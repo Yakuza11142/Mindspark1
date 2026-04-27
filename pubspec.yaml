@@ -46,3 +46,6 @@ flutter:
 dependencies:
   # ... existing dependencies ...
   flutter_secure_storage: ^9.0.0 # ENCRYPTION (Anti-Hack)
+dependencies:
+  # ... existing dependencies ...
+  flutter_secure_storage: ^9.0.0 # ENCRYPTION (Anti-Hack)
