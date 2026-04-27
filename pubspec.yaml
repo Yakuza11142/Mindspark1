@@ -53,3 +53,9 @@ dependencies:
   # ... existing deps ...
   speech_to_text: ^6.6.0  # NEW: Allows the app to hear
   permission_handler: ^11.3.0 # To ask "Can I use your Microphone?"
+dependencies:
+  # ... existing deps ...
+  url_launcher: ^6.2.5          # To open "Contact Support" or "Privacy Policy"
+  flutter_local_notifications: ^17.0.0 # Daily Reminders (The Nagging)
+  share_plus: ^9.0.0            # "Share App" button
+  image_picker: ^1.0.7          # Profile Picture
