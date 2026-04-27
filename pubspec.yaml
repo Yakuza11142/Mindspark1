@@ -49,3 +49,7 @@ dependencies:
 dependencies:
   # ... existing dependencies ...
   flutter_secure_storage: ^9.0.0 # ENCRYPTION (Anti-Hack)
+dependencies:
+  # ... existing deps ...
+  speech_to_text: ^6.6.0  # NEW: Allows the app to hear
+  permission_handler: ^11.3.0 # To ask "Can I use your Microphone?"
