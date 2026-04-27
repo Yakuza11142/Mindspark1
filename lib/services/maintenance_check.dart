@@ -1,0 +1,1 @@
+// Checks Firebase Config to see if app needs to force close for maintenance
