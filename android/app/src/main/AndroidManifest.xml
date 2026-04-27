@@ -41,3 +41,16 @@
         </activity>
     </application>
 </manifest>
+<manifest ...>
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- AR FEATURES -->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
+
+    <application ...>
+        <!-- TELLS GOOGLE PLAY THIS IS AN AR APP -->
+        <meta-data android:name="com.google.ar.core" android:value="required" />
+        
+        <!-- ... existing AdMob meta-data ... -->
+    </application>
+</manifest>
