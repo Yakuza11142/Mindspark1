@@ -59,3 +59,7 @@ dependencies:
   flutter_local_notifications: ^17.0.0 # Daily Reminders (The Nagging)
   share_plus: ^9.0.0            # "Share App" button
   image_picker: ^1.0.7          # Profile Picture
+dependencies:
+  # ... existing ...
+  screen_brightness: ^0.2.2  # To control light
+  vibration: ^1.8.4          # To control frequency
