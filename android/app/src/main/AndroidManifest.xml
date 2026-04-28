@@ -61,3 +61,14 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     
     <application ...>
+<application
+        android:label="MindSpark Elite"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"> <!-- CRITICAL FOR DOWNLOADING .GLB FILES -->
+        
+        <!-- CRITICAL FOR AR TO WAKE UP -->
+        <meta-data android:name="com.google.ar.core" android:value="optional" /> 
+        <!-- Change to 'optional' instead of 'required' so the app doesn't crash on phones without AR. It just hides the feature. -->
+
+    </application>
