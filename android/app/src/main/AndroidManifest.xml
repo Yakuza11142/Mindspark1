@@ -72,3 +72,23 @@
         <!-- Change to 'optional' instead of 'required' so the app doesn't crash on phones without AR. It just hides the feature. -->
 
     </application>
+<!-- PERMISSIONS -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- 🚨 CRITICAL FIX FOR ANDROID 11+ TO ALLOW NATIVE AR LAUNCH 🚨 -->
+    <queries>
+        <package android:name="com.google.ar.core" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="intent" />
+        </intent>
+    </queries>
+
+    <application>
+        <!-- ... the rest of your app ... -->
+    </application>
