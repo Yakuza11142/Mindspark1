@@ -63,3 +63,6 @@ dependencies:
   # ... existing ...
   screen_brightness: ^0.2.2  # To control light
   vibration: ^1.8.4          # To control frequency
+dependencies:
+  # ... existing deps ...
+  url_launcher: ^6.2.5
