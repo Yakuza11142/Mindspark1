@@ -1,0 +1,22 @@
+android {
+    compileSdkVersion 34
+    defaultConfig {
+        applicationId "com.mindspark.elite"
+        minSdkVersion 24  // Required for ARCore and Supabase
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+        multiDexEnabled true // CRITICAL: Allows app to handle 2000 scripts
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true // Scrambles code (Anti-Hacker)
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+}
