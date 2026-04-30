@@ -66,3 +66,10 @@ dependencies:
 dependencies:
   # ... existing deps ...
   url_launcher: ^6.2.5
+dependencies:
+  flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.0.0
+
+flutter:
+  assets:
+    - .env
