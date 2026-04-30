@@ -1,3 +1,7 @@
 lib/my_private_logic.dart
 .env
 mind_spark_project/.env
+.env.local
+secrets.env
+keys.env
+config.env
