@@ -1,0 +1,7 @@
+controller.onNodeTap = (name) {
+  switch (name) {
+    case "head": print("Accessing Neural Link..."); break;
+    case "stomach_back": print("Core Integrity: 100%"); break;
+    case "effector": print("Hand Interaction Triggered"); break;
+  }
+};
