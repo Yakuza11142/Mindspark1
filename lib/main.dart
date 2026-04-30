@@ -78,3 +78,66 @@ class HackedAppScreen extends StatelessWidget {
     );
   }
 }
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void main() async {
+  // 1. Initialize Flutter engine
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Load the secret .env vault
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print("Error: Could not find .env file. Check Step No. 1.");
+  }
+
+  // 3. Power up Supabase with your CEO keys
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_KEY']!,
+  );
+
+  runApp(const MindSparkApp());
+}
+
+class MindSparkApp extends StatelessWidget {
+  const MindSparkApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(), // CEO Aesthetic
+      home: const HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.bolt, color: Colors.cyanAccent, size: 50),
+            const SizedBox(height: 20),
+            const Text(
+              "MIND SPARK CORE",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
+            ),
+            Text(
+              "STATUS: ONLINE | CEO: VERIFIED",
+              style: TextStyle(color: Colors.cyanAccent.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
