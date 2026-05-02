@@ -78,6 +78,10 @@ dependencies:
 dependencies:
   google_translate_api: ^1.0.0
 dependencies:
-  qr_flutter: ^4.1.0
+  dependencies:
+  qr_flutter: ^4.1.0          # Generates the QR
+  ticket_widget_plus: ^1.0.1  # Gives the "punched-out" receipt look
+  crypto: ^3.0.3              # Used for hashing/legitimacy verification
+
 
 
