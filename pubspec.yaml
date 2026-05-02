@@ -75,4 +75,7 @@ flutter:
     - .env
 dependencies:
   google_mlkit_language_id: ^0.10.0
+dependencies:
+  google_translate_api: ^1.0.0
+
 
