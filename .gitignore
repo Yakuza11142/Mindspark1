@@ -5,3 +5,4 @@ mind_spark_project/.env
 secrets.env
 keys.env
 config.env
+lib/services/dynamic_ad_pricing.dart
