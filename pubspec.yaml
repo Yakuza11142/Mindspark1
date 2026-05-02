@@ -122,6 +122,15 @@ dependencies:
 dependencies:
   biometric_storage: ^5.0.1
   encrypt: ^5.0.3
+dev_dependencies:
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#000000" # Black background to match your logo
+  adaptive_icon_foreground: "assets/images/app_icon.png"
 
 
 
