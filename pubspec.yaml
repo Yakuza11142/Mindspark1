@@ -119,7 +119,9 @@ dependencies:
   vector_math: ^2.1.0
   google_ml_kit_face_detection: ^0.11.0 # The "Face Finder"
   tflite_flutter: ^0.10.0               # The "Face Recognizer"
-
+dependencies:
+  biometric_storage: ^5.0.1
+  encrypt: ^5.0.3
 
 
 
