@@ -102,6 +102,11 @@ dependencies:
   arcore_flutter_plus: ^1.0.2  # The recommended library for Android AR
   vector_math: ^2.1.0          # Required for positioning objects
 flutter_markdown: ^0.7.1
+dependencies:
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  arcore_flutter_plus: ^1.0.2
+
 
 
 
