@@ -233,4 +233,82 @@ class _SparkInfiniteARState extends State<SparkInfiniteAR> {
     super.dispose();
   }
 }
+import 'package:flutter/material.dart';
+import 'package:arcore_flutter_plus/arcore_flutter_plus.dart';
+import 'package:vector_math/vector_math_64.dart' as vector;
+
+void main() => runApp(MaterialApp(home: SparkGestureAR()));
+
+class SparkGestureAR extends StatefulWidget {
+  @override
+  _SparkGestureARState createState() => _SparkGestureARState();
+}
+
+class _SparkGestureARState extends State<SparkGestureAR> {
+  ArCoreController? arCoreController;
+  int nodeCount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Spark: Gesture Control")),
+      body: ArCoreView(
+        onArCoreViewCreated: _onArCoreViewCreated,
+        enableTapRecognizer: true, // Enables standard tap gestures
+      ),
+    );
+  }
+
+  void _onArCoreViewCreated(ArCoreController controller) {
+    arCoreController = controller;
+    
+    // GESTURE: Tap a plane to create a new "Secondary" hologram
+    arCoreController?.onPlaneTap = _onPlaneTapHandler;
+
+    // GESTURE: Tap an existing hologram to DELETE it
+    arCoreController?.onNodeTap = (nodeName) {
+      _deleteHologram(nodeName);
+    };
+  }
+
+  void _onPlaneTapHandler(List<ArCoreHitTestResult> hits) {
+    final hit = hits.first;
+    nodeCount++;
+    _createHologram(hit, "Spark_$nodeCount");
+  }
+
+  void _createHologram(ArCoreHitTestResult hit, String name) {
+    // Primary "Spark" hologram
+    final sparkNode = ArCoreReferenceNode(
+      name: name,
+      object3DFileName: "spark.glb",
+      position: hit.pose.translation,
+      rotation: hit.pose.rotation,
+    );
+
+    // Secondary Hologram (e.g., a data tag floating above)
+    final secondaryNode = ArCoreNode(
+      shape: ArCoreText(text: "Data: $name", extrusionDepth: 0.02),
+      position: hit.pose.translation + vector.Vector3(0, 0.3, 0), // Floats higher
+      name: "${name}_tag",
+    );
+
+    arCoreController?.addArCoreNodeWithAnchor(sparkNode);
+    arCoreController?.addArCoreNodeWithAnchor(secondaryNode);
+    print("Saved $name to the Edge World.");
+  }
+
+  void _deleteHologram(String nodeName) {
+    // Removes the specific node by its unique name
+    arCoreController?.removeNode(nodeName: nodeName);
+    print("Deleted $nodeName from the real world.");
+  }
+
+  @override
+  void dispose() {
+    arCoreController?.dispose();
+    super.dispose();
+  }
+}
+
 
