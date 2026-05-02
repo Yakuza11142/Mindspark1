@@ -111,6 +111,15 @@ dependencies:
   google_ml_kit_face_detection: ^0.11.0  # Detects where the face is
   tflite_flutter: ^0.10.0               # The "Brain" that remembers the face
   image: ^4.1.3                         # Processes camera frames for the brain
+dependencies:
+  flutter:
+    sdk: flutter
+  hive_flutter: ^1.1.0
+  arcore_flutter_plus: ^1.0.2
+  vector_math: ^2.1.0
+  google_ml_kit_face_detection: ^0.11.0 # The "Face Finder"
+  tflite_flutter: ^0.10.0               # The "Face Recognizer"
+
 
 
 
