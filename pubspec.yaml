@@ -73,3 +73,6 @@ dependencies:
 flutter:
   assets:
     - .env
+dependencies:
+  google_mlkit_language_id: ^0.10.0
+
