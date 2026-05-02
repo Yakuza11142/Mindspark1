@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s # Scrape data every 5 seconds
+
+scrape_configs:
+  - job_name: 'mindspark_flutter_app'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  - job_name: 'supabase_database_health'
+    static_configs:
+      - targets:['db.mindspark.app:5432']
