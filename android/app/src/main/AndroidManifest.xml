@@ -92,3 +92,5 @@
     <application>
         <!-- ... the rest of your app ... -->
     </application>
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera.ar" />
