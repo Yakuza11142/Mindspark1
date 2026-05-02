@@ -141,3 +141,96 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:arcore_flutter_plus/arcore_flutter_plus.dart';
+import 'package:vector_math/vector_math_64.dart' as vector;
+import 'package:google_ml_kit_face_detection/google_ml_kit_face_detection.dart';
+import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox('studentBox'); 
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: SparkInfiniteAR()));
+}
+
+class SparkInfiniteAR extends StatefulWidget {
+  @override
+  _SparkInfiniteARState createState() => _SparkInfiniteARState();
+}
+
+class _SparkInfiniteARState extends State<SparkInfiniteAR> {
+  ArCoreController? arCoreController;
+  final Box studentBox = Hive.box('studentBox');
+  late FaceDetector _faceDetector;
+  tfl.Interpreter? _interpreter;
+  bool _isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _faceDetector = FaceDetector(options: FaceDetectorOptions(
+      enableTracking: true,
+      performanceMode: FaceDetectorMode.accurate,
+    ));
+    _loadModel();
+  }
+
+  Future<void> _loadModel() async {
+    _interpreter = await tfl.Interpreter.fromAsset('mobilefacenet.tflite');
+  }
+
+  // INFINITE SCAN: This logic would be hooked into a camera stream
+  // to constantly compare the current face to your Edge Memory (Hive)
+  void _infiniteFaceScan(InputImage image) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    final faces = await _faceDetector.processImage(image);
+    for (var face in faces) {
+      // 1. Extract Face Vector (The mathematical 'face signature')
+      List currentFaceVector = [/* data from model */]; 
+
+      // 2. SEARCH EVERYTHING: Compare against every student in Hive
+      for (var key in studentBox.keys) {
+        var student = studentBox.get(key);
+        if (_isMatch(currentFaceVector, student['face_vector'])) {
+          print("RECOGNIZED: ${student['name']}");
+          _updateHologramStatus(student['name'], student['stats']);
+        }
+      }
+    }
+    _isProcessing = false;
+  }
+
+  // Simple math to see if two face vectors are the same person
+  bool _isMatch(List vec1, List vec2) {
+    // Euclidean distance logic goes here
+    return true; 
+  }
+
+  void _updateHologramStatus(String name, String stats) {
+    // This would update the 3D text in real-time
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Spark: Infinite Recognition"), backgroundColor: Colors.black),
+      body: ArCoreView(
+        onArCoreViewCreated: (controller) => arCoreController = controller,
+        enableTapRecognizer: true,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _faceDetector.close();
+    _interpreter?.close();
+    arCoreController?.dispose();
+    super.dispose();
+  }
+}
+
