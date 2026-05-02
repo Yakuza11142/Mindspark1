@@ -310,5 +310,66 @@ class _SparkGestureARState extends State<SparkGestureAR> {
     super.dispose();
   }
 }
+import 'package:flutter/material.dart';
+import 'package:arcore_flutter_plus/arcore_flutter_plus.dart';
+import 'package:vector_math/vector_math_64.dart' as vector;
+
+class SparkInfiniteAR extends StatefulWidget {
+  @override
+  _SparkInfiniteARState createState() => _SparkInfiniteARState();
+}
+
+class _SparkInfiniteARState extends State<SparkInfiniteAR> {
+  ArCoreController? arCoreController;
+  
+  // 6'2" base height converted to meters for the A71
+  double baseHeightMeters = 1.8796; 
+  double twoInchesInMeters = 0.0508;
+
+  void _onPlaneTapHandler(List<ArCoreHitTestResult> hits) {
+    final hit = hits.first;
+    
+    // Logic: Default to 6'2", but if a person is detected, 
+    // we calculate their height and add 2 inches.
+    double finalHeight = _calculateDynamicHeight(); 
+
+    _projectTallSpark(hit, finalHeight);
+  }
+
+  double _calculateDynamicHeight() {
+    // In a real scan, you'd get the 'y' coordinate of the top of a detected face.
+    // Here we set the base. If a student is 6'4", Spark becomes 6'6".
+    double detectedPersonHeight = 1.83; // Example: 6'0" person detected
+    
+    if (detectedPersonHeight + twoInchesInMeters > baseHeightMeters) {
+      return detectedPersonHeight + twoInchesInMeters;
+    }
+    return baseHeightMeters;
+  }
+
+  void _projectTallSpark(ArCoreHitTestResult hit, double height) {
+    final sparkNode = ArCoreReferenceNode(
+      name: "GiantSpark",
+      object3DFileName: "spark.glb",
+      position: hit.pose.translation,
+      // Scaling the 3D model to stand at the calculated height
+      scale: vector.Vector3(height, height, height), 
+    );
+
+    arCoreController?.addArCoreNodeWithAnchor(sparkNode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Spark: 6'2\"+ Giant Mode")),
+      body: ArCoreView(
+        onArCoreViewCreated: (c) => arCoreController = c,
+        enableTapRecognizer: true,
+      ),
+    );
+  }
+}
+
 
 
