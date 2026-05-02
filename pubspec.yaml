@@ -98,6 +98,10 @@ analyzer:
 dev_dependencies:
   # Allows the app to inspect its own code health
   custom_lint: ^0.6.4 
+dependencies:
+  ar_flutter_plugin: ^0.7.3
+  vector_math: ^2.1.0
+
 
 
 
