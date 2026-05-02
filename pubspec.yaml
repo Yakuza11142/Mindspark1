@@ -86,6 +86,19 @@ dependencies:
   ticket_clippers: ^1.1.0 # For the professional ticket shape
   qr_flutter: ^4.1.0      # For the high-quality QR code
   intl: ^0.19.0           # For clean date and time formatting
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Treat these warnings as "Fatal Errors" that kill the build
+    unused_local_variable: error
+    invalid_use_of_visible_for_testing_member: error
+    missing_required_param: error
+    dead_code: error
+dev_dependencies:
+  # Allows the app to inspect its own code health
+  custom_lint: ^0.6.4 
+
 
 
 
