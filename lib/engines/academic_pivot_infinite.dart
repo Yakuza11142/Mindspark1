@@ -2,15 +2,15 @@ import '../models/ai_persona.dart';
 
 class AcademicPivotInfinite {
   static String executePivot(String userInput, AiPersona currentAh) {
+    // Standard Flutter debug print
     print("🛡️ Semantic Shield Activated: Intercepting inappropriate request.");
 
+    // Logic restricted only to Spark, speaking standard English
     if (currentAh.name == "Spark") {
-      return "Boss, why you dey drop this kind scope? We get JAMB to crush. I've wiped that from my memory. Let's look at the structure of a cell instead.";
-    } else if (currentAh.name == "Nexus") {
-      return "I process highly complex academic data, and you attempt to input profanity? Unacceptable. We are moving on. Here is a breakdown of human anatomy.";
-    } else {
-      // Aria
-      return "There is no need for that kind of language. I know studying is stressful, but let's stay focused. Tell me what subject you need help with.";
+      return "I've intercepted an inappropriate request. Let's stay focused on our academic goals. We have a lot to cover to ensure you're fully prepared for your exams. Let's get back to the lesson.";
     }
+
+    // Standard fallback for any other persona
+    return "Let's keep our focus on your studies. What subject should we review next?";
   }
 }
