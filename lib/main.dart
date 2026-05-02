@@ -370,6 +370,59 @@ class _SparkInfiniteARState extends State<SparkInfiniteAR> {
     );
   }
 }
+import 'package:dart_openai/dart_openai.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:groq_sdk/groq_sdk.dart';
+
+class SparkConsensusBrain {
+  final groq = Groq('YOUR_GROQ_KEY');
+
+  Future<Map<String, String>> fetchTripleResponse(String prompt) async {
+    // 1. Run all three models in parallel (Parallel Processing)
+    final results = await Future.wait([
+      _askGPT(prompt),
+      _askGemini(prompt),
+      _askGroq(prompt),
+    ]);
+
+    return {
+      'gpt': results[0],
+      'gemini': results[1],
+      'groq': results[2],
+    };
+  }
+
+  Future<String> _askGPT(String p) async {
+    final chat = await OpenAI.instance.chat.create(
+      model: "gpt-5.5-preview", 
+      messages: [OpenAIChatCompletionChoiceMessageModel(content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(p)], role: OpenAIChatMessageRole.user)],
+    );
+    return chat.choices.first.message.content!.first.text!;
+  }
+
+  Future<String> _askGemini(String p) async {
+    final res = await Gemini.instance.text(p);
+    return res?.output ?? "";
+  }
+
+  Future<String> _askGroq(String p) async {
+    final chat = await groq.startChat();
+    final res = await chat.sendMessage(p);
+    return res.choices.first.message.content;
+  }
+}
+void _processConsensus(String prompt) async {
+  final responses = await _brain.fetchTripleResponse(prompt);
+  
+  // LOGIC: Use Groq for speed, Gemini for data, and GPT for logic
+  String finalAdvice = "Gemini says: ${responses['gemini']}. GPT reasoning: ${responses['gpt']}";
+  
+  setState(() {
+    // Hologram physical update
+    _sparkHeight += 0.05; // Significant "evolution" jump
+    _sparkSpeak("My consensus brain has analyzed your data using three distinct models.");
+  });
+}
 
 
 
