@@ -10,3 +10,12 @@ lib/services/dynamic_ad_pricing.dart
 .env
 .env.*
 .env.local
+# Removes .env from the git tracking (not your computer)
+git rm --cached .env
+
+# Commit the removal
+git commit -m "Stop tracking sensitive .env file"
+
+# Push the change to your remote
+git push origin <Yakuza11142Mindspark1>
+
