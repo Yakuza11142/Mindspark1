@@ -6,3 +6,7 @@ secrets.env
 keys.env
 config.env
 lib/services/dynamic_ad_pricing.dart
+# Environment secrets
+.env
+.env.*
+.env.local
