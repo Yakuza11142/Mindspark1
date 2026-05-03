@@ -18,4 +18,7 @@ git commit -m "Stop tracking sensitive .env file"
 
 # Push the change to your remote
 git push origin <Yakuza11142Mindspark1>
+# Purge .env from entire git history
+git filter-repo --path .env --invert-paths
+
 
