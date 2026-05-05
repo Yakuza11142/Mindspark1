@@ -19,7 +19,7 @@ class FounderWelcomeScreen extends StatelessWidget {
             const Text("Welcome to the Future.", style: TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             const Text(
-              "I built MindSpark because the old way of learning is broken. Here, you don't just read. You experience. Use the Holo-Deck. Ask the AI. Crush your exams.",
+              "I built Mind Spark because the old way of learning is broken. Here, you don't just read. You experience. Use the Holo-Deck. Ask the AI. Crush your exams.",
               style: TextStyle(fontSize: 16, color: Colors.white70, height: 1.5),
             ),
             const SizedBox(height: 40),
