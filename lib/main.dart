@@ -473,5 +473,13 @@ class SupabaseCoreConfig {
 
   static SupabaseClient get client => Supabase.instance.client;
 }
-
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  
+  // Start the infinite listener globally
+  LiveConfig.instance.init(); 
+  
+  runApp(const MyApp());
+}
 
