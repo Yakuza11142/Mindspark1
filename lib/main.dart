@@ -8,7 +8,8 @@ import 'services/currency_manager.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();// Check for any payments that didn't upload yesterday and push them to the cloud now
+UnfailingPaymentQueue.syncPaymentsWithServer();
   runApp(
     MultiProvider(
       providers: [
