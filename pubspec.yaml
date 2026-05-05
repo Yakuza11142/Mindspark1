@@ -147,6 +147,8 @@ flutter:
 supabase_flutter: ^2.3.1
 dependencies:
   shared_preferences: ^2.2.2
+dependencies:
+  ar_flutter_plugin_external: ^0.0.1
 
 
 
