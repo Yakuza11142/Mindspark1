@@ -144,8 +144,7 @@ flutter:
         - asset: assets/fonts/Inter-Regular.ttf
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
-
-
+supabase_flutter: ^2.3.1
 
 
 
