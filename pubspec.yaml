@@ -160,6 +160,8 @@ dependencies:
   mobile_scanner: ^5.1.0
   audioplayers: ^6.0.0
 
+dependencies:
+  llm_dart: ^0.10.0
 
 
 
