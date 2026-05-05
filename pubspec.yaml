@@ -151,6 +151,9 @@ dependencies:
   ar_flutter_plugin_external: ^0.0.1
 dependencies:
   sensors_plus: ^6.1.0
+flutter:
+  assets:
+    - assets/images/
 
 
 
