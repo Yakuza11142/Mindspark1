@@ -165,7 +165,9 @@ dependencies:
 dependencies:
   crypto: ^3.0.3        # For SHA-3
   pointycastle: ^3.9.1  # For Post-Quantum math
-  uuid: ^4.4.0          # To replace IMEI (Play Store Safe)
 
+dependencies:
+  supabase_flutter: ^2.6.0
+  pqcrypto: ^1.1.0 # The ML-DSA Verifier
 
 
