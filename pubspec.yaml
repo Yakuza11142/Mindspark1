@@ -162,6 +162,10 @@ dependencies:
 
 dependencies:
   llm_dart: ^0.10.0
+dependencies:
+  crypto: ^3.0.3        # For SHA-3
+  pointycastle: ^3.9.1  # For Post-Quantum math
+  uuid: ^4.4.0          # To replace IMEI (Play Store Safe)
 
 
 
