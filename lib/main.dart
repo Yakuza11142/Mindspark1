@@ -116,32 +116,6 @@ class MindSparkApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.bolt, color: Colors.cyanAccent, size: 50),
-            const SizedBox(height: 20),
-            const Text(
-              "MIND SPARK CORE",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
-            ),
-            Text(
-              "STATUS: ONLINE | CEO: VERIFIED",
-              style: TextStyle(color: Colors.cyanAccent.withOpacity(0.7)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:arcore_flutter_plus/arcore_flutter_plus.dart';
