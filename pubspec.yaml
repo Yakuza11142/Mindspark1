@@ -178,4 +178,6 @@ dependencies:
   pqcrypto: ^1.1.0    # Post-Quantum ML-DSA (Dilithium)
   thirds: ^1.0.1      # FIPS-compliant SHA-3 (Keccak)
 
+dependencies:
+  groq_sdk: ^0.0.3
 
