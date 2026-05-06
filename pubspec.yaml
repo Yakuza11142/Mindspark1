@@ -174,4 +174,8 @@ dependencies:
   safe_device: ^1.1.4
   flutter_jailbreak_detection: ^1.1.1
 
+dependencies:
+  pqcrypto: ^1.1.0    # Post-Quantum ML-DSA (Dilithium)
+  thirds: ^1.0.1      # FIPS-compliant SHA-3 (Keccak)
+
 
