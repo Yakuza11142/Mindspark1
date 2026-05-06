@@ -12,9 +12,9 @@ class AiVersionController {
 
     // 2. Set dynamic defaults
     await _rc.setDefaults({
-      "latest_openai_model": "gpt-4o",
-      "latest_gemini_model": "gemini-1.5-pro",
-      "latest_groq_model": "llama-3.1-70b-versatile",
+      "latest_openai_model": "gpt-5.5",
+      "latest_gemini_model": "gemini-3.1-pro",
+      "latest_groq_model": "llama-4-scout",
     });
 
     // 3. Initial Activation
