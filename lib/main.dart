@@ -457,3 +457,9 @@ void main() async {
   runApp(const MyApp());
 }
 
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  GlobalSecurityService().initialize(); // Start global protection
+  runApp(const MyApp());
+}
+
