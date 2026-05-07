@@ -97,3 +97,14 @@
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for API requests -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <application
+        android:label="Your App Name"
+        android:icon="@mipmap/ic_launcher">
+        <!-- ... existing activities ... -->
+    </application>
+</manifest>
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
