@@ -182,3 +182,6 @@ dependencies:
   groq_sdk: ^0.0.3
 
 http: ^1.2.0
+
+dependencies:
+  supabase_flutter: ^2.6.0 # The latest stable version for 2026
