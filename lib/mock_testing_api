@@ -1,0 +1,47 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:test/test.dart';
+
+// 1. The class that makes the API call
+class ApiService {
+  final http.Client client;
+  ApiService(this.client);
+
+  Future<String> fetchData() async {
+    final response = await client.get(Uri.parse('https://example.com'));
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception('Failed to load');
+    }
+  }
+}
+
+// 2. The Test
+void main() {
+  test('Mock API call returns data', () async {
+    // Create a mock client
+    final mockClient = MockClient((request) async {
+      // Define fake response
+      return http.Response(json.encode({'key': 'mocked_value'}), 200);
+    });
+
+    final apiService = ApiService(mockClient);
+    final result = await apiService.fetchData();
+
+    // Assert that the result is our mocked value
+    expect(result, '{"key":"mocked_value"}');
+  });
+
+  test('Mock API call handles error', () async {
+    final mockClient = MockClient((request) async {
+      return http.Response('Not Found', 404);
+    });
+
+    final apiService = ApiService(mockClient);
+    
+    // Expect an exception
+    expect(apiService.fetchData(), throwsException);
+  });
+}
