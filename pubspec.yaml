@@ -185,3 +185,14 @@ http: ^1.2.0
 
 dependencies:
   supabase_flutter: ^2.6.0 # The latest stable version for 2026
+
+dependencies:
+  # ... existing deps ...
+  supabase_core: ^2.24.2
+  supabase_auth: ^4.16.0
+  cloud_client: ^4.14.0
+  supabase_remote_config: ^4.3.8
+  supabase_analytics: ^10.8.0
+  supabase_crashlytics: ^3.4.8
+  supabase_messaging: ^14.7.8
+  google_sign_in: ^6.1.6
