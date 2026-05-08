@@ -22,3 +22,10 @@ git push origin <Yakuza11142Mindspark1>
 git filter-repo --path .env --invert-paths
 
 
+# Add these lines to your existing .gitignore
+lib/config/secrets.dart
+*.jks
+key.properties
+build/
+.dart_tool/
+.flutter-plugins
