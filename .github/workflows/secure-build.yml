@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 permissions:
   contents: read
 
@@ -20,44 +20,41 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🛠️ Auto-Repair Gradle (Fixes Empty Files)
+      - name: 🛠️ Force Rebuild Gradle System
         run: |
-          # 1. If gradlew is empty, download the official official script
-          if [ ! -s gradlew ]; then
-            echo "Repairing empty gradlew file..."
-            curl -sL https://githubusercontent.com -o gradlew
-          fi
-          chmod +x gradlew
+          # 1. DELETE the corrupted/empty files from the runner
+          rm -f gradlew
+          rm -rf gradle/wrapper/gradle-wrapper.jar
           
-          # 2. Ensure the wrapper properties exist so it knows which version to use
-          mkdir -p gradle/wrapper
-          if [ ! -f "gradle/wrapper/gradle-wrapper.properties" ]; then
-            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip" > gradle/wrapper/gradle-wrapper.properties
-          fi
+          # 2. GENERATE a fresh, official Gradle engine (Version 8.5)
+          # This command creates a perfect, non-corrupted JAR and script
+          gradle wrapper --gradle-version 8.5
+          
+          # 3. SET permissions
+          chmod +x gradlew
 
-      - name: 🎨 Fix Logo Filename
+      - name: 🎨 Fix Logo Name
         run: |
-          # Finds your long ChatGPT filename and renames it so Android doesn't crash
           mkdir -p app/src/main/res/drawable
+          # Finds your long ChatGPT image name and renames it correctly
           find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
 
       - name: 🚀 Build Secure APK
         run: |
-          # Finds where gradlew is hiding and runs the build
+          # Finds the new gradlew and builds the app
           GRADLE_PATH=$(find . -name "gradlew" | head -n 1)
           cd $(dirname "$GRADLE_PATH")
           ./gradlew assembleDebug --no-daemon
 
-      - name: 🔒 Generate SHA-256, 512, and SHA-3
+      - name: 🔒 Triple-Layer Integrity Hashing
         run: |
-          # Locates the finished APK
           APK_FILE=$(find . -name "*.apk" | head -n 1)
           if [ -n "$APK_FILE" ]; then
             sha256sum "$APK_FILE" > signatures.txt
             sha512sum "$APK_FILE" >> signatures.txt
             openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
           else
-            echo "APK not found, build may have failed." && exit 1
+            echo "Build failed: No APK was generated." && exit 1
           fi
 
       - name: 📦 Upload Final App
