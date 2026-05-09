@@ -463,3 +463,63 @@ void main() {
   runApp(const MyApp());
 }
 
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class AppControlWrapper extends StatefulWidget {
+  final Widget child;
+  const AppControlWrapper({super.key, required this.child});
+
+  @override
+  State<AppControlWrapper> createState() => _AppControlWrapperState();
+}
+
+class _AppControlWrapperState extends State<AppControlWrapper> {
+  bool _isLocked = false;
+  String _message = "System Maintenance";
+
+  @override
+  void initState() {
+    super.initState();
+    _initRemoteControl();
+  }
+
+  void _initRemoteControl() {
+    // Listens to your 'remote_config' table in real-time
+    Supabase.instance.client
+        .from('remote_config')
+        .stream(primaryKey: ['id'])
+        .listen((data) {
+          if (data.isNotEmpty) {
+            final config = data.first;
+            setState(() {
+              _isLocked = config['is_locked'] ?? false;
+              _message = config['alert_text'] ?? "Access Denied";
+            });
+          }
+        });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If you flip the switch in your CEO dashboard, 
+    // the student sees this screen and cannot use the app.
+    if (_isLocked) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock, size: 80, color: Colors.red),
+                const SizedBox(height: 20),
+                Text(_message, style: const TextStyle(fontSize: 20)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return widget.child;
+  }
+}
