@@ -227,3 +227,9 @@ dev_dependencies:
   # Code generation tools (essential for custom objects)
   hive_generator: ^2.0.1
   build_runner: ^2.4.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Official Google/Apple In-App Purchase plugin
+  in_app_purchase: ^3.2.0
