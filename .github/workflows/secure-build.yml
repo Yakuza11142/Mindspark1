@@ -5,49 +5,38 @@ permissions:
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Adds a button to manually run this
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          node-version: '20'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Install Tools
+      - name: Build Secure Release APK
         run: |
-          mkdir -p dist
-          # Force install obfuscator and continue even if there are npm warnings
-          npm install -g javascript-obfuscator --quiet || true
+          chmod +x gradlew
+          # assembleRelease triggers the R8/ProGuard obfuscation you enabled above
+          ./gradlew assembleRelease
 
-      - name: Secure & Obfuscate
+      - name: Triple-Layer Integrity Hashing
         run: |
-          # 1. Identify where the code is (root or src)
-          TARGET_DIR="."
-          if [ -d "./src" ]; then TARGET_DIR="./src"; fi
-          
-          # 2. Run obfuscator. '|| true' ensures the workflow continues if it just throws a warning
-          javascript-obfuscator $TARGET_DIR --output ./dist --compact true --string-array true --exclude ./dist || echo "Obfuscator found no files, moving to next step."
+          # Finds the generated release APK
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk")
+          echo "Hashing APK at: $APK_PATH"
+          sha256sum "$APK_PATH" > signatures.txt
+          sha512sum "$APK_PATH" >> signatures.txt
+          openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
 
-      - name: Integrity Hashing (SHA-256, 512, SHA-3)
-        run: |
-          # Use find to avoid "file not found" errors if dist is empty
-          find dist -name "*.js" -exec sha256sum {} + > signatures.txt || true
-          find dist -name "*.js" -exec sha512sum {} + >> signatures.txt || true
-          find dist -name "*.js" -exec openssl dgst -sha3-512 {} + >> signatures.txt || true
-          
-          # Create a dummy file if signatures is empty to prevent upload failure
-          [ -s signatures.txt ] || echo "No files to sign" > signatures.txt
-
-      - name: Upload Secured App
+      - name: Upload Secure Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mind-spark-hardened
+          name: Mind-Spark-Secure-Package
           path: |
-            dist/
+            app/build/outputs/apk/release/*.apk
             signatures.txt
