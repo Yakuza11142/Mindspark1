@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 permissions:
   contents: read
 
@@ -12,40 +12,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup Build Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Layer 2 Obfuscation
+      - name: Inject & Obfuscate Scripts
         run: |
-          npm install -g javascript-obfuscator --quiet
-          # Protects the JS logic before it gets bundled into the APK assets
           mkdir -p app/src/main/assets
-          javascript-obfuscator ./src --output ./app/src/main/assets --compact true --string-array true --exclude ./app/build
+          npm install -g javascript-obfuscator --quiet
+          # Protects all scripts before they go into the APK
+          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules ./dist || true
 
-      - name: Build Secure APK
+      - name: Execute Build
         run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
+          # Finds gradlew even if it's in a subfolder
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          chmod +x "$GRADLEW_PATH"
+          $GRADLEW_PATH assembleRelease
 
-      - name: Triple-Layer Integrity Hashing
+      - name: Secure Signatures
         run: |
-          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk")
+          APK_PATH=$(find . -name "*release-unsigned.apk" -o -name "*release.apk" | head -n 1)
           sha256sum "$APK_PATH" > signatures.txt
           sha512sum "$APK_PATH" >> signatures.txt
           openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
 
-      - name: Upload Elite Package
+      - name: Upload Secured App
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Secure
+          name: Mind-Spark-Elite-Build
           path: |
-            app/build/outputs/apk/release/*.apk
+            **/*release*.apk
             signatures.txt
