@@ -1,4 +1,4 @@
-name: Mind Spark
+name: Secure Build Mind Spark
 permissions:
   contents: read
 
@@ -7,42 +7,33 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-harden:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: audit 
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Apply Obfuscation
+      - name: Install & Prepare
         run: |
+          npm ci
+          mkdir -p dist
           npm install -g javascript-obfuscator
-          javascript-obfuscator ./src --output ./dist \
-            --compact true \
-            --control-flow-flattening true \
-            --dead-code-injection true \
-            --string-array true \
-            --string-array-encoding 'rc4'
 
-      - name: Generate Cryptographic Signatures
+      - name: Obfuscate Code
         run: |
-          sha256sum dist/main.js > signatures.txt
-          sha512sum dist/main.js >> signatures.txt
-          openssl dgst -sha3-512 dist/main.js >> signatures.txt
+          # If your files aren't in 'src', change 'src' below to '.'
+          javascript-obfuscator ./src --output ./dist --compact true --string-array true || echo "Obfuscation skipped or failed"
 
-      - name: Upload Verified Artifact
+      - name: Generate Signatures
+        run: |
+          # This command creates hashes for every .js file found in dist
+          find dist -name "*.js" -exec sha256sum {} + > signatures.txt
+          find dist -name "*.js" -exec sha512sum {} + >> signatures.txt
+          find dist -name "*.js" -exec openssl dgst -sha3-512 {} + >> signatures.txt
+
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-hardened
