@@ -116,3 +116,10 @@
 </application>
 
 <uses-permission android:name="com.android.vending.BILLING" />
+
+<application
+    android:label="Mind Spark Elite"
+    android:icon="@drawable/chatgpt"
+    android:roundIcon="@drawable/chatgpt">
+    ...
+</application>
