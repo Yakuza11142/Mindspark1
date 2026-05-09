@@ -233,3 +233,9 @@ dependencies:
     sdk: flutter
   # Official Google/Apple In-App Purchase plugin
   in_app_purchase: ^3.2.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_jailbreak_detection: ^1.1.1
+  pointycastle: ^3.9.1 # This is the library for Keccak-256/512/SHA-3
