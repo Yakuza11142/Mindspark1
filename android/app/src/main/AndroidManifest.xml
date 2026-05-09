@@ -117,9 +117,27 @@
 
 <uses-permission android:name="com.android.vending.BILLING" />
 
-<application
-    android:label="Mind Spark Elite"
-    android:icon="@drawable/chatgpt"
-    android:roundIcon="@drawable/chatgpt">
-    ...
-</application>
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/chatgpt"
+        android:roundIcon="@drawable/chatgpt"
+        android:label="Mind Spark Elite"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        
+        <!-- Ensure your main activity is declared correctly here -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+
