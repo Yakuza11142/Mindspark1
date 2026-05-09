@@ -213,3 +213,17 @@ dependencies:
     sdk: flutter
   # Latest stable version as of May 2026
   flutter_tex: ^5.2.6 
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Core Hive & Flutter support
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Code generation tools (essential for custom objects)
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.8
