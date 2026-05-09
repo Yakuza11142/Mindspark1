@@ -18,41 +18,31 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Fix Logo and Prepare Assets
+      - name: Fix Logo Filename
         run: |
-          # Create folders in case they are missing
+          # This finds your long ChatGPT filename and renames it to something Android likes
           mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/assets
+          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \;
 
-          # AUTOMATIC FIX: Finds your specific ChatGPT image and renames it correctly
-          find . -name "ChatGPT Image Mar 15*" -exec cp {} app/src/main/res/drawable/chatgpt.png \;
-
-          # Obfuscate scripts into the APK container
-          npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules ./dist || true
-
-      - name: Execute Android Build
+      - name: Build APK
         run: |
+          # Find gradlew and run the build
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           chmod +x "$GRADLEW_PATH"
-          # Builds the APK using the security settings in your build.gradle
           $GRADLEW_PATH assembleRelease
 
-      - name: Triple-Layer Integrity Signatures
+      - name: Security Hashes (SHA-256, 512, 3)
         run: |
-          APK_PATH=$(find . -name "*release*.apk" | head -n 1)
-          if [ -n "$APK_PATH" ]; then
-            sha256sum "$APK_PATH" > signatures.txt
-            sha512sum "$APK_PATH" >> signatures.txt
-            openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
-          else
-            echo "Build failed to generate an APK." && exit 1
-          fi
+          # Find the final APK and create the integrity signatures
+          APK_PATH=$(find . -name "*release-unsigned.apk" | head -n 1)
+          sha256sum "$APK_PATH" > signatures.txt
+          sha512sum "$APK_PATH" >> signatures.txt
+          openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
 
-      - name: Upload Final Elite Build
+      - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Secure
+          name: Mind-Spark-Elite-Final
           path: |
-            **/*release*.apk
+            **/*release-unsigned.apk
             signatures.txt
