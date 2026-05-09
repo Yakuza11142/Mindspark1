@@ -12,37 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      # 1. Setup Java 17 using the 'temurin' distribution (Standard for GHA)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
           java-version: '17'
+          distribution: 'temurin' # Most stable distribution for GitHub
 
-      - name: Fix Logo Filename
+      # 2. Verify path to confirm directory is found
+      - name: Verify Java Path
         run: |
-          # This finds your long ChatGPT filename and renames it to something Android likes
-          mkdir -p app/src/main/res/drawable
-          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \;
+          echo "JAVA_HOME is $JAVA_HOME"
+          java -version
 
-      - name: Build APK
+      - name: Build APK with Explicit JAVA_HOME
         run: |
-          # Find gradlew and run the build
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          chmod +x "$GRADLEW_PATH"
-          $GRADLEW_PATH assembleRelease
+          # Forces Gradle to use the Java 17 directory established above
+          export JAVA_HOME=$JAVA_HOME
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
-      - name: Security Hashes (SHA-256, 512, 3)
+      - name: Secure Signatures
         run: |
-          # Find the final APK and create the integrity signatures
-          APK_PATH=$(find . -name "*release-unsigned.apk" | head -n 1)
+          APK_PATH=$(find . -name "*release*.apk" | head -n 1)
           sha256sum "$APK_PATH" > signatures.txt
           sha512sum "$APK_PATH" >> signatures.txt
           openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
 
-      - name: Upload Finished App
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Final
+          name: Mind-Spark-Elite-Secure
           path: |
-            **/*release-unsigned.apk
+            **/*release*.apk
             signatures.txt
