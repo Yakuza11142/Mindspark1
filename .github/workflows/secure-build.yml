@@ -5,41 +5,72 @@ permissions:
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # 1. Setup Java 17 using the 'temurin' distribution (Standard for GHA)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin' # Most stable distribution for GitHub
+          distribution: 'temurin'
 
-      # 2. Verify path to confirm directory is found
-      - name: Verify Java Path
-        run: |
-          echo "JAVA_HOME is $JAVA_HOME"
-          java -version
+      - name: Setup Node & Obfuscator
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Build APK with Explicit JAVA_HOME
+      - name: Fix Logo and Harden Scripts
         run: |
-          # Forces Gradle to use the Java 17 directory established above
+          # 1. Create folders to prevent "Directory not found"
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/assets
+          
+          # 2. Fix the logo name (Removes spaces/caps from your ChatGPT image)
+          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
+          
+          # 3. Layer 1 Obfuscation (Hardens logic before APK build)
+          npm install -g javascript-obfuscator --quiet
+          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules ./dist || true
+
+      - name: Find Gradlew and Build APK
+        run: |
+          # 1. Hunt for the gradlew file
+          GRADLE_FILE=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLE_FILE" ]; then
+            echo "ERROR: 'gradlew' not found! Make sure you pushed it to GitHub."
+            exit 1
+          fi
+          
+          # 2. Navigate to the folder containing gradlew
+          PROJECT_ROOT=$(dirname "$GRADLE_FILE")
+          cd "$PROJECT_ROOT"
+          
+          # 3. Set Java and Build
           export JAVA_HOME=$JAVA_HOME
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: Secure Signatures
+      - name: Triple-Layer Integrity Hashing
         run: |
+          # Find the final APK regardless of where it was built
           APK_PATH=$(find . -name "*release*.apk" | head -n 1)
-          sha256sum "$APK_PATH" > signatures.txt
-          sha512sum "$APK_PATH" >> signatures.txt
-          openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
+          
+          if [ -n "$APK_PATH" ]; then
+            sha256sum "$APK_PATH" > signatures.txt
+            sha512sum "$APK_PATH" >> signatures.txt
+            openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
+          else
+            echo "No APK found after build." && exit 1
+          fi
 
-      - name: Upload
+      - name: Upload Final Secured App
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-Elite-Secure
