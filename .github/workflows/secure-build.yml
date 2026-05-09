@@ -1,10 +1,10 @@
 name: Mind Spark 
-permissions: contents: read
+permissions:
+  contents: read
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows you to manually trigger the build
 
 jobs:
   build:
@@ -17,45 +17,42 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-      
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
-      - name: Prep Assets & Logo
+      - name: Fix Logo and Prepare Assets
         run: |
-          # Create folders if missing so the build doesn't crash
-          mkdir -p app/src/main/assets
+          # Create folders in case they are missing
           mkdir -p app/src/main/res/drawable
-          
-          # Install obfuscator and run it; '|| true' ensures it won't stop the build if a script is missing
+          mkdir -p app/src/main/assets
+
+          # AUTOMATIC FIX: Finds your specific ChatGPT image and renames it correctly
+          find . -name "ChatGPT Image Mar 15*" -exec cp {} app/src/main/res/drawable/chatgpt.png \;
+
+          # Obfuscate scripts into the APK container
           npm install -g javascript-obfuscator --quiet
           javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules ./dist || true
 
-      - name: Execute Gradle Build
+      - name: Execute Android Build
         run: |
-          # Find the gradlew file wherever it is located
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          if [ -z "$GRADLEW_PATH" ]; then echo "gradlew not found!" && exit 1; fi
           chmod +x "$GRADLEW_PATH"
-          
-          # Build a release APK; adding --no-daemon can help with CI stability
-          $GRADLEW_PATH assembleRelease --no-daemon || $GRADLEW_PATH assembleDebug
+          # Builds the APK using the security settings in your build.gradle
+          $GRADLEW_PATH assembleRelease
 
       - name: Triple-Layer Integrity Signatures
         run: |
-          # Find any APK generated (Release or Debug)
-          APK_PATH=$(find . -name "*.apk" | head -n 1)
-          if [ -z "$APK_PATH" ]; then echo "APK not found!" && exit 1; fi
-          
-          sha256sum "$APK_PATH" > signatures.txt
-          sha512sum "$APK_PATH" >> signatures.txt
-          openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
+          APK_PATH=$(find . -name "*release*.apk" | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            sha256sum "$APK_PATH" > signatures.txt
+            sha512sum "$APK_PATH" >> signatures.txt
+            openssl dgst -sha3-512 "$APK_PATH" >> signatures.txt
+          else
+            echo "Build failed to generate an APK." && exit 1
+          fi
 
-      - name: Upload Secured App
+      - name: Upload Final Elite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Final
+          name: Mind-Spark-Elite-Secure
           path: |
-            **/*.apk
+            **/*release*.apk
             signatures.txt
