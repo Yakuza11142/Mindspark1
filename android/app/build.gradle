@@ -4,29 +4,18 @@ android {
 
     defaultConfig {
         applicationId "com.mindspark.elite"
-        minSdkVersion 24  // Supports ARCore/Supabase
+        minSdkVersion 24
         targetSdkVersion 34
         versionCode 1
         versionName "1.0.0"
-        
-        // CRITICAL: Allows app to handle 2000+ scripts safely
-        multiDexEnabled true 
+        multiDexEnabled true // Vital for your 2,000+ scripts
     }
 
     buildTypes {
         release {
-            // Anti-Hacker: Scrambles code and removes unused resources
-            minifyEnabled true 
-            shrinkResources true
+            minifyEnabled true // Aggressive code scrambling
+            shrinkResources true // Removes unused logo assets
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    // Ensures your logo (res) and scripts (assets) are included
-    sourceSets {
-        main {
-            res.srcDirs = ['src/main/res']
-            assets.srcDirs = ['src/main/assets']
         }
     }
 }
