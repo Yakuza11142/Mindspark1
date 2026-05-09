@@ -31,3 +31,14 @@ android {
         }
     }
 }
+android {
+    buildTypes {
+        release {
+            // This enables the R8 obfuscator
+            minifyEnabled true 
+            // Removes unused resources to shrink the APK
+            shrinkResources true 
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
