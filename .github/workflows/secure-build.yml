@@ -26,35 +26,37 @@ jobs:
 
       - name: 3. 🛠️ Fix Project Structure (Logo Fix)
         run: |
-          mkdir -p android/app/src/main/res/drawable
-          mkdir -p android/app/src/main/assets
-          find . -maxdepth 2 -name "ChatGPT Image*" -exec cp {} android/app/src/main/res/drawable/chatgpt.png \; || true
+          # Matches your build.gradle: creating folders in the 'app' module
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/assets
+          find . -maxdepth 2 -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
 
       - name: 4. 🛠️ Reconstruct & Repair Gradle
         run: |
-          # Run from root to keep settings.gradle in scope
+          # Fresh wrapper to ensure the .jar file exists
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
       - name: 5. 🔐 Inject Supabase Public Keys
         run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > android/app/src/main/assets/.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> android/app/src/main/assets/.env
+          # Injecting keys into the app assets folder
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > app/src/main/assets/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> app/src/main/assets/.env
 
       - name: 6. 🛡️ Anti-Reverse Engineering (Obfuscation)
         run: |
           npm install -g javascript-obfuscator --quiet
-          # Only obfuscate assets to prevent manifest corruption
-          javascript-obfuscator ./android/app/src/main/assets --output ./android/app/src/main/assets --compact true || true
+          # Obfuscate only the app assets
+          javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets --compact true || true
 
       - name: 7. 🚀 Build Secure APK
         run: |
-          # Uses the :app module path to avoid "not part of build" errors
+          # Build the :app module defined in your settings.gradle
           ./gradlew :app:assembleDebug --no-daemon
 
       - name: 8. 🔒 Generate SHA-256, 512, and SHA-3 Signatures
         run: |
-          APK_FILE=$(find . -name "*.apk" | head -n 1)
+          APK_FILE=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -n "$APK_FILE" ]; then
             sha256sum "$APK_FILE" > signatures.txt
             sha512sum "$APK_FILE" >> signatures.txt
@@ -68,5 +70,5 @@ jobs:
         with:
           name: Mind-Spark-Elite-Final-Package
           path: |
-            **/*.apk
+            app/build/outputs/apk/debug/*.apk
             signatures.txt
