@@ -15,7 +15,19 @@ android {
         multiDexEnabled true
     }
 
+    // THIS IS REQUIRED for SDK 34
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
     buildTypes {
+        debug {
+            // This ensures your code/logo are obfuscated even in debug builds
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
         release {
             minifyEnabled true
             shrinkResources true
