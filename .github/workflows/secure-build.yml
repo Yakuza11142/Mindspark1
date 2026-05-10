@@ -1,4 +1,4 @@
-name: Mind Spark
+name: Mind Spark 
 permissions:
   contents: read
 
@@ -20,48 +20,38 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. 🛠️ Reconstruct & Repair Gradle
+      - name: 3. 🛠️ Fix Directory Structure
         run: |
-          # Deletes the empty gradlew file your phone uploaded and builds a fresh one
+          # This fixes the "directory does not exist" error from your screenshot
+          if [ ! -d "app" ]; then
+            echo "Creating missing app directory..."
+            mkdir -p app
+            # Move your build files into the new app folder if they are in the root
+            mv build.gradle app/ 2>/dev/null || true
+            mv src app/ 2>/dev/null || true
+          fi
+
+      - name: 4. 🛠️ Reconstruct & Repair Gradle
+        run: |
           rm -f gradlew
           rm -rf gradle/wrapper/gradle-wrapper.jar
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: 4. 🔐 Inject Supabase Public Keys
-        env:
-          URL: ${{ secrets.SUPABASE_URL }}
-          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          # Creates the .env file inside assets for your app to read
-          mkdir -p app/src/main/assets
-          echo "SUPABASE_URL=$URL" > app/src/main/assets/.env
-          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> app/src/main/assets/.env
-
-      - name: 5. 🎨 Fix Logo & Scramble Code
-        run: |
-          # Renames your specific "ChatGPT Image..." file so the Android build works
-          mkdir -p app/src/main/res/drawable
-          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
-          
-          # ANTI-REVERSE ENGINEERING: Scrambles your scripts
-          npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules || true
-
-      - name: 6. 🚀 Build Secure APK
+      - name: 5. 🚀 Build Secure APK
         run: |
           export JAVA_HOME=$JAVA_HOME
-          # Builds the release version with the security we added to build.gradle
+          # The fix in step 3 ensures ':app' now has a directory
           ./gradlew assembleRelease --no-daemon
 
-      - name: 7. 🔒 Generate Integrity Signatures
+      - name: 6. 🔒 Generate Signatures
         run: |
           APK_FILE=$(find . -name "*release*.apk" | head -n 1)
           sha256sum "$APK_FILE" > signatures.txt
           sha512sum "$APK_FILE" >> signatures.txt
           openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
 
-      - name: 8. 📦 Upload Final App
+      - name: 7. 📦 Upload Final App
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-Elite-Final
