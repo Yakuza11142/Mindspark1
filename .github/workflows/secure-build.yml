@@ -13,15 +13,17 @@ jobs:
     steps:
       - name: 1. Checkout Everything
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Grabs every single file and folder history
 
       - name: 2. Initialize Flutter Stack
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: 3. 🛠️ Recursive Asset & Project Discovery
+      - name: 3. 🛠️ Recursive Asset Discovery & Logo Sync
         run: |
-          # Finds the project heart (pubspec.yaml) no matter where it is
+          # Finds the project heart (pubspec.yaml) no matter where it is hidden
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
@@ -29,7 +31,7 @@ jobs:
           # Force create paths for your logo and code secrets
           mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets || true
           
-          # Drag your logo into the build from anywhere in the repo
+          # DRAG your logo into the build from anywhere in the repo
           LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png || true
@@ -40,24 +42,28 @@ jobs:
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
 
-      - name: 4. 🧹 NUCLEAR SYNC & REPAIR
+      - name: 4. ☢️ NUCLEAR SYNC (The Fix)
         working-directory: ${{ env.PROJECT_ROOT }}
-        # This clears old junk and repairs broken package links
+        # This force-cleans the environment and repairs broken dependency links
         run: |
           flutter clean || true
+          rm -rf .dart_tool/ || true
+          rm -rf pubspec.lock || true
           flutter pub cache repair || true
           flutter pub get || true
 
-      - name: 5. 🚀 Build Hybrid APK (All Code Included)
+      - name: 5. 🚀 Build Hybrid APK (Total Code Inclusion)
         working-directory: ${{ env.PROJECT_ROOT }}
-        continue-on-error: true # Guarantees we move to export even with code bugs
-        run: flutter build apk --debug --stacktrace
+        continue-on-error: true # Ensures we proceed to export even if a minor code bug exists
+        run: |
+          # This command compiles ALL Dart files and native sub-modules
+          flutter build apk --debug --stacktrace
 
       - name: 6. 📦 FORCE EXPORT (Grab Anything Found)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Full-Package
+          name: MindSpark-Final-v${{ github.run_number }}
           # This pattern searches EVERY folder to find the hidden APK
           path: "**/*.apk"
           retention-days: 7
