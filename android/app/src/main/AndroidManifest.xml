@@ -1,82 +1,24 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.mindspark">
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://android.com"
+    package="com.example.mindspark">
+
+    <!-- ALL YOUR PERMISSIONS MERGED HERE -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="com.android.vending.BILLING"/>
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
-
-    <!-- AR FEATURES -->
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
-
-    <application
-        android:label="MindSpark Elite"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
-        
-        <!-- ADMOB ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-6212928709769131~8727268603"/>
-            
-        <!-- ARCORE -->
-        <meta-data android:name="com.google.ar.core" android:value="required" />
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-<manifest ...>
-    <uses-permission android:name="android.permission.CAMERA" />
-    
-    <!-- AR FEATURES -->
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
-
-    <application ...>
-        <!-- TELLS GOOGLE PLAY THIS IS AN AR APP -->
-        <meta-data android:name="com.google.ar.core" android:value="required" />
-        
-        <!-- ... existing AdMob meta-data ... -->
-    </application>
-</manifest>
-<manifest ...>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    
-    <application ...>
-<application
-        android:label="MindSpark Elite"
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"> <!-- CRITICAL FOR DOWNLOADING .GLB FILES -->
-        
-        <!-- CRITICAL FOR AR TO WAKE UP -->
-        <meta-data android:name="com.google.ar.core" android:value="optional" /> 
-        <!-- Change to 'optional' instead of 'required' so the app doesn't crash on phones without AR. It just hides the feature. -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-    </application>
-<!-- PERMISSIONS -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- AR HARDWARE REQUIREMENTS -->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
 
-    <!-- 🚨 CRITICAL FIX FOR ANDROID 11+ TO ALLOW NATIVE AR LAUNCH 🚨 -->
+    <!-- QUERIES FOR ANDROID 11+ COMPATIBILITY -->
     <queries>
         <package android:name="com.google.ar.core" />
         <intent>
@@ -89,57 +31,37 @@
         </intent>
     </queries>
 
-    <application>
-        <!-- ... the rest of your app ... -->
-    </application>
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-feature android:name="android.hardware.camera.ar" />
-<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Required for API requests -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    
     <application
-        android:label="Your App Name"
-        android:icon="@mipmap/ic_launcher">
-        <!-- ... existing activities ... -->
-    </application>
-</manifest>
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-<application
-    ...
-    android:usesCleartextTraffic="true">
-    ...
-</application>
-
-<uses-permission android:name="com.android.vending.BILLING" />
-
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <application
-        android:allowBackup="true"
-        android:icon="@drawable/chatgpt"
-        android:roundIcon="@drawable/chatgpt"
-        android:label="Mind Spark Elite"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        android:label="MindSpark Elite"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         
-        <!-- Ensure your main activity is declared correctly here -->
+        <!-- YOUR ADMOB APP ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6212928709769131~8727268603"/>
+            
+        <!-- GOOGLE ARCORE SETTINGS -->
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
+
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme" />
+
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
     </application>
-
 </manifest>
-
-<string name="app_name">Mind Spark</string>
-
