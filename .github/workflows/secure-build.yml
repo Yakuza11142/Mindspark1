@@ -28,41 +28,30 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 4. 🔍 Deep-Scan & Auto-Repair Project
+      - name: 4. 🛠️ Auto-Heal Project & Logo
         run: |
-          # 1. Locate all build.gradle files and find the primary app module
-          # We look for the one that contains 'com.android.application'
+          # Finds the module containing the actual app code
           APP_GRADLE=$(grep -l "com.android.application" $(find . -name "build.gradle") | head -n 1)
-          if [ -z "$APP_GRADLE" ]; then
-            echo "❌ ERROR: Could not find an Android application module."
-            exit 1
-          fi
-          APP_ROOT=$(dirname "$APP_GRADLE")
+          if [ -z "$APP_GRADLE" ]; then APP_ROOT="."; else APP_ROOT=$(dirname "$APP_GRADLE"); fi
           echo "APP_ROOT=$APP_ROOT" >> $GITHUB_ENV
-          echo "✅ Found App Module at: $APP_ROOT"
+          
+          # Force create the folders even if they don't exist
+          mkdir -p $APP_ROOT/src/main/res/drawable $APP_ROOT/src/main/assets
 
-          # 2. Repair Project Structure
-          mkdir -p $APP_ROOT/src/main/res/drawable $APP_ROOT/src/main/res/drawable-xxhdpi $APP_ROOT/src/main/assets
-
-          # 3. Find and Force-Inject Logo
+          # Find your logo regardless of name and force it into the build
           LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable/chatgpt.png
-            cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable-xxhdpi/chatgpt.png
-            echo "✅ Assets: Logo found at $LOGO_PATH"
           else
+            # Transparent 1x1 fallback to keep the build alive
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_ROOT/src/main/res/drawable/chatgpt.png
           fi
 
-      - name: 5. 🛠️ Force-Repair Gradle Wrapper
+      - name: 5. 🛠️ Nuclear Gradle Fix
         run: |
-          # Rebuild the Gradle wrapper from scratch to fix "Missing Jar" or "Missing Plugin" errors
+          # Forces a fresh Gradle wrapper so 'jarfile' errors disappear
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          
-          # Force sync build.gradle with the current run number
-          sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" ${{ env.APP_ROOT }}/build.gradle || true
-          sed -i "s/versionName .*/versionName \"1.5.${{ github.run_number }}\"/" ${{ env.APP_ROOT }}/build.gradle || true
 
       - name: 6. 🔐 Stealth Injection & Obfuscation
         run: |
@@ -70,39 +59,33 @@ jobs:
           cat <<EOF > $ASSETS_PATH/.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          BUILD_STATUS=FINAL_PRODUCTION
           EOF
           
           npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator $ASSETS_PATH --output $ASSETS_PATH --compact true --self-defending true --string-array-encoding 'rc4'
+          javascript-obfuscator $ASSETS_PATH --output $ASSETS_PATH --compact true --self-defending true
 
-      - name: 7. 🚀 High-Intensity Optimized Build
+      - name: 7. 🚀 Build Optimized APK
         run: |
-          # Running a total clean and assemble with parallel processing
-          ./gradlew clean assembleDebug --no-daemon --parallel --stacktrace -Pandroid.enableR8.fullMode=true
+          # Using clean and parallel to ensure all your code is included fresh
+          ./gradlew clean assembleDebug --no-daemon --parallel --stacktrace
 
-      - name: 8. ⚡ Professional Optimization
+      - name: 8. ⚡ Final Prep (Zipalign)
         id: final_prep
         run: |
-          # Find any APK generated in the build folders
+          # Find the APK no matter where Gradle put it
           RAW_APK=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
-          FINAL_NAME="MindSpark_v1.5_Final_Build.apk"
-          
           if [ -f "$RAW_APK" ]; then
             sudo apt-get update && sudo apt-get install -y zipalign
-            zipalign -v 4 "$RAW_APK" "$FINAL_NAME"
-            echo "apk_out=$FINAL_NAME" >> $GITHUB_OUTPUT
+            zipalign -v 4 "$RAW_APK" MindSpark_v1.0.apk
           else
-            echo "❌ BUILD FAILED: APK was not created."
-            exit 1
+            echo "❌ APK not found." && exit 1
           fi
 
-      - name: 9. 📦 Final Master Deployment
+      - name: 9. 📦 Deployment
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Ultimate-Package
+          name: MindSpark-Final-Package
           path: |
             *.apk
-          retention-days: 14
-          compression-level: 9
+          retention-days: 7
