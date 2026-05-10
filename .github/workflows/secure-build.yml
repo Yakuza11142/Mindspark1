@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 permissions:
   contents: write
 
@@ -13,47 +13,57 @@ jobs:
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 2. Initialize Environment
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: 3. 🛠️ Force-Fix Folders (No Matter What)
+      - name: 3. 🛡️ Force-Inject Logo & Assets
         run: |
-          # Finds any folder with 'src' and forces it to be the app root
-          APP_ROOT=$(find . -name "src" -type d -exec dirname {} \; | head -n 1 || echo ".")
-          mkdir -p $APP_ROOT/src/main/res/drawable || true
-          mkdir -p $APP_ROOT/src/main/assets || true
+          # Find the REAL app module (it's the one with build.gradle)
+          APP_DIR=$(find . -name "build.gradle" -exec grep -l "com.android.application" {} + | head -n 1 | xargs dirname)
+          echo "APP_DIR=$APP_DIR" >> $GITHUB_ENV
           
-          # Force a logo in there even if yours is missing to prevent crash
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_ROOT/src/main/res/drawable/chatgpt.png || true
+          # Create missing resource paths inside the app module
+          mkdir -p $APP_DIR/src/main/res/drawable $APP_DIR/src/main/assets || true
           
-          # Try to copy your real logo if it exists, but don't stop if it fails
-          find . -iname "*ChatGPT Image*" -exec cp {} $APP_ROOT/src/main/res/drawable/chatgpt.png \; || true
+          # Find your logo anywhere in the repo and copy it to the correct path
+          LOGO_PATH=$(find . -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          if [ -n "$LOGO_PATH" ]; then
+            cp "$LOGO_PATH" $APP_DIR/src/main/res/drawable/chatgpt.png
+            echo "✅ Logo copied to $APP_DIR/src/main/res/drawable/chatgpt.png"
+          else
+            # Placeholder to prevent build errors if the logo is missing
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_DIR/src/main/res/drawable/chatgpt.png
+          fi
 
-      - name: 4. 🛠️ Force Gradle Repair
+      - name: 4. 🔐 Secure Secret Injection
         run: |
-          gradle wrapper --gradle-version 8.5 || true
-          chmod +x gradlew || true
+          # Use the discovered app module path
+          cat <<EOF > ${{ env.APP_DIR }}/src/main/assets/.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
 
-      - name: 5. 🔐 Force Secret Injection
+      - name: 5. 🛠️ Nuclear Gradle Repair
         run: |
-          APP_ROOT=$(find . -name "src" -type d -exec dirname {} \; | head -n 1 || echo ".")
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $APP_ROOT/src/main/assets/.env || true
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $APP_ROOT/src/main/assets/.env || true
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
 
-      - name: 6. 🚀 Build APK (Force Mode)
+      - name: 6. 🚀 High-Integrity Build
         run: |
-          # --continue tells Gradle: "If you find a bug, keep building anyway"
-          ./gradlew assembleDebug --no-daemon --continue || true
+          # Running from root ensures Gradle finds all sub-modules and code
+          ./gradlew clean assembleDebug --no-daemon --parallel --stacktrace
 
-      - name: 7. 📦 Export Anything Found
+      - name: 7. 📦 Export APK & Verify Content
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Final-Package
-          # This will grab ANY apk found in the entire project after the build
+          name: MindSpark-Full-Build
           path: "**/*.apk"
-          retention-days: 1
+          retention-days: 7
