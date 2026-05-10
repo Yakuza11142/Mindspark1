@@ -14,7 +14,7 @@ jobs:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. Setup Build Environment
+      - name: 2. Setup Build Environment (Java 17 & Node)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -23,49 +23,64 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 3. 🛠️ Repair Gradle System
+      - name: 3. 🛠️ Fix Project Structure (The Manifest & Logo Fix)
         run: |
+          # Finds your manifest and logo wherever they are and moves them to the right spot
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/assets
+          
+          MANIFEST_PATH=$(find . -name "AndroidManifest.xml" | head -n 1)
+          if [ -n "$MANIFEST_PATH" ]; then
+            cp "$MANIFEST_PATH" app/src/main/AndroidManifest.xml
+          fi
+          
+          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
+
+      - name: 4. 🛠️ Reconstruct & Repair Gradle
+        run: |
+          # Deletes empty/broken gradlew files and builds a fresh, working engine
           rm -f gradlew
           rm -rf gradle/wrapper/gradle-wrapper.jar
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
-      - name: 4. 🔐 Inject Supabase Keys
+      - name: 5. 🔐 Inject Supabase Public Keys
         env:
           URL: ${{ secrets.SUPABASE_URL }}
           ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          mkdir -p app/src/main/assets
+          # Creates the secure .env inside assets so your app can read your keys
           echo "SUPABASE_URL=$URL" > app/src/main/assets/.env
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> app/src/main/assets/.env
 
-      - name: 5. 🎨 Fix Logo Filename
-        run: |
-          mkdir -p app/src/main/res/drawable
-          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
-
       - name: 6. 🛡️ Anti-Reverse Engineering (Obfuscation)
         run: |
+          # Scrambles your scripts so hackers see garbage text instead of your logic
           npm install -g javascript-obfuscator --quiet
-          # This step worked in your screenshot!
-          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules || true
+          javascript-obfuscator . --output ./app/src/main/assets --compact true --control-flow-flattening true --string-array true --exclude ./app ./node_modules || true
 
       - name: 7. 🚀 Build Secure APK
         run: |
-          # Forces the build to find the 'app' module we talked about
-          ./gradlew :app:assembleDebug --no-daemon || ./gradlew assembleDebug --no-daemon
+          export JAVA_HOME=$JAVA_HOME
+          # Forces the build of the :app module using the repaired gradlew
+          ./gradlew :app:assembleDebug --no-daemon
 
-      - name: 8. 🔒 Generate Signatures (SHA-256, 512, 3)
+      - name: 8. 🔒 Generate SHA-256, 512, and SHA-3 Signatures
         run: |
+          # Creates the "integrity cables" that prove your app is official
           APK_FILE=$(find . -name "*.apk" | head -n 1)
-          sha256sum "$APK_FILE" > signatures.txt
-          sha512sum "$APK_FILE" >> signatures.txt
-          openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
+          if [ -n "$APK_FILE" ]; then
+            sha256sum "$APK_FILE" > signatures.txt
+            sha512sum "$APK_FILE" >> signatures.txt
+            openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
+          else
+            echo "Build failed: No APK generated." && exit 1
+          fi
 
-      - name: 9. 📦 Upload Final App
+      - name: 9. 📦 Upload Final Elite Package
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Final
+          name: Mind-Spark-Elite-Final-Package
           path: |
             **/*.apk
             signatures.txt
