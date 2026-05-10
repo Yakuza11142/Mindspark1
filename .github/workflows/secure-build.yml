@@ -13,35 +13,28 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      # Fix for the "jarfile" error from your image
-      - name: Setup Gradle Engine
-        uses: gradle/actions/setup-gradle@v3
-        continue-on-error: true
+      - name: Grant Execute Permission
+        run: chmod +x gradlew
 
-      - name: Force Build APK
-        # --continue tells it not to stop at the first bug
-        run: chmod +x gradlew && ./gradlew assembleDebug --continue
-        continue-on-error: true
+      # 'clean' clears old errors, 'assembleDebug' builds the APK
+      - name: Build APK
+        run: ./gradlew clean assembleDebug
 
       - name: Generate Hashes
-        # if: always() ensures this runs even if the build failed
-        if: always()
+        if: success()
         run: |
-          APK_PATH=$(find . -name "*.apk" | head -n 1)
-          if [ -n "$APK_PATH" ]; then
-            sha256sum "$APK_PATH" > hashes.txt
-            sha512sum "$APK_PATH" >> hashes.txt
-            openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
-          else
-            echo "No APK was created due to critical errors." > hashes.txt
-          fi
+          APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
+          sha256sum "$APK_PATH" > hashes.txt
+          sha512sum "$APK_PATH" >> hashes.txt
+          openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
 
-      - name: Upload Whatever Exists
-        if: always()
+      - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: buggy-app-output
+          name: MindSpark-Elite-APK
           path: |
             **/*.apk
             hashes.txt
