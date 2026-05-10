@@ -28,83 +28,81 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 4. 🛠️ Auto-Discovery & Project Healing
+      - name: 4. 🔍 Deep-Scan & Auto-Repair Project
         run: |
-          # 1. Find the main app module (where src/main lives)
-          APP_ROOT=$(find . -name "src" -type d -exec dirname {} \; | grep -v "node_modules" | head -n 1)
-          if [ -z "$APP_ROOT" ]; then APP_ROOT="."; fi
+          # 1. Locate all build.gradle files and find the primary app module
+          # We look for the one that contains 'com.android.application'
+          APP_GRADLE=$(grep -l "com.android.application" $(find . -name "build.gradle") | head -n 1)
+          if [ -z "$APP_GRADLE" ]; then
+            echo "❌ ERROR: Could not find an Android application module."
+            exit 1
+          fi
+          APP_ROOT=$(dirname "$APP_GRADLE")
           echo "APP_ROOT=$APP_ROOT" >> $GITHUB_ENV
-          
-          # 2. Force create necessary directories
+          echo "✅ Found App Module at: $APP_ROOT"
+
+          # 2. Repair Project Structure
           mkdir -p $APP_ROOT/src/main/res/drawable $APP_ROOT/src/main/res/drawable-xxhdpi $APP_ROOT/src/main/assets
-          
-          # 3. Find and link the logo (Auto-detects any image with "ChatGPT" in the name)
-          LOGO_PATH=$(find . -maxdepth 4 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+
+          # 3. Find and Force-Inject Logo
+          LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable/chatgpt.png
             cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable-xxhdpi/chatgpt.png
-            echo "✅ Assets: Logo found at $LOGO_PATH and linked."
+            echo "✅ Assets: Logo found at $LOGO_PATH"
           else
-            echo "⚠️ Warning: Logo not found. Creating safety placeholder."
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_ROOT/src/main/res/drawable/chatgpt.png
           fi
 
-      - name: 5. 🛠️ Repair Gradle Wrapper & Versioning
+      - name: 5. 🛠️ Force-Repair Gradle Wrapper
         run: |
-          # Automatically fix broken or missing Gradle wrappers
+          # Rebuild the Gradle wrapper from scratch to fix "Missing Jar" or "Missing Plugin" errors
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
           
-          # Auto-sync build version with GitHub run number
-          VERSION_FILE=$(find . -name "build.gradle" | head -n 1)
-          if [ -f "$VERSION_FILE" ]; then
-            sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" $VERSION_FILE || true
-            sed -i "s/versionName .*/versionName \"1.2.${{ github.run_number }}\"/" $VERSION_FILE || true
-          fi
+          # Force sync build.gradle with the current run number
+          sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" ${{ env.APP_ROOT }}/build.gradle || true
+          sed -i "s/versionName .*/versionName \"1.5.${{ github.run_number }}\"/" ${{ env.APP_ROOT }}/build.gradle || true
 
-      - name: 6. 🔐 Stealth Secrets & JS Obfuscation
+      - name: 6. 🔐 Stealth Injection & Obfuscation
         run: |
-          # Use the discovered app root for asset injection
-          ASSETS_DIR="${{ env.APP_ROOT }}/src/main/assets"
-          mkdir -p $ASSETS_DIR
-          
-          cat <<EOF > $ASSETS_DIR/.env
+          ASSETS_PATH="${{ env.APP_ROOT }}/src/main/assets"
+          cat <<EOF > $ASSETS_PATH/.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          BUILD_DATE=$(date +'%Y-%m-%d')
+          BUILD_STATUS=FINAL_PRODUCTION
           EOF
           
-          # Install and run industrial-grade obfuscator
           npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator $ASSETS_DIR --output $ASSETS_DIR --compact true --self-defending true --string-array-encoding 'rc4' --unicode-escape-sequence true
+          javascript-obfuscator $ASSETS_PATH --output $ASSETS_PATH --compact true --self-defending true --string-array-encoding 'rc4'
 
-      - name: 7. 🚀 Optimized Master Build
+      - name: 7. 🚀 High-Intensity Optimized Build
         run: |
-          # Clean and build using the repaired gradlew
+          # Running a total clean and assemble with parallel processing
           ./gradlew clean assembleDebug --no-daemon --parallel --stacktrace -Pandroid.enableR8.fullMode=true
 
-      - name: 8. ⚡ Professional Optimization (Zipalign)
-        id: post_process
+      - name: 8. ⚡ Professional Optimization
+        id: final_prep
         run: |
-          # Find the generated APK regardless of its default name
-          RAW_APK=$(find . -name "*-debug.apk" -print -quit)
-          FINAL_NAME="MindSpark_v1.2.${{ github.run_number }}_Master.apk"
+          # Find any APK generated in the build folders
+          RAW_APK=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
+          FINAL_NAME="MindSpark_v1.5_Final_Build.apk"
           
           if [ -f "$RAW_APK" ]; then
             sudo apt-get update && sudo apt-get install -y zipalign
             zipalign -v 4 "$RAW_APK" "$FINAL_NAME"
-            echo "apk_path=$FINAL_NAME" >> $GITHUB_OUTPUT
+            echo "apk_out=$FINAL_NAME" >> $GITHUB_OUTPUT
           else
-            echo "❌ Build Error: APK not generated." && exit 1
+            echo "❌ BUILD FAILED: APK was not created."
+            exit 1
           fi
 
-      - name: 9. 📦 Final Artifact Deployment
+      - name: 9. 📦 Final Master Deployment
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Production-v${{ github.run_number }}
+          name: MindSpark-Ultimate-Package
           path: |
             *.apk
-            integrity-report.txt
           retention-days: 14
           compression-level: 9
