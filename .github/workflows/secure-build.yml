@@ -14,56 +14,74 @@ jobs:
       - name: 1. Checkout Everything
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Grabs every single file and folder history
+          fetch-depth: 0
 
-      - name: 2. Initialize Flutter Stack
+      - name: 2. Initialize Flutter & Security Stack
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
-      - name: 3. 🛠️ Recursive Asset Discovery & Logo Sync
+      - name: 3. 🛠️ Project Discovery & Asset Injection
         run: |
-          # Finds the project heart (pubspec.yaml) no matter where it is hidden
+          # 1. Find exactly where pubspec.yaml is
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
           
-          # Force create paths for your logo and code secrets
-          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets || true
+          # 2. Force create the asset folders
+          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
           
-          # DRAG your logo into the build from anywhere in the repo
+          # 3. Find and DRAG your logo (ChatGPT Image) into the build
           LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
-            cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png || true
-            cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png || true
+            cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
+            cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png
+            echo "✅ Logo dragged into build."
           fi
           
-          # Inject Supabase Secrets (Ensure these are in your GitHub Settings)
+          # 4. Inject Supabase Keys
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
 
-      - name: 4. ☢️ NUCLEAR SYNC (The Fix)
+      - name: 4. ☢️ NUCLEAR SYNC
         working-directory: ${{ env.PROJECT_ROOT }}
-        # This force-cleans the environment and repairs broken dependency links
         run: |
-          flutter clean || true
-          rm -rf .dart_tool/ || true
-          rm -rf pubspec.lock || true
-          flutter pub cache repair || true
-          flutter pub get || true
+          flutter clean
+          flutter pub get
 
-      - name: 5. 🚀 Build Hybrid APK (Total Code Inclusion)
+      - name: 5. 🛡️ Industrial Obfuscation (Scrambling)
+        run: |
+          npm install -g javascript-obfuscator --quiet
+          javascript-obfuscator ${{ env.PROJECT_ROOT }}/assets --output ${{ env.PROJECT_ROOT }}/assets \
+            --compact true --self-defending true --string-array-encoding 'rc4'
+
+      - name: 6. 🚀 Build Hardened APK
         working-directory: ${{ env.PROJECT_ROOT }}
-        continue-on-error: true # Ensures we proceed to export even if a minor code bug exists
-        run: |
-          # This command compiles ALL Dart files and native sub-modules
-          flutter build apk --debug --stacktrace
+        # --obfuscate scrambles Dart code; --debug allows immediate testing
+        run: flutter build apk --debug --obfuscate --split-debug-info=build/app/outputs/symbols
 
-      - name: 6. 📦 FORCE EXPORT (Grab Anything Found)
+      - name: 7. 🔒 SHA Integrity Signatures
+        id: sign
+        run: |
+          # NUCLEAR FIND: Locate the APK anywhere in the build tree and move it to ROOT
+          APK_FILE=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
+          if [ -f "$APK_FILE" ]; then
+            cp "$APK_FILE" MindSpark_Final_Master.apk
+            sha256sum MindSpark_Final_Master.apk > integrity.txt
+            echo "apk_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ APK NOT FOUND AT ALL" && exit 1
+          fi
+
+      - name: 8. 📦 Export Master Security Package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Final-v${{ github.run_number }}
-          # This pattern searches EVERY folder to find the hidden APK
-          path: "**/*.apk"
+          name: MindSpark-v${{ github.run_number }}-Artifacts
+          # We upload specifically the file we moved to the root in Step 7
+          path: |
+            MindSpark_Final_Master.apk
+            integrity.txt
+          if-no-files-found: error
           retention-days: 7
