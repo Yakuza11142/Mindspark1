@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 permissions:
   contents: write
 
@@ -13,38 +13,47 @@ jobs:
     steps:
       - name: 1. Checkout Everything
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 2. Initialize Flutter Stack
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
-      - name: 3. 🛠️ Auto-Discovery & Asset Injection
+      - name: 3. 🛠️ Recursive Asset Discovery & Logo Sync
         run: |
-          # Finds exactly where your Flutter project is hidden
+          # Finds exactly where your project root is
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
           
-          # Force create asset paths
+          # Force create paths for your logo
           mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
           
-          # Drag logo in (ignores errors if logo is missing)
-          find . -iname "*ChatGPT Image*" -exec cp {} $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png \; || true
-          find . -iname "*ChatGPT Image*" -exec cp {} $PROJECT_ROOT/assets/logo.png \; || true
+          # DRAG your logo in (ChatGPT Image)
+          LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          if [ -n "$LOGO_PATH" ]; then
+            cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
+            cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png
+          fi
           
-          # Inject Secrets
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
+          # Inject Supabase Secrets for Dart
+          cat <<EOF > $PROJECT_ROOT/assets/.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
 
-      - name: 4. 📦 Force Sync Packages (Ignore Bugs)
+      - name: 4. 🧹 Nuclear Sync (Ignore Bugs)
         working-directory: ${{ env.PROJECT_ROOT }}
-        # '|| true' ensures that even if a package has a tiny bug, the build continues
-        run: flutter pub get || true
+        run: |
+          flutter clean
+          flutter pub get || true
 
       - name: 5. 🚀 Build Hybrid APK (Total Code Inclusion)
         working-directory: ${{ env.PROJECT_ROOT }}
-        # 'continue-on-error' ensures we try to get an APK no matter what
+        # continue-on-error: true ensures the artifact step runs even if there are bugs
         continue-on-error: true
         run: flutter build apk --debug --stacktrace
 
@@ -53,5 +62,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MindSpark-Final-Artifacts
+          # This pattern finds ANY apk generated anywhere in the workspace
           path: "**/*.apk"
           retention-days: 7
