@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 permissions:
   contents: write
 
@@ -28,26 +28,35 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 4. 🛠️ Intelligent Asset Recovery & Res-Hardening
+      - name: 4. 🛠️ Fix Project Structure & Asset Recovery
         run: |
-          mkdir -p app/src/main/res/drawable-xxhdpi app/src/main/assets
+          # Create EVERY folder manually to ensure 'cp' never fails
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/drawable-xxhdpi
+          mkdir -p app/src/main/assets
+          
+          # Find logo with case-insensitive search
           LOGO_FILE=$(find . -maxdepth 3 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           
           if [ -n "$LOGO_FILE" ]; then
             cp "$LOGO_FILE" app/src/main/res/drawable/chatgpt.png
             cp "$LOGO_FILE" app/src/main/res/drawable-xxhdpi/chatgpt.png
-            echo "✅ Assets: Logo successfully linked."
+            echo "✅ Assets: Logo successfully linked from $LOGO_FILE"
           else
-            echo "⚠️ Warning: Creating placeholder asset."
+            echo "⚠️ Warning: Logo not found. Generating a silent placeholder."
+            # Base64 for a 1x1 transparent PNG
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > app/src/main/res/drawable/chatgpt.png
           fi
 
-      - name: 5. 🛠️ Dynamic Versioning & Metadata
+      - name: 5. 🛠️ Version Sync
         id: versioning
         run: |
           VERSION_NAME="1.2.${{ github.run_number }}"
-          sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" app/build.gradle || true
-          sed -i "s/versionName .*/versionName \"$VERSION_NAME\"/" app/build.gradle || true
+          # Only attempt sed if the file exists to prevent errors
+          if [ -f "app/build.gradle" ]; then
+            sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" app/build.gradle
+            sed -i "s/versionName .*/versionName \"$VERSION_NAME\"/" app/build.gradle
+          fi
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
 
       - name: 6. 🔐 Secure Environment Injection
@@ -59,33 +68,22 @@ jobs:
           MODE=PRODUCTION
           EOF
 
-      - name: 7. 🛡️ Industrial JavaScript Obfuscation
+      - name: 7. 🛡️ JavaScript Obfuscation
         run: |
           npm install -g javascript-obfuscator --quiet
           javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets \
             --compact true \
-            --control-flow-flattening true \
-            --dead-code-injection true \
-            --debug-protection true \
-            --disable-console-output true \
-            --identifier-names-generator 'mangled' \
-            --numbers-to-expressions true \
-            --rename-globals true \
             --self-defending true \
-            --split-strings true \
             --string-array-encoding 'rc4' \
-            --transform-object-keys true \
             --unicode-escape-sequence true
 
-      - name: 8. 🚀 Build Hardened APK (High-Optimization)
+      - name: 8. 🚀 Build Optimized APK
         run: |
           chmod +x gradlew
-          # Force cleaning and parallel execution for speed and stability
           ./gradlew clean :app:assembleDebug --no-daemon --parallel --build-cache \
-            -Pandroid.enableR8.fullMode=true \
-            -Dorg.gradle.jvmargs="-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"
+            -Pandroid.enableR8.fullMode=true
 
-      - name: 9. ⚡ Zipalign & Binary Hardening
+      - name: 9. ⚡ Zipalign & Final Prep
         id: optimize
         run: |
           APK_RAW=$(find app/build/outputs/apk/debug -name "*.apk" -print -quit)
@@ -93,36 +91,14 @@ jobs:
           
           sudo apt-get update && sudo apt-get install -y zipalign
           zipalign -v 4 "$APK_RAW" "$FINAL_NAME"
-          
-          # Remove internal debug metadata for extra security
-          strip --strip-debug "$FINAL_NAME" || true
-          
           echo "apk_final=$FINAL_NAME" >> $GITHUB_OUTPUT
 
-      - name: 10. 🔒 Integrity Report & Checksum
-        if: success()
-        run: |
-          {
-            echo "--- MASTER PRODUCTION REPORT ---"
-            echo "App Name: Mind Spark"
-            echo "Version: ${{ steps.versioning.outputs.version_name }}"
-            echo "SHA-256: $(sha256sum "${{ steps.optimize.outputs.apk_final }}" | awk '{print $1}')"
-            echo "Build Signature: ${{ github.sha }}"
-          } > production-manifest.txt
-
-      - name: 11. 🆘 Error Log Analysis
-        if: failure()
-        run: |
-          ./gradlew :app:assembleDebug --stacktrace --info > build_failure_log.txt || true
-
-      - name: 12. 📦 Deployment & Archival
+      - name: 10. 📦 Deployment
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Master-Build-v${{ github.run_number }}
+          name: MindSpark-Build-${{ github.run_number }}
           path: |
             *.apk
-            production-manifest.txt
-            build_failure_log.txt
-          retention-days: 90
-          compression-level: 9
+            app/build/outputs/logs/
+          retention-days: 7
