@@ -16,65 +16,58 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 2. Initialize Stack (Java 17 & Node 20)
+      - name: 2. Initialize Environment (Java & Flutter)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+      
+      - name: 3. Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
 
-      - name: 3. 🛠️ Force-Inject Logo & Fix Folders
+      - name: 4. 🛠️ Recursive Asset & Logo Recovery
         run: |
-          # Finds the ACTUAL app module by looking for the src folder
-          APP_ROOT=$(find . -name "src" -type d -exec dirname {} \; | grep -v "node_modules" | head -n 1 || echo ".")
-          echo "APP_ROOT=$APP_ROOT" >> $GITHUB_ENV
+          # Finds your project root by locating pubspec.yaml
+          PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
           
-          # Force create the folders so 'cp' doesn't fail
-          mkdir -p $APP_ROOT/src/main/res/drawable $APP_ROOT/src/main/assets || true
+          # Force create standard folders for mixed code
+          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
           
-          # Force a placeholder logo to prevent compiler crashes if yours isn't found
-          echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_ROOT/src/main/res/drawable/chatgpt.png || true
+          # Hunt for your logo and force-inject it into BOTH native and Flutter assets
+          LOGO_FILE=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          if [ -n "$LOGO_FILE" ]; then
+            cp "$LOGO_FILE" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
+            cp "$LOGO_FILE" $PROJECT_ROOT/assets/logo.png
+            echo "✅ Assets: Logo successfully dragged from $LOGO_FILE"
+          fi
           
-          # Search entire repo for your logo and copy it to the PROPER Android path
-          find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -exec cp {} $APP_ROOT/src/main/res/drawable/chatgpt.png \; || true
-          echo "✅ Asset sync attempted for: $APP_ROOT"
-
-      - name: 4. 🛠️ Repair Gradle Wrapper
-        run: |
-          # Rebuilds the wrapper locally to fix "Missing Jarfile" errors
-          gradle wrapper --gradle-version 8.5 || true
-          chmod +x gradlew || true
-
-      - name: 5. 🔐 Stealth Injection & Obfuscation
-        run: |
-          ASSETS_PATH="${{ env.APP_ROOT }}/src/main/assets"
-          cat <<EOF > $ASSETS_PATH/.env
+          # Inject Supabase Keys for the hybrid environment
+          cat <<EOF > $PROJECT_ROOT/assets/.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           EOF
-          
-          npm install -g javascript-obfuscator --quiet || true
-          javascript-obfuscator $ASSETS_PATH --output $ASSETS_PATH --compact true --self-defending true || true
 
-      - name: 6. 🚀 Build APK (Force Mode)
-        # --continue and || true ensures a file is generated even if sub-modules have bugs
+      - name: 5. 📦 Sync All Dependencies
+        working-directory: ${{ env.PROJECT_ROOT }}
         run: |
-          ./gradlew assembleDebug --no-daemon --parallel --continue --stacktrace || true
+          # Fetches all Dart packages and triggers native Android sync
+          flutter pub get
 
-      - name: 7. ⚡ Performance Optimization
-        id: optimize
+      - name: 6. 🚀 Build Multi-Language APK
+        working-directory: ${{ env.PROJECT_ROOT }}
         run: |
-          # Recursive search for ANY generated APK
-          RAW_APK=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
-          if [ -n "$RAW_APK" ]; then
-            sudo apt-get update && sudo apt-get install -y zipalign
-            zipalign -v 4 "$RAW_APK" MindSpark_v1.0.apk || cp "$RAW_APK" MindSpark_v1.0.apk
-          fi
+          # 'flutter build apk' automatically compiles both Dart and native Android code (Java/Kotlin)
+          # We use --debug to bypass signing requirements for immediate testing
+          flutter build apk --debug --stacktrace
 
-      - name: 8. 📦 Ship Final Artifacts
+      - name: 7. 📦 Export Final Hybrid Package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Full-Project-Build
-          path: "**/*.apk"
-          retention-days: 7
+          name: MindSpark-Hybrid-Build-v${{ github.run_number }}
+          path: "**/*.apk" # Scans all folders to ensure no component is left behind
+          retention-days: 14
