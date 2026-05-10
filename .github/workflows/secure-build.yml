@@ -1,46 +1,37 @@
 name: Mind Spark
-on: 
-  workflow_dispatch: # Allows you to trigger the build manually
+on: [workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. This step grabs EVERYTHING in your repo (code, images, logos)
-      - name: Checkout Full Project
-        uses: actions/checkout@v4
-
-      # 2. Setup the environment
+      - uses: actions/checkout@v4
+      
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
-      # 3. Fix permissions
-      - name: Grant Execute Permission
-        run: chmod +x gradlew
+      # THIS STEP FIXES THE ERROR: It installs a fresh Gradle "Chef" 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-      # 4. The actual build command that bundles your code and logo
-      - name: Compile Real APK
-        run: ./gradlew assembleDebug
+      # Now we run the build using the installed Gradle, not the wrapper
+      - name: Build Real APK
+        run: gradle assembleDebug
 
-      # 5. Generate your requested hashes
-      - name: Generate Hashes
+      - name: Generate Hashes & Upload
         run: |
           APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
-          if [ -z "$APK_PATH" ]; then echo "Build failed to produce APK"; exit 1; fi
-          
           sha256sum "$APK_PATH" > hashes.txt
           sha512sum "$APK_PATH" >> hashes.txt
           openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
-
-      # 6. Upload the final "Real" APK
-      - name: Upload Final APK
+      
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: My-Complete-App
+          name: complete-app
           path: |
             **/*.apk
             hashes.txt
