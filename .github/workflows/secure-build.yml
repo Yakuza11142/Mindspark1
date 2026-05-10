@@ -19,56 +19,42 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: 3. 🛠️ Fix Project Structure (The Manifest & Logo Fix)
+      - name: 3. 🛠️ Fix Project Structure (Logo Fix)
         run: |
-          # Finds your manifest and logo wherever they are and moves them to the right spot
-          mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/assets
-          
-          MANIFEST_PATH=$(find . -name "AndroidManifest.xml" | head -n 1)
-          if [ -n "$MANIFEST_PATH" ]; then
-            cp "$MANIFEST_PATH" app/src/main/AndroidManifest.xml
-          fi
-          
-          find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
+          mkdir -p android/app/src/main/res/drawable
+          mkdir -p android/app/src/main/assets
+          # Find and move your logo to the drawable folder
+          find . -maxdepth 2 -name "ChatGPT Image*" -exec cp {} android/app/src/main/res/drawable/chatgpt.png \; || true
 
       - name: 4. 🛠️ Reconstruct & Repair Gradle
+        working-directory: android
         run: |
-          # Deletes empty/broken gradlew files and builds a fresh, working engine
-          rm -f gradlew
-          rm -rf gradle/wrapper/gradle-wrapper.jar
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
       - name: 5. 🔐 Inject Supabase Public Keys
-        env:
-          URL: ${{ secrets.SUPABASE_URL }}
-          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # Creates the secure .env inside assets so your app can read your keys
-          echo "SUPABASE_URL=$URL" > app/src/main/assets/.env
-          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> app/src/main/assets/.env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > android/app/src/main/assets/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> android/app/src/main/assets/.env
 
       - name: 6. 🛡️ Anti-Reverse Engineering (Obfuscation)
         run: |
-          # Scrambles your scripts so hackers see garbage text instead of your logic
           npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator . --output ./app/src/main/assets --compact true --control-flow-flattening true --string-array true --exclude ./app ./node_modules || true
+          # Obfuscates only the assets folder to avoid breaking the Android system files
+          javascript-obfuscator ./android/app/src/main/assets --output ./android/app/src/main/assets --compact true --control-flow-flattening true || true
 
       - name: 7. 🚀 Build Secure APK
-        run: |
-          export JAVA_HOME=$JAVA_HOME
-          # Forces the build of the :app module using the repaired gradlew
-          ./gradlew :app:assembleDebug --no-daemon
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: 8. 🔒 Generate SHA-256, 512, and SHA-3 Signatures
         run: |
-          # Creates the "integrity cables" that prove your app is official
-          APK_FILE=$(find . -name "*.apk" | head -n 1)
+          APK_FILE=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -n "$APK_FILE" ]; then
             sha256sum "$APK_FILE" > signatures.txt
             sha512sum "$APK_FILE" >> signatures.txt
@@ -82,5 +68,5 @@ jobs:
         with:
           name: Mind-Spark-Elite-Final-Package
           path: |
-            **/*.apk
+            android/app/build/outputs/apk/debug/*.apk
             signatures.txt
