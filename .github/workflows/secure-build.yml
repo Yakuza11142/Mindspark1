@@ -13,29 +13,34 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          # Removed cache to prevent the yellow warning in your image
 
-      - name: Setup Gradle
-        # Using a version that doesn't rely on the broken cache service
+      - name: Force Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
+          # This stops the "Cache service responded with 400" error in your image
           cache-disabled: true
 
-      - name: Build APK
-        # This will bundle your code and logo
-        run: gradle assembleDebug
+      - name: Build Real APK
+        # We use 'gradle' directly to bypass the missing jarfile error
+        run: gradle assembleDebug --stacktrace
 
       - name: Generate Hashes
+        if: always()
         run: |
           APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
-          sha256sum "$APK_PATH" > hashes.txt
-          sha512sum "$APK_PATH" >> hashes.txt
-          openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
+          if [ -n "$APK_PATH" ]; then
+            sha256sum "$APK_PATH" > hashes.txt
+            sha512sum "$APK_PATH" >> hashes.txt
+            openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
+          else
+            echo "Build finished but no APK was found in the folders." > hashes.txt
+          fi
 
-      - name: Upload APK & Hashes
+      - name: Upload Final Package
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Elite-App-Package
+          name: Elite-Final-App
           path: |
             **/*.apk
             hashes.txt
