@@ -14,21 +14,22 @@ jobs:
       - name: 1. Checkout Everything
         uses: actions/checkout@v4
 
-      - name: 2. Initialize Flutter & Security Stack
+      - name: 2. Initialize Flutter Stack
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
+          cache: false # DISABLING CACHE TO PREVENT SYNC ERRORS
 
       - name: 3. 🛠️ Project Discovery & Asset Injection
         run: |
+          # Finds the project heart (pubspec.yaml)
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
           
           mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
           
-          # Find and Drag Logo
+          # Force Drag Logo
           LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
@@ -39,11 +40,14 @@ jobs:
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
 
-      - name: 4. ☢️ NUCLEAR SYNC
+      - name: 4. ☢️ FORCE NUCLEAR SYNC (The Fix)
         working-directory: ${{ env.PROJECT_ROOT }}
         run: |
+          # This sequence bypasses all 'No 4 is bad' errors
+          rm -rf .dart_tool/
+          rm -rf pubspec.lock
           flutter clean
-          flutter pub get
+          flutter pub get --verbose # Verbose shows exactly where it gets stuck
 
       - name: 5. 🛡️ Industrial Scrambling (Obfuscation)
         run: |
@@ -55,30 +59,24 @@ jobs:
         working-directory: ${{ env.PROJECT_ROOT }}
         run: flutter build apk --debug --obfuscate --split-debug-info=build/app/outputs/symbols
 
-      - name: 7. 🔒 SHA-256, 512 & SHA-3 Signatures
-        id: sign
+      - name: 7. 🔒 Signatures (SHA-256, 512 & 3)
         run: |
-          # Locate APK and force it to root
           APK_PATH=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
           if [ -z "$APK_PATH" ]; then echo "❌ APK NOT FOUND" && exit 1; fi
-          
-          cp "$APK_PATH" MindSpark_Master_Final.apk
+          cp "$APK_PATH" MindSpark_Final.apk
           
           {
-            echo "--- MASTER INTEGRITY MANIFEST ---"
-            echo "SHA-256: $(sha256sum MindSpark_Master_Final.apk | awk '{print $1}')"
-            echo "SHA-512: $(sha512sum MindSpark_Master_Final.apk | awk '{print $1}')"
-            echo "SHA-3-512: $(openssl dgst -sha3-512 MindSpark_Master_Final.apk | awk '{print $2}')"
+            echo "SHA-256: $(sha256sum MindSpark_Final.apk | awk '{print $1}')"
+            echo "SHA-512: $(sha512sum MindSpark_Final.apk | awk '{print $1}')"
+            echo "SHA-3: $(openssl dgst -sha3-512 MindSpark_Final.apk | awk '{print $2}')"
           } > signatures.txt
-          echo "✅ Signatures generated for artifacts."
 
       - name: 8. 📦 Export Final Master Package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Final-Build
+          name: MindSpark-v${{ github.run_number }}-Build
           path: |
-            MindSpark_Master_Final.apk
+            MindSpark_Final.apk
             signatures.txt
           if-no-files-found: error
-          retention-days: 7
