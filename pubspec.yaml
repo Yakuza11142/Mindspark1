@@ -1,6 +1,8 @@
-name: MIND SPARK
+name: MIND_SPARK
 description: AI TUTOR & AR LAB
 version: 1.0.0+1
+publish_to: 'none'
+
 environment:
   sdk: ">=3.0.0 <4.0.0"
 
@@ -8,234 +10,87 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # 1. INTELLIGENCE (Gemini + OpenAI)
-  google_generative_ai: ^0.4.0
-  dart_openai: ^5.1.0
-
-  # 2. MONEY (Ads + IAP)
-  google_mobile_ads: ^5.0.0
-  in_app_purchase: ^3.1.13
-
-  # 3. SENSES (Visuals + Audio)
-  dio: ^5.4.0
-  http: ^1.2.0
-  audioplayers: ^5.2.1
-  video_player: ^2.8.2
-  cached_video_player: ^2.0.4
-  image_picker: ^1.0.7
-  model_viewer_plus: ^1.4.0  # AR/3D Engine
-
-  # 4. UTILITIES
+  # --- CORE & DATABASE ---
+  supabase_flutter: ^2.6.0
+  flutter_dotenv: ^5.1.0
   provider: ^6.1.1
   shared_preferences: ^2.2.2
-  flutter_secure_storage: ^9.0.0
-  flutter_animate: ^4.5.0
-  glassmorphism: ^3.0.0
   path_provider: ^2.1.2
-  pdf: ^3.10.0
-  flutter_email_sender: ^6.0.1
-  intl: ^0.19.0
-  dash_chat_2: ^0.0.20
-  url_launcher: ^6.2.5
-  simple_gradient_text: ^3.0.0
+  dio: ^5.4.0
+  http: ^1.2.0
 
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/
-dependencies:
-  # ... existing dependencies ...
-  flutter_secure_storage: ^9.0.0 # ENCRYPTION (Anti-Hack)
-dependencies:
-  # ... existing dependencies ...
-  flutter_secure_storage: ^9.0.0 # ENCRYPTION (Anti-Hack)
-dependencies:
-  # ... existing deps ...
-  speech_to_text: ^6.6.0  # NEW: Allows the app to hear
-  permission_handler: ^11.3.0 # To ask "Can I use your Microphone?"
-dependencies:
-  # ... existing deps ...
-  url_launcher: ^6.2.5          # To open "Contact Support" or "Privacy Policy"
-  flutter_local_notifications: ^17.0.0 # Daily Reminders (The Nagging)
-  share_plus: ^9.0.0            # "Share App" button
-  image_picker: ^1.0.7          # Profile Picture
-dependencies:
-  # ... existing ...
-  screen_brightness: ^0.2.2  # To control light
-  vibration: ^1.8.4          # To control frequency
-dependencies:
-  # ... existing deps ...
-  url_launcher: ^6.2.5
-dependencies:
-  flutter_dotenv: ^5.1.0
-  supabase_flutter: ^2.0.0
-
-flutter:
-  assets:
-    - .env
-dependencies:
+  # --- INTELLIGENCE & ML ---
+  google_generative_ai: ^0.4.0
+  dart_openai: ^5.1.0
+  groq_sdk: ^0.0.3
   google_mlkit_language_id: ^0.10.0
-dependencies:
-  google_translate_api: ^1.0.0
-dependencies:
-  dependencies:
-  qr_flutter: ^4.1.0          # Generates the QR
-  ticket_widget_plus: ^1.0.1  # Gives the "punched-out" receipt look
-  crypto: ^3.0.3              # Used for hashing/legitimacy verification
-dependencies:
-  ticket_clippers: ^1.1.0 # For the professional ticket shape
-  qr_flutter: ^4.1.0      # For the high-quality QR code
-  intl: ^0.19.0           # For clean date and time formatting
-include: package:flutter_lints/flutter.yaml
+  google_ml_kit_face_detection: ^0.11.0
+  tflite_flutter: ^0.10.0
+  llm_dart: ^0.10.0
 
-analyzer:
-  errors:
-    # Treat these warnings as "Fatal Errors" that kill the build
-    unused_local_variable: error
-    invalid_use_of_visible_for_testing_member: error
-    missing_required_param: error
-    dead_code: error
-dev_dependencies:
-  # Allows the app to inspect its own code health
-  custom_lint: ^0.6.4 
-dependencies:
-  arcore_flutter_plus: ^1.0.2  # The recommended library for Android AR
-  vector_math: ^2.1.0          # Required for positioning objects
-flutter_markdown: ^0.7.1
-dependencies:
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-  arcore_flutter_plus: ^1.0.2
-dependencies:
-  # The NEW ones for face recognition:
-  google_ml_kit_face_detection: ^0.11.0  # Detects where the face is
-  tflite_flutter: ^0.10.0               # The "Brain" that remembers the face
-  image: ^4.1.3                         # Processes camera frames for the brain
-dependencies:
-  flutter:
-    sdk: flutter
-  hive_flutter: ^1.1.0
+  # --- AR & SENSES ---
   arcore_flutter_plus: ^1.0.2
   vector_math: ^2.1.0
-  google_ml_kit_face_detection: ^0.11.0 # The "Face Finder"
-  tflite_flutter: ^0.10.0               # The "Face Recognizer"
-dependencies:
-  biometric_storage: ^5.0.1
-  encrypt: ^5.0.3
-dev_dependencies:
-  flutter_launcher_icons: "^0.13.1"
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/app_icon.png"
-  adaptive_icon_background: "#000000" # Black background to match your logo
-  adaptive_icon_foreground: "assets/images/app_icon.png"
-dependencies:
-  flutter_dotenv: ^5.1.0
-
-flutter:
-  assets:
-    - .env
-flutter:
-  fonts:
-    - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
-supabase_flutter: ^2.3.1
-dependencies:
-  shared_preferences: ^2.2.2
-dependencies:
-  ar_flutter_plugin_external: ^0.0.1
-dependencies:
-  sensors_plus: ^6.1.0 
-
-flutter:
-  assets:
-    - assets/images/
-
-dependencies:
+  model_viewer_plus: ^1.4.0
+  image_picker: ^1.0.7
   mobile_scanner: ^5.1.0
+  speech_to_text: ^6.6.0
   audioplayers: ^6.0.0
+  video_player: ^2.8.2
+  cached_video_player: ^2.0.4
 
-dependencies:
-  llm_dart: ^0.10.0
-dependencies:
-  crypto: ^3.0.3        # For SHA-3
-  pointycastle: ^3.9.1  # For Post-Quantum math
-
-dependencies:
-  supabase_flutter: ^2.6.0
-  pqcrypto: ^1.1.0 # The ML-DSA Verifier
-
-dependencies:
-  safe_device: ^1.1.4
+  # --- SECURITY & CRYPTO ---
+  flutter_secure_storage: ^9.0.0
   flutter_jailbreak_detection: ^1.1.1
+  safe_device: ^1.1.4
+  crypto: ^3.0.3
+  pointycastle: ^3.9.1
+  pqcrypto: ^1.1.0
+  encrypt: ^5.0.3
+  biometric_storage: ^5.0.1
 
-dependencies:
-  pqcrypto: ^1.1.0    # Post-Quantum ML-DSA (Dilithium)
-  thirds: ^1.0.1      # FIPS-compliant SHA-3 (Keccak)
-
-dependencies:
-  groq_sdk: ^0.0.3
-
-http: ^1.2.0
-
-dependencies:
-  supabase_flutter: ^2.6.0 # The latest stable version for 2026
-
-dependencies:
-  # ... existing deps ...
-  supabase_core: ^2.24.2
-  supabase_auth: ^4.16.0
-  cloud_client: ^4.14.0
-  supabase_remote_config: ^4.3.8
-  supabase_analytics: ^10.8.0
-  supabase_crashlytics: ^3.4.8
-  supabase_messaging: ^14.7.8
-  google_sign_in: ^6.1.6
-
-dev_dependencies:
-  test: ^1.24.0
-  mockito: ^5.4.0
-  http: ^1.1.0
-
-dependencies:
-  flutter:
-    sdk: flutter
-  # Latest stable version as of May 2026
-  flutter_fortune_wheel: ^1.3.2 
-
-dependencies:
-  flutter:
-    sdk: flutter
-  # Latest stable version as of May 2026
-  flutter_tex: ^5.2.6 
-
-dependencies:
-  flutter:
-    sdk: flutter
-  # Core Hive & Flutter support
+  # --- UI & UTILS ---
+  flutter_animate: ^4.5.0
+  glassmorphism: ^3.0.0
+  dash_chat_2: ^0.0.20
+  intl: ^0.19.0
+  url_launcher: ^6.2.5
+  simple_gradient_text: ^3.0.0
+  flutter_markdown: ^0.7.1
+  qr_flutter: ^4.1.0
+  ticket_widget_plus: ^1.0.1
+  ticket_clippers: ^1.1.0
+  share_plus: ^9.0.0
+  vibration: ^1.8.4
+  screen_brightness: ^0.2.2
+  permission_handler: ^11.3.0
+  flutter_local_notifications: ^17.0.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  # Code generation tools (essential for custom objects)
-  hive_generator: ^2.0.1
+  flutter_lints: ^3.0.0
   build_runner: ^2.4.8
+  hive_generator: ^2.0.1
+  flutter_launcher_icons: "^0.13.1"
 
-dependencies:
-  flutter:
-    sdk: flutter
-  # Official Google/Apple In-App Purchase plugin
-  in_app_purchase: ^3.2.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - .env
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
-dependencies:
-  flutter:
-    sdk: flutter
-  flutter_jailbreak_detection: ^1.1.1
-  pointycastle: ^3.9.1 # This is the library for Keccak-256/512/SHA-3
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
