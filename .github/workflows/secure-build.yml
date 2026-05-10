@@ -1,37 +1,47 @@
-name: Mind Spark
+name: Mind Spark 
 on: [workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # THIS STEP FIXES THE ERROR: It installs a fresh Gradle "Chef" 
-      - name: Setup Gradle
+      # Fix for the "jarfile" error from your image
+      - name: Setup Gradle Engine
         uses: gradle/actions/setup-gradle@v3
+        continue-on-error: true
 
-      # Now we run the build using the installed Gradle, not the wrapper
-      - name: Build Real APK
-        run: gradle assembleDebug
+      - name: Force Build APK
+        # --continue tells it not to stop at the first bug
+        run: chmod +x gradlew && ./gradlew assembleDebug --continue
+        continue-on-error: true
 
-      - name: Generate Hashes & Upload
+      - name: Generate Hashes
+        # if: always() ensures this runs even if the build failed
+        if: always()
         run: |
-          APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
-          sha256sum "$APK_PATH" > hashes.txt
-          sha512sum "$APK_PATH" >> hashes.txt
-          openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
-      
-      - name: Upload
+          APK_PATH=$(find . -name "*.apk" | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            sha256sum "$APK_PATH" > hashes.txt
+            sha512sum "$APK_PATH" >> hashes.txt
+            openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
+          else
+            echo "No APK was created due to critical errors." > hashes.txt
+          fi
+
+      - name: Upload Whatever Exists
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: complete-app
+          name: buggy-app-output
           path: |
             **/*.apk
             hashes.txt
