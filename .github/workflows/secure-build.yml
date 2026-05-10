@@ -11,63 +11,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Code
+      - name: 1. Checkout Everything
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Drags every single file in your history
 
-      - name: 2. Initialize Environment (Java & Flutter)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      
-      - name: 3. Setup Flutter SDK
+      - name: 2. Initialize Flutter Stack
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: 4. 🛠️ Recursive Asset & Logo Recovery
+      - name: 3. 🛠️ Recursive Logo & Asset Injection
         run: |
-          # Finds your project root by locating pubspec.yaml
+          # Finds the project root by looking for pubspec.yaml
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+          if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           
-          # Force create standard folders for mixed code
-          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
+          # Force create paths to ensure the logo has a home
+          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable
+          mkdir -p $PROJECT_ROOT/assets
           
-          # Hunt for your logo and force-inject it into BOTH native and Flutter assets
-          LOGO_FILE=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
-          if [ -n "$LOGO_FILE" ]; then
-            cp "$LOGO_FILE" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
-            cp "$LOGO_FILE" $PROJECT_ROOT/assets/logo.png
-            echo "✅ Assets: Logo successfully dragged from $LOGO_FILE"
+          # Find your logo regardless of name and DRAG it into the APK
+          LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          if [ -n "$LOGO_PATH" ]; then
+            cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
+            cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png
+            echo "✅ Logo successfully dragged into build from $LOGO_PATH"
           fi
           
-          # Inject Supabase Keys for the hybrid environment
+          # Inject Supabase Keys into assets
           cat <<EOF > $PROJECT_ROOT/assets/.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           EOF
 
-      - name: 5. 📦 Sync All Dependencies
-        working-directory: ${{ env.PROJECT_ROOT }}
+      - name: 4. 📦 Sync All Code & Packages
         run: |
-          # Fetches all Dart packages and triggers native Android sync
+          # This command ensures all your Dart code and 'other' code is ready
           flutter pub get
 
-      - name: 6. 🚀 Build Multi-Language APK
-        working-directory: ${{ env.PROJECT_ROOT }}
+      - name: 5. 🚀 Build Hybrid APK (All Code Included)
         run: |
-          # 'flutter build apk' automatically compiles both Dart and native Android code (Java/Kotlin)
-          # We use --debug to bypass signing requirements for immediate testing
+          # Compiles EVERYTHING (Dart + Native + Assets) into one binary
           flutter build apk --debug --stacktrace
 
-      - name: 7. 📦 Export Final Hybrid Package
+      - name: 6. 📦 Export Final Master Package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Hybrid-Build-v${{ github.run_number }}
-          path: "**/*.apk" # Scans all folders to ensure no component is left behind
-          retention-days: 14
+          name: MindSpark-Ultimate-Package
+          path: "**/*.apk" # Scans every folder to make sure the APK is caught
+          retention-days: 7
