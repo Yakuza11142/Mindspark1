@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 2. Initialize Build Stack (Java 17 & Node 20)
         uses: actions/setup-java@v4
@@ -26,74 +28,83 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 4. 🛠️ Fix Project Structure & Asset Recovery
+      - name: 4. 🛠️ Auto-Discovery & Project Healing
         run: |
-          # Create folders and ensure the logo is moved to BOTH standard locations
-          mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/res/drawable-xxhdpi
-          mkdir -p app/src/main/assets
+          # 1. Find the main app module (where src/main lives)
+          APP_ROOT=$(find . -name "src" -type d -exec dirname {} \; | grep -v "node_modules" | head -n 1)
+          if [ -z "$APP_ROOT" ]; then APP_ROOT="."; fi
+          echo "APP_ROOT=$APP_ROOT" >> $GITHUB_ENV
           
-          LOGO_FILE=$(find . -maxdepth 3 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          # 2. Force create necessary directories
+          mkdir -p $APP_ROOT/src/main/res/drawable $APP_ROOT/src/main/res/drawable-xxhdpi $APP_ROOT/src/main/assets
           
-          if [ -n "$LOGO_FILE" ]; then
-            cp "$LOGO_FILE" app/src/main/res/drawable/chatgpt.png
-            cp "$LOGO_FILE" app/src/main/res/drawable-xxhdpi/chatgpt.png
-            echo "✅ Assets: Logo successfully linked."
+          # 3. Find and link the logo (Auto-detects any image with "ChatGPT" in the name)
+          LOGO_PATH=$(find . -maxdepth 4 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
+          if [ -n "$LOGO_PATH" ]; then
+            cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable/chatgpt.png
+            cp "$LOGO_PATH" $APP_ROOT/src/main/res/drawable-xxhdpi/chatgpt.png
+            echo "✅ Assets: Logo found at $LOGO_PATH and linked."
           else
-            echo "⚠️ Warning: Using safety placeholder."
-            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > app/src/main/res/drawable/chatgpt.png
+            echo "⚠️ Warning: Logo not found. Creating safety placeholder."
+            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > $APP_ROOT/src/main/res/drawable/chatgpt.png
           fi
 
-      - name: 5. 🛠️ REPAIR GRADLE & REFRESH DEPENDENCIES
+      - name: 5. 🛠️ Repair Gradle Wrapper & Versioning
         run: |
-          # This creates a fresh wrapper and force-refreshes the Android plugins
+          # Automatically fix broken or missing Gradle wrappers
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
-          # Refreshing dependencies solves the 'Plugin not found' error
-          ./gradlew --refresh-dependencies || true
-
-      - name: 6. 🔐 Secure Environment Injection
-        run: |
-          cat <<EOF > app/src/main/assets/.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          BUILD_TIME=$(date +'%Y-%m-%d_%H:%M')
-          MODE=PRODUCTION
-          EOF
-
-      - name: 7. 🛡️ JavaScript Obfuscation
-        run: |
-          npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets \
-            --compact true \
-            --self-defending true \
-            --string-array-encoding 'rc4'
-
-      - name: 8. 🚀 Build Optimized APK
-        run: |
-          # Running with --stacktrace so if it fails, we see EXACTLY why
-          ./gradlew clean :app:assembleDebug --no-daemon --parallel --stacktrace
-
-      - name: 9. ⚡ Zipalign & Final Prep
-        id: optimize
-        run: |
-          APK_RAW=$(find app/build/outputs/apk/debug -name "*.apk" -print -quit)
-          FINAL_NAME="MindSpark_Release_v${{ github.run_number }}.apk"
           
-          sudo apt-get update && sudo apt-get install -y zipalign
-          if [ -f "$APK_RAW" ]; then
-            zipalign -v 4 "$APK_RAW" "$FINAL_NAME"
-            echo "apk_final=$FINAL_NAME" >> $GITHUB_OUTPUT
-          else
-            echo "Build failed: APK not found."
-            exit 1
+          # Auto-sync build version with GitHub run number
+          VERSION_FILE=$(find . -name "build.gradle" | head -n 1)
+          if [ -f "$VERSION_FILE" ]; then
+            sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" $VERSION_FILE || true
+            sed -i "s/versionName .*/versionName \"1.2.${{ github.run_number }}\"/" $VERSION_FILE || true
           fi
 
-      - name: 10. 📦 Deployment
+      - name: 6. 🔐 Stealth Secrets & JS Obfuscation
+        run: |
+          # Use the discovered app root for asset injection
+          ASSETS_DIR="${{ env.APP_ROOT }}/src/main/assets"
+          mkdir -p $ASSETS_DIR
+          
+          cat <<EOF > $ASSETS_DIR/.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          BUILD_DATE=$(date +'%Y-%m-%d')
+          EOF
+          
+          # Install and run industrial-grade obfuscator
+          npm install -g javascript-obfuscator --quiet
+          javascript-obfuscator $ASSETS_DIR --output $ASSETS_DIR --compact true --self-defending true --string-array-encoding 'rc4' --unicode-escape-sequence true
+
+      - name: 7. 🚀 Optimized Master Build
+        run: |
+          # Clean and build using the repaired gradlew
+          ./gradlew clean assembleDebug --no-daemon --parallel --stacktrace -Pandroid.enableR8.fullMode=true
+
+      - name: 8. ⚡ Professional Optimization (Zipalign)
+        id: post_process
+        run: |
+          # Find the generated APK regardless of its default name
+          RAW_APK=$(find . -name "*-debug.apk" -print -quit)
+          FINAL_NAME="MindSpark_v1.2.${{ github.run_number }}_Master.apk"
+          
+          if [ -f "$RAW_APK" ]; then
+            sudo apt-get update && sudo apt-get install -y zipalign
+            zipalign -v 4 "$RAW_APK" "$FINAL_NAME"
+            echo "apk_path=$FINAL_NAME" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Build Error: APK not generated." && exit 1
+          fi
+
+      - name: 9. 📦 Final Artifact Deployment
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Final-Build
+          name: MindSpark-Production-v${{ github.run_number }}
           path: |
             *.apk
-          retention-days: 7
+            integrity-report.txt
+          retention-days: 14
+          compression-level: 9
