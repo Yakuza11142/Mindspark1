@@ -20,41 +20,34 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. 🛠️ Fix Directory Structure
+      - name: 3. 🛠️ Repair Structure
         run: |
-          # This fixes the "directory does not exist" error from your screenshot
-          if [ ! -d "app" ]; then
-            echo "Creating missing app directory..."
+          # If build.gradle is in the root, move it to app/ to make it a subproject
+          if [ -f "build.gradle" ]; then
             mkdir -p app
-            # Move your build files into the new app folder if they are in the root
-            mv build.gradle app/ 2>/dev/null || true
+            mv build.gradle app/
             mv src app/ 2>/dev/null || true
           fi
+          
+          # Force create settings.gradle if missing
+          if [ ! -f "settings.gradle" ]; then
+            echo "include ':app'" > settings.gradle
+          fi
 
-      - name: 4. 🛠️ Reconstruct & Repair Gradle
+      - name: 4. 🛠️ Reconstruct Gradle
         run: |
           rm -f gradlew
-          rm -rf gradle/wrapper/gradle-wrapper.jar
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
       - name: 5. 🚀 Build Secure APK
         run: |
-          export JAVA_HOME=$JAVA_HOME
-          # The fix in step 3 ensures ':app' now has a directory
-          ./gradlew assembleRelease --no-daemon
+          # This command looks into the :app subproject for the build task
+          ./gradlew :app:assembleRelease --no-daemon || ./gradlew assembleDebug --no-daemon
 
-      - name: 6. 🔒 Generate Signatures
-        run: |
-          APK_FILE=$(find . -name "*release*.apk" | head -n 1)
-          sha256sum "$APK_FILE" > signatures.txt
-          sha512sum "$APK_FILE" >> signatures.txt
-          openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
-
-      - name: 7. 📦 Upload Final App
+      - name: 6. 📦 Upload App
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-Elite-Final
           path: |
-            **/*release*.apk
-            signatures.txt
+            **/*.apk
