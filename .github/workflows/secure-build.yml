@@ -1,82 +1,27 @@
-name: Mind Spark 
-permissions:
-  contents: write
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+name: Mind Spark
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Everything
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 2. Initialize Flutter Stack
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: false
-
-      - name: 3. 🛠️ Auto-Discovery & Asset Injection
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with: {distribution: 'temurin', java-version: '17'}
+      - name: Build APK
+        run: ./gradlew assembleDebug
+      - name: Generate Hashes
         run: |
-          PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
-          if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
-          
-          mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
-          
-          LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
-          if [ -n "$LOGO_PATH" ]; then
-            cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
-            cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png
-          fi
-          
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
-
-      - name: 4. ☢️ NUCLEAR SYNC
-        working-directory: ${{ env.PROJECT_ROOT }}
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: 5. 🛡️ Industrial Obfuscation (Assets)
-        run: |
-          npm install -g javascript-obfuscator --quiet
-          javascript-obfuscator ${{ env.PROJECT_ROOT }}/assets --output ${{ env.PROJECT_ROOT }}/assets \
-            --compact true --self-defending true --string-array-encoding 'rc4'
-
-      - name: 6. 🚀 Build Hardened RELEASE APK (The Fix)
-        working-directory: ${{ env.PROJECT_ROOT }}
-        # Changed --debug to --release because --obfuscate requires release mode
-        # Added --no-shrink to ensure all your custom code is dragged in
-        run: |
-          mkdir -p build/symbols
-          flutter build apk --release --obfuscate --split-debug-info=build/symbols --no-shrink --stacktrace
-
-      - name: 7. 🔒 Signatures (SHA-256, 512 & 3)
-        run: |
-          APK_PATH=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
-          if [ -z "$APK_PATH" ]; then echo "❌ APK NOT FOUND" && exit 1; fi
-          cp "$APK_PATH" MindSpark_Final_Master.apk
-          
-          {
-            echo "SHA-256: $(sha256sum MindSpark_Final_Master.apk | awk '{print $1}')"
-            echo "SHA-512: $(sha512sum MindSpark_Final_Master.apk | awk '{print $1}')"
-            echo "SHA-3: $(openssl dgst -sha3-512 MindSpark_Master_Final.apk | awk '{print $2}')"
-          } > signatures.txt
-
-      - name: 8. 📦 Export Master Artifacts
-        if: always()
+          APK_PATH=$(find app/build/outputs/apk/debug/ -name "*.apk" | head -n 1)
+          sha256sum "$APK_PATH" > hashes.txt
+          sha512sum "$APK_PATH" >> hashes.txt
+          openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
+          cat hashes.txt
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Final-v${{ github.run_number }}
+          name: package
           path: |
-            MindSpark_Final_Master.apk
-            signatures.txt
-          if-no-files-found: error
+            app/build/outputs/apk/debug/*.apk
+            hashes.txt
