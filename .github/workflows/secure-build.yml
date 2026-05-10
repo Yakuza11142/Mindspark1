@@ -28,12 +28,11 @@ jobs:
         run: |
           mkdir -p android/app/src/main/res/drawable
           mkdir -p android/app/src/main/assets
-          # Find and move your logo to the drawable folder
           find . -maxdepth 2 -name "ChatGPT Image*" -exec cp {} android/app/src/main/res/drawable/chatgpt.png \; || true
 
       - name: 4. 🛠️ Reconstruct & Repair Gradle
-        working-directory: android
         run: |
+          # Run from root to keep settings.gradle in scope
           gradle wrapper --gradle-version 8.5
           chmod +x gradlew
 
@@ -45,16 +44,17 @@ jobs:
       - name: 6. 🛡️ Anti-Reverse Engineering (Obfuscation)
         run: |
           npm install -g javascript-obfuscator --quiet
-          # Obfuscates only the assets folder to avoid breaking the Android system files
-          javascript-obfuscator ./android/app/src/main/assets --output ./android/app/src/main/assets --compact true --control-flow-flattening true || true
+          # Only obfuscate assets to prevent manifest corruption
+          javascript-obfuscator ./android/app/src/main/assets --output ./android/app/src/main/assets --compact true || true
 
       - name: 7. 🚀 Build Secure APK
-        working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          # Uses the :app module path to avoid "not part of build" errors
+          ./gradlew :app:assembleDebug --no-daemon
 
       - name: 8. 🔒 Generate SHA-256, 512, and SHA-3 Signatures
         run: |
-          APK_FILE=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_FILE=$(find . -name "*.apk" | head -n 1)
           if [ -n "$APK_FILE" ]; then
             sha256sum "$APK_FILE" > signatures.txt
             sha512sum "$APK_FILE" >> signatures.txt
@@ -68,5 +68,5 @@ jobs:
         with:
           name: Mind-Spark-Elite-Final-Package
           path: |
-            android/app/build/outputs/apk/debug/*.apk
+            **/*.apk
             signatures.txt
