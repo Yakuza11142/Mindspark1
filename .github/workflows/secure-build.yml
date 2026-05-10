@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: 1. Checkout Everything
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: 2. Initialize Flutter & Security Stack
         uses: subosito/flutter-action@v2
@@ -24,23 +22,20 @@ jobs:
 
       - name: 3. 🛠️ Project Discovery & Asset Injection
         run: |
-          # 1. Find exactly where pubspec.yaml is
           PROJECT_ROOT=$(find . -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
           if [ -z "$PROJECT_ROOT" ]; then PROJECT_ROOT="."; fi
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
           
-          # 2. Force create the asset folders
           mkdir -p $PROJECT_ROOT/android/app/src/main/res/drawable $PROJECT_ROOT/assets
           
-          # 3. Find and DRAG your logo (ChatGPT Image) into the build
+          # Find and Drag Logo
           LOGO_PATH=$(find . -maxdepth 5 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           if [ -n "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" $PROJECT_ROOT/android/app/src/main/res/drawable/chatgpt.png
             cp "$LOGO_PATH" $PROJECT_ROOT/assets/logo.png
-            echo "✅ Logo dragged into build."
           fi
           
-          # 4. Inject Supabase Keys
+          # Inject Secrets
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > $PROJECT_ROOT/assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> $PROJECT_ROOT/assets/.env
 
@@ -50,7 +45,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: 5. 🛡️ Industrial Obfuscation (Scrambling)
+      - name: 5. 🛡️ Industrial Scrambling (Obfuscation)
         run: |
           npm install -g javascript-obfuscator --quiet
           javascript-obfuscator ${{ env.PROJECT_ROOT }}/assets --output ${{ env.PROJECT_ROOT }}/assets \
@@ -58,30 +53,32 @@ jobs:
 
       - name: 6. 🚀 Build Hardened APK
         working-directory: ${{ env.PROJECT_ROOT }}
-        # --obfuscate scrambles Dart code; --debug allows immediate testing
         run: flutter build apk --debug --obfuscate --split-debug-info=build/app/outputs/symbols
 
-      - name: 7. 🔒 SHA Integrity Signatures
+      - name: 7. 🔒 SHA-256, 512 & SHA-3 Signatures
         id: sign
         run: |
-          # NUCLEAR FIND: Locate the APK anywhere in the build tree and move it to ROOT
-          APK_FILE=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
-          if [ -f "$APK_FILE" ]; then
-            cp "$APK_FILE" MindSpark_Final_Master.apk
-            sha256sum MindSpark_Final_Master.apk > integrity.txt
-            echo "apk_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ APK NOT FOUND AT ALL" && exit 1
-          fi
+          # Locate APK and force it to root
+          APK_PATH=$(find . -name "*.apk" -not -path "*/build-cache/*" | head -n 1)
+          if [ -z "$APK_PATH" ]; then echo "❌ APK NOT FOUND" && exit 1; fi
+          
+          cp "$APK_PATH" MindSpark_Master_Final.apk
+          
+          {
+            echo "--- MASTER INTEGRITY MANIFEST ---"
+            echo "SHA-256: $(sha256sum MindSpark_Master_Final.apk | awk '{print $1}')"
+            echo "SHA-512: $(sha512sum MindSpark_Master_Final.apk | awk '{print $1}')"
+            echo "SHA-3-512: $(openssl dgst -sha3-512 MindSpark_Master_Final.apk | awk '{print $2}')"
+          } > signatures.txt
+          echo "✅ Signatures generated for artifacts."
 
-      - name: 8. 📦 Export Master Security Package
+      - name: 8. 📦 Export Final Master Package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-v${{ github.run_number }}-Artifacts
-          # We upload specifically the file we moved to the root in Step 7
+          name: MindSpark-Final-Build
           path: |
-            MindSpark_Final_Master.apk
-            integrity.txt
+            MindSpark_Master_Final.apk
+            signatures.txt
           if-no-files-found: error
           retention-days: 7
