@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark
 on: [workflow_dispatch]
 
 jobs:
@@ -13,28 +13,29 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+          # Removed cache to prevent the yellow warning in your image
 
-      - name: Grant Execute Permission
-        run: chmod +x gradlew
+      - name: Setup Gradle
+        # Using a version that doesn't rely on the broken cache service
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: true
 
-      # 'clean' clears old errors, 'assembleDebug' builds the APK
       - name: Build APK
-        run: ./gradlew clean assembleDebug
+        # This will bundle your code and logo
+        run: gradle assembleDebug
 
       - name: Generate Hashes
-        if: success()
         run: |
           APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
           sha256sum "$APK_PATH" > hashes.txt
           sha512sum "$APK_PATH" >> hashes.txt
           openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
 
-      - name: Upload APK
-        if: success()
+      - name: Upload APK & Hashes
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Elite-APK
+          name: Elite-App-Package
           path: |
             **/*.apk
             hashes.txt
