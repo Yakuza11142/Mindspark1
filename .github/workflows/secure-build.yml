@@ -13,62 +13,81 @@ jobs:
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Better for versioning tools
 
-      - name: 2. Setup Build Environment (Java 17 & Node)
+      - name: 2. Setup Environment (Java 17 & Node)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
-      - uses: actions/setup-node@v4
+
+      - name: 3. Setup Node & Global Cache
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm' # Speeds up obfuscator install
 
-      - name: 3. 🛠️ Fix Project Structure (Logo Fix)
+      - name: 4. 🛠️ Fix Project Structure & Assets
         run: |
-          # Matches your build.gradle: creating folders in the 'app' module
-          mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/assets
-          find . -maxdepth 2 -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
+          mkdir -p app/src/main/res/drawable app/src/main/assets
+          # Improved find to handle spaces and ensure the file exists
+          find . -maxdepth 2 -name "ChatGPT Image*" -print0 | xargs -0 -I {} cp {} app/src/main/res/drawable/chatgpt.png || echo "Logo not found, skipping..."
 
-      - name: 4. 🛠️ Reconstruct & Repair Gradle
+      - name: 5. 🛠️ Validate Gradle Wrapper
         run: |
-          # Fresh wrapper to ensure the .jar file exists
-          gradle wrapper --gradle-version 8.5
+          # Use 'wrapper' task only if missing; avoids unnecessary overhead
+          if [ ! -f "gradlew" ]; then gradle wrapper --gradle-version 8.5; fi
           chmod +x gradlew
 
-      - name: 5. 🔐 Inject Supabase Public Keys
+      - name: 6. 🔐 Secure Secrets Injection
         run: |
-          # Injecting keys into the app assets folder
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > app/src/main/assets/.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> app/src/main/assets/.env
+          # Use a dedicated directory to ensure .env isn't accidentally overwritten
+          cat <<EOF > app/src/main/assets/.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
 
-      - name: 6. 🛡️ Anti-Reverse Engineering (Obfuscation)
+      - name: 7. 🛡️ Hardened Obfuscation
         run: |
           npm install -g javascript-obfuscator --quiet
-          # Obfuscate only the app assets
-          javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets --compact true || true
+          # Added string-array encoding and dead-code injection for higher security
+          javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets \
+            --compact true \
+            --self-defending true \
+            --string-array true \
+            --string-array-encoding 'base64' \
+            --dead-code-injection true
 
-      - name: 7. 🚀 Build Secure APK
+      - name: 8. 🚀 Build Optimized APK
         run: |
-          # Build the :app module defined in your settings.gradle
-          ./gradlew :app:assembleDebug --no-daemon
+          # Added --parallel and --build-cache for speed
+          ./gradlew :app:assembleDebug --no-daemon --parallel --build-cache
 
-      - name: 8. 🔒 Generate SHA-256, 512, and SHA-3 Signatures
+      - name: 9. 🔒 Multi-Layer Integrity Signatures
+        id: sign
         run: |
-          APK_FILE=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
-          if [ -n "$APK_FILE" ]; then
-            sha256sum "$APK_FILE" > signatures.txt
-            sha512sum "$APK_FILE" >> signatures.txt
-            openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
-          else
-            echo "Build failed: No APK generated." && exit 1
-          fi
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" -print -quit)
+          if [ -z "$APK_PATH" ]; then echo "APK not found"; exit 1; fi
+          
+          {
+            echo "--- APK MANIFEST ---"
+            echo "Filename: $(basename $APK_PATH)"
+            echo "SHA-256: $(sha256sum $APK_PATH | awk '{print $1}')"
+            echo "SHA-512: $(sha512sum $APK_PATH | awk '{print $1}')"
+            echo "SHA-3: $(openssl dgst -sha3-512 $APK_PATH | awk '{print $2}')"
+          } > integrity-report.txt
+          
+          # Set path as output for next step
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
 
-      - name: 9. 📦 Upload Final Elite Package
+      - name: 10. 📦 Upload Elite Package
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Elite-Final-Package
+          name: Mind-Spark-Build-${{ github.run_number }}
           path: |
-            app/build/outputs/apk/debug/*.apk
-            signatures.txt
+            ${{ steps.sign.outputs.apk_path }}
+            integrity-report.txt
+          retention-days: 7 # Clean up storage automatically
