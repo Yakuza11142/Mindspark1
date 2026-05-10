@@ -1,4 +1,4 @@
-name: Mind Spark
+name: Mind Spark 
 on: [workflow_dispatch]
 
 jobs:
@@ -14,13 +14,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Force Setup Gradle
+      - name: Bypass Broken Cache
+        # This is the fix for the "400 Error" in your screenshot
         uses: gradle/actions/setup-gradle@v3
         with:
-          # This stops the "Cache service responded with 400" error in your image
           cache-disabled: true
 
-      - name: Build Real APK
+      - name: Build APK (Logo & Code)
         # We use 'gradle' directly to bypass the missing jarfile error
         run: gradle assembleDebug --stacktrace
 
@@ -33,14 +33,14 @@ jobs:
             sha512sum "$APK_PATH" >> hashes.txt
             openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
           else
-            echo "Build finished but no APK was found in the folders." > hashes.txt
+            echo "Build finished but APK was not generated." > hashes.txt
           fi
 
-      - name: Upload Final Package
+      - name: Upload Final APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Elite-Final-App
+          name: Elite-Project-Ready
           path: |
             **/*.apk
             hashes.txt
