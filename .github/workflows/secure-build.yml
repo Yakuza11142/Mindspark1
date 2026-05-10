@@ -1,4 +1,4 @@
-name: Mind Spark
+name: Mind Spark 
 permissions:
   contents: write
 
@@ -30,34 +30,26 @@ jobs:
 
       - name: 4. 🛠️ Fix Project Structure & Asset Recovery
         run: |
-          # Create EVERY folder manually to ensure 'cp' never fails
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/drawable-xxhdpi
           mkdir -p app/src/main/assets
           
-          # Find logo with case-insensitive search
           LOGO_FILE=$(find . -maxdepth 3 -iname "*ChatGPT Image*" -not -path "*/.*" -print -quit)
           
           if [ -n "$LOGO_FILE" ]; then
             cp "$LOGO_FILE" app/src/main/res/drawable/chatgpt.png
             cp "$LOGO_FILE" app/src/main/res/drawable-xxhdpi/chatgpt.png
-            echo "✅ Assets: Logo successfully linked from $LOGO_FILE"
+            echo "✅ Assets: Logo successfully linked."
           else
-            echo "⚠️ Warning: Logo not found. Generating a silent placeholder."
-            # Base64 for a 1x1 transparent PNG
+            echo "⚠️ Warning: Using safety placeholder."
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" | base64 -d > app/src/main/res/drawable/chatgpt.png
           fi
 
-      - name: 5. 🛠️ Version Sync
-        id: versioning
+      - name: 5. 🛠️ REPAIR GRADLE WRAPPER
         run: |
-          VERSION_NAME="1.2.${{ github.run_number }}"
-          # Only attempt sed if the file exists to prevent errors
-          if [ -f "app/build.gradle" ]; then
-            sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" app/build.gradle
-            sed -i "s/versionName .*/versionName \"$VERSION_NAME\"/" app/build.gradle
-          fi
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          # This specifically fixes the "Unable to access jarfile" error
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
 
       - name: 6. 🔐 Secure Environment Injection
         run: |
@@ -74,12 +66,11 @@ jobs:
           javascript-obfuscator ./app/src/main/assets --output ./app/src/main/assets \
             --compact true \
             --self-defending true \
-            --string-array-encoding 'rc4' \
-            --unicode-escape-sequence true
+            --string-array-encoding 'rc4'
 
       - name: 8. 🚀 Build Optimized APK
         run: |
-          chmod +x gradlew
+          # The fix in step 5 ensures this command now has access to the jarfile
           ./gradlew clean :app:assembleDebug --no-daemon --parallel --build-cache \
             -Pandroid.enableR8.fullMode=true
 
@@ -87,7 +78,7 @@ jobs:
         id: optimize
         run: |
           APK_RAW=$(find app/build/outputs/apk/debug -name "*.apk" -print -quit)
-          FINAL_NAME="MindSpark_${{ steps.versioning.outputs.version_name }}_Final.apk"
+          FINAL_NAME="MindSpark_Build_${{ github.run_number }}_Final.apk"
           
           sudo apt-get update && sudo apt-get install -y zipalign
           zipalign -v 4 "$APK_RAW" "$FINAL_NAME"
@@ -97,8 +88,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: MindSpark-Build-${{ github.run_number }}
+          name: MindSpark-Build-Package
           path: |
             *.apk
-            app/build/outputs/logs/
           retention-days: 7
