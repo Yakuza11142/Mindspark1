@@ -5,23 +5,45 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
-        with: {distribution: 'temurin', java-version: '17'}
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission
+        run: chmod +x gradlew
+
       - name: Build APK
         run: ./gradlew assembleDebug
-      - name: Generate Hashes
+
+      - name: Generate Hashes (SHA-256, 512, SHA-3)
         run: |
-          APK_PATH=$(find app/build/outputs/apk/debug/ -name "*.apk" | head -n 1)
+          # Finds the APK regardless of folder structure
+          APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
+          
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: APK not found! Check your build.gradle settings."
+            exit 1
+          fi
+          
+          echo "Found APK at: $APK_PATH"
           sha256sum "$APK_PATH" > hashes.txt
           sha512sum "$APK_PATH" >> hashes.txt
           openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
+          
+          echo "--- HASH SUMMARY ---"
           cat hashes.txt
-      - name: Upload Artifacts
+
+      - name: Upload Finished Package
         uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: final-app-package
           path: |
-            app/build/outputs/apk/debug/*.apk
+            **/*.apk
             hashes.txt
+            **/mapping.txt
