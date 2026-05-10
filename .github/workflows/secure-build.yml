@@ -11,56 +11,60 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: 2. Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 🛠️ Force Rebuild Gradle System
+      - name: 3. 🛠️ Reconstruct & Repair Gradle
         run: |
-          # 1. DELETE the corrupted/empty files from the runner
+          # Deletes the empty gradlew file your phone uploaded and builds a fresh one
           rm -f gradlew
           rm -rf gradle/wrapper/gradle-wrapper.jar
-          
-          # 2. GENERATE a fresh, official Gradle engine (Version 8.5)
-          # This command creates a perfect, non-corrupted JAR and script
           gradle wrapper --gradle-version 8.5
-          
-          # 3. SET permissions
           chmod +x gradlew
 
-      - name: 🎨 Fix Logo Name
+      - name: 4. 🔐 Inject Supabase Public Keys
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          # Creates the .env file inside assets for your app to read
+          mkdir -p app/src/main/assets
+          echo "SUPABASE_URL=$URL" > app/src/main/assets/.env
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> app/src/main/assets/.env
+
+      - name: 5. 🎨 Fix Logo & Scramble Code
+        run: |
+          # Renames your specific "ChatGPT Image..." file so the Android build works
           mkdir -p app/src/main/res/drawable
-          # Finds your long ChatGPT image name and renames it correctly
           find . -name "ChatGPT Image*" -exec cp {} app/src/main/res/drawable/chatgpt.png \; || true
+          
+          # ANTI-REVERSE ENGINEERING: Scrambles your scripts
+          npm install -g javascript-obfuscator --quiet
+          javascript-obfuscator . --output ./app/src/main/assets --compact true --string-array true --exclude ./app ./node_modules || true
 
-      - name: 🚀 Build Secure APK
+      - name: 6. 🚀 Build Secure APK
         run: |
-          # Finds the new gradlew and builds the app
-          GRADLE_PATH=$(find . -name "gradlew" | head -n 1)
-          cd $(dirname "$GRADLE_PATH")
-          ./gradlew assembleDebug --no-daemon
+          export JAVA_HOME=$JAVA_HOME
+          # Builds the release version with the security we added to build.gradle
+          ./gradlew assembleRelease --no-daemon
 
-      - name: 🔒 Triple-Layer Integrity Hashing
+      - name: 7. 🔒 Generate Integrity Signatures
         run: |
-          APK_FILE=$(find . -name "*.apk" | head -n 1)
-          if [ -n "$APK_FILE" ]; then
-            sha256sum "$APK_FILE" > signatures.txt
-            sha512sum "$APK_FILE" >> signatures.txt
-            openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
-          else
-            echo "Build failed: No APK was generated." && exit 1
-          fi
+          APK_FILE=$(find . -name "*release*.apk" | head -n 1)
+          sha256sum "$APK_FILE" > signatures.txt
+          sha512sum "$APK_FILE" >> signatures.txt
+          openssl dgst -sha3-512 "$APK_FILE" >> signatures.txt
 
-      - name: 📦 Upload Final App
+      - name: 8. 📦 Upload Final App
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-Elite-Final
           path: |
-            **/*.apk
+            **/*release*.apk
             signatures.txt
