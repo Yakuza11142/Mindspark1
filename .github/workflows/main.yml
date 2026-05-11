@@ -1,67 +1,24 @@
 name: Mind Spark 
 
-on: [workflow_dispatch, push]
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetches all history so it can "fix" better
-
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Fix Permissions & Clean
-        # This force-cleans the environment and fixes the Gradle wrapper
+      - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew clean
-
-      - name: Build APK (First Attempt)
-        id: build1
-        continue-on-error: true
-        run: ./gradlew assembleDebug --stacktrace
-
-      - name: Auto-Fix and Retry if Failed
-        # If build1 fails, this wipes the cache and force-rebuilds everything
-        if: steps.build1.outcome == 'failure'
-        run: |
-          echo "Build failed. Running Auto-Fix..."
-          rm -rf .gradle
-          rm -rf app/build
-          ./gradlew assembleDebug --stacktrace --no-daemon
-
-      - name: Verify Logo & Assets
-        # Checks if your logo and images are actually in the build folder
-        run: |
-          if [ -d "app/src/main/assets" ] || [ -d "app/src/main/res" ]; then
-            echo "Assets and Logo found. Proceeding..."
-          else
-            echo "Warning: Logo or Assets missing in src folder!"
-          fi
-
-      - name: Generate Security Hashes
-        if: always()
-        run: |
-          APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
-          if [ -n "$APK_PATH" ]; then
-            sha256sum "$APK_PATH" > hashes.txt
-            openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
-          else
-            echo "System Error: No APK generated even after fix." > hashes.txt
-          fi
-
-      - name: Upload Final Mind Spark Project
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Elite-Project-Ready
-          path: |
-            **/*.apk
-            hashes.txt
+          ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+      with:
+        name: Final-APK
+        path: app/build/outputs/apk/debug/*.apk
