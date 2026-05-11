@@ -1,4 +1,5 @@
 name: Mind Spark 
+
 on: [workflow_dispatch]
 
 jobs:
@@ -14,33 +15,38 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Bypass Broken Cache
-        # This is the fix for the "400 Error" in your screenshot
+      - name: Make Gradle Executable
+        # This prevents "Permission Denied" errors in GitHub
+        run: chmod +x gradlew
+
+      - name: Setup Gradle (No Cache)
+        # Using the official Gradle action but disabling cache to avoid 400 errors
         uses: gradle/actions/setup-gradle@v3
         with:
           cache-disabled: true
 
-      - name: Build APK (Logo & Code)
-        # We use 'gradle' directly to bypass the missing jarfile error
-        run: gradle assembleDebug --stacktrace
+      - name: Build Debug APK
+        # Clean first to make sure everything is fresh
+        run: ./gradlew clean assembleDebug --stacktrace
 
-      - name: Generate Hashes
-        if: always()
+      - name: Generate Security Hashes
+        if: success()
         run: |
-          APK_PATH=$(find . -name "*.apk" | grep "debug" | head -n 1)
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ]; then
+            echo "Hashing: $APK_PATH"
             sha256sum "$APK_PATH" > hashes.txt
             sha512sum "$APK_PATH" >> hashes.txt
             openssl dgst -sha3-256 "$APK_PATH" >> hashes.txt
           else
-            echo "Build finished but APK was not generated." > hashes.txt
+            echo "APK not found in standard path." > hashes.txt
           fi
 
-      - name: Upload Final APK
+      - name: Upload Elite Project Result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Elite-Project-Ready
           path: |
-            **/*.apk
+            app/build/outputs/apk/debug/*.apk
             hashes.txt
