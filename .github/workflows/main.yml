@@ -1,4 +1,4 @@
-name: Mind Spark - Secure Build
+name: Mind Spark 
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -16,6 +17,16 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
+
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            **/.dart_tool/pub
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
       - name: Install dependencies
         run: flutter pub get
@@ -32,43 +43,21 @@ jobs:
             --obfuscate \
             --split-debug-info=build/app/outputs/symbols
 
-      - name: Generate SHA-256 Hash
+      - name: Generate Security Checksums
+        working-directory: build/app/outputs/apk/release
         run: |
-          cd build/app/outputs/apk/release
           sha256sum app-release.apk > app-release.apk.sha256
-          cat app-release.apk.sha256
-
-      - name: Generate SHA-512 Hash
-        run: |
-          cd build/app/outputs/apk/release
           sha512sum app-release.apk > app-release.apk.sha512
-          cat app-release.apk.sha512
-
-      - name: Generate SHA3-256 Hash
-        run: |
-          cd build/app/outputs/apk/release
-          # SHA3-256 using OpenSSL (alternative method)
-          openssl dgst -sha3-256 app-release.apk > app-release.apk.sha3-256 || echo "SHA3 not available, using alternative"
-          cat app-release.apk.sha3-256 || echo "SHA3-256 generation skipped"
-
-      - name: Create Checksums File
-        run: |
-          cd build/app/outputs/apk/release
+          openssl dgst -sha3-256 app-release.apk > app-release.apk.sha3-256 || echo "SHA3 not available"
+          
           {
             echo "=== APK Security Checksums ==="
             echo ""
-            echo "SHA-256:"
-            cat app-release.apk.sha256
-            echo ""
-            echo "SHA-512:"
-            cat app-release.apk.sha512
-            echo ""
-            echo "File Size:"
-            ls -lh app-release.apk | awk '{print $5}'
-            echo ""
+            echo "SHA-256: $(cat app-release.apk.sha256)"
+            echo "SHA-512: $(cat app-release.apk.sha512)"
+            echo "File Size: $(ls -lh app-release.apk | awk '{print $5}')"
             echo "Build Date: $(date)"
           } > CHECKSUMS.txt
-          cat CHECKSUMS.txt
 
       - name: Upload APK & Checksums
         if: always()
@@ -91,17 +80,13 @@ jobs:
 
       - name: Build Summary
         run: |
-          echo "✅ Build Complete!"
+          echo "✅ Build Complete with Caching!"
           echo ""
           echo "📦 APK Details:"
           ls -lh build/app/outputs/apk/release/app-release.apk
           echo ""
           echo "🔐 Security Features Enabled:"
-          echo "  ✓ Code Obfuscation"
-          echo "  ✓ Debug Info Separated"
-          echo "  ✓ SHA-256 Checksum"
-          echo "  ✓ SHA-512 Checksum"
-          echo "  ✓ SHA3-256 Checksum"
-          echo "  ✓ Release Build (Production)"
-          echo ""
-          echo "📝 Artifacts uploaded!"
+          echo " ✓ Dependency Caching"
+          echo " ✓ Code Obfuscation"
+          echo " ✓ Debug Info Separated"
+          echo " ✓ Multi-Hash Verification (SHA256/512/SHA3)"
