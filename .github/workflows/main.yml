@@ -8,17 +8,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      - name: Build
+
+      - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
-      with:
-        name: Final-APK
-        path: app/build/outputs/apk/debug/*.apk
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload Final Build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Elite-Project-Ready
+          path: "**/*.apk"
