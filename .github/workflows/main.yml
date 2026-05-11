@@ -1,7 +1,8 @@
-name: Mind Spark 
+name: Mind Spark
 
 on:
   push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -21,19 +22,25 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
-          cache: true # Built-in caching for Flutter SDK
+          cache: true 
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.pub-cache
-            **/.dart_tool/pub
+            **/.dart_tool/
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-pub-
+          restore-keys: |
+            ${{ runner.os }}-pub-
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Install All Dependencies
+        run: |
+          flutter pub get
+          # If your watch uses code-gen for sensors or JSON, this is required:
+          if grep -q "build_runner" pubspec.yaml; then
+            flutter pub run build_runner build --delete-conflicting-outputs
+          fi
 
       - name: Build obfuscated Release APK
         run: |
