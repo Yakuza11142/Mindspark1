@@ -1,4 +1,4 @@
-name: MIND SPARK - Secure Production Build
+name: MINDSPARK
 
 on:
   push:
