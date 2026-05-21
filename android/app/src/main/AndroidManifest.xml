@@ -24,7 +24,7 @@
     </queries>
 
     <application
-        android:label="MIND_SPARK"
+        android:label="Mind Spark"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
