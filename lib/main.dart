@@ -8,6 +8,7 @@ import 'services/media_engine.dart';
 import 'services/audio_service.dart';
 import 'services/currency_manager.dart';
 import 'screens/splash_screen.dart';
+import 'lidar_engine.dart'; // REQUIRED: Imports your LiDAR code into the file
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +58,8 @@ class MindSparkApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0F172A),
         primaryColor: const Color(0xFF6366F1),
       ),
-      home: const SplashScreen(),
+      // Splash screen handles the boot, which then forwards to LidarMimicEngine
+      home: const SplashScreen(), 
     );
   }
 }
