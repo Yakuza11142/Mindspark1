@@ -1,4 +1,4 @@
-name: mind_spark
+name: mind_spark_build
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Get Code
-        uses: actions/checkout@v4
+        uses: actions/actions/checkout@v4
 
       - name: Java Setup
         uses: actions/setup-java@v4
@@ -32,7 +32,7 @@ jobs:
         run: rm -f pubspec.lock
 
       - name: Download Libraries
-        run: flutter pub get
+        run: flutter pub get --no-analytics
 
       - name: Build Secure APK
         run: |
@@ -41,9 +41,21 @@ jobs:
             --obfuscate \
             --split-debug-info=build/debug-info/
 
-      - name: Save APK Artifact
+      - name: Prepare Final Output Directory
+        run: |
+          mkdir -p build/secure_release
+          cp build/app/outputs/flutter-apk/app-release.apk build/secure_release/Mind_Spark.apk
+
+      - name: Generate Security Checksums
+        run: |
+          cd build/secure_release/
+          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
+          sha512sum Mind_Spark.apk > CHECKSUM_SHA512.txt
+          md5sum Mind_Spark.apk > CHECKSUM_MD5.txt
+
+      - name: Save Secure APK & Hashes
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Mind-Spark-Secure-Package
+          path: build/secure_release/
           retention-days: 90
