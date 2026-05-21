@@ -52,7 +52,7 @@ class MindSparkApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'MindSpark Elite',
+      title: 'MindSpark',
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0F172A),
         primaryColor: const Color(0xFF6366F1),
