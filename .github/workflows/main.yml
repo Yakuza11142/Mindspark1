@@ -14,45 +14,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Get Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Java Setup
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Flutter
+      - name: Flutter Setup
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Force Clean Assets
-        run: |
-          flutter clean
-          rm -rf .dart_tool/
+      - name: Fix Locks
+        run: rm -f pubspec.lock
 
-      - name: Fetch Dependencies Safely
-        run: flutter pub get --no-example
+      - name: Get Deps
+        run: flutter pub get
 
-      - name: Build Secure Obfuscated APK
+      - name: Build Secure APK
         run: |
           flutter build apk \
             --release \
             --obfuscate \
             --split-debug-info=build/debug-info/
 
-      - name: Prepare Final Output
-        run: |
-          mkdir -p build/output_release
-          find build/app/outputs/ -name "*.apk" -exec cp {} build/output_release/Mind_Spark.apk \;
-
-      - name: Upload Secure APK
+      - name: Save APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Secure-APK
-          path: build/output_release/Mind_Spark.apk
+          name: Mind-Spark-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 90
