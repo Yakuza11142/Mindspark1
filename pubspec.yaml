@@ -1,4 +1,4 @@
-name: mindspark
+name: Mind Spark
 description: AI TUTOR & AR LAB
 version: 1.0.0+1
 publish_to: 'none'
@@ -55,7 +55,7 @@ dependencies:
   dash_chat_2: ^0.0.21
   intl: ^0.19.0
   url_launcher: ^6.3.0
-  simple_gradient_text: ^3.0.0
+  simple_gradient_text: ^1.4.0
   flutter_markdown: ^0.7.2
   qr_flutter: ^4.1.0
   ticket_widget_plus: ^1.0.1
