@@ -1,4 +1,4 @@
-name: mind_spark
+name: mind_spark_build
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Get Code
-        uses: actions/actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Java Setup
         uses: actions/setup-java@v4
