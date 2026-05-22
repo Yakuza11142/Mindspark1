@@ -23,7 +23,7 @@ jobs:
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.27.0' # FIXED: Upgraded to provide Dart 3.7+ natively
           channel: 'stable'
 
       - name: Resolve Dependencies & Secure Spaces
@@ -41,7 +41,7 @@ jobs:
         run: flutter build apk --debug
         working-directory: "."
 
-  # JOB 2: Handles iOS Compilation (Mac Runner to process Apple asset bundles)
+  # JOB 2: Handles iOS Compilation
   build_ios:
     runs-on: macos-latest
     steps:
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.27.0' # FIXED: Upgraded to provide Dart 3.7+ natively
           channel: 'stable'
 
       - name: Resolve Dependencies & Secure Spaces
