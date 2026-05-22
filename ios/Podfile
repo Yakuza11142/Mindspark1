@@ -1,0 +1,1 @@
+platform :ios, '13.0'  # <-- UNCOMMENT AND SET TO 13.0 OR HIGHER!
