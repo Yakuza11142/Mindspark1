@@ -1,4 +1,4 @@
-name: Mind Spark Pure Code & Logo CI
+name: Mind Spark Compatibility CI
 
 on:
   push:
@@ -17,11 +17,12 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '11' # Lowered Java to match legacy embedding expectations
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '2.10.5' # FIXED: Forces an older engine that supports v1 embedding structures perfectly
           channel: 'stable' 
 
       - name: Resolve Internal Dependencies
