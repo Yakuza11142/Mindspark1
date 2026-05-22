@@ -4,71 +4,19 @@ version: 1.0.0+1
 publish_to: 'none'
 
 environment:
-  sdk: ">=3.5.0 <4.0.0" # Safely matched to your default system toolchain
+  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # --- CORE & DATABASE ---
-  supabase_flutter: ^2.6.0
-  flutter_dotenv: ^5.1.0
-  provider: ^6.1.2
-  shared_preferences: ^2.2.3
-  path_provider: ^2.1.3
-  dio: ^5.5.0
-
-  # --- INTELLIGENCE & ML ---
-  google_generative_ai: ^0.4.1
-  dart_openai: ^5.1.0
-  google_mlkit_language_id: ^0.10.0
-  google_mlkit_face_detection: ^0.11.0 # Spelling verified to prevent exit code 69
-
-  # --- AR & SENSES ---
-  arcore_flutter_plus: ^1.0.2
-  vector_math: ^2.1.4
-  model_viewer_plus: ^1.7.0
-  image_picker: ^1.1.2
-  mobile_scanner: ^5.1.1
-  speech_to_text: ^6.6.1
-  audioplayers: ^6.0.0
-  video_player: ^2.8.6 
-
-  # --- CRYPTO & LOCAL STORAGE ---
-  flutter_secure_storage: ^9.2.2
-  crypto: ^3.0.3
-  encrypt: ^5.0.3
-  hive_ce: ^2.1.3
-  hive_ce_flutter: ^2.1.3
-
-  # --- UI & UTILS ---
-  flutter_animate: ^4.5.0
-  glassmorphism: ^3.0.0
-  dash_chat_2: ^0.0.21
-  intl: ^0.19.0
-  url_launcher: ^6.3.0
-  flutter_markdown: ^0.7.2
-  qr_flutter: ^4.1.0
-  share_plus: ^9.0.0
-  vibration: ^1.8.4
-  permission_handler: ^11.3.1
-  flutter_local_notifications: ^17.2.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  build_runner: ^2.4.9
-  hive_ce_generator: any  
-  flutter_launcher_icons: ^0.13.1  
+  flutter_launcher_icons: ^0.13.1 # Keeps the tool that bakes your logo into the app
 
-dependency_overrides:
-  intl: any
-  vector_math: any
-  uuid: any
-  meta: any
-  crypto: any
-
+# Explicitly maps your custom code assets and font layouts
 flutter:
   uses-material-design: true
   assets:
@@ -81,6 +29,7 @@ flutter:
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
 
+# Bakes your brand logo directly into the application build
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
