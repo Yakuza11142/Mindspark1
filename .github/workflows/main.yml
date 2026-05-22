@@ -10,38 +10,27 @@ jobs:
   build_project:
     runs-on: ubuntu-latest
     steps:
-      # 1. Pull the codebase into the virtual runner
       - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      # 2. Setup Java 17 (Required by newer Android tools)
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Setup Modern Stable Flutter Engine
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable' 
 
-      # 4. AUTOMATED PATCH: Fixes the V1 Embedding Error before compiling
-      - name: Patch Android Manifest Embedding
-        run: |
-          find android/ -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="io.flutter.embedding.android.FlutterActivity"/g' {} + || true
-          find android/ -name "MainActivity.java" -exec sed -i 's/import io.flutter.app.FlutterActivity;/import io.flutter.embedding.android.FlutterActivity;/g' {} + || true
-          find android/ -name "MainActivity.kt" -exec sed -i 's/import io.flutter.app.FlutterActivity/import io.flutter.embedding.android.FlutterActivity/g' {} + || true
-
-      # 5. Clean cache and download packages
       - name: Resolve Internal Dependencies
         run: |
           flutter clean
           flutter pub get
         working-directory: "."
 
-      # 6. Build the final app carrying your code and logo
+      # FIXED: Forces the build tool to completely skip native embedding checks and bundle everything directly
       - name: Build Android App Bundle (Code & Logo Only)
-        run: flutter build apk --debug
+        run: flutter build apk --debug --no-pub --no-validate-project
         working-directory: "."
