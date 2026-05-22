@@ -3,8 +3,9 @@ description: "AI TUTOR & AR LAB"
 version: 1.0.0+1
 publish_to: 'none'
 
+# FIXED ERROR 1: Shifted minimum SDK to 3.7.0 to satisfy 'simple_gradient_text' requirement
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.7.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -19,7 +20,8 @@ dependencies:
   dio: ^5.5.0
 
   # --- INTELLIGENCE & ML ---
-  google_generative_ai: ^0.4.1
+  # FIXED ERROR 2: Upgraded to 0.4.6 to ensure direct compatibility with Dart 3.7+ 
+  google_generative_ai: ^0.4.6
   dart_openai: ^5.1.0
   google_mlkit_language_id: ^0.10.0
   google_mlkit_face_detection: ^0.11.0 # Fixed: Correct spelling without middle underscore
@@ -64,7 +66,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
-  hive_ce_generator: any  # Automatically links up schemas to match hive_ce
+  hive_ce_generator: any  # Automatically maps code generator parameters without syntax errors
   flutter_launcher_icons: ^0.13.1  
 
 dependency_overrides:
@@ -74,7 +76,7 @@ dependency_overrides:
   meta: any
   crypto: any
 
-# Tells the compiler exactly where your assets and fonts reside
+# Absolute path links to verify code can pull logos
 flutter:
   uses-material-design: true
   assets:
@@ -87,7 +89,7 @@ flutter:
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
 
-# Links your custom logo to build automatically across Android & iOS
+# Maps your custom branding logo to bundle across both systems
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
