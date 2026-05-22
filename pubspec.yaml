@@ -22,7 +22,7 @@ dependencies:
   google_generative_ai: ^0.4.1
   dart_openai: ^5.1.0
   google_mlkit_language_id: ^0.10.0
-  google_ml_kit_face_detection: ^0.11.0
+  google_mlkit_face_detection: ^0.11.0 # Fixed: Correct spelling without middle underscore
 
   # --- AR & SENSES ---
   arcore_flutter_plus: ^1.0.2
@@ -64,7 +64,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
-  hive_ce_generator: any  # Fixed: Resolves version solving failure exit code 1
+  hive_ce_generator: any  # Automatically links up schemas to match hive_ce
   flutter_launcher_icons: ^0.13.1  
 
 dependency_overrides:
@@ -74,10 +74,12 @@ dependency_overrides:
   meta: any
   crypto: any
 
+# Tells the compiler exactly where your assets and fonts reside
 flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/images/
   fonts:
     - family: Inter
       fonts:
@@ -85,9 +87,10 @@ flutter:
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
 
+# Links your custom logo to build automatically across Android & iOS
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/app_icon.png" 
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/images/app_icon.png"
