@@ -7,7 +7,7 @@ on:
     branches: [ main, master, dev ]
 
 jobs:
-  # JOB 1: Handles Android Compilation (Fast & Free Linux Runner)
+  # JOB 1: Handles Android Compilation
   build_android:
     runs-on: ubuntu-latest
     steps:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' # Fixes strict Gradle & safe_device requirements
+          java-version: '17'
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
@@ -31,17 +31,17 @@ jobs:
           flutter clean
           flutter pub cache clean --force
           flutter pub get
-        working-directory: "." # Forces Linux to safely interpret paths if folders have spaces
+        working-directory: "."
 
       - name: Generate Hive Database Schemas
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs --allow-dirty
         working-directory: "."
 
       - name: Build Android App Bundle
         run: flutter build apk --debug
         working-directory: "."
 
-  # JOB 2: Handles iOS Compilation (Mac Toolchain to fix Exit Code 65)
+  # JOB 2: Handles iOS Compilation (Mac Runner to handle Apple ecosystem plugins)
   build_ios:
     runs-on: macos-latest
     steps:
@@ -62,10 +62,10 @@ jobs:
         working-directory: "."
 
       - name: Generate Hive Database Schemas
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs --allow-dirty
         working-directory: "."
 
-      - name: Purge & Rebuild iOS CocoaPods (Fixes Exit Code 65)
+      - name: Purge & Rebuild iOS CocoaPods
         run: |
           cd ios
           rm -rf Pods Podfile.lock
@@ -74,6 +74,6 @@ jobs:
           cd ..
         working-directory: "."
 
-      - name: Build iOS Framework Bypass
+      - name: Build iOS Framework (Bypasses Exit Code 65)
         run: flutter build ios --no-codesign --simulator
-        working-directory: "." # Prevents path splits and skips Apple Profile code signing locks
+        working-directory: "."
