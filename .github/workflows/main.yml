@@ -1,4 +1,4 @@
-name: Mind Spark Compatibility CI
+name: Mind Spark 
 
 on:
   push:
@@ -10,27 +10,38 @@ jobs:
   build_project:
     runs-on: ubuntu-latest
     steps:
+      # 1. Pull the codebase into the virtual runner
       - name: Checkout Codebase
         uses: actions/checkout@v4
 
+      # 2. Setup Java 17 (Required by newer Android tools)
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '11' # Lowered Java to match legacy embedding expectations
+          java-version: '17'
 
+      # 3. Setup Modern Stable Flutter Engine
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '2.10.5' # FIXED: Forces an older engine that supports v1 embedding structures perfectly
           channel: 'stable' 
 
+      # 4. AUTOMATED PATCH: Fixes the V1 Embedding Error before compiling
+      - name: Patch Android Manifest Embedding
+        run: |
+          find android/ -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="io.flutter.embedding.android.FlutterActivity"/g' {} + || true
+          find android/ -name "MainActivity.java" -exec sed -i 's/import io.flutter.app.FlutterActivity;/import io.flutter.embedding.android.FlutterActivity;/g' {} + || true
+          find android/ -name "MainActivity.kt" -exec sed -i 's/import io.flutter.app.FlutterActivity/import io.flutter.embedding.android.FlutterActivity/g' {} + || true
+
+      # 5. Clean cache and download packages
       - name: Resolve Internal Dependencies
         run: |
           flutter clean
           flutter pub get
         working-directory: "."
 
+      # 6. Build the final app carrying your code and logo
       - name: Build Android App Bundle (Code & Logo Only)
         run: flutter build apk --debug
         working-directory: "."
