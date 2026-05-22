@@ -1,4 +1,4 @@
-name: Mind Spark Fixed CI
+name: Mind Spark Pure Code & Logo CI
 
 on:
   push:
@@ -19,23 +19,17 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # Dynamically pulls the latest stable Flutter ecosystem to support Dart 3.7+ properties
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable' 
 
-      - name: Resolve Dependencies
+      - name: Resolve Internal Dependencies
         run: |
           flutter clean
-          flutter pub cache clean --force
           flutter pub get
         working-directory: "."
 
-      - name: Generate Schemas
-        run: dart run build_runner build --delete-conflicting-outputs --allow-dirty
-        working-directory: "."
-
-      - name: Build Android
+      - name: Build Android App Bundle (Code & Logo Only)
         run: flutter build apk --debug
         working-directory: "."
