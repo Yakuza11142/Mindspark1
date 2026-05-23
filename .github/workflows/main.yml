@@ -1,44 +1,43 @@
-name: Flutter Mobile Cloud Build
+name: Mind Spark 
 
 on:
-  workflow_dispatch: # Allows you to trigger the build manually from your phone
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
 
 jobs:
-  build:
-    runs-on: macos-latest # Required to build both iOS and Android
-
+  build_project:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Setup Java (For Android Gradle)
+      - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: 'stable' 
 
-      - name: Clean and Get Dependencies
+      - name: Resolve Internal Dependencies
         run: |
           flutter clean
           flutter pub get
+        working-directory: "."
 
-      - name: Fix iOS Pods (Paddle)
-        run: |
-          cd ios
-          pod repo update
-          pod install --repo-update
-          cd ..
+      # FIXED: Removed the invalid flag so Gradle can compile your APK safely
+      - name: Build Android App Bundle (Code & Logo Only)
+        run: flutter build apk --debug
+        working-directory: "."
 
-      - name: Build Android APK (Fradle)
-        run: flutter build apk --release
-
-      - name: Upload Finished App
+      # OPTIONAL BUT RECOMMENDED: This saves the built app so you can download it to your phone
+      - name: Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cloud-Built-App
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: mind-spark-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
