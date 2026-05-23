@@ -3,7 +3,7 @@ name: Mind Spark
 on:
   push:
     branches: [ main, master, dev ]
-  workflow_dispatch: # Allows manual trigger from your phone
+  workflow_dispatch:
 
 jobs:
   build_project:
@@ -11,6 +11,17 @@ jobs:
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
+
+      # AUTOMATED FILE REPAIR: Finds the ChatGPT image, names it logo.png, and moves it to the assets folder
+      - name: Configure Logo Asset
+        run: |
+          mkdir -p mind_spark_project/assets
+          mv ChatGPT* mind_spark_project/assets/logo.png || echo "Logo already moved"
+
+      # AUTOMATED BRANDING: Forcefully injects "Mind Spark" as the launcher name inside the AndroidManifest
+      - name: Set App Name to Mind Spark
+        run: |
+          sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -23,25 +34,23 @@ jobs:
         with:
           channel: 'stable' 
 
-      # FORCE BYPASS FOR DEPENDENCY ERRORS: Repairs package cache and upgrades broken legacy versions
       - name: Resolve Internal Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
-        working-directory: "."
+        working-directory: "mind_spark_project"
 
-      # AUTOMATED PLAN B SCRIPT: Automatically overwrites your old v1 Android structure right inside the cloud runner
       - name: Upgrade Broken Mobile Layout Structure
         run: |
           flutter create . --overwrite
-        working-directory: "."
+        working-directory: "mind_spark_project"
 
       - name: Build Android App Bundle (Code & Logo Only)
         run: flutter build apk --debug
-        working-directory: "."
+        working-directory: "mind_spark_project"
 
       - name: Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk
