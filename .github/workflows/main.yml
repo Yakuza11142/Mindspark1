@@ -1,5 +1,4 @@
 name: Mind Spark Deep Clean & Build
-
 on:
   push:
     branches: [ main, master, dev ]
@@ -28,7 +27,6 @@ jobs:
         with:
           channel: 'stable'
 
-      # DEEP CLEAN: Permanently vaporizes the generic root template files so they can never trick the compiler again
       - name: 5. Deep Clean Root Template Files
         run: |
           rm -rf ./lib
@@ -37,48 +35,41 @@ jobs:
           rm -f ./pubspec.yaml
           rm -f ./pubspec.lock
 
-      # LOGO INJECTION: Finds your brain-globe image, copies it, and names it logo.png inside your real asset folder
-      - name: 6. Inject Mind Spark Custom Logo
+      - name: 6. Recreate Platform Layout Files
+        run: |
+          flutter create . --overwrite --project-name mind_spark
+        working-directory: "mind_spark_project"
+
+      - name: 7. Inject Mind Spark Custom Logo
         run: |
           mkdir -p mind_spark_project/assets
           find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo handled"
 
-      # LINK LOGO: Forcefully appends the asset path inside your project settings configuration block
-      - name: 7. Link Logo in Configuration File
+      - name: 8. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
             sed -i '/flutter:/a \  assets:\n    - assets/logo.png' mind_spark_project/pubspec.yaml
           fi
 
-      # PLATFORM FIX: Generates missing platform files directly inside your real app folder
-      - name: 8. Recreate Platform Layout Files
-        run: |
-          flutter create . --overwrite
-        working-directory: "mind_spark_project"
-
-      # NAME INJECTION: Hardcodes your chosen app name directly into the Android layout configuration
       - name: 9. Apply App Name to Manifest
         run: |
           if [ -f mind_spark_project/android/app/src/main/AndroidManifest.xml ]; then
             sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
           fi
 
-      # OVERRIDE DEPENDENCY HELL: Force upgrades outdated Dart dependencies to stop the "deps failed" crash
       - name: 10. Clear Cache and Force Update Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
         working-directory: "mind_spark_project"
 
-      # COMPILER PASS: Compiles your real custom screens into a working application binary
       - name: 11. Build Custom Android App
         run: |
           flutter build apk --debug -t lib/main.dart
         working-directory: "mind_spark_project"
 
-      # DELIVER APP PACKAGE: Delivers your completed, template-free app straight to your device
       - name: 12. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
+          path: "mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk"
