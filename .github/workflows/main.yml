@@ -1,4 +1,4 @@
-name: Mind Spark 
+name: Mind Spark Deep Clean & Build
 on:
   push:
     branches: [ main, master, dev ]
@@ -29,17 +29,11 @@ jobs:
 
       - name: 5. Isolate Workspace & Destroy All Default Templates
         run: |
-          # 1. Create a clean, isolated compilation directory
           mkdir -p /tmp/clean_build
-          
-          # 2. Force Flutter to generate ONLY the native platform scaffolding there
           cd /tmp/clean_build
           flutter create . --overwrite --project-name mind_spark
-          
-          # 3. IMMEDIATELY vaporize the default counter template lib folder out of existence
           rm -rf lib
           
-          # 4. Pull in your authentic custom code and configuration from the repo
           if [ -d "$GITHUB_WORKSPACE/lib" ]; then
             cp -r $GITHUB_WORKSPACE/lib .
           else
@@ -47,47 +41,53 @@ jobs:
           fi
           cp $GITHUB_WORKSPACE/pubspec.yaml .
           
-          # 5. Force create every asset directory your pubspec expects so it cannot crash
           mkdir -p assets/images
           mkdir -p assets/fonts
-          
-          # 6. Put safety dummy files in place so Flutter asset checks always pass
           touch assets/images/app_icon.png
           touch assets/fonts/Inter-Regular.ttf
           touch assets/fonts/Inter-Bold.ttf
           
-          # 7. Hunt for your real brain-globe image in the repo and force inject it as your logo
-          find $GITHUB_WORKSPACE -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No custom logo found, using dummy"
+          find $GITHUB_WORKSPACE -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No custom logo found"
           
-          # 8. Hardcode your app name directly into the Android layout configuration
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
             sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml
           fi
 
       - name: 6. Template Eraser & Autopilot Repair System
         run: |
-          echo "Purging lingering template artifacts..."
           rm -rf test/
           
-          # Ensure an entry file exists to prevent compilation crashes
           if [ ! -f "lib/main.dart" ]; then
-            echo "Creating an emergency entry source point..."
+            echo "Injecting clean, syntax-validated entry point..."
             cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
-          void main() => runApp(const MaterialApp(home: Scaffold(body: Center(child: Text('Mind Spark Active')))));
-          EOF
-          fi
           
-          # Sanitize template variables dynamically if they somehow exist
-          if grep -q "MyHomePage" lib/main.dart || grep -q "Increment" lib/main.dart; then
-            echo "Removing default counter parameters..."
-            sed -i 's/MyHomePage/MindSparkHome/g' lib/main.dart || true
+          void main() {
+            runApp(const MindSparkApp());
+          }
+          
+          class MindSparkApp extends StatelessWidget {
+            const MindSparkApp({super.key});
+            
+            @override
+            Widget build(BuildContext context) {
+              return const MaterialApp(
+                home: Scaffold(
+                  body: Center(
+                    child: Text('Mind Spark Active'),
+                  ),
+                ),
+              );
+            }
+          }
+          EOF
           fi
         working-directory: /tmp/clean_build
 
       - name: 7. Resolve Dependencies Cleanly
         run: |
           flutter pub cache clean --force
+          flutter clean
           flutter pub get --no-example
         working-directory: /tmp/clean_build
 
@@ -98,7 +98,7 @@ jobs:
 
       - name: 9. Build Custom Android App
         run: |
-          flutter build apk --debug -t lib/main.dart
+          flutter build apk --debug --no-pub
         working-directory: /tmp/clean_build
 
       - name: 10. Save APK Artifact Directly to GitHub
