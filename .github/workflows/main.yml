@@ -1,78 +1,122 @@
-name: Mind Spark Final Build
+name: Mind Spark Production Build
 
 on:
   push:
-    branches: [ main, master, dev ]
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
 
-# PERMANENT FIX: Forces GitHub to completely ignore the main directory for all build steps
-defaults:
-  run:
-    working-directory: "mind_spark_project"
+permissions:
+  contents: read
+  actions: read
 
 jobs:
-  build_project:
+  build:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: 1. Pull Codebase from GitHub
+      # 1. Checkout complete codebase
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          sparse-checkout: |
-            mind_spark_project
-            ChatGPT*
-            Mindspark_Logo*
-            input_file*
+          fetch-depth: 0
 
-      - name: 2. Set Up Java Compiler Environment
+      # 2. Setup JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: 3. Set Up Node.js 24 Environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-
-      - name: 4. Set Up Clean Flutter Tools
+      # 3. Setup Flutter SDK
+      - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.22.0'
           channel: 'stable'
+          cache: true
 
-      # DRAG LOGO: Safely searches the workspace, pulls your logo image, and places it inside assets
-      - name: 5. Inject Mind Spark Custom Logo
+      # 4. Verify Flutter installation
+      - name: Verify Flutter version
         run: |
-          mkdir -p assets
-          cp ../ChatGPT* assets/logo.png || cp ../Mindspark_Logo* assets/logo.png || cp ../input_file* assets/logo.png || echo "Logo found"
-
-      # LINK LOGO: Registers the image directly to your custom layout files
-      - name: 6. Link Logo in Configuration File
+          flutter --version
+          dart --version
+          
+      # 5. Clean and get dependencies
+      - name: Clean and get dependencies
         run: |
-          if ! grep -q "assets/logo.png" pubspec.yaml; then
-            sed -i '/flutter:/a \  assets:\n    - assets/logo.png' pubspec.yaml
-          fi
+          flutter clean
+          flutter pub get
+          flutter pub get --offline || true
 
-      # NAME REPAIR: Changes app launcher string label inside your true project folder
-      - name: 7. Apply App Name to Manifest
+      # 6. Run code generation if needed
+      - name: Run code generation
+        run: flutter pub run build_runner build --delete-conflicting-outputs || true
+
+      # 7. Static analysis
+      - name: Run flutter analyze
+        run: flutter analyze --no-pub --no-fatal-infos || true
+
+      # 8. Run tests (optional)
+      - name: Run tests
+        run: flutter test || true
+
+      # 9. Build release APK
+      - name: Build release APK
         run: |
-          if [ -f android/app/src/main/AndroidManifest.xml ]; then
-            sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml
-          fi
+          flutter build apk \
+            --release \
+            --obfuscate \
+            --split-debug-info=build/debug-info/ \
+            -v
 
-      # RESOLVE DEPENDENCIES: Downloads and links your packages
-      - name: 8. Load Project Dependencies
+      # 10. Rename APK to Mind Spark
+      - name: Rename APK to Mind Spark
         run: |
-          flutter pub cache clean --force
-          flutter pub get || flutter pub upgrade --major-versions
+          mkdir -p build/release
+          mv build/app/outputs/apk/release/app-release.apk build/release/Mind_Spark.apk
+          ls -lh build/release/Mind_Spark.apk
 
-      # COMPILER PASS: Builds your custom app logic without generating placeholder boilerplates
-      - name: 9. Build Custom Android App
+      # 11. Generate checksums
+      - name: Generate checksums
         run: |
-          flutter build apk --debug
+          cd build/release
+          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
+          sha512sum Mind_Spark.apk > CHECKSUM_SHA512.txt
+          md5sum Mind_Spark.apk > CHECKSUM_MD5.txt
+          echo "=== APK Information ===" && ls -lh Mind_Spark.apk
 
-      # DELIVER PACKAGE: Gathers your custom app build file for download directly to your phone
-      - name: 10. Save APK Artifact
+      # 12. Upload APK as artifact
+      - name: Upload Mind Spark APK
         uses: actions/upload-artifact@v4
         with:
-          name: mind-spark-debug-apk
-          path: mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk
+          name: Mind-Spark-Release-APK
+          path: build/release/
+          retention-days: 30
+          if-no-files-found: error
+
+      # 13. Build success notification
+      - name: Build Success Summary
+        if: success()
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════╗"
+          echo "║       ✅ MIND SPARK APK BUILD SUCCESSFUL! ✅          ║"
+          echo "╚════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "📱 APK Name: Mind_Spark.apk"
+          echo "📊 Size: $(du -h build/release/Mind_Spark.apk | cut -f1)"
+          echo "📍 Location: build/release/"
+          echo "🔐 Checksums: SHA256, SHA512, MD5 included"
+          echo ""
+          echo "🎯 Download from: Actions → Artifacts → Mind-Spark-Release-APK"
+          echo ""
+
+      # 14. Build failure notification
+      - name: Build Failure Notification
+        if: failure()
+        run: |
+          echo "❌ Build failed! Check logs above for details."
+          exit 1
