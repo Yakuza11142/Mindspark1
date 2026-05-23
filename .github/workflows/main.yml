@@ -1,9 +1,14 @@
-name: Mind Spark 
+name: Mind Spark Final Build
 
 on:
   push:
     branches: [ main, master, dev ]
   workflow_dispatch:
+
+# PERMANENT FIX: Forces GitHub to completely ignore the main directory for all build steps
+defaults:
+  run:
+    working-directory: "mind_spark_project"
 
 jobs:
   build_project:
@@ -11,6 +16,12 @@ jobs:
     steps:
       - name: 1. Pull Codebase from GitHub
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            mind_spark_project
+            ChatGPT*
+            Mindspark_Logo*
+            input_file*
 
       - name: 2. Set Up Java Compiler Environment
         uses: actions/setup-java@v4
@@ -18,41 +29,50 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 3. Set Up Clean Flutter Tools
+      - name: 3. Set Up Node.js 24 Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 4. Set Up Clean Flutter Tools
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' 
+          channel: 'stable'
 
-      - name: 4. Clear Generic Template Folders
-        run: |
-          rm -rf lib
-          rm -rf android
-          rm -rf ios
-
+      # DRAG LOGO: Safely searches the workspace, pulls your logo image, and places it inside assets
       - name: 5. Inject Mind Spark Custom Logo
         run: |
-          mkdir -p mind_spark_project/assets
-          find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo processing complete"
+          mkdir -p assets
+          cp ../ChatGPT* assets/logo.png || cp ../Mindspark_Logo* assets/logo.png || cp ../input_file* assets/logo.png || echo "Logo found"
 
+      # LINK LOGO: Registers the image directly to your custom layout files
       - name: 6. Link Logo in Configuration File
         run: |
-          if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
-            sed -i '/flutter:/a \  assets:\n    - assets/logo.png' mind_spark_project/pubspec.yaml
+          if ! grep -q "assets/logo.png" pubspec.yaml; then
+            sed -i '/flutter:/a \  assets:\n    - assets/logo.png' pubspec.yaml
           fi
 
-      - name: 7. Load Project Dependencies
+      # NAME REPAIR: Changes app launcher string label inside your true project folder
+      - name: 7. Apply App Name to Manifest
+        run: |
+          if [ -f android/app/src/main/AndroidManifest.xml ]; then
+            sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml
+          fi
+
+      # RESOLVE DEPENDENCIES: Downloads and links your packages
+      - name: 8. Load Project Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
-        working-directory: "mind_spark_project"
 
-      - name: 8. Build Custom Android App
+      # COMPILER PASS: Builds your custom app logic without generating placeholder boilerplates
+      - name: 9. Build Custom Android App
         run: |
           flutter build apk --debug
-        working-directory: "mind_spark_project"
 
-      - name: 9. Save APK Artifact
+      # DELIVER PACKAGE: Gathers your custom app build file for download directly to your phone
+      - name: 10. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
+          path: mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk
