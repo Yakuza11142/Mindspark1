@@ -27,18 +27,17 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: 5. Deep Clean Root Template Files
+      - name: 5. Recreate Platform Layout Files
         run: |
-          rm -rf ./lib
-          rm -rf ./android
-          rm -rf ./ios
-          rm -f ./pubspec.yaml
-          rm -f ./pubspec.lock
-
-      - name: 6. Recreate Platform Layout Files
-        run: |
+          mkdir -p mind_spark_project
+          cd mind_spark_project
           flutter create . --overwrite --project-name mind_spark
-        working-directory: "mind_spark_project"
+
+      - name: 6. Inject Custom Code and WIPE Template
+        run: |
+          rm -rf mind_spark_project/lib
+          cp -r lib mind_spark_project/lib
+          rm -rf ./lib
 
       - name: 7. Inject Mind Spark Custom Logo
         run: |
