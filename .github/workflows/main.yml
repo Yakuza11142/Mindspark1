@@ -23,54 +23,43 @@ jobs:
         with:
           channel: 'stable' 
 
-      # FORCE REMOVE TEMPLATE: Completely deletes root-level mock layouts so the runner cannot build them
+      # NO MORE TEMPLATES: Wipes root-level placeholders completely so they cannot confuse the build machine
       - name: 4. Clear Generic Template Folders
         run: |
           rm -rf lib
           rm -rf android
           rm -rf ios
 
-      # REPAIR DIRECTORY: Overwrites and builds fresh native structural platform folder layers inside your app folder
-      - name: 5. Recreate Platform Layout Files
-        run: |
-          flutter create . --overwrite
-        working-directory: "mind_spark_project"
-
-      # NAME INJECTION: Hardcodes your chosen workspace app name directly into the AndroidManifest configuration
-      - name: 6. Set App Name to Mind Spark
-        run: |
-          sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
-
-      # LOGO CAPTURE: Automatically locates your custom globe-brain artwork file and transfers it to the assets folder
-      - name: 7. Inject Mind Spark Custom Logo
+      # LOGO CAPTURE: Automatically finds your custom brain-globe image and drops it into assets
+      - name: 5. Inject Mind Spark Custom Logo
         run: |
           mkdir -p mind_spark_project/assets
-          find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo processing fallback executed"
+          find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo processing complete"
 
       # LINK LOGO: Forcefully appends the asset path inside your project settings configuration block
-      - name: 8. Link Logo in Configuration File
+      - name: 6. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
             echo "  assets:" >> mind_spark_project/pubspec.yaml
             echo "    - assets/logo.png" >> mind_spark_project/pubspec.yaml
           fi
 
-      # RESOLVE CODE DEPENDENCIES: Downloads and prepares the plugin packages needed for your 2,000 files
-      - name: 9. Load Project Dependencies
+      # LOAD PROJECT DEPS: Downloads the exact packages required by your 2,000 custom files
+      - name: 7. Load Project Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
         working-directory: "mind_spark_project"
 
-      # BUILD CUSTOM CODE: Compiles your custom application from your real folder structure
-      - name: 10. Build Custom Android App
+      # TARGET CODE ONLY: Compiles your custom application from your real folder directory without generating boilerplate
+      - name: 8. Build Custom Android App
         run: |
-          flutter build apk --debug -t lib/main.dart
+          flutter build apk --debug
         working-directory: "mind_spark_project"
 
-      # SAVE APP PACKAGE: Packages your completed custom app for immediate mobile download
-      - name: 11. Save APK Artifact
+      # DELIVER APP PACKAGE: Gathers your custom app build file for download directly to your phone
+      - name: 9. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
+          path: "mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk"
