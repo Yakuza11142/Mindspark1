@@ -9,34 +9,34 @@ jobs:
   build_project:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Codebase
+      - name: 1. Pull Codebase from GitHub
         uses: actions/checkout@v4
 
-      - name: 2. Setup Java JDK
+      - name: 2. Set Up Java Compiler Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 3. Setup Latest Flutter Environment
+      - name: 3. Set Up Clean Flutter Tools
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable' 
 
-      # 4. Cleans out any generic template files sitting in the main directory
-      - name: 4. Wipe Out Generic Main Folder Templates
+      # WIPE ROOT BLOCKS: Destroys root template folders so the machine cannot build them
+      - name: 4. Clear Generic Template Folders
         run: |
           rm -rf lib
           rm -rf android
           rm -rf ios
 
-      # 5. Copies your ChatGPT logo directly into your real project folder assets
-      - name: 5. Add Custom Logo Image
+      # EMBED IMAGE: Automatically finds your brain globe graphic and saves it as the active logo asset
+      - name: 5. Inject Mind Spark Custom Logo
         run: |
           mkdir -p mind_spark_project/assets
-          cp ChatGPT* mind_spark_project/assets/logo.png || echo "Logo already in place"
+          find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo fallback handled"
 
-      # 6. Forcefully links the logo asset inside your custom settings file
+      # MAP CONFIG: Enforces asset configuration file paths without human input
       - name: 6. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
@@ -44,20 +44,20 @@ jobs:
             echo "    - assets/logo.png" >> mind_spark_project/pubspec.yaml
           fi
 
-      # 7. Loads the exact packages needed for your 2,000 files
+      # RESOLVE CUSTOM CODE DEPS: Loads packages specifically inside your custom directory
       - name: 7. Load Project Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
         working-directory: "mind_spark_project"
 
-      # 8. FIXED: Forcefully targets your custom application entry file (-t) so it cannot build the template
+      # TARGET ONLY CUSTOM CODE: Instructs the compiler to strictly compile your custom directory (-t lib/main.dart)
       - name: 8. Build Custom Android App
         run: |
           flutter build apk --debug -t lib/main.dart
         working-directory: "mind_spark_project"
 
-      # 9. Saves your finished custom app for download
+      # DELIVER APP PACKAGE: Gathers your custom app build file for download
       - name: 9. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
