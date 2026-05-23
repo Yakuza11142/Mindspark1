@@ -23,39 +23,42 @@ jobs:
         with:
           channel: 'stable' 
 
-      - name: 4. Recreate Platform Layout Files
+      # 4. Cleans out any generic template files sitting in the main directory
+      - name: 4. Wipe Out Generic Main Folder Templates
         run: |
-          flutter create . --overwrite
-        working-directory: "mind_spark_project"
+          rm -rf lib
+          rm -rf android
+          rm -rf ios
 
-      - name: 5. Set App Name to Mind Spark
-        run: |
-          sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
-
-      - name: 6. Add Custom Logo Image
+      # 5. Copies your ChatGPT logo directly into your real project folder assets
+      - name: 5. Add Custom Logo Image
         run: |
           mkdir -p mind_spark_project/assets
           cp ChatGPT* mind_spark_project/assets/logo.png || echo "Logo already in place"
 
-      - name: 7. Link Logo in Configuration File
+      # 6. Forcefully links the logo asset inside your custom settings file
+      - name: 6. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
             echo "  assets:" >> mind_spark_project/pubspec.yaml
             echo "    - assets/logo.png" >> mind_spark_project/pubspec.yaml
           fi
 
-      - name: 8. Load Project Dependencies
+      # 7. Loads the exact packages needed for your 2,000 files
+      - name: 7. Load Project Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
         working-directory: "mind_spark_project"
 
-      - name: 9. Build Custom Android App
+      # 8. FIXED: Forcefully targets your custom application entry file (-t) so it cannot build the template
+      - name: 8. Build Custom Android App
         run: |
-          flutter build apk --debug
+          flutter build apk --debug -t lib/main.dart
         working-directory: "mind_spark_project"
 
-      - name: 10. Save APK Artifact
+      # 9. Saves your finished custom app for download
+      - name: 9. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
