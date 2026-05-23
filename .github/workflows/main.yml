@@ -8,16 +8,16 @@ jobs:
   deep_clean_and_build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Pull All Codebase Files from GitHub
+      - name: 1. Pull Codebase Files from GitHub
         uses: actions/checkout@v4
 
-      - name: 2. Set Up Java Compiler Environment
+      - name: 2. Set Up Java Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 3. Set Up Node.js 24 Environment
+      - name: 3. Set Up Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -27,82 +27,33 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: 5. Isolate Workspace & Destroy All Default Templates
+      - name: 5. Handle Assets & Folders
         run: |
-          mkdir -p /tmp/clean_build
-          cd /tmp/clean_build
-          flutter create . --overwrite --project-name mind_spark
-          rm -rf lib
-          
-          if [ -d "$GITHUB_WORKSPACE/lib" ]; then
-            cp -r $GITHUB_WORKSPACE/lib .
-          else
-            mkdir -p lib
-          fi
-          cp $GITHUB_WORKSPACE/pubspec.yaml .
-          
+          # Ensure directories exist so pubspec check passes
           mkdir -p assets/images
           mkdir -p assets/fonts
+          
+          # Setup placeholder assets if missing
           touch assets/images/app_icon.png
           touch assets/fonts/Inter-Regular.ttf
           touch assets/fonts/Inter-Bold.ttf
           
-          find $GITHUB_WORKSPACE -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No custom logo found"
-          
-          if [ -f android/app/src/main/AndroidManifest.xml ]; then
-            sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml
-          fi
+          # Force your brain-globe image to be the icon
+          find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No custom logo found"
 
-      - name: 6. Template Eraser & Autopilot Repair System
+      - name: 6. Build App Launcher Icons
         run: |
-          rm -rf test/
-          
-          if [ ! -f "lib/main.dart" ]; then
-            echo "Injecting clean, syntax-validated entry point..."
-            cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          
-          void main() {
-            runApp(const MindSparkApp());
-          }
-          
-          class MindSparkApp extends StatelessWidget {
-            const MindSparkApp({super.key});
-            
-            @override
-            Widget build(BuildContext context) {
-              return const MaterialApp(
-                home: Scaffold(
-                  body: Center(
-                    child: Text('Mind Spark Active'),
-                  ),
-                ),
-              );
-            }
-          }
-          EOF
-          fi
-        working-directory: /tmp/clean_build
+          flutter pub get
+          flutter pub run flutter_launcher_icons || echo "Icons skipped"
 
-      - name: 7. Resolve Dependencies Cleanly
+      - name: 7. Compile Your Custom Android App
         run: |
-          flutter pub cache clean --force
           flutter clean
-          flutter pub get --no-example
-        working-directory: /tmp/clean_build
+          flutter pub get
+          flutter build apk --debug -t lib/main.dart
 
-      - name: 8. Bake App Launcher Icons
-        run: |
-          flutter pub run flutter_launcher_icons || echo "Icons handled or skipped"
-        working-directory: /tmp/clean_build
-
-      - name: 9. Build Custom Android App
-        run: |
-          flutter build apk --debug --no-pub
-        working-directory: /tmp/clean_build
-
-      - name: 10. Save APK Artifact Directly to GitHub
+      - name: 8. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: "/tmp/clean_build/build/app/outputs/flutter-apk/app-debug.apk"
+          path: "build/app/outputs/flutter-apk/app-debug.apk"
