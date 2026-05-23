@@ -1,4 +1,4 @@
-name: Mind Spark Deep Clean & Build
+name: Mind Spark 
 on:
   push:
     branches: [ main, master, dev ]
