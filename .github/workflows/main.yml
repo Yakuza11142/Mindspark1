@@ -8,10 +8,10 @@ jobs:
   deep_clean_and_build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Pull Codebase Files from GitHub
+      - name: 1. Pull Your GitHub Repository Files
         uses: actions/checkout@v4
 
-      - name: 2. Set Up Java Environment
+      - name: 2. Set Up Java Compiler Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -23,62 +23,50 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: 4. Build Platforms & Delete Old Code
+      - name: 4. Rebuild Native Scaffolding Around Your Code
         run: |
-          mkdir -p /tmp/saved_code
-          cp pubspec.yaml /tmp/saved_code/ || echo "No pubspec found"
+          # 1. Back up whatever custom files are currently in your online repository
+          mkdir -p /tmp/user_code
+          cp -r lib /tmp/user_code/ || echo "No lib directory found in GitHub repository"
+          cp pubspec.yaml /tmp/user_code/ || echo "No pubspec.yaml found in GitHub repository"
           
-          # Recreate clean platform infrastructure files
+          # 2. Re-generate the missing native Android and iOS folders
           flutter create . --overwrite --project-name mind_spark
           
-          # Completely purge default template directories
+          # 3. Permanently destroy the newly generated template counter code files
           rm -rf lib test
-          mkdir -p lib
           
-          # Restore your authentic configuration rules
-          cp /tmp/saved_code/pubspec.yaml .
+          # 4. Put your authentic repository code files back into the project root
+          if [ -d "/tmp/user_code/lib" ]; then
+            cp -r /tmp/user_code/lib .
+          else
+            mkdir -p lib
+          fi
+          cp /tmp/user_code/pubspec.yaml .
 
-      - name: 5. Generate Missing Asset Structs
+      - name: 5. Align Asset Folders & Intercept Logo
         run: |
+          # Create missing asset directories expected by your configuration file
           mkdir -p assets/images assets/fonts
+          
+          # Force empty safety layout targets so the compiler won't crash on empty paths
           touch assets/images/app_icon.png assets/fonts/Inter-Regular.ttf assets/fonts/Inter-Bold.ttf
-          find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "Logo handled"
+          
+          # Look for any custom PNG image you pushed to your main repository and use it
+          find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No logo found"
 
-      - name: 6. Hard Overwrite Main File with Valid Syntax
+      - name: 6. Bake Custom App Launcher Icons
         run: |
-          # Completely clear and replace main.dart to prevent kernel snapshot compile errors
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          
-          void main() {
-            runApp(const MyApp());
-          }
-          
-          class MyApp extends StatelessWidget {
-            const MyApp({super.key});
-          
-            @override
-            Widget build(BuildContext context) {
-              return const MaterialApp(
-                home: Scaffold(
-                  body: Center(
-                    child: Text('Mind Spark Active'),
-                  ),
-                ),
-              );
-            }
-          }
-          EOF
-          echo "Main file successfully overwritten with valid Dart structures."
+          flutter pub get
+          flutter pub run flutter_launcher_icons || echo "Custom icon bake skipped"
 
-      - name: 7. Compile Your Custom Android App
+      - name: 7. Compile Your Authentic Mind Spark Code
         run: |
           flutter clean
-          flutter pub cache clean --force
           flutter pub get
           flutter build apk --debug -t lib/main.dart
 
-      - name: 8. Save APK Artifact
+      - name: 8. Save APK Artifact Directly to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
