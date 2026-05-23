@@ -9,60 +9,54 @@ jobs:
   build_project:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Codebase
+      - name: 1. Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK
+      - name: 2. Setup Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Latest Flutter Environment
+      - name: 3. Setup Latest Flutter Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable' 
 
-      # STEP 1: Recreates the missing platform folders inside your real project folder
-      - name: Recreate Platform Layout Files
+      - name: 4. Recreate Platform Layout Files
         run: |
           flutter create . --overwrite
         working-directory: "mind_spark_project"
 
-      # STEP 2: Injects your correct app name into the newly generated configuration files
-      - name: Set App Name to Mind Spark
+      - name: 5. Set App Name to Mind Spark
         run: |
           sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
 
-      # STEP 3: Moves your ChatGPT logo image directly into your project assets folder
-      - name: Configure Logo Asset Folder
+      - name: 6. Add Custom Logo Image
         run: |
           mkdir -p mind_spark_project/assets
-          cp ChatGPT* mind_spark_project/assets/logo.png || echo "Logo file copy fallback triggered"
+          cp ChatGPT* mind_spark_project/assets/logo.png || echo "Logo already in place"
 
-      # STEP 4: Forcefully links the new logo asset inside your custom configurations
-      - name: Link Logo in Configuration File
+      - name: 7. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
             echo "  assets:" >> mind_spark_project/pubspec.yaml
             echo "    - assets/logo.png" >> mind_spark_project/pubspec.yaml
           fi
 
-      # STEP 5: Fetches all custom packages required by your 2,000 files
-      - name: Resolve Internal Dependencies
+      - name: 8. Load Project Dependencies
         run: |
           flutter pub cache clean --force
           flutter pub get || flutter pub upgrade --major-versions
         working-directory: "mind_spark_project"
 
-      # STEP 6: Compiles your real custom files, packages the app name, and bundles the logo image
-      - name: Build Android App Bundle (Code & Logo Only)
-        run: flutter build apk --debug
+      - name: 9. Build Custom Android App
+        run: |
+          flutter build apk --debug
         working-directory: "mind_spark_project"
 
-      # STEP 7: Packages your completed app file for immediate download to your device
-      - name: Save APK Artifact
+      - name: 10. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk
+          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
