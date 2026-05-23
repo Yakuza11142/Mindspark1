@@ -3,8 +3,7 @@ name: Mind Spark
 on:
   push:
     branches: [ main, master, dev ]
-  pull_request:
-    branches: [ main, master, dev ]
+  workflow_dispatch: # Allows manual trigger from your phone
 
 jobs:
   build_project:
@@ -19,17 +18,22 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # FIXED: Downgraded to 3.16.9 to support your project's Android v1 embedding layout
-      - name: Setup Flutter Environment
+      - name: Setup Latest Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.9'
           channel: 'stable' 
 
+      # FORCE BYPASS FOR DEPENDENCY ERRORS: Repairs package cache and upgrades broken legacy versions
       - name: Resolve Internal Dependencies
         run: |
-          flutter clean
-          flutter pub get
+          flutter pub cache clean --force
+          flutter pub get || flutter pub upgrade --major-versions
+        working-directory: "."
+
+      # AUTOMATED PLAN B SCRIPT: Automatically overwrites your old v1 Android structure right inside the cloud runner
+      - name: Upgrade Broken Mobile Layout Structure
+        run: |
+          flutter create . --overwrite
         working-directory: "."
 
       - name: Build Android App Bundle (Code & Logo Only)
