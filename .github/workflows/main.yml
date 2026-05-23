@@ -27,24 +27,35 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: 5. Handle Assets & Folders
+      - name: 5. Generate Platforms and Destroy Templates
         run: |
-          # Ensure directories exist so pubspec check passes
+          # 1. Back up your authentic code first
+          mkdir -p /tmp/my_code
+          cp -r lib /tmp/my_code/ || echo "No local lib folder"
+          cp pubspec.yaml /tmp/my_code/ || echo "No local pubspec"
+          
+          # 2. Recreate the missing native platform folders
+          flutter create . --overwrite --project-name mind_spark
+          
+          # 3. Permanently wipe out the newly generated template code
+          rm -rf lib
+          
+          # 4. Restore your true custom screens and configuration
+          if [ -d "/tmp/my_code/lib" ]; then
+            cp -r /tmp/my_code/lib .
+          else
+            mkdir -p lib
+          fi
+          cp /tmp/my_code/pubspec.yaml .
+
+      - name: 6. Handle Assets & Folders
+        run: |
           mkdir -p assets/images
           mkdir -p assets/fonts
-          
-          # Setup placeholder assets if missing
           touch assets/images/app_icon.png
           touch assets/fonts/Inter-Regular.ttf
           touch assets/fonts/Inter-Bold.ttf
-          
-          # Force your brain-globe image to be the icon
           find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No custom logo found"
-
-      - name: 6. Build App Launcher Icons
-        run: |
-          flutter pub get
-          flutter pub run flutter_launcher_icons || echo "Icons skipped"
 
       - name: 7. Compile Your Custom Android App
         run: |
