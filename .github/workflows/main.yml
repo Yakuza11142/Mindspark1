@@ -27,7 +27,7 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: 5. Backup Your Custom Files
+      - name: 5. Backup Your Custom Files Safely
         run: |
           mkdir -p /tmp/backup_spark
           cp -r lib /tmp/backup_spark/
@@ -41,7 +41,7 @@ jobs:
         run: |
           flutter create . --overwrite --project-name mind_spark
 
-      - name: 8. Exterminate Template & Restore Your Code
+      - name: 8. Exterminate Template & Restore Your Authentic Code
         run: |
           rm -rf lib
           cp -r /tmp/backup_spark/lib .
@@ -64,10 +64,11 @@ jobs:
             sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml
           fi
 
-      - name: 12. Clear Cache and Force Update Dependencies
+      - name: 12. Safe Resolve Dependencies (No Breaking Upgrades)
         run: |
           flutter pub cache clean --force
-          flutter pub get || flutter pub upgrade --major-versions
+          flutter clean
+          flutter pub get --no-example
 
       - name: 13. Build Custom Android App
         run: |
