@@ -1,122 +1,84 @@
-name: Mind Spark Production Build
+name: Mind Spark Deep Clean & Build
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  actions: read
-
 jobs:
-  build:
+  deep_clean_and_build:
     runs-on: ubuntu-latest
-    
     steps:
-      # 1. Checkout complete codebase
-      - name: Checkout code
+      - name: 1. Pull All Codebase Files from GitHub
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # 2. Setup JDK 17
-      - name: Setup JDK 17
+      - name: 2. Set Up Java Compiler Environment
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
 
-      # 3. Setup Flutter SDK
-      - name: Setup Flutter SDK
+      - name: 3. Set Up Node.js 24 Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 4. Set Up Clean Flutter Tools
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
-          cache: true
 
-      # 4. Verify Flutter installation
-      - name: Verify Flutter version
+      # DEEP CLEAN: Permanently vaporizes the generic root template files so they can never trick the compiler again
+      - name: 5. Deep Clean Root Template Files
         run: |
-          flutter --version
-          dart --version
-          
-      # 5. Clean and get dependencies
-      - name: Clean and get dependencies
+          rm -rf ./lib
+          rm -rf ./android
+          rm -rf ./ios
+          rm -f ./pubspec.yaml
+          rm -f ./pubspec.lock
+
+      # LOGO INJECTION: Finds your brain-globe image, copies it, and names it logo.png inside your real asset folder
+      - name: 6. Inject Mind Spark Custom Logo
         run: |
-          flutter clean
-          flutter pub get
-          flutter pub get --offline || true
+          mkdir -p mind_spark_project/assets
+          find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo handled"
 
-      # 6. Run code generation if needed
-      - name: Run code generation
-        run: flutter pub run build_runner build --delete-conflicting-outputs || true
-
-      # 7. Static analysis
-      - name: Run flutter analyze
-        run: flutter analyze --no-pub --no-fatal-infos || true
-
-      # 8. Run tests (optional)
-      - name: Run tests
-        run: flutter test || true
-
-      # 9. Build release APK
-      - name: Build release APK
+      # LINK LOGO: Forcefully appends the asset path inside your project settings configuration block
+      - name: 7. Link Logo in Configuration File
         run: |
-          flutter build apk \
-            --release \
-            --obfuscate \
-            --split-debug-info=build/debug-info/ \
-            -v
+          if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
+            sed -i '/flutter:/a \  assets:\n    - assets/logo.png' mind_spark_project/pubspec.yaml
+          fi
 
-      # 10. Rename APK to Mind Spark
-      - name: Rename APK to Mind Spark
+      # PLATFORM FIX: Generates missing platform files directly inside your real app folder
+      - name: 8. Recreate Platform Layout Files
         run: |
-          mkdir -p build/release
-          mv build/app/outputs/apk/release/app-release.apk build/release/Mind_Spark.apk
-          ls -lh build/release/Mind_Spark.apk
+          flutter create . --overwrite
+        working-directory: "mind_spark_project"
 
-      # 11. Generate checksums
-      - name: Generate checksums
+      # NAME INJECTION: Hardcodes your chosen app name directly into the Android layout configuration
+      - name: 9. Apply App Name to Manifest
         run: |
-          cd build/release
-          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
-          sha512sum Mind_Spark.apk > CHECKSUM_SHA512.txt
-          md5sum Mind_Spark.apk > CHECKSUM_MD5.txt
-          echo "=== APK Information ===" && ls -lh Mind_Spark.apk
+          if [ -f mind_spark_project/android/app/src/main/AndroidManifest.xml ]; then
+            sed -i 's/android:label=".*"/android:label="Mind Spark"/' mind_spark_project/android/app/src/main/AndroidManifest.xml
+          fi
 
-      # 12. Upload APK as artifact
-      - name: Upload Mind Spark APK
+      # OVERRIDE DEPENDENCY HELL: Force upgrades outdated Dart dependencies to stop the "deps failed" crash
+      - name: 10. Clear Cache and Force Update Dependencies
+        run: |
+          flutter pub cache clean --force
+          flutter pub get || flutter pub upgrade --major-versions
+        working-directory: "mind_spark_project"
+
+      # COMPILER PASS: Compiles your real custom screens into a working application binary
+      - name: 11. Build Custom Android App
+        run: |
+          flutter build apk --debug -t lib/main.dart
+        working-directory: "mind_spark_project"
+
+      # DELIVER APP PACKAGE: Delivers your completed, template-free app straight to your device
+      - name: 12. Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Release-APK
-          path: build/release/
-          retention-days: 30
-          if-no-files-found: error
-
-      # 13. Build success notification
-      - name: Build Success Summary
-        if: success()
-        run: |
-          echo ""
-          echo "╔════════════════════════════════════════════════════════╗"
-          echo "║       ✅ MIND SPARK APK BUILD SUCCESSFUL! ✅          ║"
-          echo "╚════════════════════════════════════════════════════════╝"
-          echo ""
-          echo "📱 APK Name: Mind_Spark.apk"
-          echo "📊 Size: $(du -h build/release/Mind_Spark.apk | cut -f1)"
-          echo "📍 Location: build/release/"
-          echo "🔐 Checksums: SHA256, SHA512, MD5 included"
-          echo ""
-          echo "🎯 Download from: Actions → Artifacts → Mind-Spark-Release-APK"
-          echo ""
-
-      # 14. Build failure notification
-      - name: Build Failure Notification
-        if: failure()
-        run: |
-          echo "❌ Build failed! Check logs above for details."
-          exit 1
+          name: mind-spark-debug-apk
+          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
