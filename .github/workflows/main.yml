@@ -23,25 +23,24 @@ jobs:
         with:
           channel: 'stable' 
 
-      # NO MORE TEMPLATES: Wipes root-level placeholders completely so they cannot confuse the build machine
+      # NO MORE TEMPLATES: Explicitly wipes out root-level placeholders completely so they cannot confuse the engine
       - name: 4. Clear Generic Template Folders
         run: |
           rm -rf lib
           rm -rf android
           rm -rf ios
 
-      # LOGO CAPTURE: Automatically finds your custom brain-globe image and drops it into assets
+      # LOGO CAPTURE: Automatically localizes your custom brain-globe image file layout structure
       - name: 5. Inject Mind Spark Custom Logo
         run: |
           mkdir -p mind_spark_project/assets
           find . -maxdepth 1 -name "*.png" ! -name "logo.png" -exec cp {} mind_spark_project/assets/logo.png \; || echo "Logo processing complete"
 
-      # LINK LOGO: Forcefully appends the asset path inside your project settings configuration block
+      # FIXED AUTO-LINK: Injects layout formatting declarations directly to link your image correctly
       - name: 6. Link Logo in Configuration File
         run: |
           if ! grep -q "assets/logo.png" mind_spark_project/pubspec.yaml; then
-            echo "  assets:" >> mind_spark_project/pubspec.yaml
-            echo "    - assets/logo.png" >> mind_spark_project/pubspec.yaml
+            sed -i '/flutter:/a \  assets:\n    - assets/logo.png' mind_spark_project/pubspec.yaml
           fi
 
       # LOAD PROJECT DEPS: Downloads the exact packages required by your 2,000 custom files
@@ -62,4 +61,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
-          path: "mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk"
+          path: "**/build/app/outputs/flutter-apk/app-debug.apk"
