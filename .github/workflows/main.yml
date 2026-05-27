@@ -26,7 +26,7 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: 5. Rebuild Native Scaffolding & Patch Android Properties
+      - name: 5. Rebuild Native Scaffolding Around Your Code
         run: |
           mkdir -p /tmp/user_code
           cp -r lib /tmp/user_code/ || true
@@ -37,11 +37,6 @@ jobs:
           
           cp -r /tmp/user_code/lib . || mkdir -p lib
           cp /tmp/user_code/pubspec.yaml . || true
-          
-          # CRITICAL FIX: Force the local properties file to supply the correct target Android SDK version
-          echo "flutter.compileSdkVersion=34" >> android/local.properties
-          echo "flutter.targetSdkVersion=34" >> android/local.properties
-          echo "flutter.minSdkVersion=21" >> android/local.properties
 
       - name: 6. Align Asset Folders & Intercept Logo
         run: |
@@ -54,9 +49,25 @@ jobs:
           flutter pub get
           dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Skipping icons"
 
-      - name: 8. Compile Your Authentic Mind Spark Code
+      - name: 8. Hardcode Global SDK Overrides & Compile App
         run: |
           yes | flutter doctor --android-licenses || echo "Licenses accepted"
+          
+          # FORCE FIX: This block tells Gradle to override every sub-project package to use compileSdk 34
+          cat <<EOT >> android/build.gradle
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileSdk = 34
+                compileSdkVersion = 34
+            }
+        }
+    }
+}
+EOT
+
           flutter clean
           flutter pub get
           flutter build apk --debug -t lib/main.dart
