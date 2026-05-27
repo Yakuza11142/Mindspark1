@@ -19,7 +19,6 @@ jobs:
 
       - name: 3. Setup Project Paths & Verify Assets
         run: |
-          # Moves into your nested development directory so all steps run in the right place
           cd mind_spark_project
           mkdir -p assets/images
           if [ ! -f "assets/images/app_icon.png" ]; then
@@ -80,11 +79,36 @@ jobs:
       - name: 11. Surgical Manifest Cleaning & Cloud Backup Block
         run: |
           cd mind_spark_project
-          # Safely searches and removes default splash tags without rebuilding the file
-          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i '/android:name="io.flutter.embedding.android.SplashScreenDrawable"/d' {} \;
-          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i '/android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"/d' {} \;
-          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:allowBackup="true"/android:allowBackup="false"/g' {} \;
-          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:fullBackupContent=".*"/android:fullBackupContent="@null"/g' {} \;
+          # Python XML parsing guarantees surgery works even if elements are missing/formatted differently
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          import glob
+          
+          files = glob.glob('android/app/src/main/AndroidManifest.xml')
+          if files:
+              file_path = files[0]
+              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+              tree = ET.parse(file_path)
+              root = tree.getroot()
+              
+              # Locate application element
+              app = root.find('application')
+              if app is not None:
+                  # Set absolute safety properties
+                  app.set('{http://schemas.android.com/apk/res/android}allowBackup', 'false')
+                  if '{http://schemas.android.com/apk/res/android}fullBackupContent' in app.attrib:
+                      del app.attrib['{http://schemas.android.com/apk/res/android}fullBackupContent']
+                  
+                  # Clean old flutter splash tags inside application tag
+                  meta_data_tags = app.findall('meta-data')
+                  for meta in meta_data_tags:
+                      name = meta.get('{http://schemas.android.com/apk/res/android}name')
+                      if name in ['io.flutter.embedding.android.SplashScreenDrawable', 'io.flutter.app.android.SplashScreenUntilFirstFrame']:
+                          app.remove(meta)
+                          
+              tree.write(file_path, encoding='utf-8', xml_declaration=True)
+              print('Surgical manifest cleaning complete successfully.')
+          "
 
       - name: 12. Force Engine First-Frame Blackout
         run: |
@@ -102,7 +126,19 @@ jobs:
       - name: 14. Hardcode the Official App Label "Mind Spark"
         run: |
           cd mind_spark_project
-          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:label=".*"/android:label="Mind Spark"/g' {} \;
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          import glob
+          files = glob.glob('android/app/src/main/AndroidManifest.xml')
+          if files:
+              file_path = files[0]
+              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+              tree = ET.parse(file_path)
+              app = tree.getroot().find('application')
+              if app is not None:
+                  app.set('{http://schemas.android.com/apk/res/android}label', 'Mind Spark')
+              tree.write(file_path, encoding='utf-8', xml_declaration=True)
+          "
 
       - name: 15. Force System Cache Eviction (Package ID Rotation)
         run: |
