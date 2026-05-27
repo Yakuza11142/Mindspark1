@@ -1,68 +1,53 @@
-name: Mind Spark Deep Clean & Build
-on:
-  push:
-    branches: [ main, master, dev ]
-  workflow_dispatch:
+name: mind_spark
+description: "AI TUTOR & AR LAB"
+version: 1.0.0+1
+publish_to: 'none'
 
-jobs:
-  deep_clean_and_build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 1. Pull Your GitHub Repository Files
-        uses: actions/checkout@v4
+environment:
+  sdk: ">=3.4.0 <4.0.0"
 
-      - name: 2. Set Up Java Compiler Environment
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.2
+  flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.6.0
+  google_mobile_ads: ^5.1.0
+  arcore_flutter_plus: ^1.0.2
+  vector_math: ^2.1.4
+  flutter_animate: ^4.5.0
+  intl: ^0.19.0
+  dio: ^5.5.0
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  permission_handler: ^11.3.1
 
-      - name: 3. Set Up Android SDK Components
-        uses: android-actions/setup-android@v3
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+  build_runner: ^2.4.9
 
-      - name: 4. Set Up Matching Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+dependency_overrides:
+  intl: 0.19.0
+  vector_math: 2.1.4
+  meta: 1.11.0
 
-      - name: 5. Rebuild Native Scaffolding Around Your Code
-        run: |
-          mkdir -p /tmp/user_code
-          cp -r lib /tmp/user_code/ || true
-          cp pubspec.yaml /tmp/user_code/ || true
-          flutter create . --overwrite --project-name mind_spark
-          rm -rf lib test
-          cp -r /tmp/user_code/lib . || mkdir -p lib
-          cp /tmp/user_code/pubspec.yaml . || true
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/images/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
-      - name: 6. Align Asset Folders
-        run: |
-          mkdir -p assets/images assets/fonts
-
-      - name: 7. Inject Icon Configurations & Bake Launcher Icons
-        run: |
-          flutter pub get
-          dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Skipping icons"
-
-      - name: 8. Compile Your Authentic Mind Spark Code
-        run: |
-          yes | flutter doctor --android-licenses || echo "Licenses verified"
-          flutter clean
-          flutter pub get
-          
-          # Force compatibility for ARCore (minSdk 24) and App Links (compileSdk 34)
-          export ORG_GRADLE_PROJECT_flutterMinSdkVersion=24
-          export ORG_GRADLE_PROJECT_flutterCompileSdkVersion=34
-          export ORG_GRADLE_PROJECT_flutterTargetSdkVersion=34
-          
-          # Force multidex support for Google Mobile Ads
-          export ORG_GRADLE_PROJECT_multiDexEnabled=true
-
-          flutter build apk --debug -t lib/main.dart
-
-      - name: 9. Save APK Artifact Directly to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: mind-spark-debug-apk
-          path: "build/app/outputs/flutter-apk/app-debug.apk"
+flutter_launcher_icons:
+  android: "launcher_icon"
+  image_path: "assets/images/app_icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
