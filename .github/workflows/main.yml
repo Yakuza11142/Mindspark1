@@ -17,56 +17,75 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 3. Set Up Matching Flutter SDK
+      # CRITICAL FIX: Explicitly provision the Android SDK environment and accept licenses
+      - name: 3. Set Up Android SDK Components
+        uses: android-actions/setup-android@v3
+        with:
+          log-accepted-licenses: true
+
+      - name: 4. Set Up Matching Flutter SDK
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: 4. Rebuild Native Scaffolding Around Your Code
+      - name: 5. Rebuild Native Scaffolding Around Your Code
         run: |
-          # 1. Back up whatever custom files are currently in your online repository
           mkdir -p /tmp/user_code
-          cp -r lib /tmp/user_code/ || echo "No lib directory found in GitHub repository"
-          cp pubspec.yaml /tmp/user_code/ || echo "No pubspec.yaml found in GitHub repository"
+          [ -d "lib" ] && cp -r lib /tmp/user_code/ || echo "No lib directory"
+          [ -f "pubspec.yaml" ] && cp pubspec.yaml /tmp/user_code/ || echo "No pubspec.yaml"
           
-          # 2. Re-generate the missing native Android and iOS folders
           flutter create . --overwrite --project-name mind_spark
-          
-          # 3. Permanently destroy the newly generated template counter code files
           rm -rf lib test
           
-          # 4. Put your authentic repository code files back into the project root
           if [ -d "/tmp/user_code/lib" ]; then
             cp -r /tmp/user_code/lib .
           else
             mkdir -p lib
           fi
-          cp /tmp/user_code/pubspec.yaml .
+          
+          if [ -f "/tmp/user_code/pubspec.yaml" ]; then
+            cp /tmp/user_code/pubspec.yaml .
+          fi
 
-      - name: 5. Align Asset Folders & Intercept Logo
+      - name: 6. Align Asset Folders & Intercept Logo
         run: |
-          # Create missing asset directories expected by your configuration file
           mkdir -p assets/images assets/fonts
+          touch assets/fonts/Inter-Regular.ttf assets/fonts/Inter-Bold.ttf
           
-          # Force empty safety layout targets so the compiler won't crash on empty paths
-          touch assets/images/app_icon.png assets/fonts/Inter-Regular.ttf assets/fonts/Inter-Bold.ttf
-          
-          # Look for any custom PNG image you pushed to your main repository and use it
-          find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" -exec cp {} assets/images/app_icon.png \; || echo "No logo found"
+          CUSTOM_LOGO=$(find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" | head -n 1)
+          if [ -n "$CUSTOM_LOGO" ]; then
+            cp "$CUSTOM_LOGO" assets/images/app_icon.png
+          else
+            # Fail-safe logic if no custom image is found
+            convert -size 512x512 xc:blue assets/images/app_icon.png || touch assets/images/app_icon.png
+          fi
 
-      - name: 6. Bake Custom App Launcher Icons
+      - name: 7. Inject Icon Configurations & Bake Launcher Icons
         run: |
+          if ! grep -q "flutter_launcher_icons:" pubspec.yaml; then
+            flutter pub add --dev flutter_launcher_icons
+            cat <<EOT >> pubspec.yaml
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+EOT
+          fi
           flutter pub get
-          flutter pub run flutter_launcher_icons || echo "Custom icon bake skipped"
+          dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Icon generation skipped"
 
-      - name: 7. Compile Your Authentic Mind Spark Code
+      # FIXED COMPILATION: Automatically accepts licenses before triggering build
+      - name: 8. Compile Your Authentic Mind Spark Code
         run: |
+          yes | flutter doctor --android-licenses || echo "Licenses already accepted"
           flutter clean
           flutter pub get
           flutter build apk --debug -t lib/main.dart
 
-      - name: 8. Save APK Artifact Directly to GitHub
+      - name: 9. Save APK Artifact Directly to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-debug-apk
