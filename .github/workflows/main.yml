@@ -26,7 +26,7 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: 5. Rebuild Native Scaffolding Around Your Code
+      - name: 5. Rebuild Native Scaffolding & Patch Android Properties
         run: |
           mkdir -p /tmp/user_code
           cp -r lib /tmp/user_code/ || true
@@ -37,6 +37,11 @@ jobs:
           
           cp -r /tmp/user_code/lib . || mkdir -p lib
           cp /tmp/user_code/pubspec.yaml . || true
+          
+          # CRITICAL FIX: Force the local properties file to supply the correct target Android SDK version
+          echo "flutter.compileSdkVersion=34" >> android/local.properties
+          echo "flutter.targetSdkVersion=34" >> android/local.properties
+          echo "flutter.minSdkVersion=21" >> android/local.properties
 
       - name: 6. Align Asset Folders & Intercept Logo
         run: |
