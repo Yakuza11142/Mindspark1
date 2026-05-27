@@ -50,7 +50,13 @@ jobs:
       - name: 8. Enforce Global Android SDK Compilation Parameters
         run: |
           yes | flutter doctor --android-licenses || echo "Licenses verified"
-          echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdk = 34; compileSdkVersion = 34 } } } }" >> android/build.gradle
+          
+          # CLEAR OLD PROPERTY: Erase the previous broken afterEvaluate block completely
+          git checkout android/build.gradle || true
+          
+          # DIRECT OVERRIDE: Forces every plugin to use compileSdk 34 instantly during initialization
+          echo "subprojects { project.plugins.configureEach { id -> if (id.toString().contains('android')) { project.android { compileSdk = 34; compileSdkVersion = 34 } } } }" >> android/build.gradle
+          
           flutter clean
           flutter pub get
           flutter build apk --debug -t lib/main.dart
