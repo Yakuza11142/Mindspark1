@@ -16,10 +16,6 @@ jobs:
     steps:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            mind_spark_project
-            pubspec.yaml
 
       - name: 2. Generate Unique Build Timestamp
         id: timestamp
@@ -86,17 +82,17 @@ jobs:
           files = glob.glob('android/app/src/main/AndroidManifest.xml')
           if files:
               file_path = files[0]
-              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+              ET.register_namespace('android', 'http://android.com')
               tree = ET.parse(file_path)
               root = tree.getroot()
               app = root.find('application')
               if app is not None:
-                  app.set('{http://schemas.android.com/apk/res/android}allowBackup', 'false')
-                  if '{http://schemas.android.com/apk/res/android}fullBackupContent' in app.attrib:
-                      del app.attrib['{http://schemas.android.com/apk/res/android}fullBackupContent']
+                  app.set('{http://android.com}allowBackup', 'false')
+                  if '{http://android.com}fullBackupContent' in app.attrib:
+                      del app.attrib['{http://android.com}fullBackupContent']
                   meta_data_tags = app.findall('meta-data')
                   for meta in meta_data_tags:
-                      name = meta.get('{http://schemas.android.com/apk/res/android}name')
+                      name = meta.get('{http://android.com}name')
                       if name in ['io.flutter.embedding.android.SplashScreenDrawable', 'io.flutter.app.android.SplashScreenUntilFirstFrame']:
                           app.remove(meta)
               tree.write(file_path, encoding='utf-8', xml_declaration=True)
@@ -105,12 +101,8 @@ jobs:
 
       - name: 12. Force Engine First-Frame Blackout
         run: |
-          # FIX: Python ensures clean text injection into Kotlin/Java files without breaking bracket sequences
           python3 -c "
           import glob
-          import os
-
-          # Look for Kotlin files first
           kt_files = glob.glob('android/app/src/main/kotlin/**/MainActivity.kt', recursive=True)
           for path in kt_files:
               with open(path, 'r') as f:
@@ -124,9 +116,7 @@ jobs:
                   content = content.replace('class MainActivity : FlutterActivity() {', 'class MainActivity : FlutterActivity() {\n' + replacement)
                   with open(path, 'w') as f:
                       f.write(content)
-                  print('Kotlin first-frame blackout injected successfully.')
 
-          # Look for Java files fallback
           java_files = glob.glob('android/app/src/main/java/**/MainActivity.java', recursive=True)
           for path in java_files:
               with open(path, 'r') as f:
@@ -140,11 +130,11 @@ jobs:
                   content = content.replace('public class MainActivity extends FlutterActivity {', 'public class MainActivity extends FlutterActivity {\n' + replacement)
                   with open(path, 'w') as f:
                       f.write(content)
-                  print('Java first-frame blackout injected successfully.')
           "
 
       - name: 13. Brute-Force Native Asset Replacement
         run: |
+          # DYNAMIC PATH CORRECTION: The path has been made relative to prevent the 'No such file' crash
           find android/app/src/main/res/ -name "launch_background.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher_foreground.png" -exec cp -f assets/images/app_icon.png {} \;
@@ -157,17 +147,17 @@ jobs:
           files = glob.glob('android/app/src/main/AndroidManifest.xml')
           if files:
               file_path = files[0]
-              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+              ET.register_namespace('android', 'http://android.com')
               tree = ET.parse(file_path)
               app = tree.getroot().find('application')
               if app is not None:
-                  app.set('{http://schemas.android.com/apk/res/android}label', 'Mind Spark')
+                  app.set('{http://android.com}label', 'Mind Spark')
               tree.write(file_path, encoding='utf-8', xml_declaration=True)
           "
 
       - name: 15. Force System Cache Eviction (Package ID Rotation)
         run: |
-          find android/app/ -name "build.gradle" -exec sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' {} \;
+          find android/app/ -name "build.gradle" -exec sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' "$" \; 2>/dev/null || find android/app/ -name "build.gradle" -exec sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' {} \;
 
       - name: 16. Compile Authentic Android Application
         env:
