@@ -17,15 +17,15 @@ jobs:
         id: timestamp
         run: echo "NOW=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: 3. Setup Fallback Assets Map
+      - name: 3. Setup Layout Assets Map
         run: |
-          # Automatically creates the missing paths revealed in your files view
-          mkdir -p assets/images
+          # Creates the asset path inside your subfolder to align with your project structure
+          mkdir -p mind_spark_project/assets/images
           
-          # If a local logo doesn't exist yet, this injects a clean temporary template icon
-          if [ ! -f "assets/images/app_icon.png" ]; then
+          # Downloads a fallback graphic if app_icon.png isn't manually pushed yet
+          if [ ! -f "mind_spark_project/assets/images/app_icon.png" ]; then
             echo "Generating fallback build graphic..."
-            curl -s -o assets/images/app_icon.png "https://pub.dev"
+            curl -s -o mind_spark_project/assets/images/app_icon.png "https://pub.dev"
           fi
 
       - name: 4. Set Up Clean Java Environment (No Cache)
@@ -47,28 +47,23 @@ jobs:
           rm -rf ~/.dart-tool/
           rm -rf ~/.pub-cache/
 
-      - name: 7. Backup Your Authentic Code and Custom Assets
+      - name: 7. Backup Project Code and Assets
         run: |
           mkdir -p /tmp/user_code
-          
-          # Smart Path Discovery: Safely finds your dart code whether nested or at the root
-          if [ -d "mind_spark_project/lib" ]; then
-            cp -r mind_spark_project/lib /tmp/user_code/lib
-            cp mind_spark_project/pubspec.yaml /tmp/user_code/pubspec.yaml || cp pubspec.yaml /tmp/user_code/pubspec.yaml
-          else
-            cp -r lib /tmp/user_code/ || mkdir -p /tmp/user_code/lib
-            cp pubspec.yaml /tmp/user_code/ || true
-          fi
-          cp -r assets /tmp/user_code/ || true
+          # Safely backs up your specific subfolder structure
+          cp -r mind_spark_project/lib /tmp/user_code/lib || mkdir -p /tmp/user_code/lib
+          cp pubspec.yaml /tmp/user_code/pubspec.yaml || cp mind_spark_project/pubspec.yaml /tmp/user_code/pubspec.yaml
+          cp -r mind_spark_project/assets /tmp/user_code/assets
 
       - name: 8. Regenerate Clean Native Scaffolding
         run: |
           flutter create . --overwrite --project-name mind_spark
           rm -rf lib test
           
-          cp -r /tmp/user_code/lib . || mkdir -p lib
+          # Perfectly restores files into the compiled workspace root
+          cp -r /tmp/user_code/lib .
           cp /tmp/user_code/pubspec.yaml .
-          cp -r /tmp/user_code/assets . || mkdir -p assets/images
+          cp -r /tmp/user_code/assets .
 
       - name: 9. Inject Flash Prevention Configurations
         run: |
