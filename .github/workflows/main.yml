@@ -9,9 +9,17 @@ jobs:
   deep_clean_and_build:
     runs-on: ubuntu-latest
     
+    defaults:
+      run:
+        working-directory: mind_spark_project
+
     steps:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            mind_spark_project
+            pubspec.yaml
 
       - name: 2. Generate Unique Build Timestamp
         id: timestamp
@@ -19,7 +27,6 @@ jobs:
 
       - name: 3. Setup Project Paths & Verify Assets
         run: |
-          cd mind_spark_project
           mkdir -p assets/images
           if [ ! -f "assets/images/app_icon.png" ]; then
             echo "Generating fallback build graphic..."
@@ -41,7 +48,6 @@ jobs:
 
       - name: 6. Non-Destructive Cache Cleansing
         run: |
-          cd mind_spark_project
           flutter clean
           rm -rf .dart-tool/
           rm -rf .pub-cache/
@@ -49,13 +55,11 @@ jobs:
 
       - name: 7. Fetch Packages & Add Splash Engine
         run: |
-          cd mind_spark_project
           flutter pub get
           flutter pub add flutter_native_splash --dev
 
       - name: 8. Inject Flash Prevention Configurations
         run: |
-          cd mind_spark_project
           cat << 'EOF' > flutter_native_splash.yaml
           flutter_native_splash:
             color: "#000000"
@@ -67,65 +71,86 @@ jobs:
 
       - name: 9. Run Your Custom Code Generation (Build Runner)
         run: |
-          cd mind_spark_project
           dart run build_runner build --delete-conflicting-outputs || echo "No builders needed"
 
       - name: 10. Hard-Bake Your Custom Logo Splash Screen & Icons
         run: |
-          cd mind_spark_project
           dart run flutter_native_splash:create --path=flutter_native_splash.yaml
           dart run flutter_launcher_icons --file=pubspec.yaml || echo "Icons complete"
 
       - name: 11. Surgical Manifest Cleaning & Cloud Backup Block
         run: |
-          cd mind_spark_project
-          # Python XML parsing guarantees surgery works even if elements are missing/formatted differently
           python3 -c "
           import xml.etree.ElementTree as ET
           import glob
-          
           files = glob.glob('android/app/src/main/AndroidManifest.xml')
           if files:
               file_path = files[0]
               ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
               tree = ET.parse(file_path)
               root = tree.getroot()
-              
-              # Locate application element
               app = root.find('application')
               if app is not None:
-                  # Set absolute safety properties
                   app.set('{http://schemas.android.com/apk/res/android}allowBackup', 'false')
                   if '{http://schemas.android.com/apk/res/android}fullBackupContent' in app.attrib:
                       del app.attrib['{http://schemas.android.com/apk/res/android}fullBackupContent']
-                  
-                  # Clean old flutter splash tags inside application tag
                   meta_data_tags = app.findall('meta-data')
                   for meta in meta_data_tags:
                       name = meta.get('{http://schemas.android.com/apk/res/android}name')
                       if name in ['io.flutter.embedding.android.SplashScreenDrawable', 'io.flutter.app.android.SplashScreenUntilFirstFrame']:
                           app.remove(meta)
-                          
               tree.write(file_path, encoding='utf-8', xml_declaration=True)
-              print('Surgical manifest cleaning complete successfully.')
+              print('Surgical manifest cleaning completed.')
           "
 
       - name: 12. Force Engine First-Frame Blackout
         run: |
-          cd mind_spark_project
-          find android/app/src/main/ -name "MainActivity.kt" -exec sed -i '/class MainActivity/a\    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        super.onCreate(savedInstanceState)\n        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))\n    }' {} \;
-          find android/app/src/main/ -name "MainActivity.java" -exec sed -i '/public class MainActivity/a\    @Override\n    protected void onCreate(android.os.Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));\n    }' {} \;
+          # FIX: Python ensures clean text injection into Kotlin/Java files without breaking bracket sequences
+          python3 -c "
+          import glob
+          import os
+
+          # Look for Kotlin files first
+          kt_files = glob.glob('android/app/src/main/kotlin/**/MainActivity.kt', recursive=True)
+          for path in kt_files:
+              with open(path, 'r') as f:
+                  content = f.read()
+              if 'override fun onCreate' not in content:
+                  replacement = '''    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
+              }'''
+                  content = content.replace('class MainActivity: FlutterActivity() {', 'class MainActivity: FlutterActivity() {\n' + replacement)
+                  content = content.replace('class MainActivity : FlutterActivity() {', 'class MainActivity : FlutterActivity() {\n' + replacement)
+                  with open(path, 'w') as f:
+                      f.write(content)
+                  print('Kotlin first-frame blackout injected successfully.')
+
+          # Look for Java files fallback
+          java_files = glob.glob('android/app/src/main/java/**/MainActivity.java', recursive=True)
+          for path in java_files:
+              with open(path, 'r') as f:
+                  content = f.read()
+              if 'protected void onCreate' not in content:
+                  replacement = '''    @Override
+              protected void onCreate(android.os.Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));
+              }'''
+                  content = content.replace('public class MainActivity extends FlutterActivity {', 'public class MainActivity extends FlutterActivity {\n' + replacement)
+                  with open(path, 'w') as f:
+                      f.write(content)
+                  print('Java first-frame blackout injected successfully.')
+          "
 
       - name: 13. Brute-Force Native Asset Replacement
         run: |
-          cd mind_spark_project
           find android/app/src/main/res/ -name "launch_background.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher_foreground.png" -exec cp -f assets/images/app_icon.png {} \;
 
       - name: 14. Hardcode the Official App Label "Mind Spark"
         run: |
-          cd mind_spark_project
           python3 -c "
           import xml.etree.ElementTree as ET
           import glob
@@ -142,7 +167,6 @@ jobs:
 
       - name: 15. Force System Cache Eviction (Package ID Rotation)
         run: |
-          cd mind_spark_project
           find android/app/ -name "build.gradle" -exec sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' {} \;
 
       - name: 16. Compile Authentic Android Application
@@ -150,7 +174,6 @@ jobs:
           ORG_GRADLE_PROJECT_flutterCompileSdkVersion: "34"
           ORG_GRADLE_PROJECT_flutterTargetSdkVersion: "34"
         run: |
-          cd mind_spark_project
           yes | flutter doctor --android-licenses || echo "Licenses verified"
           flutter build apk --debug --no-build-cache -t lib/main.dart
 
