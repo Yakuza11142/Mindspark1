@@ -31,10 +31,8 @@ jobs:
           mkdir -p /tmp/user_code
           cp -r lib /tmp/user_code/ || true
           cp pubspec.yaml /tmp/user_code/ || true
-          
           flutter create . --overwrite --project-name mind_spark
           rm -rf lib test
-          
           cp -r /tmp/user_code/lib . || mkdir -p lib
           cp /tmp/user_code/pubspec.yaml . || true
 
@@ -49,25 +47,10 @@ jobs:
           flutter pub get
           dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Skipping icons"
 
-      - name: 8. Hardcode Global SDK Overrides & Compile App
+      - name: 8. Enforce Global Android SDK Compilation Parameters
         run: |
-          yes | flutter doctor --android-licenses || echo "Licenses accepted"
-          
-          # FORCE FIX: This block tells Gradle to override every sub-project package to use compileSdk 34
-          cat <<EOT >> android/build.gradle
-
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                compileSdk = 34
-                compileSdkVersion = 34
-            }
-        }
-    }
-}
-EOT
-
+          yes | flutter doctor --android-licenses || echo "Licenses verified"
+          echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdk = 34; compileSdkVersion = 34 } } } }" >> android/build.gradle
           flutter clean
           flutter pub get
           flutter build apk --debug -t lib/main.dart
