@@ -17,11 +17,8 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # CRITICAL FIX: Explicitly provision the Android SDK environment and accept licenses
       - name: 3. Set Up Android SDK Components
         uses: android-actions/setup-android@v3
-        with:
-          log-accepted-licenses: true
 
       - name: 4. Set Up Matching Flutter SDK
         uses: subosito/flutter-action@v2
@@ -32,55 +29,29 @@ jobs:
       - name: 5. Rebuild Native Scaffolding Around Your Code
         run: |
           mkdir -p /tmp/user_code
-          [ -d "lib" ] && cp -r lib /tmp/user_code/ || echo "No lib directory"
-          [ -f "pubspec.yaml" ] && cp pubspec.yaml /tmp/user_code/ || echo "No pubspec.yaml"
+          cp -r lib /tmp/user_code/ || true
+          cp pubspec.yaml /tmp/user_code/ || true
           
           flutter create . --overwrite --project-name mind_spark
           rm -rf lib test
           
-          if [ -d "/tmp/user_code/lib" ]; then
-            cp -r /tmp/user_code/lib .
-          else
-            mkdir -p lib
-          fi
-          
-          if [ -f "/tmp/user_code/pubspec.yaml" ]; then
-            cp /tmp/user_code/pubspec.yaml .
-          fi
+          cp -r /tmp/user_code/lib . || mkdir -p lib
+          cp /tmp/user_code/pubspec.yaml . || true
 
       - name: 6. Align Asset Folders & Intercept Logo
         run: |
           mkdir -p assets/images assets/fonts
           touch assets/fonts/Inter-Regular.ttf assets/fonts/Inter-Bold.ttf
-          
-          CUSTOM_LOGO=$(find . -maxdepth 1 -name "*.png" ! -name "app_icon.png" | head -n 1)
-          if [ -n "$CUSTOM_LOGO" ]; then
-            cp "$CUSTOM_LOGO" assets/images/app_icon.png
-          else
-            # Fail-safe logic if no custom image is found
-            convert -size 512x512 xc:blue assets/images/app_icon.png || touch assets/images/app_icon.png
-          fi
+          touch assets/images/app_icon.png
 
       - name: 7. Inject Icon Configurations & Bake Launcher Icons
         run: |
-          if ! grep -q "flutter_launcher_icons:" pubspec.yaml; then
-            flutter pub add --dev flutter_launcher_icons
-            cat <<EOT >> pubspec.yaml
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/app_icon.png"
-  remove_alpha_ios: true
-EOT
-          fi
           flutter pub get
-          dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Icon generation skipped"
+          dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Skipping icons"
 
-      # FIXED COMPILATION: Automatically accepts licenses before triggering build
       - name: 8. Compile Your Authentic Mind Spark Code
         run: |
-          yes | flutter doctor --android-licenses || echo "Licenses already accepted"
+          yes | flutter doctor --android-licenses || echo "Licenses accepted"
           flutter clean
           flutter pub get
           flutter build apk --debug -t lib/main.dart
