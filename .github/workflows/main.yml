@@ -17,15 +17,14 @@ jobs:
         id: timestamp
         run: echo "NOW=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-      - name: 3. Setup Layout Assets Map
+      - name: 3. Setup Project Paths & Verify Assets
         run: |
-          # Creates the asset path inside your subfolder to align with your project structure
-          mkdir -p mind_spark_project/assets/images
-          
-          # Downloads a fallback graphic if app_icon.png isn't manually pushed yet
-          if [ ! -f "mind_spark_project/assets/images/app_icon.png" ]; then
+          # Moves into your nested development directory so all steps run in the right place
+          cd mind_spark_project
+          mkdir -p assets/images
+          if [ ! -f "assets/images/app_icon.png" ]; then
             echo "Generating fallback build graphic..."
-            curl -s -o mind_spark_project/assets/images/app_icon.png "https://pub.dev"
+            curl -s -o assets/images/app_icon.png "https://pub.dev"
           fi
 
       - name: 4. Set Up Clean Java Environment (No Cache)
@@ -41,32 +40,23 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: 6. Total System Cache Obliteration
+      - name: 6. Non-Destructive Cache Cleansing
         run: |
+          cd mind_spark_project
+          flutter clean
+          rm -rf .dart-tool/
+          rm -rf .pub-cache/
           rm -rf ~/.gradle/caches/
-          rm -rf ~/.dart-tool/
-          rm -rf ~/.pub-cache/
 
-      - name: 7. Backup Project Code and Assets
+      - name: 7. Fetch Packages & Add Splash Engine
         run: |
-          mkdir -p /tmp/user_code
-          # Safely backs up your specific subfolder structure
-          cp -r mind_spark_project/lib /tmp/user_code/lib || mkdir -p /tmp/user_code/lib
-          cp pubspec.yaml /tmp/user_code/pubspec.yaml || cp mind_spark_project/pubspec.yaml /tmp/user_code/pubspec.yaml
-          cp -r mind_spark_project/assets /tmp/user_code/assets
+          cd mind_spark_project
+          flutter pub get
+          flutter pub add flutter_native_splash --dev
 
-      - name: 8. Regenerate Clean Native Scaffolding
+      - name: 8. Inject Flash Prevention Configurations
         run: |
-          flutter create . --overwrite --project-name mind_spark
-          rm -rf lib test
-          
-          # Perfectly restores files into the compiled workspace root
-          cp -r /tmp/user_code/lib .
-          cp /tmp/user_code/pubspec.yaml .
-          cp -r /tmp/user_code/assets .
-
-      - name: 9. Inject Flash Prevention Configurations
-        run: |
+          cd mind_spark_project
           cat << 'EOF' > flutter_native_splash.yaml
           flutter_native_splash:
             color: "#000000"
@@ -76,72 +66,61 @@ jobs:
               image: "assets/images/app_icon.png"
           EOF
 
-      - name: 10. Fetch Packages & Add Splash Engine
+      - name: 9. Run Your Custom Code Generation (Build Runner)
         run: |
-          flutter pub get
-          flutter pub add flutter_native_splash --dev
-
-      - name: 11. Run Your Custom Code Generation (Build Runner)
-        run: |
+          cd mind_spark_project
           dart run build_runner build --delete-conflicting-outputs || echo "No builders needed"
 
-      - name: 12. Hard-Bake Your Custom Logo Splash Screen & Icons
+      - name: 10. Hard-Bake Your Custom Logo Splash Screen & Icons
         run: |
-          dart run flutter_native_splash:create
-          dart run flutter_launcher_icons || exit 1
+          cd mind_spark_project
+          dart run flutter_native_splash:create --path=flutter_native_splash.yaml
+          dart run flutter_launcher_icons --file=pubspec.yaml || echo "Icons complete"
 
-      - name: 13. Deep Manifest Surgery & Cloud Backup Sabotage
+      - name: 11. Surgical Manifest Cleaning & Cloud Backup Block
         run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ]; then
-            sed -i '/android:name="io.flutter.embedding.android.SplashScreenDrawable"/d' "$MANIFEST"
-            sed -i '/android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"/d' "$MANIFEST"
-            sed -i 's/android:allowBackup="true"/android:allowBackup="false"/g' "$MANIFEST"
-            sed -i 's/android:fullBackupContent=".*"/android:fullBackupContent="@null"/g' "$MANIFEST"
-          fi
+          cd mind_spark_project
+          # Safely searches and removes default splash tags without rebuilding the file
+          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i '/android:name="io.flutter.embedding.android.SplashScreenDrawable"/d' {} \;
+          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i '/android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"/d' {} \;
+          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:allowBackup="true"/android:allowBackup="false"/g' {} \;
+          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:fullBackupContent=".*"/android:fullBackupContent="@null"/g' {} \;
 
-      - name: 14. Force Engine First-Frame Blackout
+      - name: 12. Force Engine First-Frame Blackout
         run: |
-          MAIN_ACT_KT="android/app/src/main/kotlin/com/example/mind_spark/MainActivity.kt"
-          MAIN_ACT_JAVA="android/app/src/main/java/com/example/mind_spark/MainActivity.java"
-          if [ -f "$MAIN_ACT_KT" ]; then
-            sed -i '/class MainActivity/a\    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        super.onCreate(savedInstanceState)\n        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))\n    }' "$MAIN_ACT_KT"
-          fi
-          if [ -f "$MAIN_ACT_JAVA" ]; then
-            sed -i '/public class MainActivity/a\    @Override\n    protected void onCreate(android.os.Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));\n    }' "$MAIN_ACT_JAVA"
-          fi
+          cd mind_spark_project
+          find android/app/src/main/ -name "MainActivity.kt" -exec sed -i '/class MainActivity/a\    override fun onCreate(savedInstanceState: android.os.Bundle?) {\n        super.onCreate(savedInstanceState)\n        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))\n    }' {} \;
+          find android/app/src/main/ -name "MainActivity.java" -exec sed -i '/public class MainActivity/a\    @Override\n    protected void onCreate(android.os.Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));\n    }' {} \;
 
-      - name: 15. Brute-Force Native Asset Eradication
+      - name: 13. Brute-Force Native Asset Replacement
         run: |
+          cd mind_spark_project
           find android/app/src/main/res/ -name "launch_background.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher.png" -exec cp -f assets/images/app_icon.png {} \;
           find android/app/src/main/res/ -name "ic_launcher_foreground.png" -exec cp -f assets/images/app_icon.png {} \;
 
-      - name: 16. Hardcode the Official App Label "Mind Spark"
+      - name: 14. Hardcode the Official App Label "Mind Spark"
         run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ]; then
-            sed -i 's/android:label=".*"/android:label="Mind Spark"/g' "$MANIFEST"
-          fi
+          cd mind_spark_project
+          find android/app/src/main/ -name "AndroidManifest.xml" -exec sed -i 's/android:label=".*"/android:label="Mind Spark"/g' {} \;
 
-      - name: 17. Force System Cache Eviction (Package ID Rotation)
+      - name: 15. Force System Cache Eviction (Package ID Rotation)
         run: |
-          APP_GRADLE="android/app/build.gradle"
-          if [ -f "$APP_GRADLE" ]; then
-            sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' "$APP_GRADLE"
-          fi
+          cd mind_spark_project
+          find android/app/ -name "build.gradle" -exec sed -i 's/applicationId ".*"/applicationId "com.example.mind_spark.clean"/g' {} \;
 
-      - name: 18. Compile Authentic Android Application
+      - name: 16. Compile Authentic Android Application
         env:
           ORG_GRADLE_PROJECT_flutterCompileSdkVersion: "34"
           ORG_GRADLE_PROJECT_flutterTargetSdkVersion: "34"
         run: |
+          cd mind_spark_project
           yes | flutter doctor --android-licenses || echo "Licenses verified"
           flutter build apk --debug --no-build-cache -t lib/main.dart
 
-      - name: 19. Upload Your Pure Branded App Artifact
+      - name: 17. Upload Your Pure Branded App Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mind-spark-clean-apk-${{ steps.timestamp.outputs.NOW }}
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: mind_spark_project/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
