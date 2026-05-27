@@ -47,19 +47,12 @@ jobs:
           flutter pub get
           dart run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Skipping icons"
 
-      - name: 8. Enforce Global Android SDK Compilation Parameters
+      - name: 8. Compile Your Authentic Mind Spark Code
         run: |
           yes | flutter doctor --android-licenses || echo "Licenses verified"
-          
-          # CLEAR OLD PROPERTY: Erase the previous broken afterEvaluate block completely
-          git checkout android/build.gradle || true
-          
-          # DIRECT OVERRIDE: Forces every plugin to use compileSdk 34 instantly during initialization
-          echo "subprojects { project.plugins.configureEach { id -> if (id.toString().contains('android')) { project.android { compileSdk = 34; compileSdkVersion = 34 } } } }" >> android/build.gradle
-          
           flutter clean
           flutter pub get
-          flutter build apk --debug -t lib/main.dart
+          flutter build apk --debug -t lib/main.dart --android-project-arg="compileSdkVersion=34" --android-project-arg="targetSdkVersion=34"
 
       - name: 9. Save APK Artifact Directly to GitHub
         uses: actions/upload-artifact@v4
