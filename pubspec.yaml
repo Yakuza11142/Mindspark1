@@ -7,44 +7,30 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-  provider: ^6.1.2
-  flutter_dotenv: ^5.1.0
-  supabase_flutter: ^2.6.0
-  google_mobile_ads: ^5.1.0
-  arcore_flutter_plus: ^1.0.2
-  vector_math: ^2.1.4
-  flutter_animate: ^4.5.0
-  intl: ^0.19.0
-  dio: ^5.5.0
-  http: ^1.2.1
-  shared_preferences: ^2.2.3
-  permission_handler: ^11.3.1
+  flutter: { sdk: flutter }
+  provider:
+  supabase_flutter:
+  flutter_dotenv:
+  dio:
+  arcore_flutter_plus:
+  vector_math:
+  flutter_animate:
+  google_mobile_ads:
+  intl:
+  permission_handler:
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
-  build_runner: ^2.4.9
-
-dependency_overrides:
-  intl: 0.19.0
-  vector_math: 2.1.4
-  meta: 1.11.0
+  flutter_test: { sdk: flutter }
+  flutter_lints:
+  flutter_launcher_icons:
+  build_runner:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/
-    - assets/images/
+  assets: ["assets/images/"]
   fonts:
     - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
+      fonts: [{asset: "assets/fonts/Inter-Regular.ttf"}, {asset: "assets/fonts/Inter-Bold.ttf", weight: 700}]
 
 flutter_launcher_icons:
   android: "launcher_icon"
