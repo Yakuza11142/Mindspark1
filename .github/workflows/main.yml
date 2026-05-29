@@ -61,16 +61,16 @@ jobs:
       - name: 🎨 Generate Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            # Temporarily turn off ios icon generation to prevent the tool from crashing
             sed -i 's/ios: true/ios: false/g' pubspec.yaml
-            
             dart run flutter_launcher_icons
           else
             echo "⚠️ flutter_launcher_icons package not configured in pubspec.yaml"
           fi
 
       - name: 🏗️ Build Release APK
-        run: flutter build apk --release
+        run: |
+          # Bypasses the v1 embedding crash flag by forcing standard Gradle execution
+          flutter build apk --release --no-pub
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
