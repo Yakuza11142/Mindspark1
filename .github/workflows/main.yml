@@ -13,187 +13,229 @@ permissions:
 
 jobs:
   # =========================================================================
-  # 🤖 JOB 1: AUTOMATED MULTI-PLATFORM COMPILATION MATRIX (19 EXPLICIT STEPS)
+  # 🤖 JOB 1: ANDROID COMPILATION (APK + APP BUNDLE AAB) - RUNS ON LINUX
   # =========================================================================
-  build_all_platforms:
-    runs-on: macos-latest
-    name: 🚀 Multi-Platform Compilation Matrix
-    
+  build_android:
+    runs-on: ubuntu-latest
+    name: 🤖 Android Pipeline
     steps:
-      - name: 📥 [Step 1/19] Checkout complete repository source tree
+      - name: 📥 Checkout repository source tree
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ☕ [Step 2/19] Initialize Java 17 Temurin Core Environment
+      - name: ☕ Initialize Java 17 Temurin Core Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🦋 [Step 3/19] Mount Flutter 3.22.0 Production Compiler Engine
+      - name: 🦋 Mount Flutter 3.22.0 Compiler
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ [Step 4/19] Run Quantum Structural Environmental Probes
+      - name: ✅ Run Global Repository Path Scanner
         run: |
-          echo "======================================================================================"
-          echo "🔬 QUANTUM DIAGNOSTICS: RUNNING GLOBAL REPOSITORY LAYER MAPPER AND SCANNER..."
-          echo "======================================================================================"
-          flutter --version
-          dart --version
-          java -version
-          echo "=== LOCATING PUBSPEC MAP ==="
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then
-            echo "❌ CRITICAL CONFIGURATION FAULT: No pubspec.yaml found anywhere in the repository!" && exit 1
-          fi
+          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
           PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
-          echo "Found project root folder directory path context at: $PROJECT_ROOT"
-          ls -la "$PROJECT_ROOT"
 
-      - name: 🔧 [Step 5/19] Force Strict Gradle File System Directory Permissions
+      - name: 🔧 Force Strict Gradle File Permissions
         run: |
-          echo "======================================================================================"
-          echo "⚙️ QUANTUM DIAGNOSTICS: OVERRIDING NATIVE SHELL WRITE AND EXECUTE RIGHTS..."
-          echo "======================================================================================"
-          find . -name "gradlew" -exec chmod +x {} \; || echo "No gradlew script tracking found"
+          find . -name "gradlew" -exec chmod +x {} \; || echo "Deferred"
           find . -type d -exec chmod 755 {} \;
 
-      - name: 🧹 [Step 6/19] Deep Purge Local Project Target Cache Configurations
+      - name: 🧹 Deep Purge Project Cache Configurations
         run: |
-          echo "======================================================================================"
-          echo "🧹 QUANTUM DIAGNOSTICS: ERASING OBSOLETE GRADLE AND FLUTTER DERIVED STORAGE CORES..."
-          echo "======================================================================================"
           cd ${{ env.PROJECT_ROOT }}
           flutter clean
 
-      - name: 📦 [Step 7/19] Fetch All Project Package Dependency Tree Maps
+      - name: 📦 Fetch All Project Package Dependencies
         run: |
-          echo "======================================================================================"
-          echo "📦 QUANTUM DIAGNOSTICS: ASSEMBLING COMPILATION DEPLOYMENT PACKAGES CORE GRAPH..."
-          echo "======================================================================================"
           cd ${{ env.PROJECT_ROOT }}
           flutter pub get
 
-      - name: 🎨 [Step 8/19] Global Repository Scanning Logo Interception Matrix
+      - name: 🎨 Global Logo Interception Matrix
         run: |
-          echo "======================================================================================"
-          echo "🎨 QUANTUM DIAGNOSTICS: DISCOVERING BRAND LOGOS ACROSS THE ENTIRE REPOSITORY TREE..."
-          echo "======================================================================================"
           cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
-          
-          echo "Searching for your visual file match..."
           LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
-          
           if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
-            echo "🎯 SUCCESS: Discovered true application logo file located at: $LOGO_PATH"
             cp "$LOGO_PATH" assets/images/app_icon.png
-            echo "✅ COPY COMPLETED: Instantly bound asset image to project graphics tree mapping layer."
           else
-            echo "❌ CRITICAL STRUCTURAL ABORT: Logo file missing anywhere in this repository!"
             exit 1
           fi
 
-      - name: 🔧 [Step 9/19] Run Background Code Generation Serialization Tools
+      - name: 🔧 Run Code Generation Serialization Tools
         run: |
           cd ${{ env.PROJECT_ROOT }}
           if grep -q "build_runner" pubspec.yaml; then
             flutter pub run build_runner build --delete-conflicting-outputs
           fi
 
-      - name: 📋 [Step 10/19] Analyze Application Syntaxes Structure Safely
+      - name: 📋 Analyze Application Syntaxes Structure
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter analyze --no-pub --no-fatal-infos
 
-      - name: 🔐 [Step 11/19] Bake Branded Logo into Native Assets Structures
+      - name: 🔐 Bake Branded Logo into Native Assets
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons
-          else
-            echo "❌ CRITICAL STRUCTURAL FAULT: Missing flutter_launcher_icons block inside your pubspec.yaml!"
-            exit 1
-          fi
+          flutter pub run flutter_launcher_icons
 
-      - name: 🏗️ [Step 12/19] BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
+      - name: 🏗️ BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          if [ -d "android" ]; then
-            flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
-          else
-            echo "❌ ARCHITECTURAL CRASH: Native android/ folder was not initialized in your project folder root!" && exit 1
-          fi
+          flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
 
-      - name: 🏗️ [Step 13/19] BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
+      - name: 🏗️ BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
 
-      - name: 🏗️ [Step 14/19] BUILD APPLE iOS ENCRYPTED CODE BUNDLE PAYLOAD
+      - name: 📂 Stage and Sync Verified Target Deliverables
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/android_distribution
+          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.apk
+          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.aab
+
+      - name: 📤 Upload Direct Device Phone Installer Package (APK)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-Android-APK
+          path: android_distribution/Mind_Spark.apk
+          retention-days: 14
+
+      - name: 📤 Upload Play Store Distribution Artifact (AAB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-PlayStore-AAB
+          path: android_distribution/Mind_Spark.aab
+          retention-days: 14
+
+  # =========================================================================
+  # 🍏 JOB 2: APPLE iOS & macOS COMPILATION - RUNS ON MACOS
+  # =========================================================================
+  build_apple:
+    runs-on: macos-latest
+    name: 🍏 Apple Pipeline
+    steps:
+      - name: 📥 Checkout repository source tree
+        uses: actions/checkout@v4
+
+      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: ✅ Run Global Repository Path Scanner
+        run: |
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
+          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+
+      - name: 📦 Fetch All Project Package Dependencies
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          flutter pub get
+
+      - name: 🍏 Initialize Native CocoaPods Workspace
         run: |
           cd ${{ env.PROJECT_ROOT }}
           if [ -d "ios" ]; then
             cd ios && pod repo update && pod install && cd ..
-            flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
-          else
-            echo "⚠️ Skipping iOS Target: native ios/ platform structural subfolder missing inside your app code."
           fi
 
-      - name: 🏗️ [Step 15/19] BUILD NATIVE MAC DESKTOP PRODUCTION BUNDLE
+      - name: 🎨 Bake Custom Branded Logo Assets
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          mkdir -p assets/images
+          LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
+          if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
+            cp "$LOGO_PATH" assets/images/app_icon.png
+          fi
+          flutter pub run flutter_launcher_icons
+
+      - name: 🏗️ COMPILE APPLE iOS ENCRYPTED CODE BUNDLE
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          if [ -d "ios" ]; then
+            flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
+          fi
+
+      - name: 🏗️ COMPILE NATIVE MAC DESKTOP PRODUCTION BUNDLE
         run: |
           cd ${{ env.PROJECT_ROOT }}
           if [ -d "macos" ]; then
             flutter config --enable-macos-desktop
             flutter build macos --release --obfuscate --split-debug-info=build/macos-debug-info/
-          else
-            echo "⚠️ Skipping macOS Target: native macos/ platform structural subfolder missing inside your app code."
           fi
 
-      - name: 🏗️ [Step 16/19] BUILD COMPACT COMPILED PRODUCTION WEB ARCHITECTURE
+      - name: 📂 Stage Apple Workspace Deliverables
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/apple_distribution
+          if [ -d "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_iOS.app; fi
+          if [ -d "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_Mac.app; fi
+
+      - name: 📤 Upload Native iOS App Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-iOS-Container
+          path: apple_distribution/Mind_Spark_iOS.app
+          retention-days: 14
+
+      - name: 📤 Upload Standalone Native macOS Desktop Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-macOS-Desktop
+          path: apple_distribution/Mind_Spark_Mac.app
+          retention-days: 14
+
+  # =========================================================================
+  # 🌐 JOB 3: WEB PORTAL RUNTIME TARGET COMPILE - RUNS ON LINUX
+  # =========================================================================
+  build_web:
+    runs-on: ubuntu-latest
+    name: 🌐 Web Pipeline
+    steps:
+      - name: 📥 Checkout repository source tree
+        uses: actions/checkout@v4
+
+      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: ✅ Run Global Repository Path Scanner
+        run: |
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
+          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+
+      - name: 📦 Fetch All Project Package Dependencies
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          if [ -d "web" ]; then
-            flutter build web --release --web-renderer auto
-          else
-            echo "⚠️ Skipping Web Target: native web/ platform structural subfolder missing inside your app code."
-          fi
+          flutter pub get
 
-      - name: 📂 [Step 17/19] Stage and Organize Verified Binary Target Deliverables Folder Matrix
+      - name: 🏗️ BUILD COMPACT COMPILED PRODUCTION WEB ARCHITECTURE
         run: |
-          echo "======================================================================================"
-          echo "🔍 QUANTUM DIAGNOSTICS: COLLECTING ALL SUCCESSFUL MULTI-PLATFORM TARGET OUTPUTS..."
-          echo "======================================================================================"
-          mkdir -p $GITHUB_WORKSPACE/release_distribution
-          
-          # android copy operations
-          if [ -f "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" ]; then
-            cp "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" $GITHUB_WORKSPACE/release_distribution/Mind_Spark.apk
-            cp "${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab" $GITHUB_WORKSPACE/release_distribution/Mind_Spark.aab
-            cd $GITHUB_WORKSPACE/release_distribution
-            sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
-          fi
-          
-          # ios / mac / web dynamic bundle capture
-          if [ -d "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" $GITHUB_WORKSPACE/release_distribution/Mind_Spark_iOS.app; fi
-          if [ -d "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" $GITHUB_WORKSPACE/release_distribution/Mind_Spark_Mac.app; fi
-          if [ -d "${{ env.PROJECT_ROOT }}/build/web" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/web" $GITHUB_WORKSPACE/release_distribution/web_build_package; fi
+          cd ${{ env.PROJECT_ROOT }}
+          flutter build web --release --web-renderer auto
 
-      - name: 📋 [Step 18/19] Compile Comprehensive Multi-Platform Production Manifest Documentation Logs
-        run: |
-          cat > $GITHUB_WORKSPACE/release_distribution/BUILD_MANIFEST.txt << 'EOF'
-          ╔══════════════════════════════════════════════════════════════╗
-          ║   MIND SPARK - NATIVE COMPILATION PIPELINE SUCCESS LOGS      ║
-          ╚══════════════════════════════════════════════════════════════╝
-          📊 SCAN COMPLETE: THE PIPELINE SCANNER LOCATED YOUR CODE ROOT AND MASTER LOGO AUTOMATICALLY!
-          
-          📦 ARTIFACT DEPLOYMENT STAGE REPORT:
-          ├─ Android Installer: Mind_Spark.apk
-          ├─ Android Play Store: Mind_Spark.aab
+      - name: 📤 Upload Production Web Engine Static Site Folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-Web-Release
+          path: ${{ env.PROJECT_ROOT }}/build/web/
+          retention-days: 14
