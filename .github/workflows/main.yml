@@ -1,218 +1,297 @@
+```yaml
 name: Mind Spark Production Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: read
+  contents: read
 
 jobs:
-  # =========================================================================
-  # 🤖 JOB 1: MOBILE SYSTEMS PIPELINE (GROUPS ANDROID + iOS TOGETHER ON MAC)
-  # =========================================================================
-  build_mobile:
-    runs-on: macos-latest
-    name: 📱 Build Mobile Core (Android + iOS)
-    steps:
-      - name: 📥 Checkout repository source tree
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: ☕ Initialize Java 17 Temurin Core Environment
+  # =========================================================================
+  # 📱 ANDROID BUILD
+  # =========================================================================
+  build_android:
+    name: 📱 Build Android APK + AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          distribution: temurin
+          java-version: 17
+          cache: gradle
 
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
+          flutter-version: 3.22.0
+          channel: stable
           cache: true
 
-      - name: ✅ Execute Global Repository Path Scanner
+      - name: 📦 Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: 🔍 Locate Flutter Project
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
-          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
 
-      - name: 🔧 Force Strict Gradle File Permissions
-        run: |
-          find . -name "gradlew" -exec chmod +x {} \; || echo "Bypassed"
-          find . -type d -exec chmod 755 {} \;
-
-      - name: 🧹 Deep Purge Project Cache Configurations
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter clean
-
-      - name: 📦 Fetch All Project Package Dependencies
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub get
-
-      - name: 🎨 High-Density Custom Logo and Env Synchronization Matrix
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          mkdir -p assets/images
-          LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
-          if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
-            cp "$LOGO_PATH" assets/images/app_icon.png
-          else
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "pubspec.yaml not found"
             exit 1
           fi
-          if [ -f "mind_spark_project/.env" ]; then cp "mind_spark_project/.env" .env; fi
 
-      - name: 🔐 Bake Branded Logo into Native Assets
+          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+
+      - name: 📦 Get Flutter Packages
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          flutter pub get
+
+      - name: 🩺 Flutter Doctor
+        run: flutter doctor -v
+
+      - name: 🎨 Setup App Logo
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+
+          mkdir -p assets/images
+
+          LOGO=$(find $GITHUB_WORKSPACE -name "app_logo.png" | head -n 1)
+
+          if [ -z "$LOGO" ]; then
+            echo "app_logo.png not found"
+            exit 1
+          fi
+
+          cp "$LOGO" assets/images/app_icon.png
+
+      - name: 🎨 Generate Launcher Icons
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter pub run flutter_launcher_icons
 
-      - name: 🏗️ BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
+      - name: 🏗️ Build Android APK
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
+          flutter build apk --release
 
-      - name: 🏗️ BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
+      - name: 🏗️ Build Android App Bundle
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
+          flutter build appbundle --release
 
-      - name: 🏗️ COMPILE APPLE iOS ENCRYPTED CODE BUNDLE
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          if [ -d "ios" ]; then
-            cd ios && pod repo update && pod install && cd ..
-            flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
-          fi
-
-      - name: 📂 Stage Mobile Target Deliverables Folder Matrix
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/mobile_distribution
-          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.apk
-          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab" $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.aab
-          if [ -d "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark_iOS.app; fi
-
-      - name: 📤 Upload Direct Device Phone Installer Package (APK)
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Android-APK
-          path: mobile_distribution/Mind_Spark.apk
+          name: Mind-Spark-APK
+          path: ${{ env.PROJECT_ROOT }}/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
-      - name: 📤 Upload Play Store Distribution Artifact (AAB)
+      - name: 📤 Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-PlayStore-AAB
-          path: mobile_distribution/Mind_Spark.aab
+          name: Mind-Spark-AAB
+          path: ${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
-      - name: 📤 Upload Native iOS App Bundle Artifact Archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-iOS-Container
-          path: mobile_distribution/Mind_Spark_iOS.app
-          retention-days: 14
-
   # =========================================================================
-  # 💻 JOB 2: LAPTOP SYSTEMS COMPILATION (WINDOWS STANDALONE APPS)
+  # 💻 WINDOWS DESKTOP BUILD
   # =========================================================================
-  build_desktop_laptops:
+  build_windows:
+    name: 💻 Build Windows Desktop App
     runs-on: windows-latest
-    name: 💻 Build Laptop PC App (.EXE)
+
     steps:
-      - name: 📥 Checkout repository source tree
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
+          flutter-version: 3.22.0
+          channel: stable
           cache: true
 
-      - name: ✅ Execute Global Repository Path Scanner
+      - name: 🔍 Locate Flutter Project
+        shell: powershell
         run: |
           $pubspec = Get-ChildItem -Recurse -Filter "pubspec.yaml" | Select-Object -First 1
-          if ($pubspec -eq $null) { exit 1 }
+
+          if ($pubspec -eq $null) {
+            Write-Host "pubspec.yaml not found"
+            exit 1
+          }
+
           $projectRoot = $pubspec.DirectoryName
+
           echo "PROJECT_ROOT=$projectRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: ⚙️ Unlock Windows Operating Configurations
-        run: |
-          cd "${{ env.PROJECT_ROOT }}"
-          flutter config --enable-windows-desktop
+      - name: ⚙️ Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
 
-      - name: 📦 Fetch All Laptop Project Package Dependencies
+      - name: 📦 Get Flutter Packages
         run: |
           cd "${{ env.PROJECT_ROOT }}"
           flutter pub get
 
-      - name: 🎨 Bake Custom Branded Logo Assets to Windows App Layers
-        shell: powershell
+      - name: 🩺 Flutter Doctor
+        run: flutter doctor -v
+
+      - name: 🏗️ Build Windows App
         run: |
           cd "${{ env.PROJECT_ROOT }}"
-          New-Item -ItemType Directory -Force -Path assets\images
-          $logo = Get-ChildItem -Recurse -Include "image_e1762c49 (1).png","app_logo.png" | Select-Object -First 1
-          if ($logo -ne $null) { Copy-Item $logo.FullName -Destination "assets\images\app_icon.png" }
-          flutter pub run flutter_launcher_icons
+          flutter build windows --release
 
-      - name: 🏗️ BUILD MICROSOFT WINDOWS STANDALONE LAPTOP EXECUTABLE (.EXE)
-        run: |
-          cd "${{ env.PROJECT_ROOT }}"
-          flutter build windows --release --obfuscate --split-debug-info=build/windows-debug-info/
-
-      - name: 📤 Upload Standalone Windows Laptop Executable Installer Package Folder
+      - name: 📤 Upload Windows App
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Windows-Laptop-App
+          name: Mind-Spark-Windows
           path: ${{ env.PROJECT_ROOT }}/build/windows/x64/runner/release/
           retention-days: 30
 
   # =========================================================================
-  # 🌐 JOB 3: WEB PORTAL RUNTIME ARCHITECTURE - RUNS STANDALONE ON LINUX
+  # 🌐 WEB BUILD
   # =========================================================================
-  build_web_portal:
+  build_web:
+    name: 🌐 Build Flutter Web
     runs-on: ubuntu-latest
-    name: 🌐 Build Flutter Web App
+
     steps:
-      - name: 📥 Checkout repository source tree
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
+          flutter-version: 3.22.0
+          channel: stable
           cache: true
 
-      - name: ✅ Execute Global Repository Path Scanner
+      - name: 📦 Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev
+
+      - name: 🔍 Locate Flutter Project
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
+
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "pubspec.yaml not found"
+            exit 1
+          fi
+
           PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
 
-      - name: 📦 Fetch All Project Package Dependencies
+      - name: 📦 Get Flutter Packages
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter pub get
 
-      - name: 🏗️ BUILD FLUTTER WEB COMPACT PRODUCTION ARCHITECTURE (FIXED CRASH)
+      - name: 🩺 Flutter Doctor
+        run: flutter doctor -v
+
+      - name: 🏗️ Build Flutter Web
         run: |
           cd ${{ env.PROJECT_ROOT }}
-          flutter build web --release --web-renderer html --dart-define=FLUTTER_WEB_AUTO_DETECT=false
+          flutter build web --release
 
-      - name: 📤 Upload Production Web Engine Static Site Folder
+      - name: 📤 Upload Web Build
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Web-Release
+          name: Mind-Spark-Web
           path: ${{ env.PROJECT_ROOT }}/build/web/
           retention-days: 30
+
+  # =========================================================================
+  # 🍎 iOS BUILD
+  # =========================================================================
+  build_ios:
+    name: 🍎 Build iOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: 🦋 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.22.0
+          channel: stable
+          cache: true
+
+      - name: 🔍 Locate Flutter Project
+        run: |
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "pubspec.yaml not found"
+            exit 1
+          fi
+
+          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+
+      - name: 📦 Get Flutter Packages
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          flutter pub get
+
+      - name: 🍎 Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+
+      - name: 📦 Install iOS Pods
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+
+          flutter precache --ios
+
+          if [ -d "ios" ]; then
+            cd ios
+            pod install --repo-update
+            cd ..
+          fi
+
+      - name: 🩺 Flutter Doctor
+        run: flutter doctor -v
+
+      - name: 🏗️ Build iOS App
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+
+          if [ -d "ios" ]; then
+            flutter build ios --release --no-codesign
+          fi
+
+      - name: 📤 Upload iOS App
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-iOS
+          path: ${{ env.PROJECT_ROOT }}/build/ios/iphoneos/
+          retention-days: 14
+```
