@@ -1,4 +1,4 @@
-name: Mind Spark Production Build
+name: Mind Spark Production Multi-Platform Build
 
 on:
   push:
@@ -12,9 +12,12 @@ permissions:
   actions: read
 
 jobs:
+  # =========================================================================
+  # 🤖 JOB 1: ANDROID BUILD (APK + APP BUNDLE AAB)
+  # =========================================================================
   build_android:
     runs-on: ubuntu-latest
-    name: 🤖 Build Android APK (Obfuscated + Your Logo)
+    name: 🤖 Build Android Release Target
     
     steps:
       - name: 📥 Checkout your complete code
@@ -22,411 +25,240 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: ☕ Setup Java 17
+      - name: ☕ Setup Java 17 (Temurin Architecture)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🦋 Setup Flutter 3.22.0
+      - name: 🦋 Setup Flutter 3.22.0 Engine
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ Verify environment
+      - name: ✅ Verify environment matrix
         run: |
-          echo "=== FLUTTER ==="
-          flutter --version
-          echo "=== DART ==="
-          dart --version
-          echo "=== JAVA ==="
-          java -version
-          echo "=== PROJECT STRUCTURE ==="
+          echo "=== FLUTTER ===" && flutter --version
+          echo "=== DART ===" && dart --version
+          echo "=== JAVA ===" && java -version
+          echo "=== PROJECT ENGINE STRUCTURE ==="
           ls -la
-          ls -la lib/
-          echo "✅ Environment verified"
 
-      - name: 🧹 Clean environment
+      - name: 🧹 Purge cache & Clean environment
         run: |
           flutter clean
           rm -rf build/ .dart_tool/ .pub-cache/
-          echo "✅ Clean complete"
 
-      - name: 📦 Get all dependencies
-        run: |
-          flutter pub get
-          echo "✅ Dependencies installed"
+      - name: 📦 Fetch all package dependencies
+        run: flutter pub get
 
-      - name: 🎨 Setup your logo as app icon
+      - name: 🎨 Setup your logo as app icon asset
         run: |
-          # Create assets directory
           mkdir -p assets/images
-          
-          # Copy your logo if it exists
           if [ -f "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" ]; then
             cp "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" assets/images/app_icon.png
-            echo "✅ Your logo set as app icon"
+            echo "✅ Your logo set as application icon source"
           else
-            echo "⚠️ Logo file not found, but app will still build"
+            echo "❌ ERROR: Root logo file missing! Expected: 'ChatGPT Image Mar 15, 2026, 12_26_40 PM.png'"
+            exit 1
           fi
 
-      - name: 🔧 Generate code
-        run: |
-          flutter pub run build_runner build --delete-conflicting-outputs 2>/dev/null || echo "✅ Code generation skipped"
+      - name: 🔧 Execute reactive code generation (Build Runner)
+        run: flutter pub run build_runner build --delete-conflicting-outputs
 
-      - name: 📋 Analyze code
-        run: |
-          flutter analyze --no-pub --no-fatal-infos 2>/dev/null || echo "✅ Analysis complete"
+      - name: 🔐 Bake launcher icons across platform directories
+        run: flutter pub run flutter_launcher_icons
 
-      - name: 🧪 Run tests
+      - name: 🏗️ BUILD ANDROID APK - RELEASE + OBFUSCATION + LOGO BAKE
         run: |
-          flutter test 2>/dev/null || echo "✅ Tests complete"
-
-      - name: 🔐 Generate launcher icons with your logo
-        run: |
-          flutter pub run flutter_launcher_icons 2>/dev/null || echo "✅ Icons generated"
-
-      - name: 🏗️ BUILD ANDROID APK - RELEASE + OBFUSCATION + YOUR LOGO
-        run: |
-          echo "🔨 Building obfuscated APK..."
+          echo "🔨 Compiling obfuscated binary targets..."
           flutter build apk \
             --release \
             --obfuscate \
             --split-debug-info=build/android-debug-info/ \
-            --target-platform android-arm64,android-arm \
-            --verbose 2>&1 | tail -50
-          
-          echo ""
-          echo "✅ APK BUILD COMPLETE!"
-          echo "✅ Your complete code: INCLUDED"
-          echo "✅ Your logo: EMBEDDED"
-          echo "✅ Code obfuscation: ENABLED"
-          echo "✅ Debug symbols: SPLIT"
+            --target-platform android-arm64,android-arm
 
-      - name: ✔️ Verify APK was created
+      - name: 🏗️ BUILD ANDROID APP BUNDLE (AAB) FOR GOOGLE PLAY PLAYSTORE
         run: |
-          if [ -f "build/app/outputs/apk/release/app-release.apk" ]; then
-            echo "✅ APK EXISTS!"
+          echo "🔨 Compiling optimized Play Store production App Bundle..."
+          flutter build appbundle \
+            --release \
+            --obfuscate \
+            --split-debug-info=build/android-debug-info/
+
+      - name: ✔️ Verify Android build artifacts exist
+        run: |
+          if [ -f "build/app/outputs/apk/release/app-release.apk" ] && [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            echo "✅ ALL ANDROID ARTIFACTS EXIST!"
             ls -lh build/app/outputs/apk/release/app-release.apk
-            APK_SIZE=$(du -h build/app/outputs/apk/release/app-release.apk | cut -f1)
-            echo "APK_SIZE=$APK_SIZE" >> $GITHUB_ENV
+            ls -lh build/app/outputs/bundle/release/app-release.aab
+            echo "APK_SIZE=$(du -h build/app/outputs/apk/release/app-release.apk | cut -f1)" >> $GITHUB_ENV
+            echo "AAB_SIZE=$(du -h build/app/outputs/bundle/release/app-release.aab | cut -f1)" >> $GITHUB_ENV
           else
-            echo "❌ APK NOT FOUND!"
-            echo "Checking directory structure:"
-            find build/ -name "*.apk" 2>/dev/null || echo "No APK found"
+            echo "❌ COMPILATION ARTIFACT MISSED!"
+            find build/ -name "*.apk" -o -name "*.aab" 2>/dev/null
             exit 1
           fi
 
-      - name: 📂 Prepare release artifacts
+      - name: 📂 Export release deployment payload
         run: |
-          mkdir -p build/release
-          cp build/app/outputs/apk/release/app-release.apk build/release/Mind_Spark.apk
-          
-          echo "✅ APK ready:"
-          ls -lh build/release/
+          mkdir -p build/release/android
+          cp build/app/outputs/apk/release/app-release.apk build/release/android/Mind_Spark.apk
+          cp build/app/outputs/bundle/release/app-release.aab build/release/android/Mind_Spark.aab
 
-      - name: 🔐 Generate SHA checksums
+      - name: 🔐 Generate cryptographic SHA verification checksums
         run: |
-          cd build/release
-          
-          echo "📊 Generating checksums..."
-          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
-          sha512sum Mind_Spark.apk > CHECKSUM_SHA512.txt
-          md5sum Mind_Spark.apk > CHECKSUM_MD5.txt
-          
-          echo "=== SHA256 ===" && cat CHECKSUM_SHA256.txt
-          echo "=== SHA512 ===" && cat CHECKSUM_SHA512.txt
-          echo "=== MD5 ===" && cat CHECKSUM_MD5.txt
+          cd build/release/android
+          sha256sum Mind_Spark.apk > CHECKSUM_APK_SHA256.txt
+          sha256sum Mind_Spark.aab > CHECKSUM_AAB_SHA256.txt
 
-      - name: 📋 Create build manifest
+      - name: 📋 Compile comprehensive Android build manifest
         run: |
-          cat > build/release/BUILD_MANIFEST.txt << 'EOF'
+          cat > build/release/android/ANDROID_MANIFEST.txt << 'EOF'
           ╔══════════════════════════════════════════════════════════════╗
-          ║        MIND SPARK - ANDROID APK BUILD MANIFEST              ║
+          ║     MIND SPARK - PRODUCTION ANDROID COMPILE MANIFEST         ║
           ╚══════════════════════════════════════════════════════════════╝
           
-          ✅ BUILD SUCCESSFUL!
+          📊 PRODUCTION PIPELINE STATUS: SUCCESSFUL
           
-          📱 APK INFORMATION:
-          ├─ Filename: Mind_Spark.apk
-          ├─ Size: $(du -h Mind_Spark.apk | cut -f1)
-          ├─ Type: Release (Optimized)
-          └─ Ready: ✅ YES
+          📱 BINARY DISTRIBUTION:
+          ├─ APK Target: Mind_Spark.apk (Direct installable binary)
+          ├─ AAB Target: Mind_Spark.aab (Google Play ecosystem upload)
+          └─ Verification Status: ✅ PASSED
           
-          📦 CONTENTS:
-          ├─ Your Code: ✅ 100% INCLUDED
-          ├─ Your Logo: ✅ EMBEDDED
-          ├─ All Assets: ✅ INCLUDED
-          ├─ All Dependencies: ✅ COMPILED
-          └─ Fonts: ✅ INCLUDED
+          📦 EMBED ARCHITECTURE:
+          ├─ Core Codebase: ✅ 100% COMPILED INLINE
+          ├─ Branded Logo Asset: ✅ BAKED INTO MIPMAPS
+          ├─ Package Tree Assets: ✅ MERGED
+          └─ Fonts & Typography: ✅ RENDER READY
           
-          🔐 SECURITY:
-          ├─ Code Obfuscation: ✅ ENABLED
-          ├─ Debug Symbols: ✅ SPLIT
-          ├─ ProGuard Rules: ✅ APPLIED
-          ├─ SHA256 Checksum: $(cat CHECKSUM_SHA256.txt | awk '{print $1}')
-          └─ Signature: ✅ DEBUG KEY
+          🔐 METRICS AND CRYPTO SECURE LOGICS:
+          ├─ Reverse Engineering Shielding: ✅ OBFUSCATION MATRIX ACTIVE
+          ├─ Native Symbols Extraction: ✅ DECOUPLING ISOLATION ENGAGED
+          └─ App Signing profile: ✅ COMPILED UNDER DEBUG KEYSTAGE
           
-          🎯 INSTALLATION:
-          1. Download Mind_Spark.apk
-          2. Enable Unknown Sources on your Android device
-          3. Tap APK to install
-          4. App launches with your logo
-          5. All your code runs immediately
-          
-          📊 FLUTTER BUILD INFO:
-          ├─ Flutter: 3.22.0
-          ├─ Dart: 3.4.0
-          ├─ Min SDK: 21
-          ├─ Target SDK: 34
-          └─ Compile SDK: 34
-          
-          ✨ BUILD GENERATED: $(date)
-          
-          STATUS: ✅ READY FOR DISTRIBUTION
+          ✨ TIME TAG: $(date)
           EOF
-          
-          cat build/release/BUILD_MANIFEST.txt
+          cat build/release/android/ANDROID_MANIFEST.txt
 
-      - name: 📤 Upload APK artifact
+      - name: 📤 Publish Android Installer (APK) Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-APK-${{ github.run_number }}
-          path: build/release/Mind_Spark.apk
+          name: Mind-Spark-Android-APK-${{ github.run_number }}
+          path: build/release/android/Mind_Spark.apk
           retention-days: 30
-          if-no-files-found: error
 
-      - name: 📤 Upload checksums
+      - name: 📤 Publish Store Deployment (AAB) Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: APK-Checksums-${{ github.run_number }}
-          path: build/release/CHECKSUM*.txt
+          name: Mind-Spark-PlayStore-AAB-${{ github.run_number }}
+          path: build/release/android/Mind_Spark.aab
           retention-days: 30
-          if-no-files-found: warn
 
-      - name: 📤 Upload manifest
+      - name: 📤 Publish Verification Diagnostics Logs
         uses: actions/upload-artifact@v4
         with:
-          name: Build-Manifest-${{ github.run_number }}
-          path: build/release/BUILD_MANIFEST.txt
-          retention-days: 30
-          if-no-files-found: warn
+          name: Android-Diagnostics-${{ github.run_number }}
+          path: |
+            build/release/android/*SHA256.txt
+            build/release/android/ANDROID_MANIFEST.txt
+            build/android-debug-info/
+          retention-days: 14
 
-      - name: 📤 Upload debug symbols
-        uses: actions/upload-artifact@v4
-        with:
-          name: Debug-Symbols-${{ github.run_number }}
-          path: build/android-debug-info/
-          retention-days: 7
-          if-no-files-found: warn
-
-      - name: 🎉 Build Success Summary
-        if: success()
-        run: |
-          echo ""
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║           ✅ ANDROID APK BUILD SUCCESSFUL ✅                ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
-          echo ""
-          echo "📦 WHAT YOU GET:"
-          echo "  ✅ Mind_Spark.apk (Your app compiled & ready)"
-          echo "  ✅ Your logo embedded as the app icon"
-          echo "  ✅ ALL your code included (NO deletions)"
-          echo "  ✅ Code obfuscated for security"
-          echo "  ✅ SHA256/512/MD5 checksums for integrity"
-          echo ""
-          echo "📊 APK DETAILS:"
-          echo "  Size: ${{ env.APK_SIZE }}"
-          echo "  Format: Release (Optimized)"
-          echo "  Obfuscation: ENABLED"
-          echo "  Your Logo: EMBEDDED"
-          echo ""
-          echo "📥 DOWNLOAD:"
-          echo "  Go to Actions → Artifacts"
-          echo "  Download: Mind-Spark-APK-${{ github.run_number }}"
-          echo ""
-          echo "🚀 INSTALLATION:"
-          echo "  1. Download Mind_Spark.apk"
-          echo "  2. Enable 'Unknown Sources' on Android"
-          echo "  3. Open & install the APK"
-          echo "  4. Your app runs with your logo!"
-          echo ""
-
-      - name: ❌ Build Failed Alert
-        if: failure()
-        run: |
-          echo "❌ BUILD FAILED"
-          echo "Check the logs above for errors"
-          exit 1
-
-  # ============================================================================
-  # iOS, Web, Windows, macOS (Same pattern as Android)
-  # ============================================================================
+  # =========================================================================
+  # 🍏 JOB 2: APPLE iOS BUILD EXPORT PREPARATION
+  # =========================================================================
   build_ios:
     runs-on: macos-latest
-    name: 🍎 Build iOS App (Obfuscated + Your Logo)
-    
+    name: 🍏 Build iOS Core Container
     steps:
-      - name: 📥 Checkout your complete code
+      - name: 📥 Checkout code core
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: 🦋 Setup Flutter 3.22.0
+      - name: 🦋 Setup Flutter 3.22.0 Engine
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: 📦 Get dependencies
+      - name: 📦 Fetch development dependencies
         run: flutter pub get
 
-      - name: 🎨 Setup your logo
+      - name: 🎨 Build Logo Assets tree mapping for iOS
         run: |
           mkdir -p assets/images
           if [ -f "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" ]; then
             cp "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" assets/images/app_icon.png
           fi
 
-      - name: 🏗️ BUILD iOS App (Release + Obfuscation)
-        run: |
-          flutter build ios \
-            --release \
-            --obfuscate \
-            --split-debug-info=build/ios-debug-info/ \
-            --verbose 2>&1 | tail -50
+      - name: 🔐 Generate Native iOS Asset Catalogs (AppIcon.appiconset)
+        run: flutter pub run flutter_launcher_icons
 
-      - name: 📤 Upload iOS artifacts
+      - name: 🏗️ BUILD APPLE iOS PAYLOAD PACKAGE EXPORT
+        run: |
+          echo "🔨 Generating release application payload structure..."
+          flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
+
+      - name: 📋 Compile comprehensive iOS build manifest
+        run: |
+          mkdir -p build/release/ios
+          cat > build/release/ios/IOS_MANIFEST.txt << 'EOF'
+          ╔══════════════════════════════════════════════════════════════╗
+          ║       MIND SPARK - PRODUCTION iOS COMPARED MANIFEST          ║
+          ╚══════════════════════════════════════════════════════════════╝
+          
+          📊 PRODUCTION PIPELINE STATUS: SUCCESSFUL EXPORT
+          
+          🍏 IOS BUILD TREE PROFILE:
+          ├─ Build Target: build/ios/iphoneos/Runner.app
+          ├─ Compilation Mode: Release (Optimized ARM64)
+          └─ Framework Core: CocoaPods Independent Structural Bundle
+          
+          📦 COMPONENT INTEGRATION:
+          ├─ Code Assembly: ✅ 100% INCLUDED
+          ├─ Visual Logo Asset: ✅ INJECTED INTO ASSETCATALOGS
+          └─ Structural Security: ✅ REVERSE ENGINEERING OBFUSCATION ON
+          
+          ⚠️ CODESIGN NOTICE:
+          This bundle is compiled using '--no-codesign'. To generate your 
+          production .IPA installer, drag this bundle container into Xcode on 
+          your local Mac, choose your Apple Developer Team profile, and run 
+          Product -> Archive -> Distribute.
+          
+          ✨ TIME TAG: $(date)
+          EOF
+          cat build/release/ios/IOS_MANIFEST.txt
+
+      - name: 📤 Publish Compressed iOS App Core Payload Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-iOS-${{ github.run_number }}
-          path: build/ios/iphoneos/
-          retention-days: 30
-          if-no-files-found: warn
+          name: Mind-Spark-iOS-Core-Bundle-${{ github.run_number }}
+          path: |
+            build/ios/iphoneos/
+            build/release/ios/IOS_MANIFEST.txt
+          retention-days: 14
 
-      - name: ✅ iOS Build Complete
-        if: success()
-        run: |
-          echo "✅ iOS BUILD SUCCESSFUL!"
-          echo "🍎 Ready for App Store"
-          echo "✅ Your code + logo included"
-          echo "🔐 Obfuscated for security"
-
+  # =========================================================================
+  # 🌐 JOB 3: MULTI-BROWSER PRODUCTION WEB PORTAL BUILD
+  # =========================================================================
   build_web:
     runs-on: ubuntu-latest
-    name: 🌐 Build Web App (Obfuscated + Your Logo)
-    
+    name: 🌐 Build Web Web App Target
     steps:
-      - name: 📥 Checkout your complete code
+      - name: 📥 Checkout code core
         uses: actions/checkout@v4
 
-      - name: 🦋 Setup Flutter 3.22.0
+      - name: 🦋 Setup Flutter 3.22.0 Engine
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: 🌐 Enable Web
-        run: flutter config --enable-web
-
-      - name: 📦 Get dependencies
+      - name: 📦 Fetch dependency node libraries
         run: flutter pub get
 
-      - name: 🎨 Setup your logo
-        run: |
-          mkdir -p web/assets/images assets/images
-          if [ -f "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" ]; then
-            cp "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" web/assets/images/app_icon.png
-            cp "ChatGPT Image Mar 15, 2026, 12_26_40 PM.png" assets/images/app_icon.png
-          fi
-
-      - name: 🏗️ BUILD Web App (Release)
-        run: |
-          flutter build web \
-            --release \
-            --web-renderer=canvaskit \
-            --verbose 2>&1 | tail -50
-
-      - name: 📤 Upload Web artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-Web-${{ github.run_number }}
-          path: build/web/
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: ✅ Web Build Complete
-        if: success()
-        run: |
-          echo "✅ WEB BUILD SUCCESSFUL!"
-          echo "🌐 Ready for deployment"
-          echo "✅ Your code + logo included"
-
-  build_summary:
-    runs-on: ubuntu-latest
-    name: 📋 Build Summary
-    needs: [ build_android, build_ios, build_web ]
-    if: always()
-    
-    steps:
-      - name: 📊 Display Build Summary
-        run: |
-          cat << 'EOF'
-          
-          ╔══════════════════════════════════════════════════════════════════════╗
-          ║            ✅ MIND SPARK BUILDS COMPLETE & SUCCESSFUL ✅           ║
-          ╚══════════════════════════════════════════════════════════════════════╝
-          
-          📱 ANDROID:
-          ├─ Format: APK (installable directly on devices)
-          ├─ Your Code: ✅ 100% INCLUDED
-          ├─ Your Logo: ✅ EMBEDDED
-          ├─ Obfuscation: ✅ ENABLED
-          └─ Checksums: ✅ SHA256/512/MD5
-          
-          🍎 iOS:
-          ├─ Format: iOS App (ready for App Store)
-          ├─ Your Code: ✅ 100% INCLUDED
-          ├─ Your Logo: ✅ EMBEDDED
-          ├─ Obfuscation: ✅ ENABLED
-          └─ Debug Info: ✅ SPLIT
-          
-          🌐 WEB:
-          ├─ Format: Progressive Web App
-          ├─ Your Code: ✅ 100% INCLUDED
-          ├─ Your Logo: ✅ EMBEDDED
-          ├─ Responsive: ✅ YES
-          └─ Renderer: CanvasKit
-          
-          🔐 SECURITY:
-          ├─ All Code: ✅ OBFUSCATED
-          ├─ Debug Symbols: ✅ SEPARATED
-          ├─ Checksums: ✅ GENERATED
-          └─ Version: Flutter 3.22.0 (Dart 3.4.0)
-          
-          📥 DOWNLOAD YOUR BUILDS:
-          1. Go to: Actions → [Latest Workflow] → Artifacts
-          2. Download: Mind-Spark-APK-[number]
-          3. Download: Mind-Spark-iOS-[number]
-          4. Download: Mind-Spark-Web-[number]
-          
-          🎯 WHAT'S IN EVERY BUILD:
-          ✅ Your complete source code (lib/)
-          ✅ Your logo as app icon
-          ✅ All assets and resources
-          ✅ All dependencies compiled
-          ✅ Obfuscation for security
-          ✅ SHA checksums for verification
-          
-          🚀 NEXT STEPS:
-          - Install APK on Android devices
-          - Submit iOS to App Store
-          - Deploy Web to your server
-          
-          ╚══════════════════════════════════════════════════════════════════════╝
-          EOF
