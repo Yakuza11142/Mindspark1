@@ -11,199 +11,147 @@ permissions:
   contents: write
   actions: read
 
+defaults:
+  run:
+    working-directory: mind_spark_project
+
 jobs:
   # =========================================================================
-  # 🤖 JOB 1: ANDROID BINARIES ENGINE (APK + STORE AAB)
+  # 🤖 JOB 1: THE UNIFIED MOBILE STACK (ANDROID APK + AAB & APPLE iOS)
   # =========================================================================
-  build_android:
-    runs-on: ubuntu-latest
-    name: 🤖 Android Pipeline
+  build_mobile_apps:
+    runs-on: macos-latest
+    name: 📱 Build Mobile Core (Android + iOS)
+    
     steps:
-      - name: 📥 Checkout repository source tree
+      - name: 📥 [Step 1/19] Checkout complete repository source tree
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ☕ Initialize Java 17 Temurin Core Environment
+      - name: ☕ [Step 2/19] Initialize Java 17 Temurin Core Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🦋 Mount Flutter 3.22.0 Compiler
+      - name: 🦋 [Step 3/19] Mount Flutter 3.22.0 Production Compiler Engine
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ Global Repository Path Scanner
+      - name: ✅ [Step 4/19] Run Mobile Workspace Environmental Probes
         run: |
-          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
-          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
+          echo "🔬 QUANTUM DIAGNOSTICS: TESTING MOBILE DEPENDENCY ROOTS..."
+          flutter --version
+          dart --version
+          java -version
+          ls -la
 
-      - name: 🔧 Force Strict Gradle File Permissions
+      - name: 🔧 [Step 5/19] Force Strict Gradle File System Directory Permissions
         run: |
-          find . -name "gradlew" -exec chmod +x {} \; || echo "Deferred"
+          find . -name "gradlew" -exec chmod +x {} \; || echo "No gradlew found"
           find . -type d -exec chmod 755 {} \;
 
-      - name: 🧹 Deep Purge Project Cache Configurations
+      - name: 🧹 [Step 6/19] Deep Purge Local Project Target Cache Configurations
         run: |
-          cd ${{ env.PROJECT_ROOT }}
           flutter clean
+          rm -rf build/ .dart_tool/
 
-      - name: 📦 Fetch All Project Package Dependencies
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub get
+      - name: 📦 [Step 7/19] Fetch All Project Package Dependency Tree Maps
+        run: flutter pub get
 
-      - name: 🎨 High-Density Custom Logo Interception Matrix
+      - name: 🎨 [Step 8/19] Global Repository Scanning Logo Interception Matrix
         run: |
-          cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
           LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
           if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" assets/images/app_icon.png
-            echo "✅ Successfully copied logo inside assets folder to prevent launcher icon crashes."
+            echo "✅ True application logo file copied to assets."
           else
-            echo "❌ CRITICAL FAULT: Logo image file missing from repository!" && exit 1
+            echo "❌ CRITICAL ABORT: Logo file missing from repository!" && exit 1
           fi
 
-      - name: 🔧 Run Code Generation Serialization Tools
+      - name: 🔧 [Step 9/19] Run Background Code Generation Serialization Tools
         run: |
-          cd ${{ env.PROJECT_ROOT }}
           if grep -q "build_runner" pubspec.yaml; then
             flutter pub run build_runner build --delete-conflicting-outputs
           fi
 
-      - name: 📋 Analyze Application Syntaxes Structure
+      - name: 📋 [Step 10/19] Analyze Application Syntaxes Structure Safely
+        run: flutter analyze --no-pub --no-fatal-infos
+
+      - name: 🔐 [Step 11/19] Bake Branded Logo into Native Assets Structures
+        run: flutter pub run flutter_launcher_icons
+
+      - name: 🏗️ [Step 12/19] BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter analyze --no-pub --no-fatal-infos
+          if [ -d "android" ]; then
+            flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
+          else
+            echo "❌ ERROR: android/ folder missing inside subfolder!" && exit 1
+          fi
 
-      - name: 🔐 Bake Branded Logo into Native Assets
+      - name: 🏗️ [Step 13/19] BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
+        run: flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
+
+      - name: 🏗️ [Step 14/19] BUILD APPLE iOS ENCRYPTED CODE BUNDLE PAYLOAD
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub run flutter_launcher_icons
-
-      - name: 🏗️ BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
-
-      - name: 🏗️ BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
-
-      - name: 📂 Stage and Sync Verified Target Deliverables
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/android_distribution
-          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.apk
-          cp "${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.aab
-
-      - name: 📤 Upload Direct Device Phone Installer Package (APK)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-Android-APK
-          path: android_distribution/Mind_Spark.apk
-          retention-days: 30
-
-      - name: 📤 Upload Play Store Distribution Artifact (AAB)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-PlayStore-AAB
-          path: android_distribution/Mind_Spark.aab
-          retention-days: 30
-
-  # =========================================================================
-  # 🍏 JOB 2: UNIFIED APPLE STACK (iOS MOBILE + macOS DESKTOP COMPILATION)
-  # =========================================================================
-  build_apple:
-    runs-on: macos-latest
-    name: 🍏 Apple Pipeline (iOS + macOS)
-    steps:
-      - name: 📥 Checkout repository source tree
-        uses: actions/checkout@v4
-
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
-          cache: true
-
-      - name: ✅ Global Repository Path Scanner
-        run: |
-          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
-          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
-
-      - name: 📦 Fetch All Project Package Dependencies
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub get
-
-      - name: 🍏 Initialize Native CocoaPods Workspace
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
           if [ -d "ios" ]; then
             cd ios && pod repo update && pod install && cd ..
-          fi
-
-      - name: 🎨 Bake Custom Branded Logo Assets to Apple Catalogs
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          mkdir -p assets/images
-          LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
-          if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
-            cp "$LOGO_PATH" assets/images/app_icon.png
-          fi
-          flutter pub run flutter_launcher_icons
-
-      - name: 🏗️ COMPILE APPLE iOS ENCRYPTED CODE BUNDLE
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          if [ -d "ios" ]; then
             flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
+          else
+            echo "❌ ERROR: ios/ folder missing inside subfolder!" && exit 1
           fi
 
-      - name: 🏗️ COMPILE NATIVE MAC DESKTOP PRODUCTION BUNDLE
+      - name: 📂 [Step 15/19] Stage and Organize Verified Mobile Target Deliverables
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-          if [ -d "macos" ]; then
-            flutter config --enable-macos-desktop
-            flutter build macos --release --obfuscate --split-debug-info=build/macos-debug-info/
-          fi
+          mkdir -p $GITHUB_WORKSPACE/mobile_distribution
+          cp build/app/outputs/apk/release/app-release.apk $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.apk
+          cp build/app/outputs/bundle/release/app-release.aab $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.aab
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then cp -R build/ios/iphoneos/Runner.app $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark_iOS.app; fi
 
-      - name: 📂 Stage Apple Workspace Deliverables
+      - name: 🔐 [Step 16/19] Compute Cryptographic Verification Checksum Fingerprints
         run: |
-          mkdir -p $GITHUB_WORKSPACE/apple_distribution
-          if [ -d "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_iOS.app; fi
-          if [ -d "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_Mac.app; fi
+          cd $GITHUB_WORKSPACE/mobile_distribution
+          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
 
-      - name: 📤 Upload Native iOS App Bundle Artifact
+      - name: 📋 [Step 17/19] Compile Comprehensive Mobile Manifest Documentation Logs
+        run: |
+          cat > $GITHUB_WORKSPACE/mobile_distribution/BUILD_MANIFEST.txt << 'EOF'
+          ╔══════════════════════════════════════════════════════════════╗
+          ║   MIND SPARK - MOBILE PIPELINE SUCCESS LOGS                  ║
+          ╚══════════════════════════════════════════════════════════════╝
+          ✅ Android Installer: Mind_Spark.apk
+          ✅ Android Store Bundle: Mind_Spark.aab
+          ✅ iOS Sandbox Container: Mind_Spark_iOS.app
+          EOF
+
+      - name: 📤 [Step 18/19] Dispatch Finished Android Artifact Installation Packages (APK + AAB)
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-iOS-Container
-          path: apple_distribution/Mind_Spark_iOS.app
-          retention-days: 14
+          name: Mind-Spark-Android-Apps
+          path: |
+            mobile_distribution/Mind_Spark.apk
+            mobile_distribution/Mind_Spark.aab
+            mobile_distribution/BUILD_MANIFEST.txt
+            mobile_distribution/CHECKSUM*.txt
+          retention-days: 30
 
-      - name: 📤 Upload Standalone Native macOS Desktop Executable
+      - name: 📤 [Step 19/19] Dispatch Finished Apple iOS App Core Bundle Package
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-macOS-Desktop
-          path: apple_distribution/Mind_Spark_Mac.app
+          name: Mind-Spark-iOS-App-Container
+          path: mobile_distribution/Mind_Spark_iOS.app
           retention-days: 14
 
   # =========================================================================
-  # 🌐 JOB 3: WEB PORTAL PRODUCTION ENGINE
+  # 🌐 JOB 2: ISOLATED WEB APPLICATION PORTAL BUILD - RUNS SEPARATELY ON LINUX
   # =========================================================================
-  build_web:
+  build_web_platform:
     runs-on: ubuntu-latest
     name: 🌐 Web Pipeline
     steps:
@@ -217,26 +165,15 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: ✅ Global Repository Path Scanner
-        run: |
-          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
-          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
-
       - name: 📦 Fetch All Project Package Dependencies
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub get
+        run: flutter pub get
 
       - name: 🏗️ BUILD COMPACT COMPILED PRODUCTION WEB ARCHITECTURE
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter build web --release --web-renderer auto
+        run: flutter build web --release --web-renderer auto
 
       - name: 📤 Upload Production Web Engine Static Site Folder
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Web-Release
-          path: ${{ env.PROJECT_ROOT }}/build/web/
+          name: Mind-Spark-Web-Site
+          path: mind_spark_project/build/web/
           retention-days: 30
