@@ -38,58 +38,43 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build libgtk-3-dev
 
-      - name: 🔍 Locate Flutter Project
-        run: |
-          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
-
-          if [ -z "$PUBSPEC_PATH" ]; then
-            echo "pubspec.yaml not found"
-            exit 1
-          fi
-
-          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
-
-          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
-
       - name: 📦 Get Flutter Packages
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter pub get
+        run: flutter pub get
 
       - name: 🩺 Flutter Doctor
         run: flutter doctor -v
 
       - name: 🎨 Setup App Logo
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-
+          # Define your exact image filename
+          IMAGE_FILE="image_e1762c49 (1).png"
+          
+          # Create the required assets/images folders just in case they are missing
           mkdir -p assets/images
+          mkdir -p assets/fonts
 
-          LOGO=$(find $GITHUB_WORKSPACE -name "app_logo.png" | head -n 1)
-
-          if [ -n "$LOGO" ]; then
-            cp "$LOGO" assets/images/app_icon.png
+          # Ensure the image file is explicitly available in the root directory for the builder tool
+          if [ -f "$IMAGE_FILE" ]; then
+            echo "✅ Successfully found $IMAGE_FILE in root directory."
+          else
+            echo "❌ Error: Could not find '$IMAGE_FILE' in the root directory!"
+            exit 1
           fi
 
       - name: 🎨 Generate Launcher Icons
         run: |
-          cd ${{ env.PROJECT_ROOT }}
-
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            flutter pub run flutter_launcher_icons
+            dart run flutter_launcher_icons
           else
-            echo "flutter_launcher_icons not configured"
+            echo "⚠️ flutter_launcher_icons package not configured in pubspec.yaml"
           fi
 
       - name: 🏗️ Build Release APK
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter build apk --release
+        run: flutter build apk --release
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-APK
-          path: ${{ env.PROJECT_ROOT }}/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
-```
