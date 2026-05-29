@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   # =========================================================================
-  # 🤖 JOB 1: ANDROID COMPILATION (APK + APP BUNDLE AAB) - RUNS ON LINUX
+  # 🤖 JOB 1: ANDROID BINARIES ENGINE (APK + STORE AAB)
   # =========================================================================
   build_android:
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: ✅ Run Global Repository Path Scanner
+      - name: ✅ Global Repository Path Scanner
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
@@ -60,15 +60,16 @@ jobs:
           cd ${{ env.PROJECT_ROOT }}
           flutter pub get
 
-      - name: 🎨 Global Logo Interception Matrix
+      - name: 🎨 High-Density Custom Logo Interception Matrix
         run: |
           cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
           LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
           if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" assets/images/app_icon.png
+            echo "✅ Successfully copied logo inside assets folder to prevent launcher icon crashes."
           else
-            exit 1
+            echo "❌ CRITICAL FAULT: Logo image file missing from repository!" && exit 1
           fi
 
       - name: 🔧 Run Code Generation Serialization Tools
@@ -109,21 +110,21 @@ jobs:
         with:
           name: Mind-Spark-Android-APK
           path: android_distribution/Mind_Spark.apk
-          retention-days: 14
+          retention-days: 30
 
       - name: 📤 Upload Play Store Distribution Artifact (AAB)
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-PlayStore-AAB
           path: android_distribution/Mind_Spark.aab
-          retention-days: 14
+          retention-days: 30
 
   # =========================================================================
-  # 🍏 JOB 2: APPLE iOS & macOS COMPILATION - RUNS ON MACOS
+  # 🍏 JOB 2: UNIFIED APPLE STACK (iOS MOBILE + macOS DESKTOP COMPILATION)
   # =========================================================================
   build_apple:
     runs-on: macos-latest
-    name: 🍏 Apple Pipeline
+    name: 🍏 Apple Pipeline (iOS + macOS)
     steps:
       - name: 📥 Checkout repository source tree
         uses: actions/checkout@v4
@@ -135,7 +136,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: ✅ Run Global Repository Path Scanner
+      - name: ✅ Global Repository Path Scanner
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
@@ -154,7 +155,7 @@ jobs:
             cd ios && pod repo update && pod install && cd ..
           fi
 
-      - name: 🎨 Bake Custom Branded Logo Assets
+      - name: 🎨 Bake Custom Branded Logo Assets to Apple Catalogs
         run: |
           cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
@@ -200,7 +201,7 @@ jobs:
           retention-days: 14
 
   # =========================================================================
-  # 🌐 JOB 3: WEB PORTAL RUNTIME TARGET COMPILE - RUNS ON LINUX
+  # 🌐 JOB 3: WEB PORTAL PRODUCTION ENGINE
   # =========================================================================
   build_web:
     runs-on: ubuntu-latest
@@ -216,7 +217,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: ✅ Run Global Repository Path Scanner
+      - name: ✅ Global Repository Path Scanner
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
@@ -238,4 +239,4 @@ jobs:
         with:
           name: Mind-Spark-Web-Release
           path: ${{ env.PROJECT_ROOT }}/build/web/
-          retention-days: 14
+          retention-days: 30
