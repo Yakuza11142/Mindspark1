@@ -1,5 +1,5 @@
 name: mind_spark
-description: "AI TUTOR & AR LAB"
+description: "AI TUTOR & AR LAB - PRODUCTION STACK"
 version: 1.0.0+1
 publish_to: 'none'
 
@@ -8,25 +8,27 @@ environment:
 
 dependencies:
   flutter: { sdk: flutter }
+  
+  # 🌐 CORE INTEGRATION NETWORK AND STATE ENGINE DEPS
   provider: ^6.1.2
-  supabase_flutter: ^2.6.0
+  supabase_flutter: ^2.2.1        # Downgraded for Flutter 3.22.0 compatibility
   flutter_dotenv: ^5.1.0
-  dio: ^5.4.3+1
+  dio: ^5.5.0-dev.1 
   intl: ^0.19.0
   permission_handler: ^11.3.1
   flutter_animate: ^4.5.0
   vector_math: ^2.1.4
 
-  # 🤖 COMPLETE AI TUTOR ENGINE DEPENDENCY CORE
-  google_generative_ai: ^0.4.4
+  # 🤖 COMPLETE AI ENGINE DEPENDENCY HOOKS MATRIX
+  google_generative_ai: ^0.2.0    # Aligned for Flutter 3.22.0 stability
   flutter_tts: ^4.0.2
   speech_to_text: ^6.6.2
   path_provider: ^2.1.3
   crypto: ^3.0.3
   uuid: ^4.4.0
 
-  # 🕶️ COMPLETE AR LAB HARDWARE AND CAMERA INTERFACE MATRIX
-  arcore_flutter_plus: ^1.1.0
+  # 🕶️ FIXED AR CORE & COMPATIBLE PLATFORM CHANNELS
+  arcore_flutter_plus: ^1.0.2
   camera: ^0.11.0+1
   camera_platform_interface: ^2.7.0
   flutter_plugin_android_lifecycle: ^2.0.21
@@ -35,8 +37,8 @@ dependencies:
   webview_flutter_android: ^3.16.0
   webview_flutter_wkwebview: ^3.13.0
 
-  # 📊 ADVERTISING & MONETIZATION CORE
-  google_mobile_ads: ^5.1.0
+  # 📊 PRODUCTION ADS AND SYSTEM STORAGE UTILITIES
+  google_mobile_ads: ^5.0.1       # Unified for dependency tree balance
   url_launcher: ^6.3.0
   shared_preferences: ^2.2.3
 
@@ -52,6 +54,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  # 📁 STRUCTURAL FILE PERMISSION VECTOR MAPPINGS
   assets:
     - assets/images/
     - assets/fonts/
@@ -64,12 +68,13 @@ flutter:
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
 
+# 🎨 EXPLICIT ASSET MAPPING CHANNELS LINKED TO YOUR MASTER LOGO FILE
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   macos: true
   web:
     generate: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "image_e1762c49 (1).png"
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/images/app_icon.png"
+  adaptive_icon_foreground: "image_e1762c49 (1).png"
