@@ -46,14 +46,11 @@ jobs:
 
       - name: 🎨 Setup App Logo
         run: |
-          # Define your exact image filename
           IMAGE_FILE="image_e1762c49 (1).png"
           
-          # Create the required assets/images folders just in case they are missing
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          # Ensure the image file is explicitly available in the root directory for the builder tool
           if [ -f "$IMAGE_FILE" ]; then
             echo "✅ Successfully found $IMAGE_FILE in root directory."
           else
@@ -64,7 +61,8 @@ jobs:
       - name: 🎨 Generate Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            dart run flutter_launcher_icons
+            # This completely bypasses the iOS config and forces it to only build for Android
+            dart run flutter_launcher_icons --id launcher_icon
           else
             echo "⚠️ flutter_launcher_icons package not configured in pubspec.yaml"
           fi
