@@ -3,8 +3,6 @@ name: Mind Spark Production Build
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -12,62 +10,52 @@ permissions:
   actions: read
 
 jobs:
-  # =========================================================================
-  # 🤖 JOB 1: ANDROID BINARIES ENGINE (STRICT APK + STORE AAB COMPILE)
-  # =========================================================================
   build_android:
     runs-on: ubuntu-latest
-    name: 🤖 Android Pipeline (APK + AAB)
+    name: 🤖 Android Pipeline
     steps:
-      - name: 📥 [Step 1/19] Checkout complete repository source tree
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ☕ [Step 2/19] Initialize Java 17 Temurin Core Environment
+      - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🦋 [Step 3/19] Mount Flutter 3.22.0 Production Compiler Engine
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ [Step 4/19] Run Quantum Structural Environmental Probes
+      - name: ✅ Scan Paths
         run: |
-          echo "======================================================================================"
-          echo "🔬 QUANTUM DIAGNOSTICS: TESTING ANDROID HOST PLATFORM VIRTUALIZATION ENGINE CORES..."
-          echo "======================================================================================"
-          flutter --version
-          dart --version
-          java -version
-          echo "=== LOCATING PROJECT PUBSPEC ==="
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
           PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
 
-      - name: 🔧 [Step 5/19] Force Strict Gradle File System Directory Permissions
+      - name: 🔧 Permissions
         run: |
-          find . -name "gradlew" -exec chmod +x {} \; || echo "Bypassed"
+          find . -name "gradlew" -exec chmod +x {} \; || echo "Deferred"
           find . -type d -exec chmod 755 {} \;
 
-      - name: 🧹 [Step 6/19] Deep Purge Local Project Target Cache Configurations
+      - name: 🧹 Clean
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter clean
 
-      - name: 📦 [Step 7/19] Fetch All Project Package Dependency Tree Maps
+      - name: 📦 Dependencies
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter pub get
 
-      - name: 🎨 [Step 8/19] High-Density Custom Branded Logo & Env Setup Matrix
+      - name: 🎨 Logo & Env Sync
         run: |
           cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
@@ -75,121 +63,80 @@ jobs:
           if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
             cp "$LOGO_PATH" assets/images/app_icon.png
           else
-            echo "❌ CRITICAL CONFIGURATION FAULT: Logo image missing from root folder!" && exit 1
+            exit 1
           fi
           ENV_PATH=$(find $GITHUB_WORKSPACE -name ".env" | head -n 1)
-          if [ -n "$ENV_PATH" ] && [ -f "$ENV_PATH" ]; then
-            cp "$ENV_PATH" .env
-          fi
+          if [ -n "$ENV_PATH" ] && [ -f "$ENV_PATH" ]; then cp "$ENV_PATH" .env; fi
 
-      - name: 🔧 [Step 9/19] Run Background Code Generation Serialization Tools
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          if grep -q "build_runner" pubspec.yaml; then
-            flutter pub run build_runner build --delete-conflicting-outputs
-          fi
-
-      - name: 📋 [Step 10/19] Analyze Application Syntaxes Structure Safely
-        run: |
-          cd ${{ env.PROJECT_ROOT }}
-          flutter analyze --no-pub --no-fatal-infos
-
-      - name: 🔐 [Step 11/19] Bake Branded Logo into Native Android Mipmap Directories
+      - name: 🔐 Generate Icons
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter pub run flutter_launcher_icons
 
-      - name: 🏗️ [Step 12/19] BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
+      - name: 🏗️ Compile APK
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
 
-      - name: 🏗️ [Step 13/19] BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
+      - name: 🏗️ Compile AAB
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
 
-      - name: 📂 [Step 14/19] Stage and Sync Verified Target Android Deliverables
+      - name: 📂 Stage Deliverables
         run: |
           mkdir -p $GITHUB_WORKSPACE/android_distribution
           cp "${{ env.PROJECT_ROOT }}/build/app/outputs/apk/release/app-release.apk" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.apk
           cp "${{ env.PROJECT_ROOT }}/build/app/outputs/bundle/release/app-release.aab" $GITHUB_WORKSPACE/android_distribution/Mind_Spark.aab
 
-      - name: 🔐 [Step 15/19] Compute Cryptographic Verification Checksum Fingerprints
-        run: |
-          cd $GITHUB_WORKSPACE/android_distribution
-          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
-
-      - name: 📋 [Step 16/19] Compile Android Comprehensive Production Manifest Logs
-        run: |
-          cat > $GITHUB_WORKSPACE/android_distribution/BUILD_MANIFEST.txt << 'EOF'
-          ╔══════════════════════════════════════════════════════════════╗
-          ║   MIND SPARK - NATIVE COMPILATION Android COMPLETE LOGS      ║
-          ╚══════════════════════════════════════════════════════════════╝
-          ✅ APK Target: Mind_Spark.apk (Direct Phone Installer File)
-          ✅ AAB Target: Mind_Spark.aab (Google Play Store Console Upload Bundle)
-          EOF
-
-      - name: 📤 [Step 17/19] Upload Direct Device Phone Installer Package (APK)
+      - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-Android-APK
           path: android_distribution/Mind_Spark.apk
           retention-days: 30
 
-      - name: 📤 [Step 18/19] Upload Play Store Store Distribution Artifact (AAB)
+      - name: 📤 Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-PlayStore-AAB
           path: android_distribution/Mind_Spark.aab
           retention-days: 30
 
-      - name: 📤 [Step 19/19] Upload Android Integrity Logs Tree Verification
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-Deployment-Logs
-          path: |
-            android_distribution/BUILD_MANIFEST.txt
-            android_distribution/CHECKSUM*.txt
-          retention-days: 30
-
-  # =========================================================================
-  # 🍏 JOB 2: APPLE ECOSYSTEM INTERFACES (iOS MOBILE BUNDLE)
-  # =========================================================================
-  build_apple_ios:
+  build_apple:
     runs-on: macos-latest
-    name: 🍏 Build iOS Mobile App
+    name: 🍏 Apple Pipeline
     steps:
-      - name: 📥 Checkout repository source tree
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ Execute Global Repository Path Scanner
+      - name: ✅ Scan Paths
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
           PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
           echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
 
-      - name: 📦 Fetch All Project Package Dependencies
+      - name: 📦 Dependencies
         run: |
           cd ${{ env.PROJECT_ROOT }}
           flutter pub get
 
-      - name: 🍏 Initialize Native CocoaPods Workspace
+      - name: 🍏 CocoaPods
         run: |
           cd ${{ env.PROJECT_ROOT }}
           if [ -d "ios" ]; then
             cd ios && pod repo update && pod install && cd ..
           fi
 
-      - name: 🎨 Bake Custom Branded Logo Assets to Apple Catalogs
+      - name: 🎨 Logo & Env Sync
         run: |
           cd ${{ env.PROJECT_ROOT }}
           mkdir -p assets/images
@@ -201,47 +148,75 @@ jobs:
           if [ -n "$ENV_PATH" ] && [ -f "$ENV_PATH" ]; then cp "$ENV_PATH" .env; fi
           flutter pub run flutter_launcher_icons
 
-      - name: 🏗️ COMPILE APPLE iOS ENCRYPTED CODE BUNDLE
+      - name: 🏗️ Compile iOS
         run: |
           cd ${{ env.PROJECT_ROOT }}
           if [ -d "ios" ]; then
             flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
           fi
 
-      - name: 📂 Stage Apple Workspace Deliverables
+      - name: 🏗️ Compile macOS
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          if [ -d "macos" ]; then
+            flutter config --enable-macos-desktop
+            flutter build macos --release --obfuscate --split-debug-info=build/macos-debug-info/
+          fi
+
+      - name: 📂 Stage Deliverables
         run: |
           mkdir -p $GITHUB_WORKSPACE/apple_distribution
           if [ -d "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/ios/iphoneos/Runner.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_iOS.app; fi
+          if [ -d "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" ]; then cp -R "${{ env.PROJECT_ROOT }}/build/macos/Build/Products/Release/mind_spark.app" $GITHUB_WORKSPACE/apple_distribution/Mind_Spark_Mac.app; fi
 
-      - name: 📤 Upload Native iOS App Bundle Artifact
+      - name: 📤 Upload iOS
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-iOS-Container
           path: apple_distribution/Mind_Spark_iOS.app
           retention-days: 14
 
-  # =========================================================================
-  # 💻 JOB 3: COMPUTER/LAPTOP PC APPLICATIONS INTERFACE (WINDOWS NATIVE APP)
-  # =========================================================================
-  build_pc_laptops:
-    runs-on: windows-latest
-    name: 💻 Build Laptop PC (.EXE)
+      - name: 📤 Upload macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-macOS-Desktop
+          path: apple_distribution/Mind_Spark_Mac.app
+          retention-days: 14
+
+  build_web:
+    runs-on: ubuntu-latest
+    name: 🌐 Web Pipeline
     steps:
-      - name: 📥 Checkout repository source tree
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
+      - name: 🦋 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
-      - name: ✅ Execute Global Repository Path Scanner
+      - name: ✅ Scan Paths
         run: |
-          $pubspec = Get-ChildItem -Recurse -Filter "pubspec.yaml" | Select-Object -First 1
-          if ($pubspec -eq $null) { exit 1 }
-          $projectRoot = $pubspec.DirectoryName
-          echo "PROJECT_ROOT=$projectRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then exit 1; fi
+          PROJECT_ROOT=$(dirname "$PUBSPEC_PATH")
+          echo "PROJECT_ROOT=$PROJECT_ROOT" >> $GITHUB_ENV
 
-      - name: ⚙️ Unlock Windows Operating Configurations
+      - name: 📦 Dependencies
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          flutter pub get
+
+      - name: 🏗️ Compile Web
+        run: |
+          cd ${{ env.PROJECT_ROOT }}
+          flutter build web --release --web-renderer auto
+
+      - name: 📤 Upload Web
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mind-Spark-Web-Release
+          path: ${{ env.PROJECT_ROOT }}/build/web/
+          retention-days: 30
