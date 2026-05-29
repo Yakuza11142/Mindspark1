@@ -61,8 +61,10 @@ jobs:
       - name: 🎨 Generate Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            # This completely bypasses the iOS config and forces it to only build for Android
-            dart run flutter_launcher_icons --id launcher_icon
+            # Temporarily turn off ios icon generation to prevent the tool from crashing
+            sed -i 's/ios: true/ios: false/g' pubspec.yaml
+            
+            dart run flutter_launcher_icons
           else
             echo "⚠️ flutter_launcher_icons package not configured in pubspec.yaml"
           fi
