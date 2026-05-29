@@ -1,179 +1,80 @@
-name: Mind Spark Production Build
+name: mind_spark
+description: "AI TUTOR & AR LAB - PRODUCTION STACK"
+version: 1.0.0+1
+publish_to: 'none'
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
+environment:
+  sdk: ">=3.4.0 <4.0.0"
 
-permissions:
-  contents: write
-  actions: read
+dependencies:
+  flutter: { sdk: flutter }
+  
+  # 🌐 CORE NETWORK AND STATE UTILITIES (FLUTTER 3.22 COMPATIBLE)
+  provider: ^6.1.2
+  supabase_flutter: ^2.2.1
+  flutter_dotenv: ^5.1.0
+  dio: ^5.4.3+1
+  intl: ^0.19.0
+  permission_handler: ^11.3.1
+  flutter_animate: ^4.5.0
+  vector_math: ^2.1.4
 
-defaults:
-  run:
-    working-directory: mind_spark_project
+  # 🤖 AI TUTOR SUBSYSTEM GRAPH BALANCED MAPPINGS
+  google_generative_ai: ^0.2.0
+  flutter_tts: ^4.0.2
+  speech_to_text: ^6.6.2
+  path_provider: ^2.1.3
+  crypto: ^3.0.3
+  uuid: ^4.4.0
 
-jobs:
-  # =========================================================================
-  # 🤖 JOB 1: THE UNIFIED MOBILE STACK (ANDROID APK + AAB & APPLE iOS)
-  # =========================================================================
-  build_mobile_apps:
-    runs-on: macos-latest
-    name: 📱 Build Mobile Core (Android + iOS)
-    
-    steps:
-      - name: 📥 [Step 1/19] Checkout complete repository source tree
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # 🕶️ AR LAB & STABLE HARDWARE PLUGINS (FIXED COMPATIBILITY)
+  arcore_flutter_plus: ^1.0.2
+  camera: ^0.11.0+1
+  camera_platform_interface: ^2.7.0
+  flutter_plugin_android_lifecycle: ^2.0.21
+  arkit_plugin: ^1.0.6
+  webview_flutter: ^4.7.0
+  webview_flutter_android: ^3.15.0
+  webview_flutter_wkwebview: ^3.11.0
 
-      - name: ☕ [Step 2/19] Initialize Java 17 Temurin Core Environment
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+  # 📊 MONETIZATION CORE SUB-SYSTEMS
+  google_mobile_ads: ^4.0.0
+  url_launcher: ^6.2.5
+  shared_preferences: ^2.2.2
 
-      - name: 🦋 [Step 3/19] Mount Flutter 3.22.0 Production Compiler Engine
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
-          cache: true
+dev_dependencies:
+  flutter_test: { sdk: flutter }
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.9
+  flutter_launcher_icons: ^0.13.1
+  json_serializable: ^6.8.0
+  json_annotation: ^4.9.0
+  build_verify: ^3.1.0
+  source_gen: ^1.5.0
 
-      - name: ✅ [Step 4/19] Run Mobile Workspace Environmental Probes
-        run: |
-          echo "🔬 QUANTUM DIAGNOSTICS: TESTING MOBILE DEPENDENCY ROOTS..."
-          flutter --version
-          dart --version
-          java -version
-          ls -la
+flutter:
+  uses-material-design: true
+  
+  # 📁 ROOT LEVEL ASSET DICTIONARY OVERRIDES
+  assets:
+    - assets/images/
+    - assets/fonts/
+    - .env                           # Dynamically handled inside the main runtime matrix
 
-      - name: 🔧 [Step 5/19] Force Strict Gradle File System Directory Permissions
-        run: |
-          find . -name "gradlew" -exec chmod +x {} \; || echo "No gradlew found"
-          find . -type d -exec chmod 755 {} \;
+  fonts:
+    - family: Inter
+      fonts: 
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
-      - name: 🧹 [Step 6/19] Deep Purge Local Project Target Cache Configurations
-        run: |
-          flutter clean
-          rm -rf build/ .dart_tool/
-
-      - name: 📦 [Step 7/19] Fetch All Project Package Dependency Tree Maps
-        run: flutter pub get
-
-      - name: 🎨 [Step 8/19] Global Repository Scanning Logo Interception Matrix
-        run: |
-          mkdir -p assets/images
-          LOGO_PATH=$(find $GITHUB_WORKSPACE -name "image_e1762c49 (1).png" -o -name "app_logo.png" | head -n 1)
-          if [ -n "$LOGO_PATH" ] && [ -f "$LOGO_PATH" ]; then
-            cp "$LOGO_PATH" assets/images/app_icon.png
-            echo "✅ True application logo file copied to assets."
-          else
-            echo "❌ CRITICAL ABORT: Logo file missing from repository!" && exit 1
-          fi
-
-      - name: 🔧 [Step 9/19] Run Background Code Generation Serialization Tools
-        run: |
-          if grep -q "build_runner" pubspec.yaml; then
-            flutter pub run build_runner build --delete-conflicting-outputs
-          fi
-
-      - name: 📋 [Step 10/19] Analyze Application Syntaxes Structure Safely
-        run: flutter analyze --no-pub --no-fatal-infos
-
-      - name: 🔐 [Step 11/19] Bake Branded Logo into Native Assets Structures
-        run: flutter pub run flutter_launcher_icons
-
-      - name: 🏗️ [Step 12/19] BUILD OBFUSCATED ANDROID Direct Installer Package (APK)
-        run: |
-          if [ -d "android" ]; then
-            flutter build apk --release --obfuscate --split-debug-info=build/android-debug-info/ --target-platform android-arm64,android-arm
-          else
-            echo "❌ ERROR: android/ folder missing inside subfolder!" && exit 1
-          fi
-
-      - name: 🏗️ [Step 13/19] BUILD OBFUSCATED ANDROID Store App Bundle Package (AAB)
-        run: flutter build appbundle --release --obfuscate --split-debug-info=build/android-debug-info/
-
-      - name: 🏗️ [Step 14/19] BUILD APPLE iOS ENCRYPTED CODE BUNDLE PAYLOAD
-        run: |
-          if [ -d "ios" ]; then
-            cd ios && pod repo update && pod install && cd ..
-            flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-debug-info/
-          else
-            echo "❌ ERROR: ios/ folder missing inside subfolder!" && exit 1
-          fi
-
-      - name: 📂 [Step 15/19] Stage and Organize Verified Mobile Target Deliverables
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/mobile_distribution
-          cp build/app/outputs/apk/release/app-release.apk $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.apk
-          cp build/app/outputs/bundle/release/app-release.aab $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark.aab
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then cp -R build/ios/iphoneos/Runner.app $GITHUB_WORKSPACE/mobile_distribution/Mind_Spark_iOS.app; fi
-
-      - name: 🔐 [Step 16/19] Compute Cryptographic Verification Checksum Fingerprints
-        run: |
-          cd $GITHUB_WORKSPACE/mobile_distribution
-          sha256sum Mind_Spark.apk > CHECKSUM_SHA256.txt
-
-      - name: 📋 [Step 17/19] Compile Comprehensive Mobile Manifest Documentation Logs
-        run: |
-          cat > $GITHUB_WORKSPACE/mobile_distribution/BUILD_MANIFEST.txt << 'EOF'
-          ╔══════════════════════════════════════════════════════════════╗
-          ║   MIND SPARK - MOBILE PIPELINE SUCCESS LOGS                  ║
-          ╚══════════════════════════════════════════════════════════════╝
-          ✅ Android Installer: Mind_Spark.apk
-          ✅ Android Store Bundle: Mind_Spark.aab
-          ✅ iOS Sandbox Container: Mind_Spark_iOS.app
-          EOF
-
-      - name: 📤 [Step 18/19] Dispatch Finished Android Artifact Installation Packages (APK + AAB)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-Android-Apps
-          path: |
-            mobile_distribution/Mind_Spark.apk
-            mobile_distribution/Mind_Spark.aab
-            mobile_distribution/BUILD_MANIFEST.txt
-            mobile_distribution/CHECKSUM*.txt
-          retention-days: 30
-
-      - name: 📤 [Step 19/19] Dispatch Finished Apple iOS App Core Bundle Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-iOS-App-Container
-          path: mobile_distribution/Mind_Spark_iOS.app
-          retention-days: 14
-
-  # =========================================================================
-  # 🌐 JOB 2: ISOLATED WEB APPLICATION PORTAL BUILD - RUNS SEPARATELY ON LINUX
-  # =========================================================================
-  build_web_platform:
-    runs-on: ubuntu-latest
-    name: 🌐 Web Pipeline
-    steps:
-      - name: 📥 Checkout repository source tree
-        uses: actions/checkout@v4
-
-      - name: 🦋 Mount Flutter 3.22.0 Production Compiler
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
-          cache: true
-
-      - name: 📦 Fetch All Project Package Dependencies
-        run: flutter pub get
-
-      - name: 🏗️ BUILD COMPACT COMPILED PRODUCTION WEB ARCHITECTURE
-        run: flutter build web --release --web-renderer auto
-
-      - name: 📤 Upload Production Web Engine Static Site Folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-Web-Site
-          path: mind_spark_project/build/web/
-          retention-days: 30
+# 🎨 TARGETING YOUR EXACT INSTANT REPO FILENAME LOGO ASSET
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  macos: true
+  web:
+    generate: true
+  image_path: "image_e1762c49 (1).png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "image_e1762c49 (1).png"
