@@ -60,5 +60,5 @@ flutter:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
-  image_path: "image_e1762c49 (1).png"
+  ios: false             # Fixed: Swapped to false to prevent Linux build compilation errors
+  image_path: "assets/images/logo.png" # Fixed: Matches the renamed file path from your workflow script
