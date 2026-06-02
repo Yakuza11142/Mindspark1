@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build_apk:
@@ -44,24 +44,34 @@ jobs:
       - name: 🩺 Flutter Doctor
         run: flutter doctor -v
 
-      - name: 🎨 Setup App Logo
+      - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          IMAGE_FILE="image_e1762c49 (1).png"
-          
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          if [ -f "$IMAGE_FILE" ]; then
-            echo "✅ Successfully found $IMAGE_FILE in root directory."
+          # Safely creates a dummy .env file if it doesn't exist to prevent pubspec build crashes
+          if [ ! -f ".env" ]; then
+            echo "SUPABASE_URL=mock_url" > .env
+            echo "SUPABASE_ANON_KEY=mock_key" >> .env
+            echo "GEMINI_API_KEY=mock_key" >> .env
+            echo "📝 Created dummy .env file for build compilation safety."
+          fi
+
+          # Handles the filename spaces and moves it to your asset path
+          if [ -f "image_e1762c49 (1).png" ]; then
+            echo "✅ Successfully found logo image file."
+            mv "image_e1762c49 (1).png" assets/images/logo.png
+            echo "🚚 Moved image file to assets/images/logo.png"
+          elif [ -f "assets/images/logo.png" ]; then
+            echo "✅ Logo already exists in assets directory."
           else
-            echo "❌ Error: Could not find '$IMAGE_FILE' in the root directory!"
+            echo "❌ Error: Could not find your image asset anywhere!"
             exit 1
           fi
 
       - name: 🎨 Generate Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            sed -i 's/ios: true/ios: false/g' pubspec.yaml
             dart run flutter_launcher_icons
           else
             echo "⚠️ flutter_launcher_icons package not configured in pubspec.yaml"
@@ -69,10 +79,9 @@ jobs:
 
       - name: 🏗️ Build Release APK
         run: |
-          # Bypasses the v1 embedding crash flag by forcing standard Gradle execution
-          flutter build apk --release --no-pub
+          flutter build apk --release
 
-      - name: 📤 Upload APK Artifact
+      - name: 📤 Upload APK Artifact to GitHub Action Summary
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-APK
