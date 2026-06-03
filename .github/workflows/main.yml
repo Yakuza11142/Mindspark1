@@ -40,26 +40,28 @@ jobs:
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          # Ensure internal directories exist at root
+          # 1. Force establish correct asset tracking paths at root
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          # Build configuration safety fallback (.env file) at root
+          # 2. Inject compilation fallback environment credentials
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
-            echo "📝 Created dummy .env file for build compilation safety."
+            echo "📝 Base build environment variable file injected."
           fi
 
-          # Handle Logo
+          # 3. Handle branding image placement safely
           if [ -f "image_e1762c49 (1).png" ]; then
+            echo "✅ Located source logo image file at repository root."
             cp "image_e1762c49 (1).png" assets/images/logo.png
           elif [ -f "assets/images/logo.png" ]; then
-            echo "✅ Logo already present."
+            echo "✅ Target branding icon already exists in assets."
           else
+            echo "⚠️ Warning: Source logo missing. Generating dummy placeholder to preserve asset mapping."
             touch assets/images/logo.png
-          </fi>
+          fi
 
       - name: 📦 Get Flutter Packages
         run: flutter pub get
@@ -70,9 +72,10 @@ jobs:
       - name: 🎨 Generate Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
+            echo "🚀 Executing flutter_launcher_icons generation engine..."
             dart run flutter_launcher_icons
           else
-            echo "⚠️ Skipping icon build."
+            echo "⚠️ flutter_launcher_icons configuration block not found in pubspec.yaml. Skipping generation."
           fi
 
       - name: 🏗️ Build Release APK
