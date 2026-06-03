@@ -38,36 +38,45 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build libgtk-3-dev
 
-      - name: 📦 Get Flutter Packages
-        run: flutter pub get
-
-      - name: 🩺 Flutter Doctor
-        run: flutter doctor -v
-
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          mkdir -p assets/images
-          mkdir -p assets/fonts
+          # Create asset directories directly inside your actual project folder
+          mkdir -p mind_spark_project/assets/images
+          mkdir -p mind_spark_project/assets/fonts
 
-          if [ ! -f ".env" ]; then
-            echo "SUPABASE_URL=mock_url" > .env
-            echo "SUPABASE_ANON_KEY=mock_key" >> .env
-            echo "GEMINI_API_KEY=mock_key" >> .env
+          # Safely creates a dummy .env file if it doesn't exist inside your project folder
+          if [ ! -f "mind_spark_project/.env" ]; then
+            echo "SUPABASE_URL=mock_url" > mind_spark_project/.env
+            echo "SUPABASE_ANON_KEY=mock_key" >> mind_spark_project/.env
+            echo "GEMINI_API_KEY=mock_key" >> mind_spark_project/.env
             echo "📝 Created dummy .env file for build compilation safety."
           fi
 
+          # Checks if the logo image is at the root or inside the project, and moves it to the right place
           if [ -f "image_e1762c49 (1).png" ]; then
-            echo "✅ Successfully found logo image file."
-            mv "image_e1762c49 (1).png" assets/images/logo.png
-            echo "🚚 Moved image file to assets/images/logo.png"
-          elif [ -f "assets/images/logo.png" ]; then
+            echo "✅ Successfully found logo image file at root."
+            mv "image_e1762c49 (1).png" mind_spark_project/assets/images/logo.png
+            echo "🚚 Moved image file to mind_spark_project/assets/images/logo.png"
+          elif [ -f "mind_spark_project/image_e1762c49 (1).png" ]; then
+            echo "✅ Successfully found logo image file inside project folder."
+            mv "mind_spark_project/image_e1762c49 (1).png" mind_spark_project/assets/images/logo.png
+          elif [ -f "mind_spark_project/assets/images/logo.png" ]; then
             echo "✅ Logo already exists in assets directory."
           else
             echo "❌ Error: Could not find your image asset anywhere!"
             exit 1
           fi
 
+      - name: 📦 Get Flutter Packages
+        working-directory: ./mind_spark_project
+        run: flutter pub get
+
+      - name: 🩺 Flutter Doctor
+        working-directory: ./mind_spark_project
+        run: flutter doctor -v
+
       - name: 🎨 Generate Launcher Icons
+        working-directory: ./mind_spark_project
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
             dart run flutter_launcher_icons
@@ -76,6 +85,7 @@ jobs:
           fi
 
       - name: 🏗️ Build Release APK
+        working-directory: ./mind_spark_project
         run: |
           flutter clean
           flutter pub get
@@ -85,5 +95,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: mind_spark_project/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
