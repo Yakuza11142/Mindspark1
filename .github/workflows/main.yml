@@ -40,52 +40,42 @@ jobs:
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          # 1. Ensure internal directories exist inside the subproject
-          mkdir -p mind_spark_project/assets/images
-          mkdir -p mind_spark_project/assets/fonts
+          # Ensure internal directories exist at root
+          mkdir -p assets/images
+          mkdir -p assets/fonts
 
-          # 2. Build configuration safety fallback (.env files)
-          if [ ! -f "mind_spark_project/.env" ]; then
-            echo "SUPABASE_URL=mock_url" > mind_spark_project/.env
-            echo "SUPABASE_ANON_KEY=mock_key" >> mind_spark_project/.env
-            echo "GEMINI_API_KEY=mock_key" >> mind_spark_project/.env
+          # Build configuration safety fallback (.env file) at root
+          if [ ! -f ".env" ]; then
+            echo "SUPABASE_URL=mock_url" > .env
+            echo "SUPABASE_ANON_KEY=mock_key" >> .env
+            echo "GEMINI_API_KEY=mock_key" >> .env
             echo "📝 Created dummy .env file for build compilation safety."
           fi
 
-          # 3. Locate logo asset from root/subfolders and inject it safely
+          # Handle Logo
           if [ -f "image_e1762c49 (1).png" ]; then
-            echo "✅ Successfully found logo image file at repository root."
-            cp "image_e1762c49 (1).png" mind_spark_project/assets/images/logo.png
-          elif [ -f "mind_spark_project/image_e1762c49 (1).png" ]; then
-            echo "✅ Successfully found logo image file inside project root folder."
-            cp "mind_spark_project/image_e1762c49 (1).png" mind_spark_project/assets/images/logo.png
-          elif [ -f "mind_spark_project/assets/images/logo.png" ]; then
-            echo "✅ Logo already present in target assets folder."
+            cp "image_e1762c49 (1).png" assets/images/logo.png
+          elif [ -f "assets/images/logo.png" ]; then
+            echo "✅ Logo already present."
           else
-            echo "⚠️ Warning: Could not find image_e1762c49 (1).png, using an automated empty fallback to avoid build crashes."
-            touch mind_spark_project/assets/images/logo.png
-          fi
+            touch assets/images/logo.png
+          </fi>
 
       - name: 📦 Get Flutter Packages
-        working-directory: ./mind_spark_project
         run: flutter pub get
 
       - name: 🩺 Flutter Doctor
-        working-directory: ./mind_spark_project
         run: flutter doctor -v
 
       - name: 🎨 Generate Launcher Icons
-        working-directory: ./mind_spark_project
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            echo "🚀 Executing flutter_launcher_icons generation engine..."
             dart run flutter_launcher_icons
           else
-            echo "⚠️ flutter_launcher_icons config block missing inside pubspec.yaml. Skipping icon build."
+            echo "⚠️ Skipping icon build."
           fi
 
       - name: 🏗️ Build Release APK
-        working-directory: ./mind_spark_project
         run: |
           flutter clean
           flutter pub get
@@ -95,5 +85,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Mind-Spark-APK
-          path: mind_spark_project/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
