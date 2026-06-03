@@ -30,7 +30,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: 'any' # Safe initialization to handle channel alignment
+          flutter-version: '' # Fixed: Leaving blank fetches the latest stable release without container crashes
 
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
