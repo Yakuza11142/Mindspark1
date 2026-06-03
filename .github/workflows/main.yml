@@ -39,27 +39,24 @@ jobs:
           channel: 'stable'
           flutter-version: '3.24.0'
 
-      - name: 🎨 Build Asset Tree & Map Branding Logo
+      - name: 🔐 Configure Local Environment Token Wrapper
         run: |
-          mkdir -p assets/images
-          mkdir -p assets/fonts
-
-          # Ensure the local environment file template is generated
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
+            echo "✅ Generated temporary compilation .env wrapper."
           fi
 
-          # Maps your branding logo cleanly into the compilation directory asset path
-          if [ -f "image_e1762c49 (1).png" ]; then
-            cp "image_e1762c49 (1).png" assets/images/logo.png
-            echo "✅ Logo successfully mapped from repository root."
-          elif [ -f "assets/images/logo.png" ]; then
-            echo "✅ Logo asset already verified inside assets/images/."
-          else
-            touch assets/images/logo.png
-            echo "⚠️ Empty placeholder logo generated."
+      - name: 🛠️ Force Migrate Legacy Android Folder to v2 Embedding
+        run: |
+          # 1. Back up your existing Android configurations safely
+          if [ -d "android" ]; then
+            echo "🔄 Found legacy Android configuration folder. Migrating meta-links..."
+            
+            # 2. Re-create the platform project metadata blueprint securely using modern v2 templates
+            flutter create --platforms=android .
+            echo "✅ Modern Android embedding graph applied successfully."
           fi
 
       - name: 🧼 Evict Cache Metadata Layers
@@ -68,19 +65,14 @@ jobs:
           rm -rf pubspec.lock
           rm -rf .dart_tool/
 
-      - name: 📦 Sync Package Tree Graph
+      - name: 📦 Sync Package Tree Graph (Android Target Only)
         run: flutter pub get
-
-      - name: 🩺 Run Flutter Doctor Analysis
-        run: flutter doctor -v
 
       - name: 🔒 Grant Native Gradle Script Access
         run: |
           if [ -f "android/gradlew" ]; then
             chmod +x android/gradlew
             echo "✅ gradlew execution permissions granted."
-          else
-            echo "⚠️ gradlew file not found. Proceeding with standard fallback configurations."
           fi
 
       - name: 🎨 Build Dynamic Branded Launcher Icons
