@@ -1,4 +1,4 @@
-name: Mind Spark APK Build
+name: mind_spark_1
 
 on:
   push:
