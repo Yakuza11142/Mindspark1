@@ -49,7 +49,6 @@ jobs:
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          # Safely creates a dummy .env file if it doesn't exist to prevent pubspec build crashes
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
@@ -57,7 +56,6 @@ jobs:
             echo "📝 Created dummy .env file for build compilation safety."
           fi
 
-          # Handles the filename spaces and moves it to your asset path
           if [ -f "image_e1762c49 (1).png" ]; then
             echo "✅ Successfully found logo image file."
             mv "image_e1762c49 (1).png" assets/images/logo.png
@@ -79,6 +77,8 @@ jobs:
 
       - name: 🏗️ Build Release APK
         run: |
+          flutter clean
+          flutter pub get
           flutter build apk --release
 
       - name: 📤 Upload APK Artifact to GitHub Action Summary
