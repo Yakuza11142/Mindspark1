@@ -16,72 +16,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: 📥 Checkout Repository Code Structure
         uses: actions/checkout@v4
 
-      - name: ☕ Setup Java 17
+      - name: ☕ Initialize Java Runtime Environment (v17)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
 
-      - name: 🦋 Setup Flutter SDK
+      - name: 🦋 Initialize Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.24.0
           channel: stable
           cache: false 
 
-      - name: 🎨 Setup App Logo and Asset Infrastructure
+      - name: 🔐 Configure Local Environment Token Wrapper
         run: |
-          mkdir -p assets/images
-          mkdir -p assets/fonts
-
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
-          fi
-
-          if [ -f "image_e1762c49 (1).png" ]; then
-            cp "image_e1762c49 (1).png" assets/images/logo.png
-          elif [ -f "assets/images/logo.png" ]; then
-            echo "✅ Logo already present."
+            echo "✅ Created missing .env container template."
           else
-            touch assets/images/logo.png
+            echo "✅ Custom repository .env file detected."
           fi
 
-      - name: 🧼 Evict Legacy Cache Layers
+      - name: 🧼 Evict Cache Metadata Layers
         run: |
           flutter clean
           rm -rf pubspec.lock
           rm -rf .dart_tool/
 
-      - name: 📦 Get Flutter Packages
+      - name: 📦 Sync Package Tree Graph
         run: flutter pub get
 
-      - name: 🩺 Flutter Diagnostics Configuration
+      - name: 🩺 Run Flutter Doctor Analysis
         run: flutter doctor -v
 
-      - name: 🔒 Grant Gradle Execution Permissions
+      - name: 🔒 Grant Native Gradle Script Access
         run: chmod +x android/gradlew
 
-      - name: 🎨 Generate Branded Launcher Icons
+      - name: 🎨 Build Dynamic Launcher Icon Mapping
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
             dart run flutter_launcher_icons
           else
-            echo "⚠️ Skipping launcher icon mapping."
+            echo "⚠️ Skipping launcher mapping task profile."
           fi
 
-      - name: 🏗️ Build Release APK
+      - name: 🏗️ Compile Pure Release Android APK Binary
         run: |
           flutter build apk --release
 
-      - name: 📤 Upload Compiled Android APK Artifact
+      - name: 📤 Export Built Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-APK
+          name: Mind-Spark-Android-Only-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
