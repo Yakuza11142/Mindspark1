@@ -1,4 +1,4 @@
-name: mind_spark
+name: mindspark
 description: "AI TUTOR & AR LAB"
 version: 1.0.0+1
 publish_to: 'none'
@@ -7,49 +7,44 @@ environment:
   sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
-  flutter: { sdk: flutter }
-  
-  # Structural Assets & Platforms
+  flutter:
+    sdk: flutter
   cupertino_icons: ^1.0.6
   provider: ^6.1.2
-  supabase_flutter: ^2.12.4
+  supabase_flutter: ^2.6.0
   flutter_dotenv: ^5.1.0
-  dio: ^5.4.3+1
+  dio: ^5.5.0
   intl: ^0.19.0
   permission_handler: ^11.3.1
   flutter_animate: ^4.5.0
   vector_math: ^2.1.4
   url_launcher: ^6.2.5
-  shared_preferences: ^2.2.2
-
-  # AI Core Matrix Integration
+  shared_preferences: ^2.2.3
   google_generative_ai: ^0.2.0
   flutter_tts: ^4.0.2
   speech_to_text: ^6.6.2
   path_provider: ^2.1.3
   crypto: ^3.0.3
   uuid: ^4.4.0
-
-  # Expanded Reality (AR) & Media Lab
   arcore_flutter_plus: ^1.0.2
-  arkit_plugin: ^1.0.6
   camera: ^0.11.0+1
-  camera_platform_interface: ^2.7.0
   flutter_plugin_android_lifecycle: ^2.0.21
   webview_flutter: ^4.7.0
-  webview_flutter_android: ^3.15.0
-  webview_flutter_wkwebview: ^3.11.0
   google_mobile_ads: ^4.0.0
 
 dev_dependencies:
-  flutter_test: { sdk: flutter }
+  flutter_test:
+    sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.9
   flutter_launcher_icons: ^0.13.1
-  json_serializable: ^6.8.0
-  json_annotation: ^4.9.0
-  build_verify: ^3.1.0
-  source_gen: ^1.5.0
+  source_gen: ^4.2.3
+
+dependency_overrides:
+  source_gen: ^4.2.3
+  intl: 0.19.0
+  vector_math: 2.1.4
+  meta: 1.11.0
 
 flutter:
   uses-material-design: true
@@ -57,15 +52,13 @@ flutter:
     - assets/images/
     - assets/fonts/
     - .env
-
   fonts:
     - family: Inter
-      fonts: 
+      fonts:
         - asset: assets/fonts/Inter-Regular.ttf
         - asset: assets/fonts/Inter-Bold.ttf
           weight: 700
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false             
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/app_icon.png"
