@@ -1,5 +1,9 @@
 plugins {
     id 'com.android.application'
+    // 🦋 THIS SCRIPT HOOKS FLUTTER INTO KOTLIN
+    id 'org.jetbrains.kotlin.android'
+    // 🦋 THIS SCRIPT INJECTS THE FLUTTER COMPILER TOOLS
+    id 'dev.flutter.flutter-gradle-plugin'
 }
 
 android {
@@ -15,15 +19,17 @@ android {
         multiDexEnabled true
     }
 
-    // THIS IS REQUIRED for SDK 34
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
     buildTypes {
         debug {
-            // This ensures your code/logo are obfuscated even in debug builds
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
