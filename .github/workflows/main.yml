@@ -26,21 +26,40 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
+      - name: 🤖 Auto-Accept Android SDK Licensing
+        run: |
+          mkdir -p ${ANDROID_HOME}/licenses
+          echo "244d2d05b41312163e1a37cd28b38e0429e7012e" > ${ANDROID_HOME}/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > ${ANDROID_HOME}/licenses/android-sdk-preview-license
+          echo "✅ Android SDK licenses signed off."
+
       - name: 🦋 Initialize Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '' # Fixed: Leaving blank fetches the latest stable release without container crashes
+          flutter-version: '3.24.0'
 
-      - name: 🔐 Configure Local Environment Token Wrapper
+      - name: 🎨 Build Asset Tree & Map Branding Logo
         run: |
+          mkdir -p assets/images
+          mkdir -p assets/fonts
+
+          # Ensure the local environment file template is generated
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
-            echo "✅ Created missing .env container template."
+          fi
+
+          # Maps your branding logo cleanly into the compilation directory asset path
+          if [ -f "image_e1762c49 (1).png" ]; then
+            cp "image_e1762c49 (1).png" assets/images/logo.png
+            echo "✅ Logo successfully mapped from repository root."
+          elif [ -f "assets/images/logo.png" ]; then
+            echo "✅ Logo asset already verified inside assets/images/."
           else
-            echo "✅ Custom repository .env file detected."
+            touch assets/images/logo.png
+            echo "⚠️ Empty placeholder logo generated."
           fi
 
       - name: 🧼 Evict Cache Metadata Layers
@@ -49,7 +68,7 @@ jobs:
           rm -rf pubspec.lock
           rm -rf .dart_tool/
 
-      - name: 📦 Sync Package Tree Graph (Android Target Only)
+      - name: 📦 Sync Package Tree Graph
         run: flutter pub get
 
       - name: 🩺 Run Flutter Doctor Analysis
@@ -59,26 +78,31 @@ jobs:
         run: |
           if [ -f "android/gradlew" ]; then
             chmod +x android/gradlew
-            echo "✅ gradlew permissions granted."
+            echo "✅ gradlew execution permissions granted."
           else
-            echo "⚠️ gradlew file not found. Proceeding with standard build routines."
+            echo "⚠️ gradlew file not found. Proceeding with standard fallback configurations."
           fi
 
-      - name: 🎨 Build Dynamic Launcher Icon Mapping
+      - name: 🎨 Build Dynamic Branded Launcher Icons
         run: |
           if grep -q "flutter_launcher_icons" pubspec.yaml; then
             dart run flutter_launcher_icons
           else
-            echo "⚠️ Skipping launcher mapping task profile."
+            echo "⚠️ Skipping launcher icon mapping."
           fi
 
-      - name: 🏗️ Compile Pure Release Android APK Binary
+      - name: 🏗️ Compile Pure Obfuscated Android-Only APK Binary
         run: |
-          flutter build apk --release --no-tree-shake-icons
+          mkdir -p build/app/outputs/symbols
+          flutter build apk --release \
+            --target-platform=android-arm64 \
+            --no-tree-shake-icons \
+            --obfuscate \
+            --split-debug-info=build/app/outputs/symbols
 
       - name: 📤 Export Built Android Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Android-Only-APK
+          name: Mind-Spark-Obfuscated-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
