@@ -29,9 +29,8 @@ jobs:
       - name: 🦋 Initialize Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
-          cache: false
+          flutter-version: 'any' # Safe initialization to handle channel alignment
 
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
@@ -50,7 +49,7 @@ jobs:
           rm -rf pubspec.lock
           rm -rf .dart_tool/
 
-      - name: 📦 Sync Package Tree Graph
+      - name: 📦 Sync Package Tree Graph (Android Target Only)
         run: flutter pub get
 
       - name: 🩺 Run Flutter Doctor Analysis
@@ -62,7 +61,7 @@ jobs:
             chmod +x android/gradlew
             echo "✅ gradlew permissions granted."
           else
-            echo "⚠️ gradlew file not found yet. Proceeding with standard build routines."
+            echo "⚠️ gradlew file not found. Proceeding with standard build routines."
           fi
 
       - name: 🎨 Build Dynamic Launcher Icon Mapping
@@ -75,7 +74,7 @@ jobs:
 
       - name: 🏗️ Compile Pure Release Android APK Binary
         run: |
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
 
       - name: 📤 Export Built Android Artifact
         uses: actions/upload-artifact@v4
