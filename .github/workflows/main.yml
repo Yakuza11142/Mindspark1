@@ -31,7 +31,7 @@ jobs:
         with:
           flutter-version: 3.22.0
           channel: stable
-          cache: false # Force clear the GitHub workflow caching mechanism
+          cache: false
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
@@ -54,7 +54,6 @@ jobs:
 
       - name: 🧼 Evict Legacy Cache Layers
         run: |
-          echo "🧹 Systematically cleaning build artifacts..."
           flutter clean
           rm -rf pubspec.lock
           rm -rf .dart_tool/
@@ -64,6 +63,18 @@ jobs:
 
       - name: 🩺 Flutter Diagnostics Configuration
         run: flutter doctor -v
+
+      - name: 🩹 Force Patch Hidden Android Legacy Embeddings
+        run: |
+          echo "🔍 Scanning and patching all internal Android Manifest templates..."
+          # Replaces any hidden v1 application class strings across all files
+          find android/ -name "AndroidManifest.xml" -exec sed -i '' 's/io.flutter.app.FlutterApplication/\${applicationName}/g' {} +
+          
+          # Force injects the v2 embedding flag if missing anywhere
+          find android/ -name "AndroidManifest.xml" -exec sed -i '' '/<\/application>/i\
+          <meta-data android:name="flutterEmbedding" android:value="2" />\
+          ' {} +
+          echo "✅ All hidden manifest configurations patched."
 
       - name: 🎨 Generate Branded Launcher Icons
         run: |
