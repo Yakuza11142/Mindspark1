@@ -31,22 +31,19 @@ jobs:
         with:
           flutter-version: 3.22.0
           channel: stable
-          cache: true
+          cache: false # Force clear the GitHub workflow caching mechanism
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          # Create required internal storage folders
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          # Inject compilation environment fallbacks
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
           fi
 
-          # Handle branding image placement
           if [ -f "image_e1762c49 (1).png" ]; then
             cp "image_e1762c49 (1).png" assets/images/logo.png
           elif [ -f "assets/images/logo.png" ]; then
@@ -54,6 +51,13 @@ jobs:
           else
             touch assets/images/logo.png
           fi
+
+      - name: 🧼 Evict Legacy Cache Layers
+        run: |
+          echo "🧹 Systematically cleaning build artifacts..."
+          flutter clean
+          rm -rf pubspec.lock
+          rm -rf .dart_tool/
 
       - name: 📦 Get Flutter Packages
         run: flutter pub get
@@ -71,13 +75,10 @@ jobs:
 
       - name: 🏗️ Compile Android Release APK
         run: |
-          flutter clean
-          flutter pub get
           flutter build apk --release
 
       - name: 🏗️ Compile iOS Test IPA Bundle
         run: |
-          # Build a release package without requiring local hardware signing keys
           flutter build ipa --release --no-codesign
 
       - name: 📤 Upload Compiled Android APK Artifact
