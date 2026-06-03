@@ -29,9 +29,9 @@ jobs:
       - name: 🦋 Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.22.0
+          flutter-version: 3.24.0
           channel: stable
-          cache: false # Enforces a pure compile by avoiding old cache fragments
+          cache: false 
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
@@ -63,6 +63,9 @@ jobs:
 
       - name: 🩺 Flutter Diagnostics Configuration
         run: flutter doctor -v
+
+      - name: 🔒 Grant Gradle Execution Permissions
+        run: chmod +x android/gradlew
 
       - name: 🎨 Generate Branded Launcher Icons
         run: |
