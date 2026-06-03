@@ -1,4 +1,4 @@
-name: Mind Spark Multi-Platform Build
+name: Mind Spark APK Build
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: write
 
 jobs:
-  compile_cross_platform:
-    name: 🍏📱 Build Android APK & iOS IPA
-    runs-on: macos-14
+  build_apk:
+    name: 📱 Build Android APK
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout Repository
@@ -31,7 +31,7 @@ jobs:
         with:
           flutter-version: 3.22.0
           channel: stable
-          cache: false # Bypasses cached file fragments to enforce a pure compile
+          cache: false # Enforces a pure compile by avoiding old cache fragments
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
@@ -72,24 +72,13 @@ jobs:
             echo "⚠️ Skipping launcher icon mapping."
           fi
 
-      - name: 🏗️ Compile Android Release APK
+      - name: 🏗️ Build Release APK
         run: |
           flutter build apk --release
-
-      - name: 🏗️ Compile iOS Test IPA Bundle
-        run: |
-          flutter build ipa --release --no-codesign
 
       - name: 📤 Upload Compiled Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mind-Spark-Android-APK
+          name: Mind-Spark-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-      - name: 📤 Upload Compiled iOS App Payload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mind-Spark-iOS-Bundle
-          path: build/ios/ipa/*.ipa
           retention-days: 14
