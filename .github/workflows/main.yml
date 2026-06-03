@@ -40,19 +40,19 @@ jobs:
 
       - name: 🎨 Setup App Logo and Asset Infrastructure
         run: |
-          # 1. Force establish correct asset tracking paths at root
+          # Ensure internal asset tracking directories exist at root
           mkdir -p assets/images
           mkdir -p assets/fonts
 
-          # 2. Inject compilation fallback environment credentials
+          # Inject compilation fallback environment credentials
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=mock_url" > .env
             echo "SUPABASE_ANON_KEY=mock_key" >> .env
             echo "GEMINI_API_KEY=mock_key" >> .env
-            echo "📝 Base build environment variable file injected."
+            echo "Base build environment variable file injected."
           fi
 
-          # 3. Handle branding image placement safely
+          # Handle branding image placement safely
           if [ -f "image_e1762c49 (1).png" ]; then
             echo "✅ Located source logo image file at repository root."
             cp "image_e1762c49 (1).png" assets/images/logo.png
