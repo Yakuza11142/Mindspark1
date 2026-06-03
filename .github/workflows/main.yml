@@ -29,9 +29,9 @@ jobs:
       - name: 🦋 Initialize Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.24.0
-          channel: stable
-          cache: false 
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: false
 
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
@@ -57,7 +57,13 @@ jobs:
         run: flutter doctor -v
 
       - name: 🔒 Grant Native Gradle Script Access
-        run: chmod +x android/gradlew
+        run: |
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+            echo "✅ gradlew permissions granted."
+          else
+            echo "⚠️ gradlew file not found yet. Proceeding with standard build routines."
+          fi
 
       - name: 🎨 Build Dynamic Launcher Icon Mapping
         run: |
