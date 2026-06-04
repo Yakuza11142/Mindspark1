@@ -1,4 +1,4 @@
-name: mind_spark_1
+name: mindspark
 description: "AI TUTOR & AR LAB"
 version: 1.0.0+1
 publish_to: 'none'
@@ -52,6 +52,7 @@ flutter:
     - assets/images/
     - assets/fonts/
     - .env
+
   fonts:
     - family: Inter
       fonts:
