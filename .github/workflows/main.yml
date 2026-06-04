@@ -53,7 +53,6 @@ jobs:
 
       - name: 🛠️ Sanitize Pubspec Package Name
         run: |
-          # Enforces the valid lowercase name standard directly inside the virtual environment wrapper
           if [ -f "pubspec.yaml" ]; then
             sed -i 's/^name: .*/name: mindspark1/' pubspec.yaml
             echo "✅ pubspec.yaml name parameter synchronized to mindspark1."
@@ -73,14 +72,6 @@ jobs:
           if [ -f "android/gradlew" ]; then
             chmod +x android/gradlew
             echo "✅ gradlew execution permissions granted."
-          fi
-
-      - name: 🎨 Build Dynamic Branded Launcher Icons
-        run: |
-          if grep -q "flutter_launcher_icons" pubspec.yaml; then
-            dart run flutter_launcher_icons
-          else
-            echo "⚠️ Skipping launcher icon mapping."
           fi
 
       - name: 🏗️ Compile Pure Obfuscated Android-Only APK Binary
