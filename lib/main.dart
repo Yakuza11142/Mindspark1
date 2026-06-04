@@ -2,15 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+import 'package:mindspark/core/constants/app_theme.dart';
+import 'package:mindspark/presentation/providers/auth_provider.dart';
+import 'package:mindspark/presentation/providers/ai_tutor_provider.dart';
+import 'package:mindspark/presentation/providers/ar_lab_provider.dart';
+import 'package:mindspark/presentation/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final initAdmob = MobileAds.instance.initialize();
 
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint("⚠️ .env not found");
+    debugPrint("⚠️ .env file not found.");
   }
 
   try {
@@ -23,7 +31,18 @@ void main() async {
     debugPrint("❌ Supabase error: $e");
   }
 
-  runApp(const MindSparkApp());
+  await initAdmob;
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppAuthProvider()),
+        ChangeNotifierProvider(create: (_) => AITutorProvider()),
+        ChangeNotifierProvider(create: (_) => ArLabProvider()),
+      ],
+      child: const MindSparkApp(),
+    ),
+  );
 }
 
 class MindSparkApp extends StatelessWidget {
@@ -32,90 +51,10 @@ class MindSparkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Mind Spark',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        primaryColor: const Color(0xFF6366F1),
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '🧠 MIND SPARK',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            fontFamily: 'Inter',
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF1E293B),
-        elevation: 4,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.psychology,
-              size: 80,
-              color: Color(0xFF6366F1),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Welcome to Mind Spark',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontFamily: 'Inter',
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'AI-Powered Learning & AR Labs',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-                fontFamily: 'Inter',
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
-                ),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Welcome! 🚀')),
-                );
-              },
-              child: const Text(
-                'Get Started',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      home: const SplashScreen(),
     );
   }
 }
