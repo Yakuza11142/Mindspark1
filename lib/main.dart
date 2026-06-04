@@ -4,11 +4,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import 'package:mindspark/core/constants/app_theme.dart';
-import 'package:mindspark/presentation/providers/auth_provider.dart';
-import 'package:mindspark/presentation/providers/ai_tutor_provider.dart';
-import 'package:mindspark/presentation/providers/ar_lab_provider.dart';
-import 'package:mindspark/presentation/screens/splash_screen.dart';
+// FIX: Updated all package paths to use the valid lowercase name
+import 'package:mindspark1/core/constants/app_theme.dart';
+import 'package:mindspark1/presentation/providers/auth_provider.dart';
+import 'package:mindspark1/presentation/providers/ai_tutor_provider.dart';
+import 'package:mindspark1/presentation/providers/ar_lab_provider.dart';
+import 'package:mindspark1/presentation/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
