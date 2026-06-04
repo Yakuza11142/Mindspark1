@@ -19,6 +19,9 @@ jobs:
       - name: 📥 Checkout Repository Code Structure
         uses: actions/checkout@v4
 
+      - name: 📋 Log Active Build Commit SHA
+        run: echo "🚀 Compiling codebase assets linked to commit SHA -> ${{ github.sha }}"
+
       - name: ☕ Initialize Java Runtime Environment (v17)
         uses: actions/setup-java@v4
         with:
@@ -48,17 +51,12 @@ jobs:
             echo "✅ Generated temporary compilation .env wrapper."
           fi
 
-      - name: 🛠️ Sanitize Pubspec Package Name & Force Migration
+      - name: 🛠️ Sanitize Pubspec Package Name
         run: |
-          # Automatically rewrites invalid uppercase package names to strict lowercase valid identifiers
+          # Enforces the valid lowercase name standard directly inside the virtual environment wrapper
           if [ -f "pubspec.yaml" ]; then
-            sed -i 's/^name: .*/name: mind_spark/' pubspec.yaml
-            echo "✅ pubspec.yaml name parameter sanitized automatically."
-          fi
-
-          if [ -d "android" ]; then
-            flutter create --platforms=android .
-            echo "✅ Modern Android embedding graph applied successfully."
+            sed -i 's/^name: .*/name: mindspark1/' pubspec.yaml
+            echo "✅ pubspec.yaml name parameter synchronized to mindspark1."
           fi
 
       - name: 🧼 Evict Cache Metadata Layers
@@ -67,7 +65,7 @@ jobs:
           rm -rf pubspec.lock
           rm -rf .dart_tool/
 
-      - name: 📦 Sync Package Tree Graph (Android Target Only)
+      - name: 📦 Sync Package Tree Graph
         run: flutter pub get
 
       - name: 🔒 Grant Native Gradle Script Access
