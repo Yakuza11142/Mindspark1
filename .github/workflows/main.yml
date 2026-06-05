@@ -63,6 +63,9 @@ jobs:
           flutter clean
           rm -rf pubspec.lock
           rm -rf .dart_tool/
+          rm -rf android/.gradle/
+          rm -rf android/app/build/
+          echo "✅ Cleared all local and native build caching artifacts."
 
       - name: 📦 Sync Package Tree Graph
         run: flutter pub get
