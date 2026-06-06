@@ -49,22 +49,25 @@ jobs:
             echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
           fi
 
-      - name: 🛠️ Upgrade to Android v2 Embedding
+      - name: 🛠️ Upgrade to Android v2 Embedding (Kotlin Variant)
         run: |
           if [ -d "android" ]; then
-            echo "⚙️ Automatically migrating legacy v1 configurations..."
-            # Remove the old plugin registry import and call if they exist in MainActivity
-            find android/app/src/main -name "MainActivity.java" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant;/d' {} +
-            find android/app/src/main -name "MainActivity.java" -exec sed -i '/GeneratedPluginRegistrant.registerWith(this);/d' {} +
+            echo "⚙️ Automatically migrating native Kotlin structures..."
+            
+            # Wipes legacy v1 imports and registrations from any MainActivity.kt files
             find android/app/src/main -name "MainActivity.kt" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant/d' {} +
             find android/app/src/main -name "MainActivity.kt" -exec sed -i '/GeneratedPluginRegistrant.registerWith/d' {} +
             
-            # Clean obsolete v1 embedding metadata tags from AndroidManifest
+            # Wipes any legacy Java-centric fallback definitions if they linger
+            find android/app/src/main -name "MainActivity.java" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant;/d' {} +
+            find android/app/src/main -name "MainActivity.java" -exec sed -i '/GeneratedPluginRegistrant.registerWith(this);/d' {} +
+            
+            # Clear obsolete application properties and legacy embedding tags from AndroidManifest.xml
             if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
               sed -i '/android:name="io.flutter.app.FlutterApplication"/d' android/app/src/main/AndroidManifest.xml
               sed -i '/<meta-data android:name="flutterEmbedding" android:value="1"/d' android/app/src/main/AndroidManifest.xml
             fi
-            echo "✅ Legacy v1 tags sanitized."
+            echo "✅ Native Kotlin codebase alignment verified."
           fi
 
       - name: 🧼 Evict Cache Metadata Layers
