@@ -40,23 +40,26 @@ jobs:
         with:
           channel: 'stable'
           flutter-version: '3.24.0'
+          cache: true
+
+      - name: 💾 Configure Advanced Native Gradle Caching
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .dart_tool/
+            android/.gradle
+          key: ${{ runner.os }}-gradle-flutter-${{ hashFiles('**/pubspec.lock', 'android/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-flutter-
 
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
-          if [ ! -f ".env" ]; then
-            echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
-            echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-            echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
-          fi
-
-      - name: 🧼 Evict Cache Metadata Layers
-        run: |
-          flutter clean
-          rm -rf pubspec.lock
-          rm -rf .dart_tool/
-          rm -rf android/.gradle/
-          rm -rf android/app/build/
-          echo "✅ Cleared all local and native build caching artifacts."
+          rm -f .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+          echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
 
       - name: 📦 Sync Package Tree Graph
         run: flutter pub get
