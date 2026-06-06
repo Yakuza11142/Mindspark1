@@ -21,16 +21,6 @@ jobs:
       - name: 📋 Log Active Build Commit SHA
         run: echo "🚀 Compiling codebase assets linked to commit SHA -> ${{ github.sha }}"
 
-      - name: 🤖 Setup App Icon / Logo
-        run: |
-          if [ -f "pubspec.yaml" ]; then
-            echo "dependencies:" >> pubspec.yaml
-            echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
-            flutter pub get
-            flutter pub run flutter_launcher_icons:main
-            echo "✅ App icon generated successfully."
-          fi
-
       - name: ☕ Initialize Java Runtime Environment (v17)
         uses: actions/setup-java@v4
         with:
@@ -50,6 +40,16 @@ jobs:
         with:
           channel: 'stable'
           flutter-version: '3.24.0'
+
+      - name: 🤖 Setup App Icon / Logo
+        run: |
+          if [ -f "pubspec.yaml" ]; then
+            echo "dependencies:" >> pubspec.yaml
+            echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
+            flutter pub get
+            flutter pub run flutter_launcher_icons:main
+            echo "✅ App icon generated successfully."
+          fi
 
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
