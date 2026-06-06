@@ -101,7 +101,7 @@ jobs:
           echo "=========================================================="
 
       - name: 📦 Upload Symbols & Obfuscated APK Artifacts
-        uses: actions/artifacts@v4
+        uses: actions/upload-artifact@v4
         with:
           name: mind-spark-release-apks
           path: |
