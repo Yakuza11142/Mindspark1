@@ -41,29 +41,12 @@ jobs:
           channel: 'stable'
           flutter-version: '3.24.0'
 
-      - name: 🤖 Setup App Icon / Logo
-        run: |
-          if [ -f "pubspec.yaml" ]; then
-            echo "dependencies:" >> pubspec.yaml
-            echo "  flutter_launcher_icons: ^0.13.1" >> pubspec.yaml
-            flutter pub get
-            flutter pub run flutter_launcher_icons:main
-            echo "✅ App icon generated successfully."
-          fi
-
       - name: 🔐 Configure Local Environment Token Wrapper
         run: |
           if [ ! -f ".env" ]; then
             echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
             echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
             echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
-          fi
-
-      - name: 🛠️ Sanitize Pubspec Package Name
-        run: |
-          if [ -f "pubspec.yaml" ]; then
-            sed -i 's/^name: .*/name: mindspark1/' pubspec.yaml
-            echo "✅ pubspec.yaml name parameter synchronized to mindspark1."
           fi
 
       - name: 🧼 Evict Cache Metadata Layers
