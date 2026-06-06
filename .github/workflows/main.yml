@@ -49,6 +49,24 @@ jobs:
             echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
           fi
 
+      - name: 🛠️ Upgrade to Android v2 Embedding
+        run: |
+          if [ -d "android" ]; then
+            echo "⚙️ Automatically migrating legacy v1 configurations..."
+            # Remove the old plugin registry import and call if they exist in MainActivity
+            find android/app/src/main -name "MainActivity.java" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant;/d' {} +
+            find android/app/src/main -name "MainActivity.java" -exec sed -i '/GeneratedPluginRegistrant.registerWith(this);/d' {} +
+            find android/app/src/main -name "MainActivity.kt" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant/d' {} +
+            find android/app/src/main -name "MainActivity.kt" -exec sed -i '/GeneratedPluginRegistrant.registerWith/d' {} +
+            
+            # Clean obsolete v1 embedding metadata tags from AndroidManifest
+            if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+              sed -i '/android:name="io.flutter.app.FlutterApplication"/d' android/app/src/main/AndroidManifest.xml
+              sed -i '/<meta-data android:name="flutterEmbedding" android:value="1"/d' android/app/src/main/AndroidManifest.xml
+            fi
+            echo "✅ Legacy v1 tags sanitized."
+          fi
+
       - name: 🧼 Evict Cache Metadata Layers
         run: |
           flutter clean
