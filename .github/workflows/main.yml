@@ -1,4 +1,4 @@
-name: mind_spark_1
+name: Mind Spark Android Build
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build_apk:
-    name: 📱 Build Android APK
+    name: 📱 Build Android APK Only
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Repository Code Structure
@@ -60,70 +60,50 @@ jobs:
             echo "⚙️ Automatically migrating native Kotlin structures..."
             find android/app/src/main -name "MainActivity.kt" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant/d' {} +
             find android/app/src/main -name "MainActivity.kt" -exec sed -i '/GeneratedPluginRegistrant.registerWith/d' {} +
-            find android/app/src/main -name "MainActivity.java" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant;/d' {} +
-            find android/app/src/main -name "MainActivity.java" -exec sed -i '/GeneratedPluginRegistrant.registerWith(this);/d' {} +
-            if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-              sed -i '/android:name="io.flutter.app.FlutterApplication"/d' android/app/src/main/AndroidManifest.xml
-              sed -i '/<meta-data android:name="flutterEmbedding" android:value="1"/d' android/app/src/main/AndroidManifest.xml
-            fi
-            echo "✅ Native structures aligned to modern standard."
+            echo "✅ Kotlin structures updated to V2 Embedding framework."
           fi
 
-      - name: 🔐 Configure Local Environment Token Wrapper
-        run: |
-          rm -f .env
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-          echo "✅ Generated temporary compilation .env wrapper containing only Supabase keys."
-
-      - name: 🧼 Evict Cache Metadata Layers
-        run: |
-          flutter clean
-          rm -rf pubspec.lock
-          rm -rf .dart_tool/
-          rm -rf android/.gradle/
-          rm -rf android/app/build/
-          echo "✅ Cleared all local and native build caching artifacts."
-
-      - name: 📦 Sync Package Tree Graph
+      - name: 📦 Fetch Flutter Dependencies
         run: flutter pub get
 
-      - name: 🔒 Grant Native Gradle Script Access
+      - name: 🚀 Build Release APK with Obfuscation
         run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
-            echo "✅ gradlew execution permissions granted."
-          fi
-
-      - name: 🏗️ Compile Pure Obfuscated Android-Only APK Binary
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          ELEVEN_LABS_API_KEY: ${{ secrets.ELEVEN_LABS_API_KEY }}
-          PEXELS_KEY: ${{ secrets.PEXELS_KEY }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-        run: |
-          mkdir -p build/app/outputs/symbols
           flutter build apk --release \
-            --target-platform=android-arm64 \
-            --no-tree-shake-icons \
             --obfuscate \
             --split-debug-info=build/app/outputs/symbols \
-            --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
-            --dart-define=RUNWAYML_API_SECRET=$RUNWAYML_API_SECRET \
-            --dart-define=MTN_API_KEY=$MTN_API_KEY \
-            --dart-define=OPENAI_API_KEY=$OPENAI_API_KEY \
-            --dart-define=GROQ_API_KEY=$GROQ_API_KEY \
-            --dart-define=ELEVEN_LABS_API_KEY=$ELEVEN_LABS_API_KEY \
-            --dart-define=PEXELS_KEY=$PEXELS_KEY \
-            --dart-define=TRIPO_API_KEY=$TRIPO_API_KEY
+            --split-per-abi
 
-      - name: 📤 Export Built Android Artifact
-        uses: actions/upload-artifact@v4
+      - name: 🔐 Generate Multi-Algorithm Integrity Checksums
+        run: |
+          echo "=========================================================="
+          echo "🛡️  ADVANCED MULTI-HASH INTEGRITY REPORT 🛡️"
+          echo "=========================================================="
+          
+          find build/app/outputs/flutter-apk/ -name "*.apk" | while read -r apk_file; do
+            echo ""
+            echo "📦 FILE: $(basename "$apk_file")"
+            echo "----------------------------------------------------------"
+            
+            echo "🔹 SHA-256:"
+            sha256sum "$apk_file" | awk '{print $1}'
+            
+            echo "🔹 SHA-512:"
+            sha512sum "$apk_file" | awk '{print $1}'
+            
+            echo "🔹 SHA3-256:"
+            openssl dgst -sha3-256 "$apk_file" | awk '{print $2}'
+            
+            echo "🔹 SHA3-512:"
+            openssl dgst -sha3-512 "$apk_file" | awk '{print $2}'
+            
+            echo "----------------------------------------------------------"
+          done
+          echo "=========================================================="
+
+      - name: 📦 Upload Symbols & Obfuscated APK Artifacts
+        uses: actions/artifacts@v4
         with:
-          name: Mind-Spark-Obfuscated-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
+          name: mind-spark-release-apks
+          path: |
+            build/app/outputs/flutter-apk/*-release.apk
+            build/app/outputs/symbols/
