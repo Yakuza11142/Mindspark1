@@ -43,7 +43,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - image_e1762c49 (1).png
+    - "image_e1762c49 (1).png"
     - .env
 
   fonts:
