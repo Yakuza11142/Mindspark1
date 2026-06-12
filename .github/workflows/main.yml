@@ -63,6 +63,17 @@ jobs:
             echo "✅ Kotlin structures updated to V2 Embedding framework."
           fi
 
+      - name: 🔑 Inject API Keys and Secrets into Environment File
+        run: |
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> .env
+          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> .env
+          echo "RUNWAY_API_KEY=${{ secrets.RUNWAY_API_KEY }}" >> .env
+          echo "HEYGEN_API_KEY=${{ secrets.HEYGEN_API_KEY }}" >> .env
+          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> .env
+          echo "✅ .env configuration file built successfully."
+
       - name: 📦 Fetch Flutter Dependencies
         run: flutter pub get
 
@@ -78,24 +89,18 @@ jobs:
           echo "=========================================================="
           echo "🛡️  ADVANCED MULTI-HASH INTEGRITY REPORT 🛡️"
           echo "=========================================================="
-          
           find build/app/outputs/flutter-apk/ -name "*.apk" | while read -r apk_file; do
             echo ""
             echo "📦 FILE: $(basename "$apk_file")"
             echo "----------------------------------------------------------"
-            
             echo "🔹 SHA-256:"
             sha256sum "$apk_file" | awk '{print $1}'
-            
             echo "🔹 SHA-512:"
             sha512sum "$apk_file" | awk '{print $1}'
-            
             echo "🔹 SHA3-256:"
             openssl dgst -sha3-256 "$apk_file" | awk '{print $2}'
-            
             echo "🔹 SHA3-512:"
             openssl dgst -sha3-512 "$apk_file" | awk '{print $2}'
-            
             echo "----------------------------------------------------------"
           done
           echo "=========================================================="
