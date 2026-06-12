@@ -40,13 +40,10 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.2
   source_gen: ^1.5.0
 
-# REMOVED: Conflicting overrides that were locking intl, source_gen, and vector_math versions
-
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
-    - assets/fonts/
+    - image_e1762c49 (1).png
     - .env
 
   fonts:
@@ -58,4 +55,4 @@ flutter:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  image_path: "assets/images/app_icon.png"
+  image_path: "image_e1762c49 (1).png"
