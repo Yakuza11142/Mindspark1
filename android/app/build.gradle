@@ -1,10 +1,10 @@
 plugins {
     id 'com.android.application'
-    // 🦋 THIS SCRIPT HOOKS FLUTTER INTO KOTLIN
     id 'org.jetbrains.kotlin.android'
-    // 🦋 THIS SCRIPT INJECTS THE FLUTTER COMPILER TOOLS
-    id 'dev.flutter.flutter-gradle-plugin'
 }
+
+// 🛠️ BYPASS TRICK: This stops the cloud runner from crashing on the AGP 9 error!
+apply plugin: 'dev.flutter.flutter-gradle-plugin'
 
 android {
     namespace 'com.mindspark.app'
