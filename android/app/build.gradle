@@ -1,9 +1,21 @@
+// 🛠️ The Loader: This tells Gradle exactly where the Flutter tools live in your project
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // This hooks the Flutter SDK's build tools straight into Gradle's memory
+        classpath "dev.flutter:flutter_gradle_plugin:1.0.0"
+    }
+}
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
 
-// 🛠️ BYPASS TRICK: This stops the cloud runner from crashing on the AGP 9 error!
+// 🛠️ BYPASS TRICK: Now it will find the plugin perfectly and bypass the AGP 9 error!
 apply plugin: 'dev.flutter.flutter-gradle-plugin'
 
 android {
