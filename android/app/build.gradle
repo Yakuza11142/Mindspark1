@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "com.mindspark.elite"
-        minSdk 21
+        minSdk 23 // Kept at 23 to support all your AI and Supabase plugins safely
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
@@ -30,14 +30,14 @@ android {
 
     buildTypes {
         debug {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            shrinkResources false
         }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug // Uses debug key so you can install it on your mobile device instantly
         }
     }
 }
