@@ -94,6 +94,12 @@ jobs:
             rm -f gradle/wrapper/gradle-wrapper.jar
             curl -LO https://githubusercontent.com -o gradle/wrapper/gradle-wrapper.jar
             chmod +x gradlew
+            
+            # Auto-patch missing package namespaces to prevent AGP 8.0+ layout compile crashes
+            if [ -f "build.gradle" ]; then
+              echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { if (namespace == null) { namespace project.group } } } } }" >> build.gradle
+            fi
+            
             ./gradlew clean
             cd ..
             echo "✅ Fresh Gradle wrapper binaries injected and validated."
@@ -105,6 +111,9 @@ jobs:
           flutter pub get
 
       - name: 🚀 Build Release APK with Obfuscation
+        env:
+          # Allocates 4GB RAM to the compiler engine to prevent JVM memory exhaustion crashes
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
         run: |
           flutter build apk --release \
             --obfuscate \
