@@ -92,14 +92,17 @@ jobs:
             cd android
             mkdir -p gradle/wrapper
             rm -f gradle/wrapper/gradle-wrapper.jar
-            curl -LO https://githubusercontent.com
-            mv gradle-wrapper.jar gradle/wrapper/
+            curl -LO https://githubusercontent.com -o gradle/wrapper/gradle-wrapper.jar
+            chmod +x gradlew
+            ./gradlew clean
             cd ..
-            echo "✅ Fresh Gradle wrapper binaries injected successfully."
+            echo "✅ Fresh Gradle wrapper binaries injected and validated."
           fi
 
-      - name: 📦 Fetch Flutter Dependencies
-        run: flutter pub get
+      - name: 📦 Clean Local Workspace Cache
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: 🚀 Build Release APK with Obfuscation
         run: |
