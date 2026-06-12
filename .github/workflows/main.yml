@@ -1,71 +1,69 @@
 name: Mind Spark Android APK
 
 on:
-push:
-branches:
-- main
-- master
-workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout Source
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
 
-  - name: Setup Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: "17"
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-  - name: Setup Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      channel: stable
-      cache: true
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
-  - name: Flutter Doctor
-    run: flutter doctor -v
+      - name: Flutter Doctor
+        run: flutter doctor -v
 
-  - name: Create .env
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-      TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-      RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
-      HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
-      MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-    run: |
-      cat > .env << EOF
-      OPENAI_API_KEY=${OPENAI_API_KEY}
-      GEMINI_API_KEY=${GEMINI_API_KEY}
-      PEXELS_API_KEY=${PEXELS_API_KEY}
-      TRIPO_API_KEY=${TRIPO_API_KEY}
-      RUNWAY_API_KEY=${RUNWAY_API_KEY}
-      HEYGEN_API_KEY=${HEYGEN_API_KEY}
-      MTN_API_KEY=${MTN_API_KEY}
-      EOF
+      - name: Create .env File
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
+          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
+        run: |
+          cat > .env << EOF
+          OPENAI_API_KEY=${OPENAI_API_KEY}
+          GEMINI_API_KEY=${GEMINI_API_KEY}
+          PEXELS_API_KEY=${PEXELS_API_KEY}
+          TRIPO_API_KEY=${TRIPO_API_KEY}
+          RUNWAY_API_KEY=${RUNWAY_API_KEY}
+          HEYGEN_API_KEY=${HEYGEN_API_KEY}
+          MTN_API_KEY=${MTN_API_KEY}
+          EOF
 
-  - name: Get Dependencies
-    run: flutter pub get
+      - name: Get Dependencies
+        run: flutter pub get
 
-  - name: Generate Launcher Icons
-    run: flutter pub run flutter_launcher_icons:main || true
+      - name: Generate Launcher Icons
+        run: flutter pub run flutter_launcher_icons:main || dart run flutter_launcher_icons || true
 
-  - name: Build APK
-    run: flutter build apk --release
+      - name: Build APK
+        run: flutter build apk --release
 
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: mind-spark-apk
-      path: build/app/outputs/flutter-apk/app-release.apk
-```
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mind-spark-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
