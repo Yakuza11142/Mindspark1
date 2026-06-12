@@ -28,7 +28,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          cache: true
+          cache: false # 🧹 Clears out bad cloud caches to prevent AGP mismatches
 
       - name: Flutter Doctor
         run: flutter doctor -v
@@ -56,8 +56,8 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Generate Launcher Icons
-        run: dart run flutter_launcher_icons || true
+      - name: Clean Project Cache
+        run: flutter clean
 
       - name: Build APK
         env:
