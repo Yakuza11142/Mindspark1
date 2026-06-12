@@ -1,143 +1,85 @@
 name: Mind Spark Android Build
 
 on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+push:
+branches:
+- main
+- master
+workflow_dispatch:
 
 permissions:
-  contents: write
+contents: read
 
 jobs:
-  build_apk:
-    name: 📱 Build Android APK Only
-    runs-on: ubuntu-latest
+build_apk:
+name: Build Android APK
+runs-on: ubuntu-latest
 
-    steps:
-      - name: 📥 Checkout Repository Code Structure
-        uses: actions/checkout@v4
+```
+steps:
+  - name: Checkout Repository
+    uses: actions/checkout@v4
 
-      - name: 🛠️ Automated Mobile Asset Fixer
-        run: |
-          if [ -f "image_e1762c49 (1).png" ]; then
-            mkdir -p assets
-            cp "image_e1762c49 (1).png" assets/app_logo.png
-            sed -i 's/image_e1762c49 (1).png/assets\/app_logo.png/g' pubspec.yaml
-            echo "✅ Asset renamed and moved automatically on the cloud."
-          fi
+  - name: Setup Java 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '17'
 
-      - name: 📋 Log Active Build Commit SHA
-        run: echo "🚀 Compiling codebase assets linked to commit SHA -> ${{ github.sha }}"
+  - name: Setup Flutter
+    uses: subosito/flutter-action@v2
+    with:
+      flutter-version: '3.24.0'
+      channel: stable
+      cache: true
 
-      # ☕ Explicitly disabled global caching to prevent it from forcing Gradle 8.5
-      - name: ☕ Initialize Java Runtime Environment (v17)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+  - name: Create Assets Directory
+    run: |
+      mkdir -p assets
 
-      - name: 🤖 Auto-Accept Android SDK Licensing
-        run: |
-          mkdir -p ${ANDROID_HOME}/licenses
-          echo "244d2d05b41312163e1a37cd28b38e0429e7012e" > ${ANDROID_HOME}/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > ${ANDROID_HOME}/licenses/android-sdk-preview-license
+  - name: Fix Logo Asset Automatically
+    run: |
+      if [ -f "image_e1762c49 (1).png" ]; then
+        cp "image_e1762c49 (1).png" assets/app_logo.png
+      fi
 
-      - name: 🦋 Initialize Flutter SDK Environment
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          flutter-version: '3.24.0'
-          cache: false
+  - name: Create Environment File
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+      RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
+      HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+      MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
+    run: |
+      cat > .env << EOF
+      OPENAI_API_KEY=${OPENAI_API_KEY}
+      GEMINI_API_KEY=${GEMINI_API_KEY}
+      PEXELS_API_KEY=${PEXELS_API_KEY}
+      TRIPO_API_KEY=${TRIPO_API_KEY}
+      RUNWAY_API_KEY=${RUNWAY_API_KEY}
+      HEYGEN_API_KEY=${HEYGEN_API_KEY}
+      MTN_API_KEY=${MTN_API_KEY}
+      EOF
 
-      - name: 🔑 Inject API Keys and Secrets into Environment File
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-          RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
-          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-        run: |
-          touch .env
-          echo "" >> .env
-          echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
-          echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> .env
-          echo "PEXELS_API_KEY=${PEXELS_API_KEY}" >> .env
-          echo "TRIPO_API_KEY=${TRIPO_API_KEY}" >> .env
-          echo "RUNWAY_API_KEY=${RUNWAY_API_KEY}" >> .env
-          echo "HEYGEN_API_KEY=${HEYGEN_API_KEY}" >> .env
-          echo "MTN_API_KEY=${MTN_API_KEY}" >> .env
+  - name: Flutter Clean
+    run: flutter clean
 
-      - name: 🔧 Force Gradle 7.6.1 Environment Hard Patch
-        run: |
-          if [ -d "android" ]; then
-            cd android
-            
-            # Wipe out every trace of the corrupted local or global wrapper
-            rm -rf gradle/wrapper/gradle-wrapper.jar
-            rm -rf gradle/wrapper/gradle-wrapper.properties
-            rm -f gradlew
-            rm -f gradlew.bat
-            
-            # Downloads a pure, clean Gradle 7.6.1 wrapper definition directly
-            curl -LO https://githubusercontent.com
-            mkdir -p gradle/wrapper
-            mv gradle-wrapper.jar gradle/wrapper/
-            
-            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.1-all.zip" > gradle/wrapper/gradle-wrapper.properties
-            
-            # Download a completely fresh working standard launcher script
-            curl -LO https://githubusercontent.com
-            chmod +x gradlew
-            
-            # Explicitly force the main build tools classpath down to 7.4.2 to match
-            if [ -f "build.gradle" ]; then
-              sed -i "s/classpath 'com.android.tools.build:gradle:.*/classpath 'com.android.tools.build:gradle:7.4.2'/g" build.gradle
-              echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { if (namespace == null) { namespace project.group } } } } }" >> build.gradle
-            fi
-            
-            ./gradlew clean
-            cd ..
-          fi
+  - name: Get Dependencies
+    run: flutter pub get
 
-      - name: 📦 Fetch Workspace Dependencies
-        run: |
-          flutter clean
-          flutter pub get
+  - name: Generate Launcher Icons
+    run: flutter pub run flutter_launcher_icons:main || true
 
-      - name: 🩺 Deep Surgical ARCore Plugin Patch Fix
-        run: |
-          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
-          find "$PUB_CACHE_DIR" -name "build.gradle" -path "*arcore_flutter_plus*" | while read -r plugin_gradle; do
-            echo "🔧 Aligning ARCore build targets: $plugin_gradle"
-            if ! grep -q "namespace" "$plugin_gradle"; then
-              sed -i '/android {/a \    namespace "com.sh1ft.arcore_flutter_plus"' "$plugin_gradle"
-            fi
-          done
-          echo "✅ Background dependencies safely aligned."
+  - name: Build Release APK
+    env:
+      GRADLE_OPTS: "-Xmx4g"
+    run: flutter build apk --release
 
-      - name: 📦 Natively Generate Home Screen Assets
-        run: flutter pub run flutter_launcher_icons:main || true
-
-      - name: 🚀 Build Release APK with Obfuscation
-        env:
-          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
-        run: |
-          flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --split-per-abi
-
-      - name: 🔐 Generate Multi-Algorithm Integrity Checksums
-        run: |
-          find build/app/outputs/flutter-apk/ -name "*.apk" | while read -r apk_file; do
-            sha256sum "$apk_file"
-          done
-
-      - name: 📦 Upload Symbols & Obfuscated APK Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mind-spark-release-apks
-          path: |
-            build/app/outputs/flutter-apk/*-release.apk
-            build/app/outputs/symbols/
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: mind-spark-release-apk
+      path: build/app/outputs/flutter-apk/app-release.apk
+```
