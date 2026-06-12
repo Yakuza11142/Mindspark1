@@ -28,7 +28,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          flutter-version: "3.27.0" # 🔒 Locks down the version to prevent AGP 9+ crashes
           cache: true
 
       - name: Flutter Doctor
@@ -59,12 +58,6 @@ jobs:
 
       - name: Generate Launcher Icons
         run: dart run flutter_launcher_icons || true
-
-      - name: Force Disable New DSL
-        run: |
-          mkdir -p android
-          touch android/gradle.properties
-          echo "android.newDsl=false" >> android/gradle.properties
 
       - name: Build APK
         env:
