@@ -86,6 +86,18 @@ jobs:
           echo "MTN_API_KEY=${MTN_API_KEY}" >> .env
           echo "✅ .env configuration file updated with environment secrets."
 
+      - name: 🔧 Fix and Re-generate Corrupted Gradle Wrapper
+        run: |
+          if [ -d "android" ]; then
+            cd android
+            mkdir -p gradle/wrapper
+            rm -f gradle/wrapper/gradle-wrapper.jar
+            curl -LO https://githubusercontent.com
+            mv gradle-wrapper.jar gradle/wrapper/
+            cd ..
+            echo "✅ Fresh Gradle wrapper binaries injected successfully."
+          fi
+
       - name: 📦 Fetch Flutter Dependencies
         run: flutter pub get
 
