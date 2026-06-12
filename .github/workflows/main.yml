@@ -14,6 +14,7 @@ jobs:
   build_apk:
     name: 📱 Build Android APK Only
     runs-on: ubuntu-latest
+
     steps:
       - name: 📥 Checkout Repository Code Structure
         uses: actions/checkout@v4
@@ -64,15 +65,26 @@ jobs:
           fi
 
       - name: 🔑 Inject API Keys and Secrets into Environment File
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
+          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> .env
-          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> .env
-          echo "RUNWAY_API_KEY=${{ secrets.RUNWAY_API_KEY }}" >> .env
-          echo "HEYGEN_API_KEY=${{ secrets.HEYGEN_API_KEY }}" >> .env
-          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> .env
-          echo "✅ .env configuration file built successfully."
+          # Create file if missing, otherwise append secrets without clearing Supabase keys
+          touch .env
+          echo "" >> .env
+          echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
+          echo "GEMINI_API_KEY=${GEMINI_API_KEY}" >> .env
+          echo "PEXELS_API_KEY=${PEXELS_API_KEY}" >> .env
+          echo "TRIPO_API_KEY=${TRIPO_API_KEY}" >> .env
+          echo "RUNWAY_API_KEY=${RUNWAY_API_KEY}" >> .env
+          echo "HEYGEN_API_KEY=${HEYGEN_API_KEY}" >> .env
+          echo "MTN_API_KEY=${MTN_API_KEY}" >> .env
+          echo "✅ .env configuration file updated with environment secrets."
 
       - name: 📦 Fetch Flutter Dependencies
         run: flutter pub get
@@ -87,7 +99,7 @@ jobs:
       - name: 🔐 Generate Multi-Algorithm Integrity Checksums
         run: |
           echo "=========================================================="
-          echo "🛡️  ADVANCED MULTI-HASH INTEGRITY REPORT 🛡️"
+          echo "🛡️ ADVANCED MULTI-HASH INTEGRITY REPORT 🛡️"
           echo "=========================================================="
           find build/app/outputs/flutter-apk/ -name "*.apk" | while read -r apk_file; do
             echo ""
