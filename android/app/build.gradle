@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.application'
+    // 🦋 THIS SCRIPT HOOKS FLUTTER INTO KOTLIN
+    id 'org.jetbrains.kotlin.android'
+    // 🦋 THIS SCRIPT INJECTS THE FLUTTER COMPILER TOOLS
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace 'com.mindspark.elite'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mindspark.elite"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+        multiDexEnabled true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+}
