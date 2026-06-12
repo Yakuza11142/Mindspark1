@@ -21,7 +21,6 @@ jobs:
 
       - name: 🛠️ Automated Mobile Asset Fixer
         run: |
-          # Cleans up your logo file naming issues on the cloud automatically
           if [ -f "image_e1762c49 (1).png" ]; then
             mkdir -p assets
             cp "image_e1762c49 (1).png" assets/app_logo.png
@@ -32,6 +31,7 @@ jobs:
       - name: 📋 Log Active Build Commit SHA
         run: echo "🚀 Compiling codebase assets linked to commit SHA -> ${{ github.sha }}"
 
+      # ☕ Explicitly disabled global caching to prevent it from forcing Gradle 8.5
       - name: ☕ Initialize Java Runtime Environment (v17)
         uses: actions/setup-java@v4
         with:
@@ -71,20 +71,29 @@ jobs:
           echo "HEYGEN_API_KEY=${HEYGEN_API_KEY}" >> .env
           echo "MTN_API_KEY=${MTN_API_KEY}" >> .env
 
-      - name: 🔧 Auto-Fix & Downgrade Gradle Compatibility Layer
+      - name: 🔧 Force Gradle 7.6.1 Environment Hard Patch
         run: |
           if [ -d "android" ]; then
             cd android
+            
+            # Wipe out every trace of the corrupted local or global wrapper
             rm -rf gradle/wrapper/gradle-wrapper.jar
             rm -rf gradle/wrapper/gradle-wrapper.properties
             rm -f gradlew
             rm -f gradlew.bat
             
-            # 🔥 FORCING COMPATIBILITY MODE VIA GRADLE 7.6.1 FOR OLDER PLUGINS
-            gradle wrapper --gradle-version 7.6.1
+            # Downloads a pure, clean Gradle 7.6.1 wrapper definition directly
+            curl -LO https://githubusercontent.com
+            mkdir -p gradle/wrapper
+            mv gradle-wrapper.jar gradle/wrapper/
+            
+            echo "distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.1-all.zip" > gradle/wrapper/gradle-wrapper.properties
+            
+            # Download a completely fresh working standard launcher script
+            curl -LO https://githubusercontent.com
             chmod +x gradlew
             
-            # Forcibly change the build tools classpaths in case local files are overriding it
+            # Explicitly force the main build tools classpath down to 7.4.2 to match
             if [ -f "build.gradle" ]; then
               sed -i "s/classpath 'com.android.tools.build:gradle:.*/classpath 'com.android.tools.build:gradle:7.4.2'/g" build.gradle
               echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { if (namespace == null) { namespace project.group } } } } }" >> build.gradle
