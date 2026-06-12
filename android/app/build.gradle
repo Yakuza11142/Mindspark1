@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace 'com.mindspark.elite'
+    namespace 'com.mindspark.app'
     compileSdk 34
 
     defaultConfig {
