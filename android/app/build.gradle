@@ -1,31 +1,17 @@
-// 🛠️ The Loader: This tells Gradle exactly where the Flutter tools live in your project
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        // This hooks the Flutter SDK's build tools straight into Gradle's memory
-        classpath "dev.flutter:flutter_gradle_plugin:1.0.0"
-    }
-}
-
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
-
-// 🛠️ BYPASS TRICK: Now it will find the plugin perfectly and bypass the AGP 9 error!
-apply plugin: 'dev.flutter.flutter-gradle-plugin'
 
 android {
     namespace 'com.mindspark.app'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.mindspark.elite"
         minSdk 23 // Kept at 23 to support all your AI and Supabase plugins safely
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0.0"
         multiDexEnabled true
@@ -55,7 +41,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.multidex:multidex:2.0.1'
 }
