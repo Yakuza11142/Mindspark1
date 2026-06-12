@@ -19,6 +19,16 @@ jobs:
       - name: 📥 Checkout Repository Code Structure
         uses: actions/checkout@v4
 
+      - name: 🛠️ Automated Mobile Asset Fixer
+        run: |
+          # Cleans up your logo file naming issues on the cloud automatically
+          if [ -f "image_e1762c49 (1).png" ]; then
+            mkdir -p assets
+            cp "image_e1762c49 (1).png" assets/app_logo.png
+            sed -i 's/image_e1762c49 (1).png/assets\/app_logo.png/g' pubspec.yaml
+            echo "✅ Asset renamed and moved automatically on the cloud."
+          fi
+
       - name: 📋 Log Active Build Commit SHA
         run: echo "🚀 Compiling codebase assets linked to commit SHA -> ${{ github.sha }}"
 
@@ -27,42 +37,19 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: 🤖 Auto-Accept Android SDK Licensing
         run: |
           mkdir -p ${ANDROID_HOME}/licenses
           echo "244d2d05b41312163e1a37cd28b38e0429e7012e" > ${ANDROID_HOME}/licenses/android-sdk-license
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > ${ANDROID_HOME}/licenses/android-sdk-preview-license
-          echo "✅ Android SDK licenses signed off."
 
       - name: 🦋 Initialize Flutter SDK Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           flutter-version: '3.24.0'
-          cache: true
-
-      - name: 💾 Configure Advanced Native Gradle Caching
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .dart_tool/
-            android/.gradle
-          key: ${{ runner.os }}-gradle-flutter-${{ hashFiles('**/pubspec.lock', 'android/build.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-flutter-
-
-      - name: 🛠️ Upgrade to Android v2 Embedding (Kotlin Variant)
-        run: |
-          if [ -d "android" ]; then
-            echo "⚙️ Automatically migrating native Kotlin structures..."
-            find android/app/src/main -name "MainActivity.kt" -exec sed -i '/import io.flutter.plugins.GeneratedPluginRegistrant/d' {} +
-            find android/app/src/main -name "MainActivity.kt" -exec sed -i '/GeneratedPluginRegistrant.registerWith/d' {} +
-            echo "✅ Kotlin structures updated to V2 Embedding framework."
-          fi
+          cache: false
 
       - name: 🔑 Inject API Keys and Secrets into Environment File
         env:
@@ -74,7 +61,6 @@ jobs:
           HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
-          # Create file if missing, otherwise append secrets without clearing Supabase keys
           touch .env
           echo "" >> .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
@@ -84,62 +70,60 @@ jobs:
           echo "RUNWAY_API_KEY=${RUNWAY_API_KEY}" >> .env
           echo "HEYGEN_API_KEY=${HEYGEN_API_KEY}" >> .env
           echo "MTN_API_KEY=${MTN_API_KEY}" >> .env
-          echo "✅ .env configuration file updated with environment secrets."
 
-      - name: 🔧 Fix and Re-generate Corrupted Gradle Wrapper
+      - name: 🔧 Auto-Fix & Downgrade Gradle Compatibility Layer
         run: |
           if [ -d "android" ]; then
             cd android
-            mkdir -p gradle/wrapper
-            rm -f gradle/wrapper/gradle-wrapper.jar
-            curl -LO https://githubusercontent.com -o gradle/wrapper/gradle-wrapper.jar
+            rm -rf gradle/wrapper/gradle-wrapper.jar
+            rm -rf gradle/wrapper/gradle-wrapper.properties
+            rm -f gradlew
+            rm -f gradlew.bat
+            
+            # 🔥 FORCING COMPATIBILITY MODE VIA GRADLE 7.6.1 FOR OLDER PLUGINS
+            gradle wrapper --gradle-version 7.6.1
             chmod +x gradlew
             
-            # Auto-patch missing package namespaces to prevent AGP 8.0+ layout compile crashes
+            # Forcibly change the build tools classpaths in case local files are overriding it
             if [ -f "build.gradle" ]; then
+              sed -i "s/classpath 'com.android.tools.build:gradle:.*/classpath 'com.android.tools.build:gradle:7.4.2'/g" build.gradle
               echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { if (namespace == null) { namespace project.group } } } } }" >> build.gradle
             fi
             
             ./gradlew clean
             cd ..
-            echo "✅ Fresh Gradle wrapper binaries injected and validated."
           fi
 
-      - name: 📦 Clean Local Workspace Cache
+      - name: 📦 Fetch Workspace Dependencies
         run: |
           flutter clean
           flutter pub get
 
+      - name: 🩺 Deep Surgical ARCore Plugin Patch Fix
+        run: |
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          find "$PUB_CACHE_DIR" -name "build.gradle" -path "*arcore_flutter_plus*" | while read -r plugin_gradle; do
+            echo "🔧 Aligning ARCore build targets: $plugin_gradle"
+            if ! grep -q "namespace" "$plugin_gradle"; then
+              sed -i '/android {/a \    namespace "com.sh1ft.arcore_flutter_plus"' "$plugin_gradle"
+            fi
+          done
+          echo "✅ Background dependencies safely aligned."
+
+      - name: 📦 Natively Generate Home Screen Assets
+        run: flutter pub run flutter_launcher_icons:main || true
+
       - name: 🚀 Build Release APK with Obfuscation
         env:
-          # Allocates 4GB RAM to the compiler engine to prevent JVM memory exhaustion crashes
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
         run: |
-          flutter build apk --release \
-            --obfuscate \
-            --split-debug-info=build/app/outputs/symbols \
-            --split-per-abi
+          flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --split-per-abi
 
       - name: 🔐 Generate Multi-Algorithm Integrity Checksums
         run: |
-          echo "=========================================================="
-          echo "🛡️ ADVANCED MULTI-HASH INTEGRITY REPORT 🛡️"
-          echo "=========================================================="
           find build/app/outputs/flutter-apk/ -name "*.apk" | while read -r apk_file; do
-            echo ""
-            echo "📦 FILE: $(basename "$apk_file")"
-            echo "----------------------------------------------------------"
-            echo "🔹 SHA-256:"
-            sha256sum "$apk_file" | awk '{print $1}'
-            echo "🔹 SHA-512:"
-            sha512sum "$apk_file" | awk '{print $1}'
-            echo "🔹 SHA3-256:"
-            openssl dgst -sha3-256 "$apk_file" | awk '{print $2}'
-            echo "🔹 SHA3-512:"
-            openssl dgst -sha3-512 "$apk_file" | awk '{print $2}'
-            echo "----------------------------------------------------------"
+            sha256sum "$apk_file"
           done
-          echo "=========================================================="
 
       - name: 📦 Upload Symbols & Obfuscated APK Artifacts
         uses: actions/upload-artifact@v4
