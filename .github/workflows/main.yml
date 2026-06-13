@@ -52,6 +52,44 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
+      - name: System-Wide Global Manifest Fix
+        run: |
+          # Create a perfectly valid temporary manifest file on the runner
+          cat << 'EOF' > /tmp/clean_manifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com" package="com.example.mindspark">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
+              <uses-feature android:name="android.hardware.camera" android:required="false"/>
+              <queries>
+                  <package android:name="com.google.ar.core" />
+                  <intent>
+                      <action android:name="android.intent.action.VIEW" />
+                      <data android:scheme="https" />
+                  </intent>
+              </queries>
+              <application android:label="Mind Spark" android:name="${applicationName}" android:icon="@mipmap/launcher_icon" android:usesCleartextTraffic="true">
+                  <meta-data android:name="com.google.ar.core" android:value="optional" />
+                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data android:name="flutterEmbedding" android:value="2" />
+              </application>
+          </manifest>
+          EOF
+
+          # Hunt down every single AndroidManifest.xml in the project and overwrite it completely
+          find android/ -name "AndroidManifest.xml" -type f -exec cp /tmp/clean_manifest.xml {} \;
+          echo "=== Global Manifest Synchronization Complete ==="
+
       - name: Build Secured Obfuscated APK
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
