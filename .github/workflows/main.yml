@@ -54,7 +54,7 @@ jobs:
 
       - name: System-Wide Global Manifest Fix
         run: |
-          # Create a perfectly valid temporary manifest file on the runner
+          # Creates a perfectly valid plain manifest file directly on the Linux runner
           cat << 'EOF' > /tmp/clean_manifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com" package="com.example.mindspark">
