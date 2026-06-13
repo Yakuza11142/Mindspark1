@@ -30,19 +30,6 @@ jobs:
           channel: "stable"
           cache: false
 
-      - name: Force Migrate MainActivity to Kotlin V2
-        run: |
-          KT_FILE=$(find android/app/src/main -name "MainActivity.kt" -type f | head -n 1)
-          if [ -n "$KT_FILE" ]; then
-              PACKAGE_LINE=$(grep "package " "$KT_FILE" | head -n 1)
-              echo "$PACKAGE_LINE" > "$KT_FILE"
-              echo "" >> "$KT_FILE"
-              echo "import io.flutter.embedding.android.FlutterActivity" >> "$KT_FILE"
-              echo "" >> "$KT_FILE"
-              echo "class MainActivity: FlutterActivity() {" >> "$KT_FILE"
-              echo "}" >> "$KT_FILE"
-          fi
-
       - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -62,49 +49,15 @@ jobs:
           echo "HEYGEN_API_KEY=\${HEYGEN_API_KEY}" >> assets/.env
           echo "MTN_API_KEY=\${MTN_API_KEY}" >> assets/.env
 
-      - name: Inject Clean Manifest Code Block
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          /usr/bin/mkdir -p android/app/src/main
-          echo '<?xml version="1.0" encoding="utf-8"?>' > $MANIFEST_PATH
-          echo '<manifest xmlns:android="http://android.com">' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.CAMERA"/>' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.VIBRATE"/>' >> $MANIFEST_PATH
-          echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> $MANIFEST_PATH
-          echo '    <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>' >> $MANIFEST_PATH
-          echo '    <uses-feature android:name="android.hardware.camera" android:required="false"/>' >> $MANIFEST_PATH
-          echo '    <queries>' >> $MANIFEST_PATH
-          echo '        <package android:name="com.google.ar.core" />' >> $MANIFEST_PATH
-          echo '        <intent>' >> $MANIFEST_PATH
-          echo '            <action android:name="android.intent.action.VIEW" />' >> $MANIFEST_PATH
-          echo '            <data android:scheme="https" />' >> $MANIFEST_PATH
-          echo '        </intent>' >> $MANIFEST_PATH
-          echo '    </queries>' >> $MANIFEST_PATH
-          echo '    <application android:label="Mind Spark" android:name="${applicationName}" android:icon="@mipmap/launcher_icon" android:usesCleartextTraffic="true">' >> $MANIFEST_PATH
-          echo '        <meta-data android:name="com.google.ar.core" android:value="optional" />' >> $MANIFEST_PATH
-          echo '        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">' >> $MANIFEST_PATH
-          echo '            <intent-filter>' >> $MANIFEST_PATH
-          echo '                <action android:name="android.intent.action.MAIN"/>' >> $MANIFEST_PATH
-          echo '                <category android:name="android.intent.category.LAUNCHER"/>' >> $MANIFEST_PATH
-          echo '            </intent-filter>' >> $MANIFEST_PATH
-          echo '        </activity>' >> $MANIFEST_PATH
-          echo '        <meta-data android:name="flutterEmbedding" android:value="2" />' >> $MANIFEST_PATH
-          echo '    </application>' >> $MANIFEST_PATH
-          echo '</manifest>' >> $MANIFEST_PATH
-
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Build Secured Obfuscated APK (Forced Skip)
+      - name: Build Secured Obfuscated APK
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
         run: |
           /usr/bin/mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons \
-            --ignore-deprecation \
             --obfuscate \
             --split-debug-info=build/symbols \
             --build-number=${{ github.run_number }}
