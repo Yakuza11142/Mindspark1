@@ -52,39 +52,6 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Force Gradle Hook to Patch Manifest
-        run: |
-          GRADLE_PATH="android/app/build.gradle"
-          if [ -f "$GRADLE_PATH" ]; then
-              cat << 'EOF' >> "$GRADLE_PATH"
-          
-          android.applicationVariants.all { variant ->
-              variant.outputs.all { output ->
-                  output.processManifestProvider.get().doLast { task ->
-                      def manifestFile = task.manifestOutputFile.get().asFile
-                      if (manifestFile.exists()) {
-                          def text = manifestFile.text
-                          text = text.replace('name=', 'android:name=')
-                          text = text.replace('label=', 'android:label=')
-                          text = text.replace('icon=', 'android:icon=')
-                          text = text.replace('value=', 'android:value=')
-                          text = text.replace('exported=', 'android:exported=')
-                          text = text.replace('theme=', 'android:theme=')
-                          text = text.replace('hardwareAccelerated=', 'android:hardwareAccelerated=')
-                          text = text.replace('windowSoftInputMode=', 'android:windowSoftInputMode=')
-                          text = text.replace('configChanges=', 'android:configChanges=')
-                          text = text.replace('required=', 'android:required=')
-                          text = text.replace('launchMode=', 'android:launchMode=')
-                          text = text.replace('xmlns:android="http://android.com"', 'xmlns:android="http://android.com"')
-                          manifestFile.text = text
-                      }
-                  }
-              }
-          }
-          EOF
-              echo "=== Gradle File Successfully Hooked ==="
-          fi
-
       - name: Build Secured Obfuscated APK
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
