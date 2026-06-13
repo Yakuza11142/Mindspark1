@@ -18,6 +18,11 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
+      - name: Force Clean Untracked Manifests
+        run: |
+          git clean -fdx android/app/src/debug/ || true
+          git clean -fdx android/app/src/profile/ || true
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -28,12 +33,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          cache: false # 🧹 Clears out bad cloud caches to prevent AGP mismatches
+          cache: false
 
-      - name: Flutter Doctor
-        run: flutter doctor -v
-
-      - name: Create .env File
+      - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -43,7 +45,8 @@ jobs:
           HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
-          cat > .env << EOF
+          mkdir -p assets
+          cat > assets/.env << EOF
           OPENAI_API_KEY=${OPENAI_API_KEY}
           GEMINI_API_KEY=${GEMINI_API_KEY}
           PEXELS_API_KEY=${PEXELS_API_KEY}
@@ -62,10 +65,36 @@ jobs:
       - name: Build APK
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2"
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Upload APK Artifact
+      - name: Calculate Cryptographic Hashes
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          echo "========================================================"
+          echo "           MIND SPARK APK SECURITY INTEGRITY            "
+          echo "========================================================"
+          
+          echo "SHA-256:"
+          sha256sum "$APK_PATH" | awk '{print $1}' | tee sha256.txt
+          
+          echo "SHA-512:"
+          sha512sum "$APK_PATH" | awk '{print $1}' | tee sha512.txt
+          
+          echo "SHA-3-256:"
+          openssl dgst -sha3-256 "$APK_PATH" | awk '{print $2}' | tee sha3_256.txt
+          
+          echo "SHA-3-512:"
+          openssl dgst -sha3-512 "$APK_PATH" | awk '{print $2}' | tee sha3_512.txt
+          
+          echo "========================================================"
+
+      - name: Upload APK and Security Hashes
         uses: actions/upload-artifact@v4
         with:
-          name: mind-spark-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: mind-spark-release-package
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            sha256.txt
+            sha512.txt
+            sha3_256.txt
+            sha3_512.txt
