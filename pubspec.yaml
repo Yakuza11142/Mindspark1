@@ -46,12 +46,7 @@ flutter:
     - "image_e1762c49 (1).png"
     - .env
 
-  fonts:
-    - family: Inter
-      fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
-        - asset: assets/fonts/Inter-Bold.ttf
-          weight: 700
+# 🌟 FIXED: Removed the missing Inter font assets block that crashed your compilation runner
 
 flutter_launcher_icons:
   android: "launcher_icon"
