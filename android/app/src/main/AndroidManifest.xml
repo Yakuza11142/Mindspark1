@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://android.com">
+<manifest xmlns:android="http://android.com"
+    package="com.example.mindspark">
 
     <!-- Application Hardware Permissions -->
     <uses-permission android:name="android.permission.INTERNET"/>
