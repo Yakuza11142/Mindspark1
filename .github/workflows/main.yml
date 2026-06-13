@@ -30,60 +30,6 @@ jobs:
           channel: "stable"
           cache: false
 
-      - name: Force Inject Valid Manifest Plaintext
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          /usr/bin/mkdir -p android/app/src/main
-          cat << 'MANIFEST_EOF' > "$MANIFEST_PATH"
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com">
-
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
-              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-
-              <queries>
-                  <package android:name="com.google.ar.core" />
-                  <intent>
-                      <action android:name="android.intent.action.VIEW" />
-                      <data android:scheme="https" />
-                  </intent>
-              </queries>
-
-              <application
-                  android:label="Mind Spark"
-                  android:name="${applicationName}"
-                  android:icon="@mipmap/launcher_icon"
-                  android:usesCleartextTraffic="true">
-
-                  <meta-data android:name="com.google.ar.core" android:value="optional" />
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          MANIFEST_EOF
-
       - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -134,4 +80,4 @@ jobs:
             sha256.txt
             sha512.txt
             sha3_256.txt
-            sha3_512.txt
+            sha512.txt
