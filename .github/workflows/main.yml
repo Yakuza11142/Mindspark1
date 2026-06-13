@@ -30,74 +30,6 @@ jobs:
           channel: "stable"
           cache: false
 
-      - name: Inject Custom CEO App Logo
-        run: |
-          /usr/bin/mkdir -p android/app/src/main/res/mipmap-mdpi
-          /usr/bin/mkdir -p android/app/src/main/res/mipmap-hdpi
-          /usr/bin/mkdir -p android/app/src/main/res/mipmap-xhdpi
-          /usr/bin/mkdir -p android/app/src/main/res/mipmap-xxhdpi
-          /usr/bin/mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          
-          cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-mdpi/launcher_icon.png
-          cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-hdpi/launcher_icon.png
-          cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-xhdpi/launcher_icon.png
-          cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-xxhdpi/launcher_icon.png
-          cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-xxxhdpi/launcher_icon.png
-          
-          echo "Logo injection complete!"
-
-      - name: Overwrite Clean Android Manifest
-        run: |
-          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com">
-
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
-              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-
-              <queries>
-                  <package android:name="com.google.ar.core" />
-                  <intent>
-                      <action android:name="android.intent.action.VIEW" />
-                      <data android:scheme="https" />
-                  </intent>
-              </queries>
-
-              <application
-                  android:label="Mind Spark"
-                  android:name="${applicationName}"
-                  android:icon="@mipmap/launcher_icon"
-                  android:usesCleartextTraffic="true">
-                  
-                  <meta-data android:name="com.google.ar.core" android:value="optional" />
-                  
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-                      
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-                  
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          EOF
-
       - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -117,6 +49,25 @@ jobs:
           RUNWAY_API_KEY=${RUNWAY_API_KEY}
           HEYGEN_API_KEY=${HEYGEN_API_KEY}
           MTN_API_KEY=${MTN_API_KEY}
+          EOF
+
+      - name: Inject Clean Manifest Code Block
+        run: |
+          # Forcefully writes a clean manifest configuration directly into the source folder
+          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
+          <manifest xmlns:android="http://android.com" package="com.example.mindspark">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <application android:label="Mind Spark" android:icon="@mipmap/launcher_icon">
+                  <activity android:name=".MainActivity" android:exported="true" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
           EOF
 
       - name: Get Dependencies
