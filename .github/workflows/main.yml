@@ -32,14 +32,12 @@ jobs:
 
       - name: Inject Custom CEO App Logo
         run: |
-          # Uses the absolute system path /usr/bin/mkdir to completely bypass the command error
           /usr/bin/mkdir -p android/app/src/main/res/mipmap-mdpi
           /usr/bin/mkdir -p android/app/src/main/res/mipmap-hdpi
           /usr/bin/mkdir -p android/app/src/main/res/mipmap-xhdpi
           /usr/bin/mkdir -p android/app/src/main/res/mipmap-xxhdpi
           /usr/bin/mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           
-          # Safely duplicates your exact logo into every Android display size folder
           cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-mdpi/launcher_icon.png
           cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-hdpi/launcher_icon.png
           cp -f "image_e1762c49 (1).png" android/app/src/main/res/mipmap-xhdpi/launcher_icon.png
@@ -110,7 +108,6 @@ jobs:
           HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
-          # Explicitly uses absolute directory paths to prevent location mismatches
           /usr/bin/mkdir -p assets
           cat > assets/.env << 'EOF'
           OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -130,7 +127,7 @@ jobs:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
         run: |
           /usr/bin/mkdir -p build/symbols
-          flutter build apk --release --no-tree-shake-icons --strip \
+          flutter build apk --release --no-tree-shake-icons \
             --obfuscate \
             --split-debug-info=build/symbols \
             --build-number=${{ github.run_number }}
