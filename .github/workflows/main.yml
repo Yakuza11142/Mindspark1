@@ -30,6 +30,14 @@ jobs:
           channel: "stable"
           cache: false
 
+      - name: Automate Line 2 Fix
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+              # This overrides the faulty line 2 directly on the cloud runner
+              sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|g' "$MANIFEST_PATH"
+          fi
+
       - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
