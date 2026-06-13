@@ -28,7 +28,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          cache: false # 🧹 Blocks the workflow engine from loading old cloud dependencies
+          cache: false
 
       - name: Create Production .env File
         env:
@@ -56,12 +56,12 @@ jobs:
           flutter pub get
           flutter clean
 
-      - name: Build APK (Bypass Cache)
+      - name: Build APK (Safe Versioning)
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
         run: |
-          # --build-number ensures Gradle treats this file layer as brand new
-          flutter build apk --release --no-tree-shake-icons --build-number=${{ github.run_id }}
+          # run_number safely keeps your version code small and valid
+          flutter build apk --release --no-tree-shake-icons --build-number=${{ github.run_number }}
 
       - name: Calculate Cryptographic Hashes
         run: |
@@ -72,7 +72,7 @@ jobs:
           openssl dgst -sha3-256 "$APK_PATH" | awk '{print $2}' > sha3_256.txt
           openssl dgst -sha3-512 "$APK_PATH" | awk '{print $2}' > sha3_512.txt
           
-          echo "Hashes successfully generated!"
+          echo "Security cryptographic hashes successfully generated!"
 
       - name: Upload APK and Security Hashes
         uses: actions/upload-artifact@v4
