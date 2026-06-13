@@ -35,12 +35,12 @@ jobs:
           KT_FILE=$(find android/app/src/main -name "MainActivity.kt" -type f | head -n 1)
           if [ -n "$KT_FILE" ]; then
               PACKAGE_LINE=$(grep "package " "$KT_FILE" | head -n 1)
-              cat > "$KT_FILE" << EOF
-              $PACKAGE_LINE
-              import io.flutter.embedding.android.FlutterActivity
-              class MainActivity: FlutterActivity() {
-              }
-              EOF
+              echo "$PACKAGE_LINE" > "$KT_FILE"
+              echo "" >> "$KT_FILE"
+              echo "import io.flutter.embedding.android.FlutterActivity" >> "$KT_FILE"
+              echo "" >> "$KT_FILE"
+              echo "class MainActivity: FlutterActivity() {" >> "$KT_FILE"
+              echo "}" >> "$KT_FILE"
           fi
 
       - name: Create Production .env File
@@ -54,33 +54,29 @@ jobs:
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
           /usr/bin/mkdir -p assets
-          cat > assets/.env << 'EOF'
-          OPENAI_API_KEY=${OPENAI_API_KEY}
-          GEMINI_API_KEY=${GEMINI_API_KEY}
-          PEXELS_API_KEY=${PEXELS_API_KEY}
-          TRIPO_API_KEY=${TRIPO_API_KEY}
-          RUNWAY_API_KEY=${RUNWAY_API_KEY}
-          HEYGEN_API_KEY=${HEYGEN_API_KEY}
-          MTN_API_KEY=${MTN_API_KEY}
-          EOF
+          echo "OPENAI_API_KEY=\${OPENAI_API_KEY}" > assets/.env
+          echo "GEMINI_API_KEY=\${GEMINI_API_KEY}" >> assets/.env
+          echo "PEXELS_API_KEY=\${PEXELS_API_KEY}" >> assets/.env
+          echo "TRIPO_API_KEY=\${TRIPO_API_KEY}" >> assets/.env
+          echo "RUNWAY_API_KEY=\${RUNWAY_API_KEY}" >> assets/.env
+          echo "HEYGEN_API_KEY=\${HEYGEN_API_KEY}" >> assets/.env
+          echo "MTN_API_KEY=\${MTN_API_KEY}" >> assets/.env
 
       - name: Inject Clean Manifest Code Block
         run: |
-          cat > android/app/src/main/AndroidManifest.xml << 'EOF'
-          <manifest xmlns:android="http://android.com" package="com.example.mindspark">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <application android:label="Mind Spark" android:icon="@mipmap/launcher_icon">
-                  <activity android:name=".MainActivity" android:exported="true" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          echo '<manifest xmlns:android="http://android.com" package="com.example.mindspark">' > android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.CAMERA"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <application android:label="Mind Spark" android:icon="@mipmap/launcher_icon">' >> android/app/src/main/AndroidManifest.xml
+          echo '        <activity android:name=".MainActivity" android:exported="true" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar">' >> android/app/src/main/AndroidManifest.xml
+          echo '            <intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <action android:name="android.intent.action.MAIN"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <category android:name="android.intent.category.LAUNCHER"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            </intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </activity>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </application>' >> android/app/src/main/AndroidManifest.xml
+          echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get
@@ -90,7 +86,6 @@ jobs:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
         run: |
           /usr/bin/mkdir -p build/symbols
-          # Added the ignore-deprecation flag to force clear the v1 embedding block
           flutter build apk --release --no-tree-shake-icons \
             --ignore-deprecation \
             --obfuscate \
