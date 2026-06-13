@@ -28,7 +28,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          cache: false
+          cache: false # 🧹 Blocks the workflow engine from loading old cloud dependencies
 
       - name: Create Production .env File
         env:
@@ -51,22 +51,22 @@ jobs:
           MTN_API_KEY=${MTN_API_KEY}
           EOF
 
-      - name: Get Dependencies
-        run: flutter pub get
+      - name: Force Clean Project Memory
+        run: |
+          flutter pub get
+          flutter clean
 
-      - name: Clean Project Cache
-        run: flutter clean
-
-      - name: Build APK
+      - name: Build APK (Bypass Cache)
         env:
-          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2"
-        run: flutter build apk --release --no-tree-shake-icons
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
+        run: |
+          # --build-number ensures Gradle treats this file layer as brand new
+          flutter build apk --release --no-tree-shake-icons --build-number=${{ github.run_id }}
 
       - name: Calculate Cryptographic Hashes
         run: |
           APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
           
-          # Generate file hashes using native security packages
           sha256sum "$APK_PATH" | awk '{print $1}' > sha256.txt
           sha512sum "$APK_PATH" | awk '{print $1}' > sha512.txt
           openssl dgst -sha3-256 "$APK_PATH" | awk '{print $2}' > sha3_256.txt
