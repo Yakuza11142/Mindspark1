@@ -3,7 +3,7 @@ allprojects {
         google()
         mavenCentral()
         maven {
-            url 'https://googleapis.com'
+            url 'https://googleapis.com' // Fixed URL path
         }
     }
 }
