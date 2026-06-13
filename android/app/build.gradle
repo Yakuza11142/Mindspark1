@@ -5,12 +5,14 @@ plugins {
 }
 
 android {
-    namespace 'com.mindspark.app'
+    // 🌟 SYNCHRONIZED: Updated to match your repository's expected manifest configuration path
+    namespace 'com.example.mindspark'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.mindspark.elite"
-        minSdk 23 // Kept at 23 to support all your AI and Supabase plugins safely
+        // 🌟 SYNCHRONIZED: Aligned package identifier to prevent deployment tool collisions
+        applicationId "com.example.mindspark"
+        minSdk 23 
         targetSdk 35
         versionCode 1
         versionName "1.0.0"
@@ -35,7 +37,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug // Uses debug key so you can install it on your mobile device instantly
+            signingConfig signingConfigs.debug 
         }
     }
 }
