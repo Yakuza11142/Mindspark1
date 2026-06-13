@@ -73,7 +73,7 @@ class MainDevelopmentPage extends StatefulWidget {
 class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
   // Fixed Error #2 (Line 168): Closed the incomplete string literal
   final String statusMessage = 'System initialization complete successfully.';
-  
+
   String formattedTime = '';
   double calculatedSine = 0.0;
   double utilityResult = 0.0;
@@ -86,7 +86,7 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
 
   void _runCalculations() {
     final DateTime now = DateTime.now();
-    
+
     // Fixed Error #2 (Line 344): Corrected method name capitalization to 'toIso8601String'
     setState(() {
       formattedTime = now.toIso8601String();
@@ -111,7 +111,7 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
       appBar: AppBar(title: const Text('MindSpark Workspace')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        body: Column(
+        child: Column( // 🌟 FIXED: Changed "body:" to "child:" right here
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Status: $statusMessage', style: const TextStyle(fontWeight: FontWeight.bold)),
