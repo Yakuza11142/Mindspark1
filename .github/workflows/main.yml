@@ -30,41 +30,6 @@ jobs:
           channel: "stable"
           cache: false
 
-      - name: Force Overwrite Manifest Core
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          /usr/bin/mkdir -p android/app/src/main
-          cat << 'RAW_MANIFEST_EOF' > "$MANIFEST_PATH"
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com" package="com.example.mindspark">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-              <queries>
-                  <package android:name="com.google.ar.core" />
-                  <intent>
-                      <action android:name="android.intent.action.VIEW" />
-                      <data android:scheme="https" />
-                  </intent>
-              </queries>
-              <application android:label="Mind Spark" android:name="${applicationName}" android:icon="@mipmap/launcher_icon" android:usesCleartextTraffic="true">
-                  <meta-data android:name="com.google.ar.core" android:value="optional" />
-                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@android:style/Theme.DeviceDefault.Light.NoTitleBar" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          RAW_MANIFEST_EOF
-
       - name: Create Production .env File
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -86,6 +51,39 @@ jobs:
 
       - name: Get Dependencies
         run: flutter pub get
+
+      - name: Force Gradle Hook to Patch Manifest
+        run: |
+          GRADLE_PATH="android/app/build.gradle"
+          if [ -f "$GRADLE_PATH" ]; then
+              cat << 'EOF' >> "$GRADLE_PATH"
+          
+          android.applicationVariants.all { variant ->
+              variant.outputs.all { output ->
+                  output.processManifestProvider.get().doLast { task ->
+                      def manifestFile = task.manifestOutputFile.get().asFile
+                      if (manifestFile.exists()) {
+                          def text = manifestFile.text
+                          text = text.replace('name=', 'android:name=')
+                          text = text.replace('label=', 'android:label=')
+                          text = text.replace('icon=', 'android:icon=')
+                          text = text.replace('value=', 'android:value=')
+                          text = text.replace('exported=', 'android:exported=')
+                          text = text.replace('theme=', 'android:theme=')
+                          text = text.replace('hardwareAccelerated=', 'android:hardwareAccelerated=')
+                          text = text.replace('windowSoftInputMode=', 'android:windowSoftInputMode=')
+                          text = text.replace('configChanges=', 'android:configChanges=')
+                          text = text.replace('required=', 'android:required=')
+                          text = text.replace('launchMode=', 'android:launchMode=')
+                          text = text.replace('xmlns:android="http://android.com"', 'xmlns:android="http://android.com"')
+                          manifestFile.text = text
+                      }
+                  }
+              }
+          }
+          EOF
+              echo "=== Gradle File Successfully Hooked ==="
+          fi
 
       - name: Build Secured Obfuscated APK
         env:
