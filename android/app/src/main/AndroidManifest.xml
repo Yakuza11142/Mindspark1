@@ -20,7 +20,6 @@
         </intent>
     </queries>
 
-    <!-- Changed android:icon back to standard @mipmap/ic_launcher -->
     <application
         android:label="Mind Spark"
         android:name="${applicationName}"
@@ -29,7 +28,6 @@
 
         <meta-data android:name="com.google.ar.core" android:value="optional" />
 
-        <!-- Changed theme to @style/LaunchTheme for proper Flutter setup -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -39,7 +37,6 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Added required NormalTheme meta-data -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme" />
