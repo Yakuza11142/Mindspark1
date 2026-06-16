@@ -47,7 +47,8 @@ jobs:
           flutter build apk --release --no-tree-shake-icons \
             --obfuscate \
             --split-debug-info=build/symbols \
-            --build-number=${{ github.run_number }}
+            --build-number=${{ github.run_number }} \
+            --android-skip-build-dependency-validation
 
       - name: Calculate Cryptographic Hashes
         run: |
