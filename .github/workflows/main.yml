@@ -33,13 +33,8 @@ jobs:
       - name: Create Production .env File
         run: |
           /usr/bin/mkdir -p assets
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > assets/.env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> assets/.env
-          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> assets/.env
-          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> assets/.env
-          echo "RUNWAY_API_KEY=${{ secrets.RUNWAY_API_KEY }}" >> assets/.env
-          echo "HEYGEN_API_KEY=${{ secrets.HEYGEN_API_KEY }}" >> assets/.env
-          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> assets/.env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
 
       - name: Get Dependencies
         run: flutter pub get
@@ -72,3 +67,4 @@ jobs:
             sha256.txt
             sha512.txt
             sha3_256.txt
+            sha3_512.txt
