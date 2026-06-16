@@ -39,9 +39,10 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Force Write Perfect Manifest
+      - name: Force Overwrite Manifest
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          /usr/bin/mkdir -p android/app/src/main
           rm -f "$MANIFEST_PATH"
           cat << 'EOF' > "$MANIFEST_PATH"
           <?xml version="1.0" encoding="utf-8"?>
@@ -97,7 +98,7 @@ jobs:
               </application>
           </manifest>
           EOF
-          echo "Brand new manifest with verified schemas generated successfully!"
+          echo "Fresh manifest with proper schemas injected!"
 
       - name: Build Secured Obfuscated APK
         env:
