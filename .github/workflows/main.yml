@@ -31,51 +31,18 @@ jobs:
           cache: false
 
       - name: Create Production .env File
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-          RUNWAY_API_KEY: ${{ secrets.RUNWAY_API_KEY }}
-          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
         run: |
           /usr/bin/mkdir -p assets
-          echo "OPENAI_API_KEY=\${OPENAI_API_KEY}" > assets/.env
-          echo "GEMINI_API_KEY=\${GEMINI_API_KEY}" >> assets/.env
-          echo "PEXELS_API_KEY=\${PEXELS_API_KEY}" >> assets/.env
-          echo "TRIPO_API_KEY=\${TRIPO_API_KEY}" >> assets/.env
-          echo "RUNWAY_API_KEY=\${RUNWAY_API_KEY}" >> assets/.env
-          echo "HEYGEN_API_KEY=\${HEYGEN_API_KEY}" >> assets/.env
-          echo "MTN_API_KEY=\${MTN_API_KEY}" >> assets/.env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > assets/.env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> assets/.env
+          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> assets/.env
+          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> assets/.env
+          echo "RUNWAY_API_KEY=${{ secrets.RUNWAY_API_KEY }}" >> assets/.env
+          echo "HEYGEN_API_KEY=${{ secrets.HEYGEN_API_KEY }}" >> assets/.env
+          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> assets/.env
 
       - name: Get Dependencies
         run: flutter pub get
-
-      - name: Pre-Build Manifest Fixer
-        run: |
-          # This forces Flutter to prepare the android build tools files early
-          flutter build apk --config-only || true
-          
-          # This sweeps the whole directory and forces the android: prefix back on!
-          find android/ -name "AndroidManifest.xml" -type f | while read -r file; do
-            echo "Fixing file: $file"
-            sed -i 's| name=| android:name=|g' "$file"
-            sed -i 's|<manifest name=|<manifest android:name=|g' "$file"
-            sed -i 's| label=| android:label=|g' "$file"
-            sed -i 's| icon=| android:icon=|g' "$file"
-            sed -i 's| value=| android:value=|g' "$file"
-            sed -i 's| exported=| android:exported=|g' "$file"
-            sed -i 's| launchMode=| android:launchMode=|g' "$file"
-            sed -i 's| theme=| android:theme=|g' "$file"
-            sed -i 's| configChanges=| android:configChanges=|g' "$file"
-            sed -i 's| hardwareAccelerated=| android:hardwareAccelerated=|g' "$file"
-            sed -i 's| windowSoftInputMode=| android:windowSoftInputMode=|g' "$file"
-            sed -i 's| required=| android:required=|g' "$file"
-            sed -i 's| scheme=| android:scheme=|g' "$file"
-            sed -i 's| usesCleartextTraffic=| android:usesCleartextTraffic=|g' "$file"
-            sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|g' "$file"
-          done
 
       - name: Build Secured Obfuscated APK
         env:
@@ -105,4 +72,3 @@ jobs:
             sha256.txt
             sha512.txt
             sha3_256.txt
-            sha512.txt
