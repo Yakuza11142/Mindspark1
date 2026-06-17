@@ -32,7 +32,7 @@ jobs:
 
       - name: Create Production .env File
         run: |
-          /usr/bin/mkdir -p assets
+          mkdir -p assets
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
 
@@ -43,7 +43,7 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
         run: |
-          /usr/bin/mkdir -p build/symbols
+          mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons \
             --obfuscate \
             --split-debug-info=build/symbols \
