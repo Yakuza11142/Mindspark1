@@ -4,6 +4,25 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// 🔐 SECURITY FIX: Dynamically reads app version code/name from the Flutter pipeline cache
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0.0'
+}
+
 android {
     namespace "com.example.mindspark"
     compileSdk 34
@@ -19,11 +38,16 @@ android {
 
     defaultConfig {
         applicationId "com.example.mindspark"
+        
+        // 🛠️ ARCORE FIX: Forced to 24 to satisfy Google AR Core library compilation demands
         minSdkVersion 24
         targetSdkVersion 34
+        
+        // 🔄 DYNAMIC VERSIONS: These variables pull '1' and '1.0.0' dynamically from your pubspec.yaml
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         
+        // 🧠 MEMORY MANAGEMENT: Bypasses the 65k method compilation barrier for your Gemini AI, ads, and webviews
         multiDexEnabled true
     }
 
