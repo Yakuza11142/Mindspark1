@@ -44,9 +44,7 @@ flutter:
   uses-material-design: true
   assets:
     - "image_e1762c49 (1).png"
-    - .env
-
-# 🌟 FIXED: Removed the missing Inter font assets block that crashed your compilation runner
+    - assets/.env
 
 flutter_launcher_icons:
   android: "launcher_icon"
