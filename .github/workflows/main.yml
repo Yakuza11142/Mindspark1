@@ -30,11 +30,12 @@ jobs:
           channel: "stable"
           cache: false
 
-      - name: Create Production .env File
+      - name: Create Production .env File and Auto-Fix Manifest
         run: |
           mkdir -p assets
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
+          sed -i 's|http://android.com|http://android.com|g' android/app/src/main/AndroidManifest.xml
 
       - name: Get Dependencies
         run: flutter pub get
