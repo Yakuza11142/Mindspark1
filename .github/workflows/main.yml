@@ -36,6 +36,7 @@ jobs:
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
           
+          # Force overwrite the Manifest completely to wipe out any mobile editing layout errors
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
