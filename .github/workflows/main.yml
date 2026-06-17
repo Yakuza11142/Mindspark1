@@ -1,59 +1,126 @@
-plugins {
-    id "com.android.application"
-    id "org.jetbrains.kotlin.android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
+name: Mind Spark Android APK
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
+permissions:
+  contents: read
 
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0.0'
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-android {
-    namespace "com.example.mindspark"
-    compileSdk 34
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-    kotlinOptions {
-        jvmTarget = '17'
-    }
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: false
 
-    defaultConfig {
-        applicationId "com.example.mindspark"
-        minSdkVersion 24
-        targetSdkVersion 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        
-        multiDexEnabled true
-    }
+      - name: Create Production .env File and Overwrite Manifest
+        run: |
+          mkdir -p assets
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
+          
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com"
+              package="com.example.mindspark">
 
-    buildTypes {
-        release {
-            signingConfig signingConfigs.debug
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-}
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-dependencies {
-    implementation "androidx.multidex:multidex:2.0.1"
-}
+              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
+              <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
+              <queries>
+                  <package android:name="com.google.ar.core" />
+                  <intent>
+                      <action android:name="android.intent.action.VIEW" />
+                      <data android:scheme="https" />
+                  </intent>
+              </queries>
+
+              <application
+                  android:label="Mind Spark"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:usesCleartextTraffic="true">
+
+                  <meta-data android:name="com.google.ar.core" android:value="optional" />
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+
+                      <meta-data
+                        android:name="io.flutter.embedding.android.NormalTheme"
+                        android:resource="@style/NormalTheme" />
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+
+                  <meta-data android:name="flutterEmbedding" android:value="2" />
+              </application>
+          </manifest>
+          EOF
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Secured Obfuscated APK
+        env:
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
+        run: |
+          mkdir -p build/symbols
+          flutter build apk --release --no-tree-shake-icons \
+            --obfuscate \
+            --split-debug-info=build/symbols \
+            --build-number=${{ github.run_number }} \
+            --android-skip-build-dependency-validation
+
+      - name: Calculate Cryptographic Hashes
+        run: |
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          sha256sum "$APK_PATH" | awk '{print $1}' > sha256.txt
+          sha512sum "$APK_PATH" | awk '{print $1}' > sha512.txt
+          openssl dgst -sha3-256 "$APK_PATH" | awk '{print $2}' > sha3_256.txt
+          openssl dgst -sha3-512 "$APK_PATH" | awk '{print $2}' > sha3_512.txt
+
+      - name: Upload Secured App Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mind-spark-release-package
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/symbols/
+            sha256.txt
+            sha512.txt
+            sha3_256.txt
+            sha3_512.txt
