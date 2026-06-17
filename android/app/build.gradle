@@ -5,19 +5,8 @@ plugins {
 }
 
 android {
-    // 🌟 SYNCHRONIZED: Updated to match your repository's expected manifest configuration path
-    namespace 'com.example.mindspark'
-    compileSdk 35
-
-    defaultConfig {
-        // 🌟 SYNCHRONIZED: Aligned package identifier to prevent deployment tool collisions
-        applicationId "com.example.mindspark"
-        minSdk 23 
-        targetSdk 35
-        versionCode 1
-        versionName "1.0.0"
-        multiDexEnabled true
-    }
+    namespace "com.example.mindspark"
+    compileSdk 34
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -28,22 +17,29 @@ android {
         jvmTarget = '17'
     }
 
+    defaultConfig {
+        applicationId "com.example.mindspark"
+        minSdkVersion 24
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        
+        multiDexEnabled true
+    }
+
     buildTypes {
-        debug {
-            minifyEnabled false
-            shrinkResources false
-        }
         release {
+            signingConfig signingConfigs.debug
             minifyEnabled true
-            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug 
         }
     }
 }
 
+flutter {
+    sourceDir "../.."
+}
+
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.multidex:multidex:2.0.1"
 }
