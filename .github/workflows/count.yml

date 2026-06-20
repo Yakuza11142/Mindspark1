@@ -1,0 +1,11 @@
+name: Count Lines of Code
+on: [push]
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Count
+        run: |
+          echo "=== TOTAL LINES OF CODE ==="
+          git ls-files | xargs wc -l
