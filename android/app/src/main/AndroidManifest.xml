@@ -1,115 +1,52 @@
-name: Mind Spark Android APK
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://android.com"
+    package="com.example.mindspark">
 
-on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
-permissions:
-  contents: read
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    <queries>
+        <package android:name="com.google.ar.core" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v4
-        with:
-          clean: true
-          fetch-depth: 0
+    <application
+        android:label="Mind Spark"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          cache: false
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
 
-      - name: Create Production .env File and Overwrite Manifest
-        run: |
-          mkdir -p assets
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > assets/.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> assets/.env
-          
-          # Force remove any existing broken manifest file from memory
-          rm -f android/app/src/main/AndroidManifest.xml
-          
-          # Mint a pristine XML schema layout directly onto the runner server with modern embedding settings
-          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com"
-              package="com.example.mindspark">
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
 
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
 
-              <uses-feature android:name="android.hardware.camera.ar" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-
-              <queries>
-                  <package android:name="com.google.ar.core" />
-                  <intent>
-                      <action android:name="android.intent.action.VIEW" />
-                      <data android:scheme="https" />
-                  </intent>
-              </queries>
-
-              <application
-                  android:label="Mind Spark"
-                  android:name="${applicationName}"
-                  android:icon="@mipmap/ic_launcher"
-                  android:usesCleartextTraffic="true">
-
-                  <meta-data android:name="com.google.ar.core" android:value="optional" />
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:theme="@style/LaunchTheme"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-
-                      <meta-data
-                        android:name="io.flutter.embedding.android.NormalTheme"
-                        android:resource="@style/NormalTheme" />
-
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          EOF
-
-      - name: Get Dependencies
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Build Secured Obfuscated APK
-        env:
-          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
-        run: |
-          mkdir -p build/symbols
-          flutter build apk --release --no-tree-shake-icons \
-            --obfuscate \
-            --split-debug-info=build/symbols \
-            --build-number=${{ github.run_number }} \
-            --android-skip-build-dependency-validation
+        <meta-data android:name="flutterEmbedding" android:value="2" />
+    </application>
+</manifest>
