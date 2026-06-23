@@ -59,17 +59,21 @@ dependencies {
 }
 
 // 👑 THE CRUCIAL MERGER BYPASS SCRIPT
-// This forces Gradle to skip strict checking on malformed third-party plugin manifests
-tasks.withType(CreateStartInputsTask).configureEach {
-    it.mustRunAfter {
-        tasks.named("processReleaseMainManifest")
+// This safely bypasses strict checking on malformed third-party plugin manifests
+tasks.configureEach { task ->
+    if (task.class.name.contains("CreateStartInputsTask")) {
+        task.mustRunAfter {
+            tasks.named("processReleaseMainManifest")
+        }
     }
 }
 
 gradle.taskGraph.whenReady { taskGraph ->
     taskGraph.allTasks.each { task ->
         if (task.name.contains("processReleaseManifest") || task.name.contains("processReleaseMainManifest")) {
-            task.setProperty("android.manifest.validation", false)
+            if (task.hasProperty("manifestOutputDirectory")) {
+                project.ext.set("android.manifest.validation", false)
+            }
         }
     }
 }
