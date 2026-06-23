@@ -42,7 +42,7 @@ jobs:
           # Force remove any existing broken manifest file from memory
           rm -f android/app/src/main/AndroidManifest.xml
           
-          # Mint a pristine XML schema layout directly onto the runner server with modern embedding settings
+          # Mint a pristine XML schema layout directly onto the runner server with escaped string placeholder
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
@@ -68,7 +68,7 @@ jobs:
 
               <application
                   android:label="Mind Spark"
-                  android:name="${applicationName}"
+                  android:name="\${applicationName}"
                   android:icon="@mipmap/ic_launcher"
                   android:usesCleartextTraffic="true">
 
