@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://android.com"
+    xmlns:tools="http://android.com"
     package="com.example.mindspark">
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -24,7 +25,8 @@
         android:label="Mind Spark"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        tools:replace="android:name">
 
         <meta-data android:name="com.google.ar.core" android:value="optional" />
 
