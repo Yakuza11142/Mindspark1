@@ -58,8 +58,7 @@ dependencies {
     implementation "androidx.multidex:multidex:2.0.1"
 }
 
-// 👑 THE CRUCIAL MERGER BYPASS SCRIPT
-// This safely bypasses strict checking on malformed third-party plugin manifests
+// Bypasses strict checking on malformed third-party plugin manifests
 tasks.configureEach { task ->
     if (task.class.name.contains("CreateStartInputsTask")) {
         task.mustRunAfter {
