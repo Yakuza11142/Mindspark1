@@ -48,6 +48,23 @@ jobs:
           flutter clean
           flutter pub get
 
+      - name: Force Clean Manifest Namespaces and Prefixes
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          
+          # 1. Fix the broken namespace URLs
+          sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|g' "$MANIFEST_PATH"
+          sed -i 's|xmlns:tools="http://android.com"|xmlns:tools="http://android.com"|g' "$MANIFEST_PATH"
+          
+          # 2. Automatically inject missing android: prefixes to key attributes just in case
+          sed -i -E 's/\b(name|value|required|launchMode|exported)="/android:\1="/g' "$MANIFEST_PATH"
+          
+          # 3. Clean up any accidental double-prefixes caused by the step above
+          sed -i 's/android:android:/android:/g' "$MANIFEST_PATH"
+          
+          echo "=== Repaired AndroidManifest.xml Content ==="
+          cat "$MANIFEST_PATH"
+
       - name: Compile Secured Obfuscated APK
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
