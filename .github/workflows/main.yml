@@ -54,8 +54,7 @@ jobs:
             --split-debug-info=build/symbols \
             --build-number=${{ github.run_number }} \
             --android-skip-build-dependency-validation \
-            --pub \
-            -- -Pandroid.manifest.validation=false
+            --pub
 
       - name: Calculate Cryptographic Hashes
         run: |
