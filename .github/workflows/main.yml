@@ -58,7 +58,8 @@ jobs:
           TARGET_FILE="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
           if [ -f "$TARGET_FILE" ]; then
             echo "Patching arcore_flutter_plus Gradle syntax..."
-            sed -i 's/configurations.all/configurations.configureEach/g' "$TARGET_FILE"
+            # FIXED: Targets the exact broken string in the cache and forces the correct project scope
+            sed -i 's/configurations.configureEach/project.configurations.configureEach/g' "$TARGET_FILE"
             echo "Patch applied successfully!"
           else
             echo "Error: Target plugin layout file not found in build runner cache." && exit 1
