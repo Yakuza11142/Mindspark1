@@ -48,15 +48,21 @@ jobs:
           flutter clean
           rm -rf android
           flutter create .
-          
-          # SAFETY LAYER: This keeps arcore_flutter_plus fully intact and safe, 
-          # but intercepts Gradle 8+ incompatibilities so the package can compile.
-          ROOT_GRADLE="android/build.gradle"
-          echo "subprojects { subproject -> if (subproject.plugins.hasPlugin('com.android.library') || subproject.plugins.hasPlugin('com.android.application')) { subproject.configurations.configureEach { compileCommand -> } } }" >> "$ROOT_GRADLE"
 
       - name: Fetch Application Dependencies
         run: |
           flutter pub get
+
+      - name: Directly Patch ArCore Dependency Code
+        run: |
+          TARGET_FILE="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
+          if [ -f "$TARGET_FILE" ]; then
+            echo "Patching arcore_flutter_plus Gradle syntax..."
+            sed -i 's/configurations.all/configurations.configureEach/g' "$TARGET_FILE"
+            echo "Patch applied successfully!"
+          else
+            echo "Error: Target plugin layout file not found in build runner cache." && exit 1
+          fi
 
       - name: Compile Secured Obfuscated APK
         env:
