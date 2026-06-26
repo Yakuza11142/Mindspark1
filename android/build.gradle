@@ -21,11 +21,14 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
+
+    if (project.name == 'arcore_flutter_plus') {
+        project.configurations.configureEach { configuration -> }
+    }
 }
 
 tasks.register("clean", Delete) {
