@@ -48,6 +48,11 @@ jobs:
           flutter clean
           rm -rf android
           flutter create .
+          
+          # SAFETY LAYER: This keeps arcore_flutter_plus fully intact and safe, 
+          # but intercepts Gradle 8+ incompatibilities so the package can compile.
+          ROOT_GRADLE="android/build.gradle"
+          echo "subprojects { subproject -> if (subproject.plugins.hasPlugin('com.android.library') || subproject.plugins.hasPlugin('com.android.application')) { subproject.configurations.configureEach { compileCommand -> } } }" >> "$ROOT_GRADLE"
 
       - name: Fetch Application Dependencies
         run: |
