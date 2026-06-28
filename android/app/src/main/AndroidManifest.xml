@@ -9,11 +9,11 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- 2. Hardware Feature Declarations for Play Store Filtering -->
+    <!-- 2. Hardware Feature Declarations -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
-    <!-- 3. Package Visibility Filters for External Links & Supabase Auth Links -->
+    <!-- 3. Package Visibility Filters -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -24,17 +24,27 @@
 
     <!-- 4. Application Configuration Layer -->
     <application
-        android:label="Mind Spark"
         android:name="${applicationName}"
+        android:label="Mind Spark"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:fullBackupContent="true"
         tools:targetApi="34">
-        
-        <!-- Deep linking configuration metadata tag -->
+
+        <!-- Google AdMob App ID Setup -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+
+        <!-- Deep Linking Configuration -->
         <meta-data
             android:name="flutter_deeplinking_enabled"
             android:value="true" />
+
+        <!-- Flutter Engine Embedding Parameter -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
 
         <!-- 5. Core App Activity Window Component -->
         <activity
@@ -46,20 +56,15 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            
+
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
-                
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        
-        <!-- Essential Flutter engine embedding binding parameter -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
     </application>
 </manifest>
