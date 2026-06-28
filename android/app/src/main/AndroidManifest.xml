@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://android.com"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://android.com">
 
     <!-- 1. System Hardware & Network Permissions -->
@@ -9,16 +9,25 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- Required for AdMob to track attribution and serve high-paying ads -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
     <!-- 2. Hardware Feature Declarations -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
-    <!-- 3. Package Visibility Filters -->
+    <!-- 3. Package Visibility Filters (Crucial for URL launching and Ad overlays) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
+        </intent>
+        <!-- Allows your app to query web browsers to open ad landing pages safely -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
         </intent>
     </queries>
 
@@ -29,9 +38,10 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:fullBackupContent="true"
+        android:hardwareAccelerated="true"
         tools:targetApi="34">
 
-        <!-- Google AdMob App ID Setup -->
+        <!-- Google AdMob App ID Setup (Universal Test ID) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
