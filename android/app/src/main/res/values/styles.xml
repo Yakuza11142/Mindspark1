@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Activity before Flutter renders its first frame -->
-    <style name="LaunchTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <!-- Modern AndroidX Material style definition for the loading window screen -->
+    <style name="LaunchTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 
-    <!-- Theme applied seamlessly once Flutter initialization is complete -->
-    <style name="NormalTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <!-- Modern AndroidX Material style definition for seamless Flutter transition -->
+    <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>
