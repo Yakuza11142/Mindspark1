@@ -1,31 +1,21 @@
+# 1. Block real production sensitive keys
 lib/my_private_logic.dart
-.env
-mind_spark_project/.env
+lib/services/dynamic_ad_pricing.dart
+lib/config/secrets.dart
+*.jks
+key.properties
+
+# 2. Block default compilation directories
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# 3. Block generic system environment variants
 .env.local
 secrets.env
 keys.env
 config.env
-lib/services/dynamic_ad_pricing.dart
-# Environment secrets
-.env
-.env.*
-.env.local
-# Removes .env from the git tracking (not your computer)
-git rm --cached .env
 
-# Commit the removal
-git commit -m "Stop tracking sensitive .env file"
-
-# Push the change to your remote
-git push origin <Yakuza11142Mindspark1>
-# Purge .env from entire git history
-git filter-repo --path .env --invert-paths
-
-
-# Add these lines to your existing .gitignore
-lib/config/secrets.dart
-*.jks
-key.properties
-build/
-.dart_tool/
-.flutter-plugins
+# Note: We removed the ".env" and "assets/.env" blockers 
+# so your repository can safely bundle your app variables.
