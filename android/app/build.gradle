@@ -24,6 +24,9 @@ if (flutterVersionName == null) {
 }
 
 android {
+    // 1. ADDED: Fixes the fatal "Namespace not specified" evaluation crash
+    namespace "com.example.mindspark"
+    
     compileSdk 36
 
     compileOptions {
