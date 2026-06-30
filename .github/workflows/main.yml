@@ -13,81 +13,73 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Pull down the repository files cleanly
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          clean: true # ⚡ FORCE: Wipes out stale file anomalies inside the git check
+          clean: true
 
-      # 2. Configure a completely isolated, clean Java environment
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Provision the stable Flutter runtime engine
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.4'
           channel: 'stable'
-          cache: false # ⚡ CACHE BUSTER: Prevents the runner from reusing older broken asset buckets
+          cache: false
 
-      # 4. Enject a flawless, certified ASCII AndroidManifest over the cache
-      - name: Inject Clean Server-Generated AndroidManifest
+      - name: Native Machine Manifest Generation
         run: |
           rm -rf android/app/src/main/AndroidManifest.xml
           mkdir -p android/app/src/main
-          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
-              <queries>
-                  <intent>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <category android:name="android.intent.category.BROWSABLE"/>
-                      <data android:scheme="https"/>
-                  </intent>
-                  <intent>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <category android:name="android.intent.category.BROWSABLE"/>
-                      <data android:scheme="http"/>
-                  </intent>
-              </queries>
-              <application android:name="${applicationName}" android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">
-                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
-                  <meta-data android:name="com.google.ar.core" android:value="required"/>
-                  <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
-                  <meta-data android:name="flutterEmbedding" android:value="2"/>
-                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
-                      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' > android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.VIBRATE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.CAMERA"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera" android:required="false"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <queries>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <data android:scheme="https"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <data android:scheme="http"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </queries>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <application android:name="${applicationName}" android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="com.google.ar.core" android:value="required"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="flutterEmbedding" android:value="2"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">' >> android/app/src/main/AndroidManifest.xml
+          echo '            <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <action android:name="android.intent.action.MAIN"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <category android:name="android.intent.category.LAUNCHER"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            </intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </activity>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </application>' >> android/app/src/main/AndroidManifest.xml
+          echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-      # 5. Flush and fetch dependencies with absolute zero tracking overrides
       - name: Install dependencies
         run: |
           flutter pub get
           flutter clean
 
-      # 6. Execute fresh compilation pipeline
       - name: Run Release APK Build
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
@@ -101,7 +93,6 @@ jobs:
             --pub \
             --target-platform=android-arm64
 
-      # 7. Deliver the production APK artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
