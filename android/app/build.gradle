@@ -4,7 +4,7 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-// Extract properties safely from the Flutter engine generation files
+// Safely loads version parameters from your local configuration cache
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -44,6 +44,12 @@ android {
 
         ndk {
             abiFilters 'arm64-v8a'
+        }
+    }
+
+    signingConfigs {
+        debug {
+            // Automatically maps standard background developer profiles
         }
     }
 
