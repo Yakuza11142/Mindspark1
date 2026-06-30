@@ -5,25 +5,37 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:math' as math;
 
-// 🌟 REMOVED THE 5 BROKEN IMPORTS TO FIX THE BUILD ERRORS
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final initAdmob = MobileAds.instance.initialize();
 
+  // Safe fallback configurations since .env file asset bundling is removed
+  String supabaseUrl = '';
+  String supabaseKey = '';
+
   try {
+    // Attempts to load .env safely if present locally during development
     await dotenv.load(fileName: ".env");
+    supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+    supabaseKey = dotenv.env['SUPABASE_KEY'] ?? '';
   } catch (e) {
-    debugPrint("⚠️ .env file not found.");
+    debugPrint("⚠️ .env file asset absent. Emplementing fallback runtime parameters.");
+    // 💡 TIP: You can paste your production keys directly into these fallback variables if needed:
+    supabaseUrl = "https://supabase.co";
+    supabaseKey = "your-anon-key-here";
   }
 
   try {
-    await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL'] ?? '',
-      anonKey: dotenv.env['SUPABASE_KEY'] ?? '',
-    );
-    debugPrint("☁️ Supabase initialized");
+    if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty && !supabaseUrl.contains("your-supabase-project")) {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+      );
+      debugPrint("☁️ Supabase initialized");
+    } else {
+      debugPrint("⚠️ Supabase skipped: Set your production keys inside main.dart variables.");
+    }
   } catch (e) {
     debugPrint("❌ Supabase error: $e");
   }
@@ -50,18 +62,16 @@ class MindSparkApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mind Spark',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), // 🌟 FIXED: Replaced missing AppTheme with built-in dark theme
+      theme: ThemeData.dark(), 
       home: const MainDevelopmentPage(),
     );
   }
 }
 
-// 🌟 EMBEDDED PROVIDERS (Temporary placeholders so the app builds without the missing files)
+// EMBEDDED PROVIDERS (Temporary placeholders so the app builds without the missing files)
 class AppAuthProvider extends ChangeNotifier {}
 class AITutorProvider extends ChangeNotifier {}
 class ArLabProvider extends ChangeNotifier {}
-
-// --- RESOLVED CODE SECTION ---
 
 class MainDevelopmentPage extends StatefulWidget {
   const MainDevelopmentPage({super.key});
