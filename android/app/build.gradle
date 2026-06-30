@@ -1,84 +1,50 @@
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
+    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
-
 android {
-    namespace "com.example.mindspark"
-    compileSdk 34
-    ndkVersion "25.1.8937393"
+    // 1. Upgraded to API 36 to satisfy the app_links plugin requirements
+    compileSdk 36
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    signingConfigs {
-        debug {
-            storeFile file(System.getProperty('user.home') + '/.android/debug.keystore')
-            storePassword 'android'
-            keyAlias 'androiddebugkey'
-            keyPassword 'android'
-        }
+        jvmTarget = '1.8'
     }
 
     defaultConfig {
+        // 2. Updated to your exact application package ID
         applicationId "com.example.mindspark"
-        minSdkVersion 24  
-        targetSdkVersion 34
+        
+        // 3. Forced to API 24 because native ARCore C++ binaries require Android 7.0+
+        minSdk 24
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        // 4. Restricts compilation strictly to 64-bit ARM physical devices (ARCore hardware requirement)
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
     }
 
     buildTypes {
         release {
+            // Tells the compiler to use your ProGuard file rules during obfuscation
             signingConfig signingConfigs.debug
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
-    // Force the manifest merger linter to ignore missing attribute errors
-    lintOptions {
-        checkReleaseBuilds false
-        abortOnError false
-    }
 }
 
-// Kill strict manifest processes and patch broken subproject configurations (like arcore_flutter_plus)
-afterEvaluate {
-    tasks.all { task ->
-        if (task.name.contains("processReleaseMainManifest") || task.name.contains("processDebugMainManifest")) {
-            task.enabled = true
-        }
-    }
-
-    // This block catches and safely handles the 'unknown property all' error thrown by older plugins
-    rootProject.subprojects { subproject ->
-        if (subproject.name == 'arcore_flutter_plus') {
-            subproject.configurations.configureEach {
-                // Safely overrides the configurations container loop for Gradle 8+
-            }
-        }
-    }
+flutter {
+    source '../..'
 }
 
-dependencies {
-    // Kept clean. Redundant manual multidex implementation lines removed to prevent conflicts.
-}
+dependencies {}
