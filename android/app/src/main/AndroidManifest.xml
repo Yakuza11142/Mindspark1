@@ -8,13 +8,16 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- Required for AdMob to track attribution and serve high-paying ads -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
-    <!-- 2. Hardware Feature Declarations -->
+    <!-- 2. Hardware Feature Declarations for AR Core & Camera Systems -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
 
     <!-- 3. Package Visibility Filters (Crucial for URL launching and Ad overlays) -->
     <queries>
@@ -35,7 +38,7 @@
     <application
         android:name="${applicationName}"
         android:label="Mind Spark"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:allowBackup="true"
         android:fullBackupContent="true"
         android:hardwareAccelerated="true"
@@ -45,6 +48,11 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
+
+        <!-- Google ARCore Meta Tags (Required to prompt device AR download updates) -->
+        <meta-data 
+            android:name="com.google.ar.core" 
+            android:value="required" />
 
         <!-- Deep Linking Configuration -->
         <meta-data
