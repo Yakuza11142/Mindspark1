@@ -4,8 +4,26 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// Extract properties safely from the Flutter engine generation files
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
 android {
-    // 1. Upgraded to API 36 to satisfy the app_links plugin requirements
     compileSdk 36
 
     compileOptions {
@@ -18,16 +36,12 @@ android {
     }
 
     defaultConfig {
-        // 2. Updated to your exact application package ID
         applicationId "com.example.mindspark"
-        
-        // 3. Forced to API 24 because native ARCore C++ binaries require Android 7.0+
         minSdk 24
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
-        // 4. Restricts compilation strictly to 64-bit ARM physical devices (ARCore hardware requirement)
         ndk {
             abiFilters 'arm64-v8a'
         }
@@ -35,7 +49,6 @@ android {
 
     buildTypes {
         release {
-            // Tells the compiler to use your ProGuard file rules during obfuscation
             signingConfig signingConfigs.debug
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
