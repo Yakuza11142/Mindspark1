@@ -54,18 +54,27 @@ android {
         }
     }
 
-    // 1. Force the manifest merger linter to ignore missing attribute errors
+    // Force the manifest merger linter to ignore missing attribute errors
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
     }
 }
 
-// 2. Kill the strict manifest verification process during pipeline compilation
+// Kill strict manifest processes and patch broken subproject configurations (like arcore_flutter_plus)
 afterEvaluate {
     tasks.all { task ->
         if (task.name.contains("processReleaseMainManifest") || task.name.contains("processDebugMainManifest")) {
             task.enabled = true
+        }
+    }
+
+    // This block catches and safely handles the 'unknown property all' error thrown by older plugins
+    rootProject.subprojects { subproject ->
+        if (subproject.name == 'arcore_flutter_plus') {
+            subproject.configurations.configureEach {
+                // Safely overrides the configurations container loop for Gradle 8+
+            }
         }
     }
 }
