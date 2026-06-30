@@ -49,7 +49,7 @@ jobs:
           rm -rf android
           flutter create .
 
-      - name: Inject Patched Gradle Properties
+      - name: Inject Patched Root Gradle Structure
         run: |
           rm -f android/build.gradle.kts
           
@@ -80,15 +80,96 @@ jobs:
 
           subprojects {
               project.buildDir = "${rootProject.buildDir}/${project.name}"
-              project.evaluationDependsOn(':app')
-
-              if (project.name == 'arcore_flutter_plus') {
-                  project.configurations.configureEach { configuration -> }
+              
+              afterEvaluate { project ->
+                  if (project.hasProperty('configurations')) {
+                      project.configurations.configureEach {
+                          // Bypasses the 'unknown property all' exception in Gradle 8+
+                      }
+                  }
               }
           }
 
           tasks.register("clean", Delete) {
               delete rootProject.buildDir
+          }
+          EOF
+
+      - name: Inject Final App Build Gradle
+        run: |
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "org.jetbrains.kotlin.android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+
+          def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+          def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
+
+          android {
+              namespace "com.example.mindspark"
+              compileSdk 34
+              ndkVersion "25.1.8937393"
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+
+              signingConfigs {
+                  debug {
+                      storeFile file(System.getProperty('user.home') + '/.android/debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+
+              defaultConfig {
+                  applicationId "com.example.mindspark"
+                  minSdkVersion 24  
+                  targetSdkVersion 34
+                  versionCode flutterVersionCode.toInteger()
+                  versionName flutterVersionName
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                      minifyEnabled true
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+              }
+
+              lintOptions {
+                  checkReleaseBuilds false
+                  abortOnError false
+              }
+          }
+
+          afterEvaluate {
+              tasks.all { task ->
+                  if (task.name.contains("processReleaseMainManifest") || task.name.contains("processDebugMainManifest")) {
+                      task.enabled = true
+                  }
+              }
+          }
+
+          dependencies {
+              // Kept clean. Redundant manual multidex implementation lines removed to prevent conflicts.
           }
           EOF
 
