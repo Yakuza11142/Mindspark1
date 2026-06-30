@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://android.com"
     xmlns:tools="http://android.com">
 
     <!-- 1. System Hardware & Network Permissions -->
@@ -38,7 +38,7 @@
     <application
         android:name="${applicationName}"
         android:label="Mind Spark"
-        android:icon="@mipmap/launcher_icon"
+        android:icon="@android:drawable/sym_def_app_icon"
         android:allowBackup="true"
         android:fullBackupContent="true"
         android:hardwareAccelerated="true"
