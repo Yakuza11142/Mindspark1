@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Modern AndroidX Material style definition for the loading window screen -->
-    <style name="LaunchTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <!-- Core Android primitive layout styles (Guaranteed to resolve instantly) -->
+    <style name="LaunchTheme" parent="android:Theme.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 
-    <!-- Modern AndroidX Material style definition for seamless Flutter transition -->
-    <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="NormalTheme" parent="android:Theme.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>
