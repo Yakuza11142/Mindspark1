@@ -27,7 +27,9 @@ subprojects {
     project.evaluationDependsOn(':app')
 
     if (project.name == 'arcore_flutter_plus') {
-        project.configurations.configureEach { configuration -> }
+        project.configurations.metaClass.all = { Closure closure ->
+            delegate.configureEach(closure)
+        }
     }
 }
 
