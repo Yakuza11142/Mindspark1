@@ -13,24 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Pull down the repository files cleanly
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          clean: true # ⚡ FORCE: Wipes out stale file anomalies inside the git check
 
+      # 2. Configure a completely isolated, clean Java environment
       - name: Set up Java Development Kit (JDK)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 3. Provision the stable Flutter runtime engine
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.4'
           channel: 'stable'
-          cache: true
+          cache: false # ⚡ CACHE BUSTER: Prevents the runner from reusing older broken asset buckets
 
+      # 4. Enject a flawless, certified ASCII AndroidManifest over the cache
       - name: Inject Clean Server-Generated AndroidManifest
         run: |
+          rm -rf android/app/src/main/AndroidManifest.xml
           mkdir -p android/app/src/main
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">
@@ -74,9 +81,13 @@ jobs:
           </manifest>
           EOF
 
+      # 5. Flush and fetch dependencies with absolute zero tracking overrides
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter clean
 
+      # 6. Execute fresh compilation pipeline
       - name: Run Release APK Build
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
@@ -90,6 +101,7 @@ jobs:
             --pub \
             --target-platform=android-arm64
 
+      # 7. Deliver the production APK artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
