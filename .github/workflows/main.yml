@@ -35,9 +35,8 @@ jobs:
         run: |
           rm -rf android/app/src/main/AndroidManifest.xml
           mkdir -p android/app/src/main
-          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          cat <<-'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com"
-              xmlns:tools="http://android.com"
               xmlns:tools="http://android.com"
               package="com.example.mindspark">
 
