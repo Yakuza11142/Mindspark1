@@ -4,7 +4,6 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-// Safely loads version parameters from your local configuration cache
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -24,10 +23,8 @@ if (flutterVersionName == null) {
 }
 
 android {
-    // 1. ADDED: Fixes the fatal "Namespace not specified" evaluation crash
     namespace "com.example.mindspark"
-    
-    compileSdk 36
+    compileSdk 34
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -50,17 +47,10 @@ android {
         }
     }
 
-    signingConfigs {
-        debug {
-            // Automatically maps standard background developer profiles
-        }
-    }
-
     buildTypes {
         release {
             signingConfig signingConfigs.debug
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
         }
     }
 }
