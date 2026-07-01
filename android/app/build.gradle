@@ -12,15 +12,8 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
     namespace "com.example.mindspark"
@@ -41,17 +34,13 @@ android {
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-
-        ndk {
-            abiFilters 'arm64-v8a'
-        }
     }
 
     buildTypes {
         release {
             signingConfig signingConfigs.debug
-            minifyEnabled false       // Disables code shrinking
-            shrinkResources false     // FIX: Turned off to prevent the build exception crash
+            minifyEnabled false
+            shrinkResources false
         }
     }
 }
@@ -59,5 +48,3 @@ android {
 flutter {
     source '../..'
 }
-
-dependencies {}
