@@ -41,12 +41,12 @@
         android:fullBackupContent="true"
         android:hardwareAccelerated="true"
         tools:targetApi="34">
-        
+
         <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
         <meta-data android:name="com.google.ar.core" android:value="required"/>
         <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
         <meta-data android:name="flutterEmbedding" android:value="2"/>
-        
+
         <!-- HARDCODED RUNTIME ENTRY POINT (Bypasses missing styles) -->
         <activity 
             android:name="io.flutter.embedding.android.FlutterActivity" 
@@ -56,7 +56,7 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" 
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
