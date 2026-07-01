@@ -1,0 +1,56 @@
+name: Flutter Android Release Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Set up Java Development Kit (JDK)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+          channel: 'stable'
+          cache: false
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+          flutter clean
+
+      - name: Run Release APK Build
+        env:
+          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.workers.max=2 -Dorg.gradle.cache=none"
+        run: |
+          mkdir -p build/symbols
+          flutter build apk --release --no-tree-shake-icons \
+            --obfuscate \
+            --split-debug-info=build/symbols \
+            --build-number=396 \
+            --android-skip-build-dependency-validation \
+            --pub \
+            --target-platform=android-arm64
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
