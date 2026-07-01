@@ -2,7 +2,6 @@
     xmlns:tools="http://android.com"
     package="com.example.mindspark">
 
-    <!-- 1. CORE SYSTEM PERMISSIONS -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -13,12 +12,10 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
-    <!-- 2. HARDWARE AND AR PRESETS -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
 
-    <!-- 3. DEEP LINKING RESOURCE QUERIES -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -32,7 +29,6 @@
         </intent>
     </queries>
 
-    <!-- 4. CORE APPLICATION PROPERTIES -->
     <application 
         android:name="${applicationName}" 
         android:label="Mind Spark" 
