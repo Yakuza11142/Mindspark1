@@ -21,11 +21,7 @@ rootProject.buildDir = '../build'
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-
-// EMERGENCY OVERRIDE: This script intercepts all external plugins during build evaluation.
-// If a plugin like arcore_flutter_plus is missing its namespace, this forces it to inherit one.
-subprojects {
+    
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
