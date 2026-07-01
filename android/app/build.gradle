@@ -50,7 +50,8 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.debug
-            minifyEnabled false
+            minifyEnabled false       // Disables code shrinking
+            shrinkResources false     // FIX: Turned off to prevent the build exception crash
         }
     }
 }
