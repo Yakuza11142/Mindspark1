@@ -2,6 +2,7 @@
     xmlns:tools="http://android.com"
     package="com.example.mindspark">
 
+    <!-- 1. CORE SYSTEM PERMISSIONS -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -12,10 +13,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
+    <!-- 2. NATIVE HARDWARE AND SPATIAL CORE FEATURES -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
 
+    <!-- 3. INTENT AND DEEP LINKING QUERY SCHEMAS -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -29,8 +32,8 @@
         </intent>
     </queries>
 
+    <!-- 4. MODERN APPLICATION ENGINE CONTAINER -->
     <application 
-        android:name="${applicationName}" 
         android:label="Mind Spark" 
         android:icon="@android:drawable/sym_def_app_icon" 
         android:allowBackup="true" 
@@ -41,10 +44,10 @@
         <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
         <meta-data android:name="com.google.ar.core" android:value="required"/>
         <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
-        <meta-data android:name="flutterEmbedding" android:value="2"/>
         
+        <!-- FLUTTER FLAVOR ENGINE ENTRY POINT -->
         <activity 
-            android:name=".MainActivity" 
+            android:name="io.flutter.embedding.android.FlutterActivity" 
             android:exported="true" 
             android:launchMode="singleTop" 
             android:taskAffinity="" 
