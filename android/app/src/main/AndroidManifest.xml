@@ -14,12 +14,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
-    <!-- 2. HARDWARE AND SPATIAL CORE FEATURES -->
+    <!-- 2. NATIVE HARDWARE AND AR SPATIAL CAPABILITIES -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
 
-    <!-- 3. QUERY SCHEMAS FOR WEB LINKS -->
+    <!-- 3. DEEP LINKING QUERY SCHEMAS -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -33,7 +33,7 @@
         </intent>
     </queries>
 
-    <!-- 4. PURE NATIVE APPLICATION CONTAINER -->
+    <!-- 4. NATIVE APPLICATION LAYOUT ENGINE -->
     <application 
         android:label="Mind Spark" 
         android:icon="@android:drawable/sym_def_app_icon" 
