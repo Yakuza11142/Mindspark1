@@ -3,63 +3,58 @@
     xmlns:tools="http://android.com"
     package="com.example.mindspark">
 
-    <!-- 1. CORE SYSTEM PERMISSIONS -->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-    <!-- 2. NATIVE HARDWARE AND AR SPATIAL CAPABILITIES -->
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
 
-    <!-- 3. DEEP LINKING QUERY SCHEMAS -->
     <queries>
         <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <category android:name="android.intent.category.BROWSABLE"/>
-            <data android:scheme="https"/>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
         </intent>
         <intent>
-            <action android:name="android.intent.action.VIEW"/>
-            <category android:name="android.intent.category.BROWSABLE"/>
-            <data android:scheme="http"/>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
         </intent>
     </queries>
 
-    <!-- 4. NATIVE APPLICATION LAYOUT ENGINE -->
-    <application 
-        android:label="Mind Spark" 
-        android:icon="@android:drawable/sym_def_app_icon" 
-        android:allowBackup="true" 
+    <application
+        android:allowBackup="true"
         android:fullBackupContent="true"
         android:hardwareAccelerated="true"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="Mind Spark"
         tools:targetApi="34">
 
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>
-        <meta-data android:name="com.google.ar.core" android:value="required"/>
-        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
-        <meta-data android:name="flutterEmbedding" android:value="2"/>
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713" />
+        <meta-data android:name="com.google.ar.core" android:value="required" />
+        <meta-data android:name="flutter_deeplinking_enabled" android:value="true" />
+        <meta-data android:name="flutterEmbedding" android:value="2" />
 
-        <!-- HARDCODED RUNTIME ENTRY POINT (Bypasses missing styles) -->
-        <activity 
-            android:name="io.flutter.embedding.android.FlutterActivity" 
-            android:exported="true" 
-            android:launchMode="singleTop" 
-            android:taskAffinity=""
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" 
+        <activity
+            android:name="io.flutter.embedding.android.FlutterActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:exported="true"
             android:hardwareAccelerated="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
