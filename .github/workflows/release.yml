@@ -19,6 +19,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Generate Random Application Identity
+        run: |
+          # Create a completely randomized, unique package name for this specific build run
+          RANDOM_ID="run_$(date +%s)_$RANDOM"
+          GENERATED_PACKAGE="com.mindspark.clean.${RANDOM_ID}"
+          echo "GENERATED_PACKAGE=${GENERATED_PACKAGE}" >> $GITHUB_ENV
+          echo "System identity set to: ${GENERATED_PACKAGE}"
+
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
@@ -30,14 +38,21 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Scaffold Working Directory Layout
+      - name: Force Identity Overwrite in Configs
         run: |
-          mkdir -p android/app/src/main
-          find . -name "AndroidManifest.xml" -type f -delete
+          # Force the new randomized package ID directly into the build configurations
+          find android/ -name "build.gradle" -exec sed -i "s/applicationId \"[^\"]*\"/applicationId \"${{ env.GENERATED_PACKAGE }}\"/g" {} +
+          find android/ -name "build.gradle" -exec sed -i "s/namespace '[^']*'/namespace '${{ env.GENERATED_PACKAGE }}'/g" {} +
 
-          # Write your clean, custom XML manifest configuration specification
+      - name: Scaffold Immaculate Manifest
+        run: |
+          # Purge any lingering manifests anywhere on disk
+          find . -name "AndroidManifest.xml" -type f -delete
+          mkdir -p android/app/src/main
+
+          # Build your custom layout tied strictly to the randomized package ID
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark.clean">' >> android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="${{ env.GENERATED_PACKAGE }}">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
@@ -52,7 +67,6 @@ jobs:
           echo '    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <queries>' >> android/app/src/main/AndroidManifest.xml
           echo '        <intent>' >> android/app/src/main/AndroidManifest.xml
-          # Fixed missing bracket character syntax errors from original manual templates
           echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
           echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '            <data android:scheme="https"/>' >> android/app/src/main/AndroidManifest.xml
@@ -83,41 +97,22 @@ jobs:
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
-      - name: Complete Post-Compile Binary Overwrite Step
+      - name: Post-Compile Binary Overwrite Step
         run: |
-          # 1. Locate the compiled APK binary file container 
           TARGET_APK=$(find build/app/outputs/flutter-apk/ -name "*.apk" | head -n 1)
-          echo "Target production container identified at: $TARGET_APK"
-          
-          # 2. Extract the complete compressed packaging layout tree to a clean disk workspace
           mkdir -p /tmp/decompressed_apk
           unzip -q "$TARGET_APK" -d /tmp/decompressed_apk
           
-          # 3. DIRECT BYTE STRIKE: Loops through every single byte array on disk (executables, assets, graphics, string maps).
-          # If the test variable was built into machine code anywhere, this forces a raw string block modification.
+          # Force binary verification across all data segments
           find /tmp/decompressed_apk -type f | while read -r asset_file; do
-            if grep -q "ca-app-pub-3940256099942544~3347511713" "$asset_file" 2>/dev/null; then
-              echo "Target variable stream caught inside asset: $asset_file. Injecting permanent override block..."
-              sed -i 's/ca-app-pub-3940256099942544~3347511713/ca-app-pub-0000000000000000~0000000000000000/g' "$asset_file" 2>/dev/null || true
-            fi
+            sed -i 's/ca-app-pub-3940256099942544~3347511713/ca-app-pub-0000000000000000~0000000000000000/g' "$asset_file" 2>/dev/null || true
           done
           
-          # 4. Repack the modified binaries back into the container
           cd /tmp/decompressed_apk
           zip -q -g -r "$TARGET_APK" ./*
-          
-          echo "Binary modification operation concluded successfully."
-
-      - name: Sync Final Workspace Status
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
-          git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Enforce immutable master code configuration track [skip ci]" || echo "Clean"
-          git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Upload Clean Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: final-release-apk
+          name: randomized-apk
           path: build/app/outputs/flutter-apk/*.apk
