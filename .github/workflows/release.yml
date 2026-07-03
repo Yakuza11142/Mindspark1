@@ -65,7 +65,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Unified block auto-repaired manifest file [skip ci]" || echo "No changes to commit"
+          git commit -m "Unified build layout manifest repair [skip ci]" || echo "No changes to commit"
           git push
 
       - name: Set up Java JDK 17
@@ -86,6 +86,10 @@ jobs:
 
       - name: Install Dependencies
         run: flutter pub get
+
+      - name: Force Clean Corrupted Plugin Manifests
+        run: |
+          find ~/.pub-cache/hosted/pub.dev/ -name "AndroidManifest.xml" -exec sed -i 's/package="[^"]*"//g' {} + || echo "Skipping package patch"
 
       - name: Run Build
         run: |
