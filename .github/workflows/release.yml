@@ -39,9 +39,9 @@ jobs:
           rm -rf android/.gradle/
           flutter pub get
 
-      - name: Force-Inject Master Manifest Across Entire Workspace
+      - name: Universal XML Force-Overwrite
         run: |
-          # 1. Create a pristine standalone copy of your correct manifest outside the source directories
+          # 1. Create a pristine master manifest template file
           cat << 'EOF' > /tmp/master_pure_manifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://microsoft.com"
@@ -106,11 +106,17 @@ jobs:
           </manifest>
           EOF
 
-          # 2. Hard-overwrite EVERY single file named AndroidManifest.xml in the workspace
-          echo "Commencing total workspace overwrite..."
-          find . -name "AndroidManifest.xml" -type f | while read -r target_file; do
-            echo "Replacing file configuration at: $target_file"
-            cp /tmp/master_pure_manifest.xml "$target_file"
+          # 2. Hard ensure the default path directory exists
+          mkdir -p android/app/src/main
+
+          # 3. Find EVERY single .xml file inside the android folder.
+          # If it looks like a manifest file (contains <manifest), overwrite it entirely.
+          echo "Scanning all XML files for hidden manifests..."
+          find android/ -name "*.xml" -type f | while read -r target_xml; do
+            if grep -q "<manifest" "$target_xml"; then
+              echo "Replacing hidden manifest found at: $target_xml"
+              cp /tmp/master_pure_manifest.xml "$target_xml"
+            fi
           done
 
       - name: Compile Pristine Binary
