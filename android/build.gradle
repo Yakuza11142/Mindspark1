@@ -21,12 +21,33 @@ rootProject.buildDir = '../build'
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    
+
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
+                // Extracts the existing package from the manifest if present before stripping
+                var manifestFile = project.file('src/main/AndroidManifest.xml')
+                var extractedPackage = null
+                
+                if (manifestFile.exists()) {
+                    var matcher = (manifestFile.text =~ /package="([^"]+)"/)
+                    if (matcher.find()) {
+                        extractedPackage = matcher[0][1]
+                    }
+                }
+
+                // Assigns a unique namespace so dependencies don't collide
                 if (namespace == null) {
-                    namespace = "com.example.mindspark"
+                    if (extractedPackage != null) {
+                        namespace = extractedPackage
+                    } else {
+                        namespace = "com.example.mindspark.${project.name.replaceAll(/[^a-zA-Z0-9_]/, '')}"
+                    }
+                }
+                
+                // Safely strip the deprecated package attribute to satisfy AGP 8 strict rules
+                if (manifestFile.exists()) {
+                    manifestFile.text = manifestFile.text.replaceAll(/(<manifest[^>]*?)\s+package="[^"]*"/, '$1')
                 }
             }
         }
