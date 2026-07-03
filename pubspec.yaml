@@ -26,7 +26,8 @@ dependencies:
   path_provider: ^2.1.3
   crypto: ^3.0.5
   uuid: ^4.5.0
-  arcore_flutter_plus: ^1.0.2
+  # FORCED EXACT VERSION LOCK (Removed caret ^ symbol)
+  arcore_flutter_plus: 1.0.2
   camera: ^0.12.0+1
   flutter_plugin_android_lifecycle: ^2.0.24
   webview_flutter: ^4.8.0
@@ -43,7 +44,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - "image_e1762c49 (1).png"
+    - image_e1762c49 (1).png
 
 flutter_launcher_icons:
   android: "launcher_icon"
