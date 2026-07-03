@@ -14,29 +14,25 @@ jobs:
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2"
+      NEW_PACKAGE_ID: "com.example.mindspark.clean"  # Change this to your new unique package name
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Direct File System Cleansing
+      - name: Hard Overwrite Application Package Identity Everywhere
         run: |
+          # 1. Search for any old occurrences of the package name in your build configs and replace them
+          find android/ -name "build.gradle" -exec sed -i "s/applicationId \"[^\"]*\"/applicationId \"${{ env.NEW_PACKAGE_ID }}\"/g" {} +
+          find android/ -name "build.gradle" -exec sed -i "s/namespace '[^']*'/namespace '${{ env.NEW_PACKAGE_ID }}'/g" {} +
+
+          # 2. Obliterate every existing instance of AndroidManifest.xml on disk
+          find . -name "AndroidManifest.xml" -type f -delete
           mkdir -p android/app/src/main
-          
-          # Write your immaculate layout source fresh
+
+          # 3. Inject your custom XML layout using the new package identity
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark">' >> android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="'${{ env.NEW_PACKAGE_ID }}'">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
@@ -55,7 +51,7 @@ jobs:
           echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '            <data android:scheme="https"/>' >> android/app/src/main/AndroidManifest.xml
           echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
-          echo '    <intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <intent>' >> android/app/src/main/AndroidManifest.xml
           echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
           echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '            <data android:scheme="http"/>' >> android/app/src/main/AndroidManifest.xml
@@ -75,41 +71,29 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-      - name: Compile Release APK
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Compile Pristine Release APK
         run: |
           flutter pub get
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
-      - name: Byte-Level Binary Purge Injection
-        run: |
-          # 1. Locate the compiled machine binary APK file
-          TARGET_APK=$(find build/app/outputs/flutter-apk/ -name "*.apk" | head -n 1)
-          
-          # 2. Extract the raw file package container 
-          mkdir -p /tmp/binary_core
-          unzip -q "$TARGET_APK" -d /tmp/binary_core
-          
-          # 3. HEX STRIKE: Search inside ALL generated classes.dex, compiled resources, 
-          # and machine code binaries (.so) for any residual bad tracker IDs or tags, 
-          # and forcefully overwrite them with empty bytes at the raw machine level.
-          find /tmp/binary_core -type f | while read -r binary_file; do
-            # Replaces the generic ad tracking app ID string inside the byte layout with neutral zeros
-            sed -i 's/ca-app-pub-3940256099942544~3347511713/ca-app-pub-0000000000000000~0000000000000000/g' "$binary_file" 2>/dev/null || true
-          done
-          
-          # 4. Re-pack the compiled binary assets back together
-          cd /tmp/binary_core
-          zip -g -r "$TARGET_APK" ./*
-          
-          echo "Hex patch successful. The old properties have been rewritten at the machine bytecode layer."
-
-      - name: Sync Master Repository Track
+      - name: Push Clean Identity Update To Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
-          git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Enforce byte-level tracking code reset [skip ci]" || echo "Clean"
+          git add .
+          git commit -m "Complete application identity reset sequence [skip ci]" || echo "Clean"
           git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Upload Clean Build Artifact
