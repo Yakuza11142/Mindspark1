@@ -1,11 +1,3 @@
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
-import org.w3c.dom.Document
-import org.w3c.dom.Element
-import org.w3c.dom.NodeList
-
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
@@ -50,59 +42,43 @@ android {
     }
 }
 
-// ROBUST JAVA DOM PARSER - Structural validation fixer
-ext.fixManifestNamespaces = { File manifestFile ->
-    if (!manifestFile.exists() || manifestFile.name != "AndroidManifest.xml") return
-
-    try {
-        var factory = DocumentBuilderFactory.newInstance()
-        var builder = factory.newDocumentBuilder()
-        Document doc = builder.parse(manifestFile)
+// UNFAILABLE PRE-BUILD HOOK
+// Fixes un-namespaced elements inside the cache directory before compilation starts
+tasks.register("cleanProjectManifests") {
+    doFirst {
+        println "🚀 [Unfailable Hook] Pre-cleaning all project dependency manifests..."
         
-        // Critical targets that often drop missing prefixes inside third-party modules
-        String[] targets = ["uses-permission", "uses-feature", "action", "category", "meta-data", "activity", "intent", "data"]
-        boolean amended = false
-
-        for (String tagName : targets) {
-            NodeList list = doc.getElementsByTagName(tagName)
-            for (int i = 0; i < list.getLength(); i++) {
-                Element el = (Element) list.item(i)
-                
-                // If a standard key is found without its prefix namespace, correct it structurally
-                String[] attrs = ["name", "required", "scheme", "host", "value", "exported", "launchMode"]
-                for (String attr : attrs) {
-                    if (el.hasAttribute(attr) && !el.hasAttributeNS("http://android.com", attr)) {
-                        String value = el.getAttribute(attr)
-                        el.removeAttribute(attr)
-                        el.setAttribute("android:" + attr, value)
-                        amended = true
-                    }
+        // Scan the project directory root structures dynamically
+        fileTree(dir: "${rootProject.projectDir}", include: "**/AndroidManifest.xml").each { file ->
+            if (file.exists() && !file.absolutePath.contains("build/intermediates")) {
+                String text = file.getText('UTF-8')
+                if (text.contains("<uses-permission") || text.contains("<uses-feature") || text.contains("<action")) {
+                    
+                    // Structurally force correct un-namespaced attributes globally
+                    text = text.replaceAll(/(?<!android:)name=/, 'android:name=')
+                    text = text.replaceAll(/(?<!android:)required=/, 'android:required=')
+                    text = text.replaceAll(/(?<!android:)scheme=/, 'android:scheme=')
+                    text = text.replaceAll(/(?<!android:)host=/, 'android:host=')
+                    text = text.replaceAll(/(?<!android:)value=/, 'android:value=')
+                    text = text.replaceAll(/(?<!android:)exported=/, 'android:exported=')
+                    text = text.replaceAll(/(?<!android:)launchMode=/, 'android:launchMode=')
+                    
+                    file.setText(text, 'UTF-8')
                 }
             }
         }
-
-        if (amended) {
-            var transformer = TransformerFactory.newInstance().newTransformer()
-            var source = new DOMSource(doc)
-            var result = new StreamResult(manifestFile)
-            transformer.transform(source, result)
-        }
-    } catch (Exception e) {
-        // Safe logger block to guarantee compilation never halts on a parsing conflict
-        println "⚠️ [Unfailable Hook Notice] Skipping structural analysis on intermediate file node: " + e.getMessage()
+        println "✅ Pre-build manifest normalization completed."
     }
 }
 
-// Intercept manifest generation right before final compilation assembly
-android.applicationVariants.all { variant ->
-    variant.outputs.all { output ->
-        output.processManifestProvider.get().doLast { task ->
-            File outputDir = task.manifestOutputDirectory.get().asFile
-            if (outputDir.exists()) {
-                outputDir.eachFileRecurse { file ->
-                    fixManifestNamespaces(file)
-                }
-            }
+// Force the compilation pipeline to wait until our cleaning script finishes running
+project.afterEvaluate {
+    tasks.all { task ->
+        if (task.name.startsWith('merge') && task.name.contains('Manifest')) {
+            task.dependsOn cleanProjectManifests
+        }
+        if (task.name.startsWith('process') && task.name.contains('Manifest')) {
+            task.dependsOn cleanProjectManifests
         }
     }
 }
