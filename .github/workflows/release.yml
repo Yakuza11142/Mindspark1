@@ -8,7 +8,7 @@ on:
 jobs:
   override_and_build:
     runs-on: ubuntu-latest
-    
+
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2"
 
@@ -20,7 +20,7 @@ jobs:
         run: |
           rm -f android/app/src/main/AndroidManifest.xml
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark">' >> android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
@@ -45,7 +45,7 @@ jobs:
           echo '            <data android:scheme="http"/>' >> android/app/src/main/AndroidManifest.xml
           echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
           echo '    </queries>' >> android/app/src/main/AndroidManifest.xml
-          echo '    <application android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">' >> android/app/src/main/AndroidManifest.xml
+          echo '    <application android:name="androidx.multidex.MultiDexApplication" android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">' >> android/app/src/main/AndroidManifest.xml
           echo '        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' >> android/app/src/main/AndroidManifest.xml
           echo '        <meta-data android:name="com.google.ar.core" android:value="required"/>' >> android/app/src/main/AndroidManifest.xml
           echo '        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>' >> android/app/src/main/AndroidManifest.xml
