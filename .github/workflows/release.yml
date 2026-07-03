@@ -82,10 +82,10 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Inject Live Gradle Manifest Patch and Compile
+      - name: Inject Valid Gradle Manifest Patch and Compile
         run: |
-          # Modifies the local gradle setup to wipe out package attributes inside plugins during the build
-          echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android.outputs.all { output -> var manifestFile = project.file('src/main/AndroidManifest.xml'); if (manifestFile.exists()) { var contents = manifestFile.text; contents = contents.replaceAll(/package=\"[^\"]*\"/, ''); manifestFile.text = contents; } } } } }" >> android/build.gradle
+          # Safe compilation-level interceptor that targets variant outputs instead of global extensions
+          echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { if (project.android.hasProperty('applicationVariants')) { project.android.applicationVariants.all { variant -> variant.outputs.all { output -> var manifestFile = project.file('src/main/AndroidManifest.xml'); if (manifestFile.exists()) { var contents = manifestFile.text; contents = contents.replaceAll(/package=\"[^\"]*\"/, ''); manifestFile.text = contents; } } } } else if (project.android.hasProperty('libraryVariants')) { project.android.libraryVariants.all { variant -> variant.outputs.all { output -> var manifestFile = project.file('src/main/AndroidManifest.xml'); if (manifestFile.exists()) { var contents = manifestFile.text; contents = contents.replaceAll(/package=\"[^\"]*\"/, ''); manifestFile.text = contents; } } } } } } }" >> android/build.gradle
           
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
