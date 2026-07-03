@@ -34,13 +34,20 @@ jobs:
           rm -f pubspec.lock
           flutter pub get
 
-      - name: Safe Global Cache Sanitization Sweep
+      - name: Deep Global Cache Sanitization Sweep
         run: |
-          echo "Safely fixing un-prefixed Android attributes in global cache..."
-          # This regex explicitly checks to ensure 'android:' does NOT already exist before fixing it
+          echo "Safely repairing raw plugin sources using exact word boundaries..."
           find /home/runner/.pub-cache -name "AndroidManifest.xml" -type f 2>/dev/null | while read -r manifest; do
-            sed -i -E 's/\b(name|required|scheme|host|value|exported|launchMode)=/android:\1=/g' "$manifest"
-            # Remove any double prefixes (android:android:) just in case they were cached
+            # Use \b to ensure we only target attributes missing the 'android:' prefix
+            sed -i -E 's/\bname=/android:name=/g' "$manifest"
+            sed -i -E 's/\brequired=/android:required=/g' "$manifest"
+            sed -i -E 's/\bscheme=/android:scheme=/g' "$manifest"
+            sed -i -E 's/\bhost=/android:host=/g' "$manifest"
+            sed -i -E 's/\bvalue=/android:value=/g' "$manifest"
+            sed -i -E 's/\bexported=/android:exported=/g' "$manifest"
+            sed -i -E 's/\blaunchMode=/android:launchMode=/g' "$manifest"
+            
+            # Fail-safe line: Instantly repairs any accidental double-prefixes (android:android:)
             sed -i 's/android:android:/android:/g' "$manifest"
           done
 
