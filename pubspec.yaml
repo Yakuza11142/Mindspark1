@@ -28,7 +28,7 @@ dependencies:
   uuid: ^4.5.0
   # FORCED EXACT VERSION LOCK (Removed caret ^ symbol)
   arcore_flutter_plus: 1.0.2
-  camera: ^0.12.0+1
+  camera: ^0.12.0+2
   flutter_plugin_android_lifecycle: ^2.0.24
   webview_flutter: ^4.8.0
   google_mobile_ads: ^9.0.0
