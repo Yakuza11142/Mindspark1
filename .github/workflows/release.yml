@@ -1,4 +1,4 @@
-name: Clean Standard Flutter Build
+name: Ultimate Clean Manifest Build
 
 on:
   push:
@@ -27,9 +27,16 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Install Dependencies
+      # This completely wipes the hidden build directories before downloading fresh packages
+      - name: Nuke All Hidden Build Caches
         run: |
           flutter clean
+          rm -rf .dart_tool/
+          rm -rf android/.gradle/
+          rm -rf android/app/build/
+
+      - name: Install Fresh Dependencies
+        run: |
           flutter pub get
 
       - name: Compile Release APK
@@ -37,7 +44,7 @@ jobs:
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
-      - name: Upload Build Artifact
+      - name: Upload Clean Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
