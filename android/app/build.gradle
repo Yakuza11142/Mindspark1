@@ -41,18 +41,35 @@ android {
         }
     }
 
-    // Absolute Manifest Overwrite Hook
+    // Corrected Absolute Manifest Overwrite Hook
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             output.processManifestProvider.get().doLast { task ->
+                // 1. Get the actual folder where Gradle is outputting the manifest for validation
                 var outputDir = task.manifestOutputDirectory.get().asFile
-                outputDir.walkTopDown().forEach { file ->
-                    if (file.name == 'AndroidManifest.xml') {
-                        var masterManifest = rootProject.file('app/src/main/AndroidManifest.xml')
-                        if (masterManifest.exists()) {
-                            file.text = masterManifest.text
+                
+                // 2. Locate your true source manifest relative to this build.gradle file
+                var masterManifest = new File(projectDir, "src/main/AndroidManifest.xml")
+                
+                // Fallback check: If the directory structure is flat, search relative paths
+                if (!masterManifest.exists()) {
+                    masterManifest = new File(projectDir, "src/AndroidManifest.xml")
+                }
+                if (!masterManifest.exists()) {
+                    masterManifest = rootProject.file("app/src/main/AndroidManifest.xml")
+                }
+
+                // 3. Force-write your clean manifest over the intermediate compiler files
+                if (masterManifest.exists()) {
+                    var cleanText = masterManifest.text
+                    outputDir.walkTopDown().forEach { file ->
+                        if (file.name == 'AndroidManifest.xml') {
+                            file.text = cleanText
                         }
                     }
+                } else {
+                    // Fail the build immediately with an explicit error if the file is completely missing
+                    throw new GradleException("❌ [Gradle Hook] Critical Error: Could not locate your master AndroidManifest.xml path on disk!")
                 }
             }
         }
