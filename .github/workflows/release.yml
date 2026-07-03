@@ -8,6 +8,9 @@ on:
 jobs:
   override_and_build:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2"
@@ -16,7 +19,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Build Manifest Layer by Layer
+      - name: Unified Manifest Layer Builder and Git Push Block
         run: |
           rm -f android/app/src/main/AndroidManifest.xml
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
@@ -58,6 +61,12 @@ jobs:
           echo '        </activity>' >> android/app/src/main/AndroidManifest.xml
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          git add android/app/src/main/AndroidManifest.xml
+          git commit -m "Unified block auto-repaired manifest file [skip ci]" || echo "No changes to commit"
+          git push
 
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
