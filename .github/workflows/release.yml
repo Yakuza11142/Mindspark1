@@ -84,10 +84,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Inject Precise Safe Manifest Patch and Compile
+      - name: Compile Release APK
         run: |
-          # Intercepts build evaluations and targets only the root manifest package attribute, protecting your names
-          echo "subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { if (project.android.hasProperty('applicationVariants')) { project.android.applicationVariants.all { variant -> variant.outputs.all { output -> var manifestFile = project.file('src/main/AndroidManifest.xml'); if (manifestFile.exists()) { var contents = manifestFile.text; contents = contents.replaceAll(/(<manifest[^>]*?)\s+package=\"[^\"]*\"/, '\$1'); manifestFile.text = contents; } } } } else if (project.android.hasProperty('libraryVariants')) { project.android.libraryVariants.all { variant -> variant.outputs.all { output -> var manifestFile = project.file('src/main/AndroidManifest.xml'); if (manifestFile.exists()) { var contents = manifestFile.text; contents = contents.replaceAll(/(<manifest[^>]*?)\s+package=\"[^\"]*\"/, '\$1'); manifestFile.text = contents; } } } } } } }" >> android/build.gradle
-          
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
