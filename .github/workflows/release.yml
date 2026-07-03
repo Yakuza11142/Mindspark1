@@ -18,10 +18,21 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Unified Manifest Layer Builder and Git Push Block
+      - name: Hard Purge and Global Manifest Rewrite
         run: |
-          rm -f android/app/src/main/AndroidManifest.xml
+          # 1. Force remove any tracked main manifest from git index and working tree
+          git rm -f android/app/src/main/AndroidManifest.xml || rm -f android/app/src/main/AndroidManifest.xml
+          
+          # 2. Deep sweep: Wipe out ANY accidental duplicate/corrupted manifests in your app project folder
+          find android/app/ -name "AndroidManifest.xml" -exec rm -f {} +
+          
+          # Ensure target directory tree exists cleanly
+          mkdir -p android/app/src/main
+
+          # 3. Write your clean, standard custom layout manifest file from scratch
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
           echo '<manifest xmlns:android="http://example.com" xmlns:tools="http://example.com">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
@@ -62,12 +73,14 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-          # Safely restores schemas while pushing uncorrupted code directly to storage
+          # Fix placeholder URLs to official android schemas
           sed -i 's|http://example.com|http://android.com|g' android/app/src/main/AndroidManifest.xml
+          
+          # Push the absolute clean file back to your GitHub repository
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Unified build layout manifest repair [skip ci]" || echo "No changes to commit"
+          git commit -m "Hard system purge and manifest overwrite [skip ci]" || echo "No changes to commit"
           git push
 
       - name: Set up Java JDK 17
@@ -83,6 +96,11 @@ jobs:
 
       - name: Install Dependencies
         run: flutter pub get
+
+      - name: Purge Corrupted Dependency Manifest Attributes
+        run: |
+          # Finds and scrubs deprecated package attributes in all transient plugin files (.pub-cache)
+          find . -name "AndroidManifest.xml" -not -path "*/android/app/*" -exec sed -i 's/\(<manifest[^>]*\)[[:space:]]package="[^"]*"/\1/g' {} +
 
       - name: Compile Release APK
         run: |
