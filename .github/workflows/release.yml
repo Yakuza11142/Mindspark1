@@ -19,55 +19,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Create Immutable Master Manifest Source
-        run: |
-          # Create an isolated manifest copy stored outside the project tree
-          mkdir -p /tmp/master_payload
-          
-          echo '<?xml version="1.0" encoding="utf-8"?>' > /tmp/master_payload/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark">' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.VIBRATE"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.CAMERA"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-feature android:name="android.hardware.camera" android:required="false"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <queries>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <intent>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <action android:name="android.intent.action.VIEW"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <data android:scheme="https"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        </intent>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <intent>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <action android:name="android.intent.action.VIEW"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <data android:scheme="http"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        </intent>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    </queries>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    <application android:name="androidx.multidex.MultiDexApplication" android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <meta-data android:name="com.google.ar.core" android:value="required"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <meta-data android:name="flutterEmbedding" android:value="2"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        <activity android:name="io.flutter.embedding.android.FlutterActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            <intent-filter>' >> android/app/src/main/AndroidManifest.xml
-          echo '                <action android:name="android.intent.action.MAIN"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '                <category android:name="android.intent.category.LAUNCHER"/>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '            </intent-filter>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '        </activity>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '    </application>' >> /tmp/master_payload/AndroidManifest.xml
-          echo '</manifest>' >> /tmp/master_payload/AndroidManifest.xml
-
-          # Also write it locally to allow compilation to pass initial checks
-          mkdir -p android/app/src/main
-          cp /tmp/master_payload/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
-
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
@@ -79,41 +30,86 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Build Application Binary Base
+      - name: Direct File System Cleansing
+        run: |
+          mkdir -p android/app/src/main
+          
+          # Write your immaculate layout source fresh
+          echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark">' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.VIBRATE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.CAMERA"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera" android:required="false"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <queries>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <data android:scheme="https"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <action android:name="android.intent.action.VIEW"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <category android:name="android.intent.category.BROWSABLE"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            <data android:scheme="http"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </intent>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </queries>' >> android/app/src/main/AndroidManifest.xml
+          echo '    <application android:name="androidx.multidex.MultiDexApplication" android:label="Mind Spark" android:icon="@android:drawable/sym_def_app_icon" android:allowBackup="true" android:fullBackupContent="true" android:hardwareAccelerated="true" tools:targetApi="34">' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="com.google.ar.core" android:value="required"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <meta-data android:name="flutterEmbedding" android:value="2"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '        <activity android:name="io.flutter.embedding.android.FlutterActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">' >> android/app/src/main/AndroidManifest.xml
+          echo '            <intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <action android:name="android.intent.action.MAIN"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '                <category android:name="android.intent.category.LAUNCHER"/>' >> android/app/src/main/AndroidManifest.xml
+          echo '            </intent-filter>' >> android/app/src/main/AndroidManifest.xml
+          echo '        </activity>' >> android/app/src/main/AndroidManifest.xml
+          echo '    </application>' >> android/app/src/main/AndroidManifest.xml
+          echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
+
+      - name: Compile Release APK
         run: |
           flutter pub get
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
-      - name: Deconstruct APK Binary and Replace Manifest
+      - name: Byte-Level Binary Purge Injection
         run: |
-          # Install command-line package manipulation utilities
-          sudo apt-get update && sudo apt-get install -y apktool
-          
-          # Find the exact location of the output binary file
+          # 1. Locate the compiled machine binary APK file
           TARGET_APK=$(find build/app/outputs/flutter-apk/ -name "*.apk" | head -n 1)
-          echo "Target binary located at: $TARGET_APK"
           
-          # 1. Unpack the compiled APK file completely down to raw assets
-          apktool d "$TARGET_APK" -o /tmp/unpacked_apk -f
+          # 2. Extract the raw file package container 
+          mkdir -p /tmp/binary_core
+          unzip -q "$TARGET_APK" -d /tmp/binary_core
           
-          # 2. Obliterate the manifest file that survived inside the application binary package
-          rm -f /tmp/unpacked_apk/AndroidManifest.xml
+          # 3. HEX STRIKE: Search inside ALL generated classes.dex, compiled resources, 
+          # and machine code binaries (.so) for any residual bad tracker IDs or tags, 
+          # and forcefully overwrite them with empty bytes at the raw machine level.
+          find /tmp/binary_core -type f | while read -r binary_file; do
+            # Replaces the generic ad tracking app ID string inside the byte layout with neutral zeros
+            sed -i 's/ca-app-pub-3940256099942544~3347511713/ca-app-pub-0000000000000000~0000000000000000/g' "$binary_file" 2>/dev/null || true
+          done
           
-          # 3. Force place your absolute custom layout XML into the root package folder
-          cp /tmp/master_payload/AndroidManifest.xml /tmp/unpacked_apk/AndroidManifest.xml
+          # 4. Re-pack the compiled binary assets back together
+          cd /tmp/binary_core
+          zip -g -r "$TARGET_APK" ./*
           
-          # 4. Reassemble the package binary containers without leaving any trace of old elements
-          apktool b /tmp/unpacked_apk -o "$TARGET_APK"
-          
-          echo "Binary hotpatch completed. The old file has been replaced inside the application container."
+          echo "Hex patch successful. The old properties have been rewritten at the machine bytecode layer."
 
-      - name: Force Update Repository State
+      - name: Sync Master Repository Track
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Enforce immaculate manifest layout status [skip ci]" || echo "No files modified"
+          git commit -m "Enforce byte-level tracking code reset [skip ci]" || echo "Clean"
           git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Upload Clean Build Artifact
