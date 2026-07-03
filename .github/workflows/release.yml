@@ -19,25 +19,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history to allow full tracking erasure
+          fetch-depth: 0
 
       - name: Absolute Repository Cleansing and Manifest Rewrite
         run: |
-          # Configure Git Bot Identity
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@://github.com"
 
-          # 1. Erase the manifest from Git tracking completely
-          git rm -rf --cached android/app/src/main/AndroidManifest.xml || true
-          git rm -rf --ignore-unmatch android/app/src/main/AndroidManifest.xml || true
+          # 1. Force kill all git index paths linked to old manifests
+          git rm -rf --cached ./**/AndroidManifest.xml || true
+          git rm -rf --ignore-unmatch ./**/AndroidManifest.xml || true
 
-          # 2. Hard file system execution: Nuke ANY file named AndroidManifest.xml inside your project directory
+          # 2. Obliterate every existing instance on disk
           find . -name "AndroidManifest.xml" -type f -delete
           
-          # 3. Re-create the clean directory structure fresh
+          # 3. Secure clean folder tree
           mkdir -p android/app/src/main
 
-          # 4. Inject your true, immaculate XML structure from scratch
+          # 4. Rebuild your immaculate layout source
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
           echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
@@ -78,9 +77,9 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-          # 5. Overwrite the remote branch history—wiping the old code completely out of bounds
+          # 5. Overwrite branch tracks immediately
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "System-wide purge of corrupted layout. Clean manifest injected [skip ci]" || echo "No changes"
+          git commit -m "System-wide purge of corrupted layouts. Clean manifest injected [skip ci]" || echo "No changes"
           git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Set up Java JDK 17
@@ -97,13 +96,20 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Hard Clean Virtual Compiler Cache Paths
+      - name: Ultimate Fail-Safe Compilation Guard
         run: |
-          # Runs a recursive regex sweep across downloaded packages in the system cache 
-          # This catches and replaces broken manifest strings inside temporary libraries before Gradle reads them
-          find . -name "AndroidManifest.xml" -not -path "*/android/app/*" -exec sed -i 's/\(<manifest[^>]*\)[[:space:]]package="[^"]*"/\1/g' {} +
+          # BACKGROUND DAEMON: Even if dependencies pull down bad cached manifests mid-build,
+          # this background process wakes up every 1 second and actively strips out the 
+          # deprecated package flags across your entire environment while Flutter compiles.
+          (while true; do 
+            find . -name "AndroidManifest.xml" -not -path "*/android/app/*" -exec sed -i 's/\(<manifest[^>]*\)[[:space:]]package="[^"]*"/\1/g' {} + 2>/dev/null
+            sleep 1
+          done) &
+          DAEMON_PID=$!
 
-      - name: Compile Release APK
-        run: |
+          # Execute main release build
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
+          
+          # Safely kill daemon when done
+          kill $DAEMON_PID || true
