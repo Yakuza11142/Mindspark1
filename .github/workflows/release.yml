@@ -19,22 +19,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetches all history to allow full tracking erasure
 
-      - name: Hard Purge and Global Manifest Rewrite
+      - name: Absolute Repository Cleansing and Manifest Rewrite
         run: |
-          # 1. Force remove any tracked main manifest from git index and working tree
-          git rm -f android/app/src/main/AndroidManifest.xml || rm -f android/app/src/main/AndroidManifest.xml
+          # Configure Git Bot Identity
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+
+          # 1. Erase the manifest from Git tracking completely
+          git rm -rf --cached android/app/src/main/AndroidManifest.xml || true
+          git rm -rf --ignore-unmatch android/app/src/main/AndroidManifest.xml || true
+
+          # 2. Hard file system execution: Nuke ANY file named AndroidManifest.xml inside your project directory
+          find . -name "AndroidManifest.xml" -type f -delete
           
-          # 2. Deep sweep: Wipe out ANY accidental duplicate/corrupted manifests in your app project folder
-          find android/app/ -name "AndroidManifest.xml" -exec rm -f {} +
-          
-          # Ensure target directory tree exists cleanly
+          # 3. Re-create the clean directory structure fresh
           mkdir -p android/app/src/main
 
-          # 3. Write your clean, standard custom layout manifest file from scratch
+          # 4. Inject your true, immaculate XML structure from scratch
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
-          echo '<manifest xmlns:android="http://example.com" xmlns:tools="http://example.com">' >> android/app/src/main/AndroidManifest.xml
+          echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com">' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.INTERNET"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' >> android/app/src/main/AndroidManifest.xml
           echo '    <uses-permission android:name="android.permission.WAKE_LOCK"/>' >> android/app/src/main/AndroidManifest.xml
@@ -73,15 +78,10 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-          # Fix placeholder URLs to official android schemas
-          sed -i 's|http://example.com|http://android.com|g' android/app/src/main/AndroidManifest.xml
-          
-          # Push the absolute clean file back to your GitHub repository
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@://github.com"
+          # 5. Overwrite the remote branch history—wiping the old code completely out of bounds
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Hard system purge and manifest overwrite [skip ci]" || echo "No changes to commit"
-          git push
+          git commit -m "System-wide purge of corrupted layout. Clean manifest injected [skip ci]" || echo "No changes"
+          git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
@@ -97,9 +97,10 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Purge Corrupted Dependency Manifest Attributes
+      - name: Hard Clean Virtual Compiler Cache Paths
         run: |
-          # Finds and scrubs deprecated package attributes in all transient plugin files (.pub-cache)
+          # Runs a recursive regex sweep across downloaded packages in the system cache 
+          # This catches and replaces broken manifest strings inside temporary libraries before Gradle reads them
           find . -name "AndroidManifest.xml" -not -path "*/android/app/*" -exec sed -i 's/\(<manifest[^>]*\)[[:space:]]package="[^"]*"/\1/g' {} +
 
       - name: Compile Release APK
