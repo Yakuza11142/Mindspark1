@@ -27,12 +27,27 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Clear Engine Caches & Fetch Dependencies
+      - name: Force Clean Cache Resolution
         run: |
           flutter clean
           rm -rf .dart_tool/
           rm -f pubspec.lock
           flutter pub get
+
+      - name: Deep Global Cache Sanitization Sweep
+        run: |
+          echo "Repairing raw plugin sources in global environment layers..."
+          find /home/runner/.pub-cache -name "AndroidManifest.xml" -type f 2>/dev/null | while read -r manifest; do
+            if grep -qE '(uses-permission|uses-feature|action|category|meta-data|activity|intent|data)' "$manifest"; then
+              sed -i -E 's/([^:])name=/\1android:name=/g' "$manifest"
+              sed -i -E 's/([^:])required=/\1android:required=/g' "$manifest"
+              sed -i -E 's/([^:])scheme=/\1android:scheme=/g' "$manifest"
+              sed -i -E 's/([^:])host=/\1android:host=/g' "$manifest"
+              sed -i -E 's/([^:])value=/\1android:value=/g' "$manifest"
+              sed -i -E 's/([^:])exported=/\1android:exported=/g' "$manifest"
+              sed -i -E 's/([^:])launchMode=/\1android:launchMode=/g' "$manifest"
+            fi
+          done
 
       - name: Compile Pristine Binary
         run: |
