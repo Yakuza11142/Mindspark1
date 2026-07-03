@@ -41,15 +41,15 @@ android {
         }
     }
 
-    // Direct Hardcoded In-Memory Overwrite Hook
+    // Fixed Groovy Native Manifest Interceptor Hook
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             output.processManifestProvider.get().doLast { task ->
-                var outputDir = task.manifestOutputDirectory.get().asFile
+                File outputDir = task.manifestOutputDirectory.get().asFile
                 
-                // Hardcoded production-ready pure manifest string definition
+                // Pure master manifest text data mapping
                 String pureManifestXml = """<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://android.com"
     xmlns:tools="http://android.com"
     package="com.example.mindspark.clean">
 
@@ -110,8 +110,8 @@ android {
     </application>
 </manifest>"""
 
-                // Force overwrite every generated output manifest directly out of memory
-                outputDir.walkTopDown().forEach { file ->
+                // Traverse directories using Groovy's native eachFileRecurse closure
+                outputDir.eachFileRecurse { file ->
                     if (file.name == 'AndroidManifest.xml') {
                         file.text = pureManifestXml
                     }
