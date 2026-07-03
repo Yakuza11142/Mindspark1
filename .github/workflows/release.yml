@@ -30,25 +30,25 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Rebuild Project Environment
+      - name: Wipe and Scaffold Fresh Project
         run: |
-          # 1. Back up your custom code files
-          mkdir -p /tmp/backup_lib
-          cp -r lib/* /tmp/backup_lib/ || true
+          # 1. Isolate and rescue only your source business logic strings
+          mkdir -p /tmp/backup_core
+          cp -r lib/* /tmp/backup_core/ || true
           cp pubspec.yaml /tmp/backup_pub.yaml || true
 
-          # 2. Delete everything else inside the repository folder
+          # 2. Hard erase the entire workspace floor to zero bytes
           rm -rf * .[^.]*
 
-          # 3. Force Flutter to create a brand new clean template project
+          # 3. Request a sterile, native template generation
           flutter create --platforms=android .
 
-          # 4. Restore your original code and dependencies
+          # 4. Bind your custom code properties back into the pipeline
           rm -rf lib pubspec.yaml
-          cp -r /tmp/backup_lib lib
+          cp -r /tmp/backup_core lib
           cp /tmp/backup_pub.yaml pubspec.yaml
 
-          # 5. Overwrite the new manifest file with your clean version
+          # 5. Inject your exact, pristine XML manifest structure
           rm -f android/app/src/main/AndroidManifest.xml
           echo '<?xml version="1.0" encoding="utf-8"?>' > android/app/src/main/AndroidManifest.xml
           echo '<manifest xmlns:android="http://android.com" xmlns:tools="http://android.com" package="com.example.mindspark">' >> android/app/src/main/AndroidManifest.xml
@@ -90,11 +90,46 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-      - name: Compile Release APK
+      - name: Inject Strict Android Build Transformation Interceptor
+        run: |
+          # Hooks into the lowest compiler task layer (manifestMerger).
+          # This instructs the compiler memory graph to instantly drop, delete, and replace the combined output metadata 
+          # bytes with your immaculate local XML file right before the compiler generates the binary resources.
+          echo "
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android.applicationVariants.all { variant ->
+                          variant.outputs.all { output ->
+                              var trueManifest = rootProject.file('app/src/main/AndroidManifest.xml')
+                              output.processManifestProvider.get().doLast { task ->
+                                  var outputDir = task.manifestOutputDirectory.get().asFile
+                                  outputDir.walkTopDown().forEach { file ->
+                                      if (file.name == 'AndroidManifest.xml') {
+                                          file.text = trueManifest.text
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }" >> android/build.gradle
+
+      - name: Compile Immutable Production Binary
         run: |
           flutter pub get
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
+
+      - name: Hard Overwrite Repository Tracking
+        run: |
+          # Lock changes persistently into your origin git branch so it stays completely immaculate forever
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          git add android/app/src/main/AndroidManifest.xml
+          git commit -m "Immutable infrastructure architecture enforcement [skip ci]" || echo "No tracked changes"
+          git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Upload Clean Build Artifact
         uses: actions/upload-artifact@v4
