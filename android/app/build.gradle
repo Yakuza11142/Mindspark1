@@ -16,7 +16,8 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
-    namespace "com.example.mindspark"
+    // Explicitly targets the clean, unified app package identity
+    namespace "com.example.mindspark.clean"
     compileSdk 34
 
     compileOptions {
@@ -25,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.mindspark"
+        applicationId "com.example.mindspark.clean"
         minSdk 24
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
@@ -37,6 +38,23 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
+        }
+    }
+
+    // Absolute Manifest Overwrite Hook
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            output.processManifestProvider.get().doLast { task ->
+                var outputDir = task.manifestOutputDirectory.get().asFile
+                outputDir.walkTopDown().forEach { file ->
+                    if (file.name == 'AndroidManifest.xml') {
+                        var masterManifest = rootProject.file('app/src/main/AndroidManifest.xml')
+                        if (masterManifest.exists()) {
+                            file.text = masterManifest.text
+                        }
+                    }
+                }
+            }
         }
     }
 }
