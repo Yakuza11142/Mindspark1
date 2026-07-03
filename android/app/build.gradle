@@ -17,7 +17,7 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
-    namespace "com.example.mindspark.clean"
+    namespace "com.example.mindspark"
     compileSdk 34
 
     compileOptions {
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.mindspark.clean"
+        applicationId "com.example.mindspark"
         minSdk 24
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
