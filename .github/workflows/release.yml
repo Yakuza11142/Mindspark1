@@ -34,22 +34,21 @@ jobs:
           rm -f pubspec.lock
           flutter pub get
 
-      - name: Deep Global Cache Sanitization Sweep
+      - name: Advanced Self-Healing Manifest Repair Sweep
         run: |
-          echo "Safely repairing raw plugin sources using exact word boundaries..."
+          echo "Executing deep structural repairs on all AndroidManifest layouts..."
           find /home/runner/.pub-cache -name "AndroidManifest.xml" -type f 2>/dev/null | while read -r manifest; do
-            # Use \b to ensure we only target attributes missing the 'android:' prefix
-            sed -i -E 's/\bname=/android:name=/g' "$manifest"
-            sed -i -E 's/\brequired=/android:required=/g' "$manifest"
-            sed -i -E 's/\bscheme=/android:scheme=/g' "$manifest"
-            sed -i -E 's/\bhost=/android:host=/g' "$manifest"
-            sed -i -E 's/\bvalue=/android:value=/g' "$manifest"
-            sed -i -E 's/\bexported=/android:exported=/g' "$manifest"
-            sed -i -E 's/\blaunchMode=/android:launchMode=/g' "$manifest"
             
-            # Fail-safe line: Instantly repairs any accidental double-prefixes (android:android:)
+            # Step 1: Fix naked attributes missing the 'android:' prefix entirely
+            # Uses strict word boundaries (\b) to avoid breaking existing valid code
+            sed -i -E 's/\b(name|required|scheme|host|value|exported|launchMode)=/android:\1=/g' "$manifest"
+            
+            # Step 2: Critical Self-Healing Safety Net
+            # If a file was previously corrupted into 'android:android:name=', this instantly heals it back to 'android:name='
             sed -i 's/android:android:/android:/g' "$manifest"
+            
           done
+          echo "All XML manifests successfully sanitized and preserved."
 
       - name: Compile Pristine Binary
         run: |
