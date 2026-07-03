@@ -1,3 +1,11 @@
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.NodeList
+
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
@@ -42,32 +50,57 @@ android {
     }
 }
 
-// ROBUST GRADLE INTERCEPTOR (Fixes un-namespaced elements dynamically)
-project.ext.manifestTransformer = { File manifestFile ->
-    if (manifestFile.exists() && manifestFile.name == "AndroidManifest.xml") {
-        String contents = manifestFile.getText('UTF-8')
-        if (contents.contains("<uses-permission") || contents.contains("<uses-feature") || contents.contains("<action")) {
-            // Apply standard text replacement rules across un-namespaced attributes
-            contents = contents.replaceAll(/(?<!android:)name=/, 'android:name=')
-            contents = contents.replaceAll(/(?<!android:)required=/, 'android:required=')
-            contents = contents.replaceAll(/(?<!android:)scheme=/, 'android:scheme=')
-            contents = contents.replaceAll(/(?<!android:)host=/, 'android:host=')
-            contents = contents.replaceAll(/(?<!android:)value=/, 'android:value=')
-            contents = contents.replaceAll(/(?<!android:)exported=/, 'android:exported=')
-            contents = contents.replaceAll(/(?<!android:)launchMode=/, 'android:launchMode=')
-            manifestFile.setText(contents, 'UTF-8')
+// ROBUST JAVA DOM PARSER - Structural validation fixer
+ext.fixManifestNamespaces = { File manifestFile ->
+    if (!manifestFile.exists() || manifestFile.name != "AndroidManifest.xml") return
+
+    try {
+        var factory = DocumentBuilderFactory.newInstance()
+        var builder = factory.newDocumentBuilder()
+        Document doc = builder.parse(manifestFile)
+        
+        // Critical targets that often drop missing prefixes inside third-party modules
+        String[] targets = ["uses-permission", "uses-feature", "action", "category", "meta-data", "activity", "intent", "data"]
+        boolean amended = false
+
+        for (String tagName : targets) {
+            NodeList list = doc.getElementsByTagName(tagName)
+            for (int i = 0; i < list.getLength(); i++) {
+                Element el = (Element) list.item(i)
+                
+                // If a standard key is found without its prefix namespace, correct it structurally
+                String[] attrs = ["name", "required", "scheme", "host", "value", "exported", "launchMode"]
+                for (String attr : attrs) {
+                    if (el.hasAttribute(attr) && !el.hasAttributeNS("http://android.com", attr)) {
+                        String value = el.getAttribute(attr)
+                        el.removeAttribute(attr)
+                        el.setAttribute("android:" + attr, value)
+                        amended = true
+                    }
+                }
+            }
         }
+
+        if (amended) {
+            var transformer = TransformerFactory.newInstance().newTransformer()
+            var source = new DOMSource(doc)
+            var result = new StreamResult(manifestFile)
+            transformer.transform(source, result)
+        }
+    } catch (Exception e) {
+        // Safe logger block to guarantee compilation never halts on a parsing conflict
+        println "⚠️ [Unfailable Hook Notice] Skipping structural analysis on intermediate file node: " + e.getMessage()
     }
 }
 
-// Hook directly into the compilation lifecycle phases
+// Intercept manifest generation right before final compilation assembly
 android.applicationVariants.all { variant ->
     variant.outputs.all { output ->
         output.processManifestProvider.get().doLast { task ->
             File outputDir = task.manifestOutputDirectory.get().asFile
             if (outputDir.exists()) {
                 outputDir.eachFileRecurse { file ->
-                    project.ext.manifestTransformer(file)
+                    fixManifestNamespaces(file)
                 }
             }
         }
