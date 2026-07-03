@@ -21,19 +21,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Absolute Repository Cleansing and Manifest Rewrite
+      - name: Force Core Codebase Alignment
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
 
-          # 1. Clear old layouts completely from Git index tracking
+          # 1. Un-track any old layouts from git tracking index completely
           git rm -rf --cached ./**/AndroidManifest.xml || true
           git rm -rf --ignore-unmatch ./**/AndroidManifest.xml || true
 
-          # 2. Hard file system execution: Destroy every file named AndroidManifest.xml on the machine workspace
+          # 2. Obliterate every existing manifest file across the entire workspace
           find . -name "AndroidManifest.xml" -type f -delete
           
-          # 3. Create clean directory paths fresh
+          # 3. Build pristine directory structure fresh
           mkdir -p android/app/src/main
 
           # 4. Inject your true, immaculate XML structure from scratch
@@ -77,12 +77,12 @@ jobs:
           echo '    </application>' >> android/app/src/main/AndroidManifest.xml
           echo '</manifest>' >> android/app/src/main/AndroidManifest.xml
 
-          # 5. Lock your custom manifest to read-only mode so nothing can edit it later
+          # 5. Lock manifest system-wide to read-only mode
           chmod 444 android/app/src/main/AndroidManifest.xml
 
-          # 6. Overwrite the remote tracking repository branches with full force
+          # 6. Push clear layout directly back to repository branches
           git add android/app/src/main/AndroidManifest.xml
-          git commit -m "Absolute system-wide purge of corrupted templates [skip ci]" || echo "Clean"
+          git commit -m "Immutable manifest lockdown sequence completed [skip ci]" || echo "Clean"
           git push origin HEAD:${{ github.ref_name }} --force
 
       - name: Set up Java JDK 17
@@ -98,25 +98,31 @@ jobs:
 
       - name: Deep Cache Eviction
         run: |
-          # Obliterates pre-compiled dependency leftovers and intermediate build objects
           flutter clean
           flutter pub get
 
-      - name: Ultimate Fail-Safe Compilation Guard
+      - name: Inject Memory-Level Compiler Overwrite Hook
         run: |
-          # Background loop ensuring any transient dependency cache manifests are stripped every second
-          (while true; do 
-            find . -name "AndroidManifest.xml" -not -path "*/android/app/*" -exec sed -i 's/\(<manifest[^>]*\)[[:space:]]package="[^"]*"/\1/g' {} + 2>/dev/null
-            sleep 1
-          done) &
-          DAEMON_PID=$!
+          # Intercepts the compiler memory streams directly. This tells Gradle that right after 
+          # processing the manifests, it must read your clean manifest from disk and completely 
+          # replace the compiler's output data cache with your layout before building.
+          echo "
+          allprojects {
+              tasks.matching { it.name.startsWith('process') && it.name.endsWith('Manifest') }.configureEach { task ->
+                  task.doLast {
+                      if (task.name.contains('Release')) {
+                          var trueManifest = file('${{ github.workspace }}/android/app/src/main/AndroidManifest.xml').text
+                          task.outputs.files.each { f ->
+                              if (f.exists() && f.name == 'AndroidManifest.xml') {
+                                  f.text = trueManifest
+                              }
+                          }
+                      }
+                  }
+              }
+          }" >> android/build.gradle
 
-          # Force restore read-only locks on your master design file
-          chmod 444 android/app/src/main/AndroidManifest.xml || true
-
-          # Execute release build
+      - name: Compile Release APK
+        run: |
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
-          
-          # Kill cleanup loops cleanly
-          kill $DAEMON_PID || true
