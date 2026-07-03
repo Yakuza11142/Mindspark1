@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    // Modernized Kotlin layout configuration for Flutter
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -30,6 +31,9 @@ android {
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        
+        // CRITICAL: Enables parsing for your MultiDexApplication manifest configuration
+        multiDexEnabled true
     }
 
     buildTypes {
