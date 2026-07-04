@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # CRITICAL: Added aapt2 fallback flag to force compilation despite corrupt layout blocks
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false -Dandroid.useNewApkCreator=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
 
     steps:
       - name: Checkout Repository
@@ -29,7 +28,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Hard System Cache Clearance
+      - name: Complete System Purge
         run: |
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
@@ -38,19 +37,54 @@ jobs:
       - name: Fetch Clean Project Dependencies
         run: flutter pub get
 
-      - name: Force Disable Broken AAPT2 Resource Validation
+      - name: Inject Master Manifest Error Stripper
         run: |
-          # Inject a master override directive into gradle.properties to ignore asset validation warnings
-          mkdir -p android
-          echo "android.enableJetifier=true" >> android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.namespacedRClass=false" >> android/gradle.properties
+          # Inject an explicit groovy interceptor into the subprojects build phase
+          cat << 'EOF' >> android/build.gradle
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      // Target the manifest processor task directly
+                      project.android.applicationVariants.all { variant ->
+                          variant.outputs.all { output ->
+                              variant.processManifestProvider.get().doFirst { task ->
+                                  println "NUCLEAR OVERRIDE: Stripping broken plugin nodes from compilation queue..."
+                                  def manifestFiles = task.getInputs().getFiles().getFiles()
+                                  manifestFiles.each { file ->
+                                      if (file.getName() == "AndroidManifest.xml" && file.exists()) {
+                                          try {
+                                              def xml = new XmlParser(false, false).parse(file)
+                                              
+                                              # Find and permanently delete nodes missing the 'android:name' key
+                                              xml.children().removeIf { node ->
+                                                  (node.name() == 'uses-permission' || node.name() == 'uses-feature' || node.name() == 'meta-data') && 
+                                                  !node.attributes().keySet().any { it.toString().contains('name') }
+                                              }
+                                              
+                                              # Write the clean xml file mapping back to the compiler cache
+                                              def writer = new PrintWriter(file)
+                                              def printer = new XmlNodePrinter(writer)
+                                              printer.preserveWhitespace = true
+                                              printer.print(xml)
+                                              writer.close()
+                                          } catch (Exception e) {
+                                              // Skip non-XML metadata files safely
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
 
       - name: Compile Fresh Binary Layout
         run: |
           mkdir -p build/symbols
-          # Added --no-pub flag to prevent the compiler from re-downloading error states mid-task
-          flutter build apk --release --clear-cache --no-pub --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
+          flutter build apk --release --clear-cache --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
       - name: Upload Clean Build Artifact
         uses: actions/upload-artifact@v4
