@@ -28,31 +28,7 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Force Fix Manifest Integrity (Python Sanitizer)
-        run: |
-          python3 -c "
-          import xml.etree.ElementTree as ET
-          import os
-
-          path = 'android/app/src/main/AndroidManifest.xml'
-          if os.path.exists(path):
-              print('Sanitizing XML nodes...')
-              # Read raw text to force repair root definitions
-              with open(path, 'r', encoding='utf-8') as f:
-                  content = f.read()
-              
-              # Force correct standard schemas regardless of existing file state
-              if 'xmlns:android=' in content:
-                  content = content.replace('xmlns:android=\"http://android.com\"', 'xmlns:android=\"http://android.com\"')
-              
-              with open(path, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print('XML namespace rewrite structural checks complete.')
-          else:
-              print('File not found')
-          "
-
-      - name: Hard Purge Assembly Dependencies
+      - name: Force Clean Local Caches
         run: |
           flutter clean
           rm -rf .dart_tool/
@@ -61,15 +37,44 @@ jobs:
           rm -rf android/app/build
           flutter pub get
 
+      - name: Self-Healing Manifest Sanitizer
+        run: |
+          python3 -c "
+          import os
+          import glob
+
+          # 1. Fix the main project manifest root
+          main_manifest = 'android/app/src/main/AndroidManifest.xml'
+          if os.path.exists(main_manifest):
+              with open(main_manifest, 'r') as f:
+                  text = f.read()
+              text = text.replace('http://android.com', 'http://schemas.android.com/apk/res/android')
+              with open(main_manifest, 'w') as f:
+                  f.write(text)
+              print('Main manifest healed.')
+
+          # 2. Aggressively scan and patch every single plugin manifest fetched by pub get
+          pub_cache_path = os.path.expanduser('~/.pub-cache/hosted/pub.dev/')
+          manifest_files = glob.glob(os.path.join(pub_cache_path, '**/AndroidManifest.xml'), recursive=True)
+          
+          print(f'Scanning {len(manifest_files)} sub-plugin manifests for corrupt namespaces...')
+          for path in manifest_files:
+              with open(path, 'r', errors='ignore') as f:
+                  data = f.read()
+              if 'http://android.com' in data:
+                  print(f'ALERT: Found corrupt namespace inside dependency: {path}')
+                  data = data.replace('http://android.com', 'http://schemas.android.com/apk/res/android')
+                  with open(path, 'w') as f:
+                      f.write(data)
+          "
+
       - name: Compile Fresh Binary Layout
         run: |
           mkdir -p build/symbols
-          # Added split-per-abi flag to isolate platform layout files safely if main bundle maps fail
           flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation
 
       - name: Upload Clean Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: final-apk
-          # Path configuration modified to capture all split arm binaries compiled safely
           path: build/app/outputs/flutter-apk/*.apk
