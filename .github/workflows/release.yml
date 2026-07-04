@@ -28,63 +28,39 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Hard Workspace Purge
+      - name: Hard System Cache Clearance
         run: |
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
           rm -rf ~/.gradle/caches/
 
-      - name: Resolve Project Dependencies
+      - name: Fetch Clean Project Dependencies
         run: flutter pub get
 
-      - name: Deep-Sanitize ARCore and Camera Manifest Segments
+      - name: Inject Strict Resolution Strategy Strategy
         run: |
-          python3 -c "
-          import os
-          import glob
+          # Inject an explicit resolution block directly into the root build configuration file
+          cat << 'EOF' >> android/build.gradle
 
-          # Scan workspace and pub-cache where arcore_flutter_plus is checked out
-          paths_to_sweep = [os.getcwd(), os.path.expanduser('~/.pub-cache')]
-          
-          print('Scanning global file maps for invalid AR manifest schemas...')
-          for base_dir in paths_to_sweep:
-              if not os.path.exists(base_dir):
-                  continue
-              for root, dirs, files in os.walk(base_dir):
-                  for file in files:
-                      if file == 'AndroidManifest.xml':
-                          manifest_path = os.path.join(root, file)
-                          try:
-                              with open(manifest_path, 'r', encoding='utf-8', errors='ignore') as f:
-                                  content = f.read()
-                              
-                              # Catching invalid/blank uses-permission and uses-feature formatting
-                              corrupt_detected = False
-                              if 'xmlns:android=\"http://android.com\"' in content:
-                                  content = content.replace('http://android.com', 'http://android.com')
-                                  corrupt_detected = True
-                              
-                              # Strip any malformed uses-feature nodes without names that arcore injects
-                              if '<uses-feature />' in content or '<uses-permission />' in content:
-                                  content = content.replace('<uses-feature />', '')
-                                  content = content.replace('<uses-permission />', '')
-                                  corrupt_detected = True
-                                  
-                              if corrupt_detected:
-                                  print(f'PARSING REPAIR COMPLETED FOR: {manifest_path}')
-                                  with open(manifest_path, 'w', encoding='utf-8') as f:
-                                      f.write(content)
-                          except:
-                              pass
-          "
+          subprojects {
+              project.configurations.all {
+                  resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                      // If any plugin brings in an outdated Google AR Core artifact, force patch it
+                      if (details.requested.group == 'com.google.ar' && details.requested.name == 'core') {
+                          details.useVersion '1.48.0'
+                          details.because 'Forces structural XML namespace validation attributes'
+                      }
+                  }
+              }
+          }
+          EOF
 
-      - name: Force Injection of Master Manifest Override Template
+      - name: Reset Local App Manifest Parameters
         run: |
-          # Overwrites your local manifest using a strict node substitution map to ignore plugin errors
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
-              xmlns:tools="http://android.com"
+              xmlns:tools="http://github.com"
               package="com.example.mindspark">
 
               <uses-permission android:name="android.permission.INTERNET"/>
@@ -106,7 +82,7 @@ jobs:
                   android:hardwareAccelerated="true">
 
                   <meta-data android:name="flutterEmbedding" android:value="2"/>
-                  <meta-data android:name="com.google.ar.core" android:value="required" tools:replace="android:value"/>
+                  <meta-data android:name="com.google.ar.core" android:value="optional" tools:replace="android:value"/>
 
                   <activity
                       android:name="io.flutter.embedding.android.FlutterActivity"
