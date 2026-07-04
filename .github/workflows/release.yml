@@ -40,12 +40,12 @@ jobs:
       - name: Resolve Project Dependencies
         run: flutter pub get
 
-      - name: Global Search-and-Destroy Namespace Overwrite
+      - name: Overwrite and Heal Manifest Namespace XML
         run: |
           python3 -c "
           import os
 
-          # This searches EVERY file in the runner workspace, including system caches
+          # Search path points to the active project directories and cached source extensions
           search_paths = [os.getcwd(), os.path.expanduser('~/.pub-cache')]
           broken_string = 'xmlns:android=\"http://android.com\"'
           fixed_string = 'xmlns:android=\"http://schemas.android.com/apk/res/android\"'
@@ -64,7 +64,6 @@ jobs:
                               
                               if 'http://android.com' in content:
                                   print(f'CRITICAL PATCH: Corrected manifest at -> {full_path}')
-                                  # Fixes the broken namespace tag instantly
                                   content = content.replace('http://android.com', 'http://schemas.android.com/apk/res/android')
                                   with open(full_path, 'w', encoding='utf-8') as f:
                                       f.write(content)
@@ -75,7 +74,7 @@ jobs:
       - name: Compile Fresh Binary Layout
         run: |
           mkdir -p build/symbols
-          # Uses clear-cache to prevent Gradle from loading unzipped error states
+          # Uses clear-cache to strip unzipped assembly layers from breaking compilation
           flutter build apk --release --clear-cache --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
       - name: Upload Clean Build Artifact
