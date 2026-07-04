@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -47,13 +46,13 @@ android {
 tasks.register("cleanProjectManifests") {
     doFirst {
         println "🚀 [Unfailable Hook] Pre-cleaning all project dependency manifests..."
-        
+
         // Scan the project directory root structures dynamically
         fileTree(dir: "${rootProject.projectDir}", include: "**/AndroidManifest.xml").each { file ->
             if (file.exists() && !file.absolutePath.contains("build/intermediates")) {
                 String text = file.getText('UTF-8')
                 if (text.contains("<uses-permission") || text.contains("<uses-feature") || text.contains("<action")) {
-                    
+
                     // Structurally force correct un-namespaced attributes globally
                     text = text.replaceAll(/(?<!android:)name=/, 'android:name=')
                     text = text.replaceAll(/(?<!android:)required=/, 'android:required=')
@@ -62,7 +61,7 @@ tasks.register("cleanProjectManifests") {
                     text = text.replaceAll(/(?<!android:)value=/, 'android:value=')
                     text = text.replaceAll(/(?<!android:)exported=/, 'android:exported=')
                     text = text.replaceAll(/(?<!android:)launchMode=/, 'android:launchMode=')
-                    
+
                     file.setText(text, 'UTF-8')
                 }
             }
