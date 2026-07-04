@@ -41,47 +41,6 @@ android {
     }
 }
 
-// UNFAILABLE PRE-BUILD HOOK
-// Fixes un-namespaced elements inside the cache directory before compilation starts
-tasks.register("cleanProjectManifests") {
-    doFirst {
-        println "🚀 [Unfailable Hook] Pre-cleaning all project dependency manifests..."
-
-        // Scan the project directory root structures dynamically
-        fileTree(dir: "${rootProject.projectDir}", include: "**/AndroidManifest.xml").each { file ->
-            if (file.exists() && !file.absolutePath.contains("build/intermediates")) {
-                String text = file.getText('UTF-8')
-                if (text.contains("<uses-permission") || text.contains("<uses-feature") || text.contains("<action")) {
-
-                    // Structurally force correct un-namespaced attributes globally
-                    text = text.replaceAll(/(?<!android:)name=/, 'android:name=')
-                    text = text.replaceAll(/(?<!android:)required=/, 'android:required=')
-                    text = text.replaceAll(/(?<!android:)scheme=/, 'android:scheme=')
-                    text = text.replaceAll(/(?<!android:)host=/, 'android:host=')
-                    text = text.replaceAll(/(?<!android:)value=/, 'android:value=')
-                    text = text.replaceAll(/(?<!android:)exported=/, 'android:exported=')
-                    text = text.replaceAll(/(?<!android:)launchMode=/, 'android:launchMode=')
-
-                    file.setText(text, 'UTF-8')
-                }
-            }
-        }
-        println "✅ Pre-build manifest normalization completed."
-    }
-}
-
-// Force the compilation pipeline to wait until our cleaning script finishes running
-project.afterEvaluate {
-    tasks.all { task ->
-        if (task.name.startsWith('merge') && task.name.contains('Manifest')) {
-            task.dependsOn cleanProjectManifests
-        }
-        if (task.name.startsWith('process') && task.name.contains('Manifest')) {
-            task.dependsOn cleanProjectManifests
-        }
-    }
-}
-
 flutter {
     source '../..'
 }
