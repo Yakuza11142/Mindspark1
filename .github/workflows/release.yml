@@ -28,76 +28,56 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Hard System Cache Clearance
+      - name: Wipe Workspace Storage
         run: |
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
           rm -rf ~/.gradle/caches/
 
-      - name: Fetch Clean Project Dependencies
+      - name: Fetch Dependencies
         run: flutter pub get
 
-      - name: Inject Strict Resolution Strategy Strategy
+      - name: Inject Runtime Manifest Stripper Hook
         run: |
-          # Inject an explicit resolution block directly into the root build configuration file
+          # Inject a Groovy parser directly into the main Gradle build tree
           cat << 'EOF' >> android/build.gradle
 
           subprojects {
-              project.configurations.all {
-                  resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                      // If any plugin brings in an outdated Google AR Core artifact, force patch it
-                      if (details.requested.group == 'com.google.ar' && details.requested.name == 'core') {
-                          details.useVersion '1.48.0'
-                          details.because 'Forces structural XML namespace validation attributes'
+              afterEvaluate { project ->
+                  if (project.hasProperty("android")) {
+                      project.android.applicationVariants.all { variant ->
+                          variant.outputs.all { output ->
+                              // Intercept the manifest processor task before execution
+                              variant.processManifestProvider.get().doFirst { task ->
+                                  println "CRITICAL: Cleaning binary manifest fragments in memory..."
+                                  task.getInputs().getFiles().getFiles().each { file ->
+                                      if (file.getName() == "AndroidManifest.xml" && file.exists()) {
+                                          try {
+                                              def parser = new groovy.xml.XmlParser(false, false)
+                                              def xml = parser.parse(file)
+                                              
+                                              // Remove nodes that are completely blank or missing the name key
+                                              xml.children().removeIf { node ->
+                                                  (node.name() == 'uses-permission' || node.name() == 'uses-feature') &&
+                                                  !node.attributes().keySet().any { it.toString().contains('name') }
+                                              }
+                                              
+                                              def writer = new PrintWriter(file)
+                                              def printer = new groovy.xml.XmlNodePrinter(writer)
+                                              printer.preserveWhitespace = true
+                                              printer.print(xml)
+                                              writer.close()
+                                          } catch (Exception e) {
+                                              // Gracefully skip binary file read locks
+                                          }
+                                      }
+                                  }
+                              }
+                          }
                       }
                   }
               }
           }
-          EOF
-
-      - name: Reset Local App Manifest Parameters
-        run: |
-          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com"
-              xmlns:tools="http://github.com"
-              package="com.example.mindspark">
-
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-
-              <application
-                  tools:node="replace"
-                  tools:replace="android:label,android:name,android:allowBackup"
-                  android:name="androidx.multidex.MultiDexApplication"
-                  android:label="Mind Spark"
-                  android:icon="@android:drawable/sym_def_app_icon"
-                  android:allowBackup="true"
-                  android:hardwareAccelerated="true">
-
-                  <meta-data android:name="flutterEmbedding" android:value="2"/>
-                  <meta-data android:name="com.google.ar.core" android:value="optional" tools:replace="android:value"/>
-
-                  <activity
-                      android:name="io.flutter.embedding.android.FlutterActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
           EOF
 
       - name: Compile Fresh Binary Layout
