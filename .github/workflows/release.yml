@@ -27,35 +27,10 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Force Clean Cache Resolution
-        run: |
-          flutter clean
-          rm -rf .dart_tool/
-          rm -f pubspec.lock
-          flutter pub get
-
-      - name: Advanced Self-Healing Manifest Repair Sweep
-        run: |
-          echo "Executing deep structural repairs on all AndroidManifest layouts..."
-          
-          # STEP 1: Fix your local project file that caused the July 3rd crash
-          LOCAL_MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$LOCAL_MANIFEST" ]; then
-            echo "Sanitizing local repository manifest file..."
-            sed -i -E 's/\b(name|required|scheme|host|value|exported|launchMode)=/android:\1=/g' "$LOCAL_MANIFEST"
-            sed -i 's/android:android:/android:/g' "$LOCAL_MANIFEST"
-          fi
-
-          # STEP 2: Fix any un-prefixed plugin cache files
-          find /home/runner/.pub-cache -name "AndroidManifest.xml" -type f 2>/dev/null | while read -r manifest; do
-            sed -i -E 's/\b(name|required|scheme|host|value|exported|launchMode)=/android:\1=/g' "$manifest"
-            sed -i 's/android:android:/android:/g' "$manifest"
-          done
-          
-          echo "All XML manifests successfully sanitized and preserved."
-
       - name: Compile Pristine Binary
         run: |
+          flutter clean
+          flutter pub get
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
