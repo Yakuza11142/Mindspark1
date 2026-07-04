@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
 
     steps:
       - name: Checkout Repository
@@ -26,11 +26,19 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: false # CRITICAL FIX: Forces GitHub to drop all old, broken file histories
 
-      - name: Compile Pristine Binary
+      - name: Wipe Local Assembly Directories
         run: |
           flutter clean
+          rm -rf .dart_tool/
+          rm -f pubspec.lock
+          rm -rf android/.gradle
+          rm -rf android/app/build
           flutter pub get
+
+      - name: Compile Fresh Binary Layout
+        run: |
           mkdir -p build/symbols
           flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
