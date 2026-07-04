@@ -28,48 +28,86 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Nuclear Native Directory Re-Generation
+      - name: Hard Workspace Purge
         run: |
-          # 1. Back up vital native configuration files if they exist
-          mkdir -p build/backup_meta
-          [ -f "android/app/google-services.json" ] && cp android/app/google-services.json build/backup_meta/ || true
-          [ -f "android/key.properties" ] && cp android/key.properties build/backup_meta/ || true
-          [ -f "android/app/release-key.jks" ] && cp android/app/release-key.jks build/backup_meta/ || true
+          flutter clean
+          rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
+          rm -rf ~/.gradle/caches/
 
-          # 2. Obliterate the corrupt native layer completely
-          rm -rf android/
-          rm -rf .dart_tool/
-          rm -f pubspec.lock
+      - name: Resolve Project Dependencies
+        run: flutter pub get
 
-          # 3. Force Flutter to generate a clean, modern Android module
-          flutter create . --platforms=android
-          flutter pub get
-
-          # 4. Restore original structural keys and signatures into the fresh folder map
-          [ -f "build/backup_meta/google-services.json" ] && cp build/backup_meta/google-services.json android/app/ || true
-          [ -f "build/backup_meta/key.properties" ] && cp build/backup_meta/key.properties android/ || true
-          [ -f "build/backup_meta/release-key.jks" ] && cp build/backup_meta/release-key.jks android/app/ || true
-
-      - name: Inject Production Manifest Node Permissions
+      - name: Deep-Sanitize ARCore and Camera Manifest Segments
         run: |
-          # Inject a functional production manifest layout directly into the clean skeleton
+          python3 -c "
+          import os
+          import glob
+
+          # Scan workspace and pub-cache where arcore_flutter_plus is checked out
+          paths_to_sweep = [os.getcwd(), os.path.expanduser('~/.pub-cache')]
+          
+          print('Scanning global file maps for invalid AR manifest schemas...')
+          for base_dir in paths_to_sweep:
+              if not os.path.exists(base_dir):
+                  continue
+              for root, dirs, files in os.walk(base_dir):
+                  for file in files:
+                      if file == 'AndroidManifest.xml':
+                          manifest_path = os.path.join(root, file)
+                          try:
+                              with open(manifest_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                  content = f.read()
+                              
+                              # Catching invalid/blank uses-permission and uses-feature formatting
+                              corrupt_detected = False
+                              if 'xmlns:android=\"http://android.com\"' in content:
+                                  content = content.replace('http://android.com', 'http://android.com')
+                                  corrupt_detected = True
+                              
+                              # Strip any malformed uses-feature nodes without names that arcore injects
+                              if '<uses-feature />' in content or '<uses-permission />' in content:
+                                  content = content.replace('<uses-feature />', '')
+                                  content = content.replace('<uses-permission />', '')
+                                  corrupt_detected = True
+                                  
+                              if corrupt_detected:
+                                  print(f'PARSING REPAIR COMPLETED FOR: {manifest_path}')
+                                  with open(manifest_path, 'w', encoding='utf-8') as f:
+                                      f.write(content)
+                          except:
+                              pass
+          "
+
+      - name: Force Injection of Master Manifest Override Template
+        run: |
+          # Overwrites your local manifest using a strict node substitution map to ignore plugin errors
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
+              xmlns:tools="http://android.com"
               package="com.example.mindspark">
 
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
               <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
               <application
-                  android:label="Mind Spark"
+                  tools:node="replace"
+                  tools:replace="android:label,android:name,android:allowBackup"
                   android:name="androidx.multidex.MultiDexApplication"
+                  android:label="Mind Spark"
                   android:icon="@android:drawable/sym_def_app_icon"
+                  android:allowBackup="true"
                   android:hardwareAccelerated="true">
-                  
+
                   <meta-data android:name="flutterEmbedding" android:value="2"/>
-                  
+                  <meta-data android:name="com.google.ar.core" android:value="required" tools:replace="android:value"/>
+
                   <activity
                       android:name="io.flutter.embedding.android.FlutterActivity"
                       android:exported="true"
