@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # THE MASTER FIX: Forces Gradle to turn off strict XML manifest validation warnings completely
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false -Dcom.android.build.gradle.overrideVersionCheck=true"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
 
     steps:
       - name: Checkout Repository
@@ -29,28 +28,67 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Hard System Cache Clearance
+      - name: Nuclear Native Directory Re-Generation
         run: |
-          flutter clean
-          rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
-          rm -rf ~/.gradle/caches/
+          # 1. Back up vital native configuration files if they exist
+          mkdir -p build/backup_meta
+          [ -f "android/app/google-services.json" ] && cp android/app/google-services.json build/backup_meta/ || true
+          [ -f "android/key.properties" ] && cp android/key.properties build/backup_meta/ || true
+          [ -f "android/app/release-key.jks" ] && cp android/app/release-key.jks build/backup_meta/ || true
 
-      - name: Fetch Clean Project Dependencies
-        run: flutter pub get
+          # 2. Obliterate the corrupt native layer completely
+          rm -rf android/
+          rm -rf .dart_tool/
+          rm -f pubspec.lock
 
-      - name: Force Disable Merger Safety Constraints
+          # 3. Force Flutter to generate a clean, modern Android module
+          flutter create . --platforms=android
+          flutter pub get
+
+          # 4. Restore original structural keys and signatures into the fresh folder map
+          [ -f "build/backup_meta/google-services.json" ] && cp build/backup_meta/google-services.json android/app/ || true
+          [ -f "build/backup_meta/key.properties" ] && cp build/backup_meta/key.properties android/ || true
+          [ -f "build/backup_meta/release-key.jks" ] && cp build/backup_meta/release-key.jks android/app/ || true
+
+      - name: Inject Production Manifest Node Permissions
         run: |
-          # Inject rules directly into gradle.properties to force bypass compilation failures
-          mkdir -p android
-          echo "android.manifestMerger.setRequiredAttributes=false" >> android/gradle.properties
-          echo "android.backgroundManifestValidation=false" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
+          # Inject a functional production manifest layout directly into the clean skeleton
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com"
+              package="com.example.mindspark">
+
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+              <application
+                  android:label="Mind Spark"
+                  android:name="androidx.multidex.MultiDexApplication"
+                  android:icon="@android:drawable/sym_def_app_icon"
+                  android:hardwareAccelerated="true">
+                  
+                  <meta-data android:name="flutterEmbedding" android:value="2"/>
+                  
+                  <activity
+                      android:name="io.flutter.embedding.android.FlutterActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
 
       - name: Compile Fresh Binary Layout
         run: |
           mkdir -p build/symbols
-          # Uses special Gradle build override flags directly inside the Flutter CLI task execution
           flutter build apk --release --clear-cache --no-tree-shake-icons --obfuscate --split-debug-info=build/symbols --build-number=400 --android-skip-build-dependency-validation --target-platform=android-arm64
 
       - name: Upload Clean Build Artifact
