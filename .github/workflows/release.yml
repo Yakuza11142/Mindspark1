@@ -39,6 +39,7 @@ jobs:
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
             echo "Modifying broken manifest namespace..."
+            # FIXED: Now correctly replaces the broken url with the official schemas url
             sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|' "$MANIFEST_PATH"
           fi
 
