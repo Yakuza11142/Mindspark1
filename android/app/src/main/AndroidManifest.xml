@@ -37,7 +37,8 @@
         android:fullBackupContent="true"
         android:hardwareAccelerated="true">
 
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-0000000000000000~0000000000000000"/>
+        <!-- UPDATED: Real AdMob Application ID Added Below -->
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6212928709769131~8727268603"/>
         <meta-data android:name="com.google.ar.core" android:value="required"/>
         <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
         <meta-data android:name="flutterEmbedding" android:value="2"/>
