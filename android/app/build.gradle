@@ -18,9 +18,15 @@ android {
     namespace "com.example.mindspark"
     compileSdk 34
 
+    // Fixed: Upgraded from Java 1.8 to Java 17 to match your new Kotlin version
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // Fixed: Added explicit JVM target version for the Kotlin compiler
+    kotlinOptions {
+        jvmTarget = '17'
     }
 
     defaultConfig {
