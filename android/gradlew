@@ -35,8 +35,8 @@ do
     ARGS="$ARGS \"$var\""
 done
 
-# 🚀 Optimized memory allocations for launching the Gradle client wrapper
-DEFAULT_JVM_OPTS='"-Xmx1024m" "-Xms256m" "-XX:MaxMetaspaceSize=256m"'
+# 🚀 FIXED: Clean single-string format without nested quotes to prevent Java runtime confusion
+DEFAULT_JVM_OPTS="-Xmx1024m -Xms256m -XX:MaxMetaspaceSize=256m"
 
 # Determine the Java command to use or fallback to paths
 if [ -n "$JAVA_HOME" ] ; then
