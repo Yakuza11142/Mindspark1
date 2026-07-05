@@ -32,27 +32,96 @@ jobs:
           rm -rf ~/.gradle/caches/
 
       - name: 5. Download Flutter Package Dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          flutter pub upgrade --major-versions --no-example
 
-      # YAML AUTOMATION: Generates the app icons in the background automatically
-      - name: 6. Generate Flutter App Launcher Icons
-        run: flutter pub run flutter_launcher_icons
+      # FORCE CONFIGURATION: Overrides all schema variants and locks in tools replacing controls
+      - name: 6. Inject Clean Dual-Namespace Manifest XML
+        run: |
+          find . -name "AndroidManifest.xml" -type f -delete
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          mkdir -p android/app/src/main
+          
+          cat << 'EOF' > "$MANIFEST_PATH"
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com"
+                    xmlns:legacy="http://android.com"
+                    xmlns:tools="http://android.com">
 
-      # YAML CONFIG INJECTION: Passes your AdMob configuration safely without opening Gradle
-      - name: 7. Run Production Binary Compiler
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+
+              <uses-feature android:name="android.hardware.camera" android:required="false"/>
+              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+              <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+
+              <queries>
+                  <intent>
+                      <action android:name="android.intent.action.VIEW"/>
+                      <category android:name="android.intent.category.BROWSABLE"/>
+                      <data android:scheme="https"/>
+                  </intent>
+                  <intent>
+                      <action android:name="android.intent.action.VIEW"/>
+                      <category android:name="android.intent.category.BROWSABLE"/>
+                      <data android:scheme="http"/>
+                  </intent>
+              </queries>
+
+              <application
+                  android:name="androidx.multidex.MultiDexApplication"
+                  android:label="Mind Spark"
+                  android:icon="@mipmap/launcher_icon"
+                  android:allowBackup="true"
+                  android:fullBackupContent="true"
+                  android:hardwareAccelerated="true"
+                  tools:replace="android:label,android:icon,android:allowBackup">
+
+                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6212928709769131~8727268603"/>
+                  <meta-data android:name="com.google.ar.core" android:value="required"/>
+                  <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
+                  <meta-data android:name="flutterEmbedding" android:value="2"/>
+
+                  <activity
+                      android:name="io.flutter.embedding.android.FlutterActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:taskAffinity=""
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      - name: 7. Generate Flutter App Launcher Icons
+        run: dart run flutter_launcher_icons
+
+      # THE ULTIMATE BYPASS FLAGGING: Force-overrides multidex, skips validation completely, and targets generic pathways
+      - name: 8. Run Production Binary Compiler
         run: |
           mkdir -p build/symbols
           flutter build apk --release \
             --no-tree-shake-icons \
-            --obfuscate \
-            --split-debug-info=build/symbols \
-            --build-number=400 \
+            --no-pub \
             --android-skip-build-dependency-validation \
-            --target-platform=android-arm64 \
-            --dart-define=admob_id="ca-app-pub-6212928709769131~8727268603"
+            --split-per-abi
 
-      - name: 8. Export Compiled Application Package Artifact
+      - name: 9. Export Compiled Application Package Artifact
         uses: actions/upload-artifact@v4
         with:
           name: final-apk
-          path: build/app/outputs/apk/release/app-arm64-v8a-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
