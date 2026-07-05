@@ -34,40 +34,14 @@ jobs:
       - name: Fetch Dependencies
         run: flutter pub get
 
-      - name: Inject Agnostic Manifest Patch
+      - name: Repair AndroidManifest Namespace Syntax
         run: |
-          # Safe fallback pattern: Patch both project file and early build targets 
-          cat << 'EOF' >> android/app/build.gradle
-
-          gradle.taskGraph.whenReady { taskGraph ->
-              taskGraph.allTasks.each { task ->
-                  if (task.name.startsWith("process") && task.name.endsWith("Manifest")) {
-                      task.doFirst {
-                          def manifestDirs = [
-                              file("${project.projectDir}/src/main"),
-                              file("${project.buildDir}/intermediates/merged_manifests")
-                          ]
-                          manifestDirs.each { dir ->
-                              if (dir.exists()) {
-                                  dir.eachFileRecurse { file ->
-                                      if (file.name == "AndroidManifest.xml" && file.isFile()) {
-                                          try {
-                                              def txt = file.text
-                                              def clean = txt.replaceAll(/<uses-permission(?![^>]*android:name)[^>]*\/>/, "")
-                                              clean = clean.replaceAll(/<uses-feature(?![^>]*android:name)[^>]*\/>/, "")
-                                              if (txt != clean) {
-                                                  file.text = clean
-                                              }
-                                          } catch (Exception e) {}
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                  }
-              }
-          }
-          EOF
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            echo "Repairing XML manifest structure..."
+            # Ensures the manifest tag contains the correct schema namespace declaration
+            sed -i 's/<manifest[^>]*>/<manifest xmlns:android="http:\/\/://android.com\/apk\/res\/android" xmlns:tools="http:\/\/://android.com\/tools">/' "$MANIFEST_PATH"
+          fi
 
       - name: Compile Fresh Binary Layout
         run: |
