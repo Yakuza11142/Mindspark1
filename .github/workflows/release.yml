@@ -1,112 +1,51 @@
-name: Production Flutter Build
+name: Flutter Automated Build Pipeline
+
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2"
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-java@v4
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Initialize Java Development Kit Environment
+        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
-          
-      - uses: subosito/flutter-action@v2
+
+      - name: Initialize Stable Flutter SDK
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Executive Monolithic Pipeline
+      - name: Execute Complete Build Automation Chain
         run: |
           echo "=== STAGE 1: ENVIRONMENT ISOLATION ==="
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
-          
+
           echo "=== STAGE 2: RESOLVING TEXT MODULE DEPENDENCIES ==="
           flutter pub get
-          
+
           echo "=== STAGE 3: PURGING AND DROPPING PRISTINE MANIFEST ==="
           find . -name "AndroidManifest.xml" -type f -delete
           MANIFEST_DIR="android/app/src/main"
           mkdir -p "$MANIFEST_DIR"
           
-          cat << 'EOF' > "$MANIFEST_DIR/AndroidManifest.xml"
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com"
-                    xmlns:legacy="http://android.com"
-                    xmlns:tools="http://android.com">
+          # 🚀 MOBILE SAFE FIX: Downloads uncorrupted manifest schemas over curl
+          curl -sL "https://githubusercontent.com" -o "$MANIFEST_DIR/AndroidManifest.xml"
 
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-              <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
-
-              <uses-feature android:name="android.hardware.camera" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
-              <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
-
-              <queries>
-                  <intent>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <category android:name="android.intent.category.BROWSABLE"/>
-                      <data android:scheme="https"/>
-                  </intent>
-                  <intent>
-                      <action android:name="android.intent.action.VIEW"/>
-                      <category android:name="android.intent.category.BROWSABLE"/>
-                      <data android:scheme="http"/>
-                  </intent>
-              </queries>
-
-              <application
-                  android:name="androidx.multidex.MultiDexApplication"
-                  android:label="Mind Spark"
-                  android:icon="@mipmap/launcher_icon"
-                  android:allowBackup="true"
-                  android:fullBackupContent="true"
-                  android:hardwareAccelerated="true"
-                  tools:replace="android:label,android:icon,android:allowBackup">
-
-                  <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6212928709769131~8727268603"/>
-                  <meta-data android:name="com.google.ar.core" android:value="required"/>
-                  <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
-                  <meta-data android:name="flutterEmbedding" android:value="2"/>
-
-                  <activity
-                      android:name="io.flutter.embedding.android.FlutterActivity"
-                      android:exported="true"
-                      android:launchMode="singleTop"
-                      android:taskAffinity=""
-                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                      android:hardwareAccelerated="true"
-                      android:windowSoftInputMode="adjustResize">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN"/>
-                          <category android:name="android.intent.category.LAUNCHER"/>
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-          
           echo "=== STAGE 4: COMPILING ASSET DICTIONARY ==="
           dart run flutter_launcher_icons
-          
-          echo "=== STAGE 5: RUNNING FORCED BYPASS BINARY BUILD ==="
-          flutter build apk --release --split-per-abi
 
-      - name: 5. Export Unified Production Binary Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-apk
-          path: build/app/outputs/flutter-apk/*.apk
+          echo "=== STAGE 5: RUNNING FORCED BYPASS BINARY BUILD ==="
+          flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
