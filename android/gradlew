@@ -1,40 +1,80 @@
 #!/usr/bin/env sh
 
-# Ensure we use an absolute path for resolving the script location
-# to handle execution relative paths accurately
-DIRNAME=$(dirname "$0")
-[ -z "$DIRNAME" ] && DIRNAME="."
-APP_BASE_NAME=$(basename "$0")
-APP_HOME=$(cd "$DIRNAME" && pwd)
+###############################################################################
+#
+#  Gradle startup script for POSIX/Unix systems
+#
+###############################################################################
 
-# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+# Attempt to set APP_HOME
+# Resolve links: $0 may be a link
+PRG="$0"
+# Need this for relative symlinks.
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`"/$link"
+    fi
+done
 
-# Locate standard system paths
+SAVED="`pwd`"
+cd "`dirname \"$PRG\"`" >/dev/null
+APP_HOME="`pwd`"
+cd "$SAVED" >/dev/null
+
+APP_BASE_NAME=`basename "$PRG"`
+APP_ARGS="$#"
+
+# Collect all arguments for the java command, preserving spaces
+NUMARGS=$#
+for var in "$@"
+do
+    ARGS="$ARGS \"$var\""
+done
+
+# 🚀 Optimized memory allocations for launching the Gradle client wrapper
+DEFAULT_JVM_OPTS='"-Xmx1024m" "-Xms256m" "-XX:MaxMetaspaceSize=256m"'
+
+# Determine the Java command to use or fallback to paths
 if [ -n "$JAVA_HOME" ] ; then
-    JAVACMD="$JAVA_HOME/bin/java"
+    if [ -x "$JAVA_HOME/jre/bin/java" ] ; then
+        JAVACMD="$JAVA_HOME/jre/bin/java"
+    elif [ -x "$JAVA_HOME/bin/java" ] ; then
+        JAVACMD="$JAVA_HOME/bin/java"
+    fi
 else
     JAVACMD="java"
+    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH."
 fi
 
 if [ ! -x "$JAVACMD" ] ; then
     die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME"
 fi
 
+# Increase maximum file descriptors if permissible
+MAX_FD_LIMIT=`ulimit -H -n`
+if [ $? -eq 0 ] ; then
+    ulimit -n $MAX_FD_LIMIT
+fi
+
+# Setup the classpath to find your gradle-wrapper.jar
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
-# Collect execution arguments safely
-for arg do
-    # Escape characters for execution arrays
-    case $arg in
-        (-*) ;;
-        (*) arg="\"$arg\"" ;;
-    esac
-    ARGS="$ARGS $arg"
-done
+# Helper function to print error and exit
+die () {
+    echo
+    echo "$*"
+    echo
+    exit 1
+}
 
-# Execute the core Java wrapper logic mapping properties targets
+# Execute Gradle
 exec "$JAVACMD" \
+    $DEFAULT_JVM_OPTS \
+    $GRADLE_OPTS \
     "-Dorg.gradle.appname=$APP_BASE_NAME" \
     -classpath "$CLASSPATH" \
     org.gradle.wrapper.GradleWrapperMain \
