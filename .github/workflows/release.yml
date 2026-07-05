@@ -34,42 +34,36 @@ jobs:
       - name: Fetch Dependencies
         run: flutter pub get
 
-      - name: Inject Safe Pre-Build Manifest Sanitizer
+      - name: Inject Agnostic Manifest Patch
         run: |
+          # Safe fallback pattern: Patch both project file and early build targets 
           cat << 'EOF' >> android/app/build.gradle
 
-          tasks.register("sanitizeManifestFiles") {
-              doLast {
-                  def manifestDirs = [
-                      file("${project.projectDir}/src/main"),
-                      file("${project.buildDir}/intermediates/merged_manifests")
-                  ]
-                  manifestDirs.each { dir ->
-                      if (dir.exists()) {
-                          dir.eachFileRecurse { file ->
-                              if (file.name == "AndroidManifest.xml" && file.isFile()) {
-                                  try {
-                                      def content = file.text
-                                      def cleanContent = content.replaceAll(/<uses-permission(?![^>]*android:name)[^>]*\/>/, "")
-                                      cleanContent = cleanContent.replaceAll(/<uses-feature(?![^>]*android:name)[^>]*\/>/, "")
-                                      if (content != cleanContent) {
-                                          file.text = cleanContent
-                                          logger.lifecycle("SANITIZED: Cleaned layout fragments in ${file.absolutePath}")
+          gradle.taskGraph.whenReady { taskGraph ->
+              taskGraph.allTasks.each { task ->
+                  if (task.name.startsWith("process") && task.name.endsWith("Manifest")) {
+                      task.doFirst {
+                          def manifestDirs = [
+                              file("${project.projectDir}/src/main"),
+                              file("${project.buildDir}/intermediates/merged_manifests")
+                          ]
+                          manifestDirs.each { dir ->
+                              if (dir.exists()) {
+                                  dir.eachFileRecurse { file ->
+                                      if (file.name == "AndroidManifest.xml" && file.isFile()) {
+                                          try {
+                                              def txt = file.text
+                                              def clean = txt.replaceAll(/<uses-permission(?![^>]*android:name)[^>]*\/>/, "")
+                                              clean = clean.replaceAll(/<uses-feature(?![^>]*android:name)[^>]*\/>/, "")
+                                              if (txt != clean) {
+                                                  file.text = clean
+                                              }
+                                          } catch (Exception e) {}
                                       }
-                                  } catch (Exception e) {
-                                      logger.warn("Skipping file lock on: ${file.name}")
                                   }
                               }
                           }
                       }
-                  }
-              }
-          }
-
-          project.afterEvaluate {
-              tasks.all { task ->
-                  if (task.name.startsWith("process") && task.name.endsWith("Manifest")) {
-                      task.dependsOn("sanitizeManifestFiles")
                   }
               }
           }
