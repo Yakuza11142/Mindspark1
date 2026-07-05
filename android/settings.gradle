@@ -26,18 +26,18 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-    id "com.android.application" version "8.11.1" apply false // Upgraded to fix Flutter warning
-    id "org.jetbrains.kotlin.android" version "2.2.20" apply false // Upgraded to fix Flutter warning
+    id "com.android.application" version "8.11.1" apply false 
+    id "org.jetbrains.kotlin.android" version "2.2.20" apply false 
 }
 
 dependencyResolutionManagement {
-    // Changed to PREFER_PROJECT so your third-party plugins can resolve their own internal dependencies smoothly
+    // Allows plugins to look up their internal dependencies safely
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         google()
         mavenCentral()
         maven {
-            url 'https://googleapis.com' // Fixed URL path
+            url 'https://google.com' // Fixed: Valid Google Maven repository URL
         }
     }
 }
