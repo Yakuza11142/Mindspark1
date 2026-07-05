@@ -10,40 +10,39 @@ jobs:
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
     steps:
-      - name: Checkout Repository
+      - name: 1. Checkout Repository Source
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK 17
+      - name: 2. Install Java Runtime Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: 3. Install Flutter SDK Engine
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      - name: Wipe Workspace Storage
+      - name: 4. Clear Workspace Stale Storage
         run: |
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
           rm -rf ~/.gradle/caches/
 
-      - name: Fetch Dependencies
+      - name: 5. Download Flutter Package Dependencies
         run: flutter pub get
 
-      - name: Repair AndroidManifest Namespace Syntax
+      - name: 6. Hotfix Android Manifest Namespace Schema Link
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            echo "Repairing XML manifest structure..."
-            # Ensures the manifest tag contains the correct schema namespace declaration
-            sed -i 's/<manifest[^>]*>/<manifest xmlns:android="http:\/\/://android.com\/apk\/res\/android" xmlns:tools="http:\/\/://android.com\/tools">/' "$MANIFEST_PATH"
+            echo "Modifying broken manifest namespace..."
+            sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|' "$MANIFEST_PATH"
           fi
 
-      - name: Compile Fresh Binary Layout
+      - name: 7. Run Production Binary Compiler
         run: |
           mkdir -p build/symbols
           flutter build apk --release \
@@ -54,7 +53,7 @@ jobs:
             --android-skip-build-dependency-validation \
             --target-platform=android-arm64
 
-      - name: Upload Clean Build Artifact
+      - name: 8. Export Compiled Application Package Artifact
         uses: actions/upload-artifact@v4
         with:
           name: final-apk
