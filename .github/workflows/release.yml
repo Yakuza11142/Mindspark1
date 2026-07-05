@@ -34,15 +34,11 @@ jobs:
       - name: 5. Download Flutter Package Dependencies
         run: flutter pub get
 
-      - name: 6. Hotfix Android Manifest Namespace Schema Link
-        run: |
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST_PATH" ]; then
-            echo "Modifying broken manifest namespace..."
-            # FIXED: Now correctly replaces the broken url with the official schemas url
-            sed -i 's|xmlns:android="http://android.com"|xmlns:android="http://android.com"|' "$MANIFEST_PATH"
-          fi
+      # YAML AUTOMATION: Generates the app icons in the background automatically
+      - name: 6. Generate Flutter App Launcher Icons
+        run: flutter pub run flutter_launcher_icons
 
+      # YAML CONFIG INJECTION: Passes your AdMob configuration safely without opening Gradle
       - name: 7. Run Production Binary Compiler
         run: |
           mkdir -p build/symbols
@@ -52,7 +48,8 @@ jobs:
             --split-debug-info=build/symbols \
             --build-number=400 \
             --android-skip-build-dependency-validation \
-            --target-platform=android-arm64
+            --target-platform=android-arm64 \
+            --dart-define=admob_id="ca-app-pub-6212928709769131~8727268603"
 
       - name: 8. Export Compiled Application Package Artifact
         uses: actions/upload-artifact@v4
