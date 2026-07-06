@@ -37,28 +37,31 @@ jobs:
           flutter pub upgrade --major-versions
           flutter pub get
 
-          echo "=== STAGE 3: PURGING AND DROPPING PRISTINE MANIFEST ==="
+          echo "=== STAGE 3: MANIFEST INTEGRITY VERIFICATION ==="
           TARGET_DIR="android/app/src/main"
           TARGET_FILE="$TARGET_DIR/AndroidManifest.xml"
-          mkdir -p "$TARGET_DIR"
 
-          # 🔄 INFINITE ANTI-CORRUPTION LOOP:
-          # Automatically checks the integrity of the file. If it detects any corruption,
-          # it drops the file and rebuilds it fresh from a pristine network source.
-          for i in {1..5}; do
+          if [ ! -f "$TARGET_FILE" ]; then
+            echo "❌ Critical Error: Manifest file is missing from repository."
+            exit 1
+          fi
+
+          # Local Self-Healing Loop: Verifies structure without breaking git tracking
+          for i in {1..3}; do
             echo "Self-Healing Verification Loop: Run $i"
-            rm -f "$TARGET_FILE"
             
-            # Download a pristine, untouchable baseline copy of your manifest
-            wget -q "https://githubusercontent.com" -O "$TARGET_FILE"
-            
-            # Infinite Healing Validation: Check if the download contains crucial android keys
             if grep -q 'android:name' "$TARGET_FILE"; then
               echo "✅ Manifest structure verified! Zero corruption detected."
               break
             else
-              echo "⚠️ Corruption detected! Re-initializing automatic healing sequence..."
+              echo "⚠️ Corruption detected! Reverting to clean repository baseline..."
+              git checkout HEAD -- "$TARGET_FILE"
               sleep 1
+            fi
+            
+            if [ $i -eq 3 ] && ! grep -q 'android:name' "$TARGET_FILE"; then
+              echo "❌ Error: Manifest is permanently corrupted in source control."
+              exit 1
             fi
           done
 
@@ -66,5 +69,4 @@ jobs:
           dart run flutter_launcher_icons
 
           echo "=== STAGE 5: RUNNING FORCED BYPASS BINARY BUILD ==="
-          # Pure performance settings optimized to compile your 600k lines of code and holographic camera systems smoothly
           flutter build apk --release --split-per-abi --android-skip-build-dependency-validation --no-tree-shake-icons
