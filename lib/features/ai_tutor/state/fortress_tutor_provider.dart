@@ -16,11 +16,16 @@ class FortressTutorProvider with ChangeNotifier {
   String get diagnosticMonitorOutput => _diagnosticMonitorOutput;
   String get certifiedHologramOutput => _certifiedHologramOutput;
 
-  /// Submits queries straight to the OpenAI/Groq API interfaces.
-  /// Runs a recursive self-correcting loop until an inference branch survives the non-AI compiler constraints.
-  Future<void> computeGroundedAxioms(String humanVoiceCommand, String targetEndpointApiKey) async {
+  /// Pipes queries to ANY OpenAI-compatible API (OpenAI, Groq, DeepSeek, or OpenRouter).
+  /// ZERO hardcoded values. Pass the endpoint target and model configuration dynamically.
+  Future<void> computeGroundedAxioms({
+    required String humanVoiceCommand,
+    required String targetEndpointApiKey,
+    required String targetBaseUrl, // 🚀 DYNAMIC: e.g., 'https://openai.com' or 'https://groq.com'
+    required String targetModelName, // 🚀 DYNAMIC: e.g., 'gpt-4o' or 'llama-3.3-70b-versatile'
+  }) async {
     _processState = CoreProcessState.orchestratingInference;
-    _diagnosticMonitorOutput = "🧠 System Core: Launching parallel multi-branch generation tracks via server-enforced JSON structures...";
+    _diagnosticMonitorOutput = "🧠 System Core: Launching parallel multi-branch generation tracks via $targetModelName...";
     notifyListeners();
 
     bool absoluteTruthVerified = false;
@@ -45,14 +50,13 @@ class FortressTutorProvider with ChangeNotifier {
       
       try {
         final apiResponse = await _networkClient.post(
-          'https://openai.com',
+          '$targetBaseUrl/chat/completions', // 🚀 Dynamic API Destination Routing
           options: Options(headers: {
             'Authorization': 'Bearer $targetEndpointApiKey',
             'Content-Type': 'application/json',
           }),
           data: {
-            'model': 'gpt-4o',
-            // Server-Level Binding: Aligned to token-level constraints to prevent markdown wrap variations
+            'model': targetModelName, // 🚀 Dynamic Model Selection
             'response_format': {
               'type': 'json_object',
               'schema': rigidJsonSchemaContract
@@ -71,7 +75,7 @@ class FortressTutorProvider with ChangeNotifier {
         );
 
         if (apiResponse.statusCode != 200) {
-          _diagnosticMonitorOutput = "🚨 Network Outage: Cloud endpoint returned a connection exception. Retrying track...";
+          _diagnosticMonitorOutput = "🚨 Gateway Timeout: $targetModelName node connection dropped. Retrying track...";
           notifyListeners();
           await Future.delayed(const Duration(seconds: 1));
           continue;
@@ -97,13 +101,12 @@ class FortressTutorProvider with ChangeNotifier {
 
         _diagnosticMonitorOutput = compilationResult['logMessage'].toString();
         notifyListeners();
-        await Future.delayed(const Duration(milliseconds: 600)); // Pacing threshold for UI readout tracking
+        await Future.delayed(const Duration(milliseconds: 600));
 
         if (compilationResult['success'] == true) {
           _certifiedHologramOutput = compilationResult['extractedProof'].toString();
           absoluteTruthVerified = true;
         } else {
-          // 🚀 AGENTIC SYSTEM FEEDBACK: Inject the compilation error string directly back into the system context
           feedbackContextBacklog = "🚨 PREVIOUS ATTEMPT REJECTED BY SYSTEM LAWS: ${compilationResult['logMessage']}. Re-calculate your data parameters and fix structural syntax bugs.";
         }
 
