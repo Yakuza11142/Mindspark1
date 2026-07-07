@@ -47,9 +47,19 @@ jobs:
 
       - name: "6. Cellular Repair: Restructure XML Document Streams"
         run: |
-          echo "Slaying trailing code debris and inline syntax comments..."
+          echo "Restoring missing android namespaces and cleaning trailing debris..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
+            # Restores key attributes that were stripped by the old build.gradle regex loop
+            sed -i 's/ name=/ android:name=/g' "$MANIFEST_PATH"
+            sed -i 's/ value=/ android:value=/g' "$MANIFEST_PATH"
+            sed -i 's/ label=/ android:label=/g' "$MANIFEST_PATH"
+            sed -i 's/ theme=/ android:theme=/g' "$MANIFEST_PATH"
+            sed -i 's/ hardwareAccelerated=/ android:hardwareAccelerated=/g' "$MANIFEST_PATH"
+            sed -i 's/ windowSoftInputMode=/ android:windowSoftInputMode=/g' "$MANIFEST_PATH"
+            sed -i 's/ configChanges=/ android:configChanges=/g' "$MANIFEST_PATH"
+            
+            # Ensures core manifest properties are correctly terminated
             sed -i 's_xmlns:tools="http://android.com">.*_xmlns:tools="http://android.com">_' "$MANIFEST_PATH"
             sed -i '/<\/manifest>/q' "$MANIFEST_PATH"
           fi
@@ -66,7 +76,6 @@ jobs:
         run: |
           echo "Locating and routing root hologram_glow.frag asset..."
           mkdir -p shaders
-          # Checks if your physical shader file is sitting at the root alongside pubspec.yaml
           if [ -f "hologram_glow.frag" ]; then
             echo "Found shader asset at project root. Moving to target shaders/ path..."
             cp hologram_glow.frag shaders/hologram_glow.frag
@@ -85,7 +94,7 @@ jobs:
       - name: "10. Compile Production APK Binary"
         run: |
           echo "Assembling functional machine binary layer..."
-          flutter build apk --release --split-per-abi --no-pub
+          flutter build apk --release --split-per-abi --no-pub --no-tree-shake-icons
 
       - name: "11. Distribute Clean Installer Artifact Stream"
         uses: actions/upload-artifact@v4
