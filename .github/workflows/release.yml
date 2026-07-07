@@ -45,24 +45,67 @@ jobs:
             sed -i '/var manifestFile/,/manifestFile.text.replaceAll/d' "$GRADLE_PATH"
           fi
 
-      - name: "6. Cellular Repair: Restructure XML Document Streams"
+      - name: "6. Cellular Overwrite: Inject Pristine Manifest Layout"
         run: |
-          echo "Restoring missing android namespaces and cleaning trailing debris..."
+          echo "Overwriting corrupted manifest with clean system template..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST_PATH" ]; then
-            # Restores key attributes that were stripped by the old build.gradle regex loop
-            sed -i 's/ name=/ android:name=/g' "$MANIFEST_PATH"
-            sed -i 's/ value=/ android:value=/g' "$MANIFEST_PATH"
-            sed -i 's/ label=/ android:label=/g' "$MANIFEST_PATH"
-            sed -i 's/ theme=/ android:theme=/g' "$MANIFEST_PATH"
-            sed -i 's/ hardwareAccelerated=/ android:hardwareAccelerated=/g' "$MANIFEST_PATH"
-            sed -i 's/ windowSoftInputMode=/ android:windowSoftInputMode=/g' "$MANIFEST_PATH"
-            sed -i 's/ configChanges=/ android:configChanges=/g' "$MANIFEST_PATH"
-            
-            # Ensures core manifest properties are correctly terminated
-            sed -i 's_xmlns:tools="http://android.com">.*_xmlns:tools="http://android.com">_' "$MANIFEST_PATH"
-            sed -i '/<\/manifest>/q' "$MANIFEST_PATH"
-          fi
+          mkdir -p android/app/src/main
+          
+          # Force overwrite the file with a perfectly structured production manifest
+          cat << 'EOF' > "$MANIFEST_PATH"
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://android.com"
+              package="com.example.mindspark1">
+
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+              <uses-feature android:name="android.hardware.camera" android:required="true"/>
+              <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+
+              <application
+                  android:label="mindspark1"
+                  android:name="${applicationName}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:hardwareAccelerated="true"
+                  tools:replace="android:label">
+                  
+                  <meta-data
+                      android:name="com.google.ar.core"
+                      android:value="required" />
+                      
+                  <meta-data
+                      android:name="com.google.android.gms.ads.APPLICATION_ID"
+                      android:value="ca-app-pub-3940256099942544~3347511713"/>
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <meta-data
+                          android:name="io.flutter.embedding.android.NormalTheme"
+                          android:resource="@style/NormalTheme"
+                          />
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+              </application>
+          </manifest>
+          EOF
 
       - name: "7. Slay Broken kotlinOptions Blocks"
         run: |
