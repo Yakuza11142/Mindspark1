@@ -50,23 +50,30 @@ jobs:
           echo "Slaying trailing code debris and inline syntax comments..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # ✅ FIX: Uses an alternate separator (_) so web slashes don't break the expression
             sed -i 's_xmlns:tools="http://android.com">.*_xmlns:tools="http://android.com">_' "$MANIFEST_PATH"
-            # Locks file formatting strictly to the closing manifest bracket
             sed -i '/<\/manifest>/q' "$MANIFEST_PATH"
           fi
 
-      - name: "7. Synthesize Verified Dependencies"
+      - name: "7. Slay Broken kotlinOptions Blocks"
+        run: |
+          echo "Fixing line 28 inside app/build.gradle..."
+          APP_GRADLE="android/app/build.gradle"
+          if [ -f "$APP_GRADLE" ]; then
+            # Programmatically removes the broken kotlinOptions closure block to clear the syntax failure
+            sed -i '/kotlinOptions {/,/}/d' "$APP_GRADLE"
+          fi
+
+      - name: "8. Synthesize Verified Dependencies"
         run: |
           echo "Binding dependencies natively..."
           flutter pub get
 
-      - name: "8. Compile Production APK Binary"
+      - name: "9. Compile Production APK Binary"
         run: |
           echo "Assembling functional machine binary layer..."
           flutter build apk --release --split-per-abi --no-pub
 
-      - name: "9. Distribute Clean Installer Artifact Stream"
+      - name: "10. Distribute Clean Installer Artifact Stream"
         uses: actions/upload-artifact@v4
         with:
           name: "mindspark-immune-apk"
