@@ -34,14 +34,12 @@ jobs:
       - name: "5. Red Blood Cell Mode: Repair Broken Android Architecture"
         run: |
           echo "Repairing native structural properties..."
-          # Force build properties to isolate and ignore strict compilation crashes
           mkdir -p android/app
           touch android/gradle.properties
           sed -i '/android.lintOptions/d' android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
           
-          # Fix project-level build.gradle by stripping destructive regex routines out
           GRADLE_PATH="android/build.gradle"
           if [ -f "$GRADLE_PATH" ]; then
             sed -i '/var manifestFile/,/manifestFile.text.replaceAll/d' "$GRADLE_PATH"
@@ -52,8 +50,9 @@ jobs:
           echo "Slaying trailing code debris and inline syntax comments..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # Isolates structural brackets and cuts off text bleeding past closing tag boundary
-            sed -i 's/xmlns:tools="http:\/\/://android.com\/tools">.*/xmlns:tools="http:\/\/://android.com\/tools">/' "$MANIFEST_PATH"
+            # ✅ FIX: Uses an alternate separator (_) so web slashes don't break the expression
+            sed -i 's_xmlns:tools="http://android.com">.*_xmlns:tools="http://android.com">_' "$MANIFEST_PATH"
+            # Locks file formatting strictly to the closing manifest bracket
             sed -i '/<\/manifest>/q' "$MANIFEST_PATH"
           fi
 
