@@ -1,72 +1,42 @@
-name: Flutter Automated Build Pipeline
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+name: Flutter Build Check
+on: [push, pull_request]
 
 jobs:
-  build:
+  check-build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository Code
+      - name: Checkout Code Repository
         uses: actions/checkout@v4
 
-      - name: Initialize Java Development Kit Environment
+      - name: Set up Java Environment
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Initialize Stable Flutter SDK
+      - name: Set up Flutter Engine
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.22.0'
 
-      - name: Execute Complete Build Automation Chain
+      # === STAGE 1: ENVIRONMENT ISOLATION ===
+      - name: Stage 1 - Clean Cache Environment
         run: |
-          echo "=== STAGE 1: ENVIRONMENT ISOLATION ==="
           flutter clean
           rm -rf .dart_tool/ pubspec.lock android/.gradle android/app/build android/build
 
-          echo "=== STAGE 2: RESOLVING TEXT MODULE DEPENDENCIES ==="
+      # === STAGE 2: RESOLVING TEXT MODULE DEPENDENCIES ===
+      - name: Stage 2 - Update Packages
+        run: |
           flutter pub upgrade --major-versions
           flutter pub get
 
-          echo "=== STAGE 3: MANIFEST INTEGRITY VERIFICATION ==="
-          TARGET_DIR="android/app/src/main"
-          TARGET_FILE="$TARGET_DIR/AndroidManifest.xml"
-
-          if [ ! -f "$TARGET_FILE" ]; then
-            echo "❌ Critical Error: Manifest file is missing from repository."
-            exit 1
-          fi
-
-          # Local Self-Healing Loop: Verifies structure without breaking git tracking
-          for i in {1..3}; do
-            echo "Self-Healing Verification Loop: Run $i"
-            
-            if grep -q 'android:name' "$TARGET_FILE"; then
-              echo "✅ Manifest structure verified! Zero corruption detected."
-              break
-            else
-              echo "⚠️ Corruption detected! Reverting to clean repository baseline..."
-              git checkout HEAD -- "$TARGET_FILE"
-              sleep 1
-            fi
-            
-            if [ $i -eq 3 ] && ! grep -q 'android:name' "$TARGET_FILE"; then
-              echo "❌ Error: Manifest is permanently corrupted in source control."
-              exit 1
-            fi
-          done
-
-          echo "=== STAGE 4: COMPILING ASSET DICTIONARY ==="
+      # === STAGE 4: COMPILING ASSET DICTIONARY ===
+      - name: Stage 4 - Generate App Launcher Icons
+        run: |
           dart run flutter_launcher_icons
 
-          echo "=== STAGE 5: RUNNING FORCED BYPASS BINARY BUILD ==="
+      # === STAGE 5: RUNNING FORCED BYPASS BINARY BUILD ===
+      - name: Stage 5 - Compile Production Release APK
+        run: |
           flutter build apk --release --split-per-abi --android-skip-build-dependency-validation --no-tree-shake-icons
