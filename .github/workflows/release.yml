@@ -33,7 +33,7 @@ jobs:
       - name: "5. Cellular Regeneration: Force Recreate Official Scaffolding"
         run: |
           echo "Recreating pure Android templates directly from Flutter SDK..."
-          flutter create . --platforms=android --org com.mindspark
+          flutter create . --platforms=android --org com.mindspark --project-name=mindspark1
 
       - name: "6. Inject App Identity & Production Package Name"
         run: |
@@ -46,44 +46,47 @@ jobs:
           echo "Using XMLStarlet to inject variables safely into data nodes..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           
-          # Fix root namespaces to clean up errors permanently
+          # 7a. Clean up base document structures and map standard tools namespaces
           xmlstarlet ed -L \
             -u "/manifest/@xmlns:android" -v "http://android.com" \
             -s "/manifest" -t attr -n "xmlns:tools" -v "http://android.com" \
             "$MANIFEST_PATH"
 
-          # Inject permissions dynamically as individual items
+          # Define shorthand mapping shell for sub-node updates
+          NS="-N a=http://android.com"
+
+          # 7b. Inject device system permissions dynamically
           for perm in INTERNET ACCESS_NETWORK_STATE WAKE_LOCK RECEIVE_BOOT_COMPLETED VIBRATE POST_NOTIFICATIONS CAMERA RECORD_AUDIO; do
             xmlstarlet ed -L -s "/manifest" -t elem -n "uses-permission" -v "" \
-              -s "/manifest/uses-permission[not(@android:name)]" -t attr -n "android:name" -v "android.permission.$perm" \
+              -s "/manifest/uses-permission[not(@a:name)]" -t attr -n "android:name" -v "android.permission.$perm" \
               "$MANIFEST_PATH"
           done
           
-          # Inject special AD_ID permission
+          # Inject targeted advertisement attribution permission profile
           xmlstarlet ed -L -s "/manifest" -t elem -n "uses-permission" -v "" \
-            -s "/manifest/uses-permission[not(@android:name)]" -t attr -n "android:name" -v "com.google.android.gms.permission.AD_ID" \
+            -s "/manifest/uses-permission[not(@a:name)]" -t attr -n "android:name" -v "com.google.android.gms.permission.AD_ID" \
             "$MANIFEST_PATH"
 
-          # Inject Hardware Features
+          # 7c. Append Hardware and Feature limitations safely
           xmlstarlet ed -L \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[1]" -t attr -n "android:name" -v "android.hardware.camera" -s "/manifest/uses-feature[1]" -t attr -n "android:required" -v "false" \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[2]" -t attr -n "android:name" -v "android.hardware.camera.autofocus" -s "/manifest/uses-feature[2]" -t attr -n "android:required" -v "false" \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[3]" -t attr -n "android:name" -v "android.hardware.camera.ar" -s "/manifest/uses-feature[3]" -t attr -n "android:required" -v "true" \
+            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera" -s "/manifest/uses-feature[@android:name='android.hardware.camera']" -t attr -n "android:required" -v "false" \
+            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera.autofocus" -s "/manifest/uses-feature[@android:name='android.hardware.camera.autofocus']" -t attr -n "android:required" -v "false" \
+            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera.ar" -s "/manifest/uses-feature[@android:name='android.hardware.camera.ar']" -t attr -n "android:required" -v "true" \
             "$MANIFEST_PATH"
 
-          # Update global <application> parameters
+          # 7d. Update application container labels and parameters
           xmlstarlet ed -L \
-            -u "/manifest/application/@android:label" -v "Mind Spark" \
-            -u "/manifest/application/@android:icon" -v "@mipmap/launcher_icon" \
+            -u "/manifest/application/@a:label" -v "Mind Spark" \
+            -u "/manifest/application/@a:icon" -v "@mipmap/launcher_icon" \
             -s "/manifest/application" -t attr -n "android:allowBackup" -v "true" \
             -s "/manifest/application" -t attr -n "android:fullBackupContent" -v "true" \
             "$MANIFEST_PATH"
 
-          # Inject internal API metadata entries safely
+          # 7e. Drop production properties (AdMob API key and AR core parameters) into application settings
           xmlstarlet ed -L \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[1]" -t attr -n "android:name" -v "com.google.android.gms.ads.APPLICATION_ID" -s "/manifest/application/meta-data[1]" -t attr -n "android:value" -v "ca-app-pub-6212928709769131~8727268603" \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[2]" -t attr -n "android:name" -v "com.google.ar.core" -s "/manifest/application/meta-data[2]" -t attr -n "android:value" -v "required" \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[3]" -t attr -n "android:name" -v "flutter_deeplinking_enabled" -s "/manifest/application/meta-data[3]" -t attr -n "android:value" -v "true" \
+            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "com.google.android.gms.ads.APPLICATION_ID" -s "/manifest/application/meta-data[@android:name='com.google.android.gms.ads.APPLICATION_ID']" -t attr -n "android:value" -v "ca-app-pub-6212928709769131~8727268603" \
+            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "com.google.ar.core" -s "/manifest/application/meta-data[@android:name='com.google.ar.core']" -t attr -n "android:value" -v "required" \
+            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "flutter_deeplinking_enabled" -s "/manifest/application/meta-data[@android:name='flutter_deeplinking_enabled']" -t attr -n "android:value" -v "true" \
             "$MANIFEST_PATH"
 
           echo "Inspecting final verified clean manifest output stream..."
