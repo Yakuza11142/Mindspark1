@@ -25,91 +25,121 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: "4. White Blood Cell Mode: Purge Corrupted Native Subsystems"
+      - name: "4. White Blood Cell Mode: Slay Corrupted Caches"
         run: |
-          echo "Erasing the corrupt native structural shell entirely..."
-          rm -rf android/
+          echo "Purging malicious and dead build caches..."
+          flutter clean
+          rm -rf android/.gradle android/app/build android/build pubspec.lock .dart_tool/
 
-      - name: "5. Cellular Regeneration: Force Recreate Official Scaffolding"
+      - name: "5. Manifest Protection Shield: Auto-Detect & Healing Layer"
         run: |
-          echo "Recreating pure Android templates directly from Flutter SDK..."
-          flutter create . --platforms=android --org com.mindspark --project-name=mindspark1
-
-      - name: "6. Inject App Identity & Production Package Name"
-        run: |
-          echo "Overwriting generic variables with your unique App ID layer..."
-          flutter pub add change_app_package_name --dev
-          dart run change_app_package_name:main com.mindspark.mindspark1
-
-      - name: "7. Data Engine: Programmatic Manifest Configuration"
-        run: |
-          echo "Using XMLStarlet to inject variables safely into data nodes..."
+          echo "Scanning manifest health protocols..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           
-          # 7a. Clean up base document structures and map standard tools namespaces
-          xmlstarlet ed -L \
-            -u "/manifest/@xmlns:android" -v "http://android.com" \
-            -s "/manifest" -t attr -n "xmlns:tools" -v "http://android.com" \
-            "$MANIFEST_PATH"
+          # 🚨 IMMUNE CHECK: If the file contains bad links, force overwrite with the clean template
+          if grep -q 'http://android.com' "$MANIFEST_PATH" || [ ! -f "$MANIFEST_PATH" ]; then
+            echo "⚠️ CORRUPTION DETECTED! Deploying clean manifest layout shield..."
+            mkdir -p android/app/src/main
+            
+            cat << 'EOF' > "$MANIFEST_PATH"
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://android.com"
+          xmlns:tools="http://android.com">
 
-          # Define shorthand mapping shell for sub-node updates
-          NS="-N a=http://android.com"
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
-          # 7b. Inject device system permissions dynamically
-          for perm in INTERNET ACCESS_NETWORK_STATE WAKE_LOCK RECEIVE_BOOT_COMPLETED VIBRATE POST_NOTIFICATIONS CAMERA RECORD_AUDIO; do
-            xmlstarlet ed -L -s "/manifest" -t elem -n "uses-permission" -v "" \
-              -s "/manifest/uses-permission[not(@a:name)]" -t attr -n "android:name" -v "android.permission.$perm" \
-              "$MANIFEST_PATH"
-          done
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="http"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
+        </intent>
+    </queries>
+
+    <application android:name="${applicationName}" 
+                 android:label="Mind Spark" 
+                 android:icon="@mipmap/launcher_icon" 
+                 android:allowBackup="true" 
+                 android:fullBackupContent="true" 
+                 android:hardwareAccelerated="true">
+
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6212928709769131~8727268603"/>
+        <meta-data android:name="com.google.ar.core" android:value="required"/>
+        <meta-data android:name="flutter_deeplinking_enabled" android:value="true"/>
+        <meta-data android:name="flutterEmbedding" android:value="2"/>
+
+        <activity android:name=".MainActivity" 
+                  android:exported="true" 
+                  android:launchMode="singleTop" 
+                  android:taskAffinity="" 
+                  android:theme="@style/LaunchTheme" 
+                  android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" 
+                  android:hardwareAccelerated="true" 
+                  android:windowSoftInputMode="adjustResize">
+            <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+EOF
+          else
+            echo "✅ Manifest schema is healthy. Proceeding with surgical text alignments..."
+            sed -i '/<config name="flutter_pubspec_backup">/,/<\/config>/d' "$MANIFEST_PATH"
+          fi
           
-          # Inject targeted advertisement attribution permission profile
-          xmlstarlet ed -L -s "/manifest" -t elem -n "uses-permission" -v "" \
-            -s "/manifest/uses-permission[not(@a:name)]" -t attr -n "android:name" -v "com.google.android.gms.permission.AD_ID" \
-            "$MANIFEST_PATH"
-
-          # 7c. Append Hardware and Feature limitations safely
-          xmlstarlet ed -L \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera" -s "/manifest/uses-feature[@android:name='android.hardware.camera']" -t attr -n "android:required" -v "false" \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera.autofocus" -s "/manifest/uses-feature[@android:name='android.hardware.camera.autofocus']" -t attr -n "android:required" -v "false" \
-            -s "/manifest" -t elem -n "uses-feature" -v "" -s "/manifest/uses-feature[not(@a:name)]" -t attr -n "android:name" -v "android.hardware.camera.ar" -s "/manifest/uses-feature[@android:name='android.hardware.camera.ar']" -t attr -n "android:required" -v "true" \
-            "$MANIFEST_PATH"
-
-          # 7d. Update application container labels and parameters
-          xmlstarlet ed -L \
-            -u "/manifest/application/@a:label" -v "Mind Spark" \
-            -u "/manifest/application/@a:icon" -v "@mipmap/launcher_icon" \
-            -s "/manifest/application" -t attr -n "android:allowBackup" -v "true" \
-            -s "/manifest/application" -t attr -n "android:fullBackupContent" -v "true" \
-            "$MANIFEST_PATH"
-
-          # 7e. Drop production properties (AdMob API key and AR core parameters) into application settings
-          xmlstarlet ed -L \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "com.google.android.gms.ads.APPLICATION_ID" -s "/manifest/application/meta-data[@android:name='com.google.android.gms.ads.APPLICATION_ID']" -t attr -n "android:value" -v "ca-app-pub-6212928709769131~8727268603" \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "com.google.ar.core" -s "/manifest/application/meta-data[@android:name='com.google.ar.core']" -t attr -n "android:value" -v "required" \
-            -s "/manifest/application" -t elem -n "meta-data" -v "" -s "/manifest/application/meta-data[not(@a:name)]" -t attr -n "android:name" -v "flutter_deeplinking_enabled" -s "/manifest/application/meta-data[@android:name='flutter_deeplinking_enabled']" -t attr -n "android:value" -v "true" \
-            "$MANIFEST_PATH"
-
           echo "Inspecting final verified clean manifest output stream..."
           cat "$MANIFEST_PATH"
 
-      - name: "8. Red Blood Cell Mode: Repair Broken Android Architecture"
+      - name: "6. Secure Key Injection: Decode and Link Production Signing Elements"
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "Repairing native structural properties..."
-          mkdir -p android/app
-          touch android/gradle.properties
-          sed -i '/android.lintOptions/d' android/gradle.properties
-          echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
-          echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
+          echo "Decoding secure upload keystore certificate binary..."
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          
+          echo "Generating structured release key properties configuration mapping..."
+          cat <<EOF > android/key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
 
-      - name: "9. Slay Broken kotlinOptions Blocks"
+      - name: "7. Slay Broken kotlinOptions Blocks"
         run: |
-          echo "Fixing kotlinOptions inside app/build.gradle..."
+          echo "Removing unneeded kotlinOptions syntax inside app/build.gradle..."
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
             sed -i '/kotlinOptions {/,/}/d' "$APP_GRADLE"
           fi
 
-      - name: "10. Asset Layer Repair: Route Root Shader to Targeted Directory"
+      - name: "8. Asset Layer Repair: Route Root Shader to Targeted Directory"
         run: |
           echo "Locating and routing root hologram_glow.frag asset..."
           mkdir -p shaders
@@ -123,17 +153,17 @@ jobs:
             echo 'void main() { fragColor = vec4(0.0, 0.5, 1.0, 1.0); }' >> shaders/hologram_glow.frag
           fi
 
-      - name: "11. Synthesize Verified Dependencies"
+      - name: "9. Synthesize Verified Dependencies"
         run: |
           echo "Binding dependencies natively..."
           flutter pub get
 
-      - name: "12. Compile Production APK Binary"
+      - name: "10. Compile Production APK Binary"
         run: |
           echo "Assembling functional machine binary layer..."
           flutter build apk --release --split-per-abi --no-pub --no-tree-shake-icons
 
-      - name: "13. Distribute Clean Installer Artifact Stream"
+      - name: "11. Distribute Clean Installer Artifact Stream"
         uses: actions/upload-artifact@v4
         with:
           name: "mindspark-immune-apk"
