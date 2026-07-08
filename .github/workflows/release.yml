@@ -43,6 +43,8 @@ jobs:
           VERTEX_KEY: ${{secrets.VERTEX_API_KEY}}
           SUPABASE_URL: ${{secrets.SUPABASE_URL}}
           SUPABASE_ANON_KEY: ${{secrets.SUPABASE_ANON_KEY}}
+          V_NAME: "1.0.${{github.run_number}}"
+          V_NUM: "${{github.run_number}}"
         run: |
           h(){
           local n="$1" c="$2" m=10 a=1 g="s.log"
@@ -97,10 +99,10 @@ jobs:
           flutter pub get --no-example || flutter pub get --offline || true
           if [[ "$n" == "APK" || "$n" == "AAB" ]]; then
             echo "Emergency forcing clean android assembly structure..."
-            flutter build apk --release --no-tree-shake-icons --no-pub || true
+            flutter build apk --release --no-tree-shake-icons --no-pub --build-name="$V_NAME" --build-number="$V_NUM" || true
             return 0
           elif [ "$n" == "IOS" ]; then
-            flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub || true
+            flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub --build-name="$V_NAME" --build-number="$V_NUM" || true
             return 0
           elif [ "$n" == "W" ]; then
             flutter build web --release --web-renderer html --no-pub || true
@@ -118,7 +120,7 @@ jobs:
           h "D" "flutter config --jdk-dir \"\$JAVA_HOME\"&&flutter pub get"||exit 1
           h "T" "flutter test --no-pub"||exit 1
           mkdir -p ds
-          F="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY --dart-define=VERTEX=\$VERTEX_KEY --dart-define=S_URL=\$SUPABASE_URL --dart-define=S_KEY=\$SUPABASE_ANON_KEY"
+          F="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY --dart-define=VERTEX=\$VERTEX_KEY --dart-define=S_URL=\$SUPABASE_URL --dart-define=S_KEY=\$SUPABASE_ANON_KEY --build-name=\$V_NAME --build-number=\$V_NUM"
           h "APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk $F"||exit 1
           h "AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab $F"||exit 1
           h "W" "flutter build web --release $F"||exit 1
@@ -135,3 +137,12 @@ jobs:
         with:
           name: web-build
           path: build/web/
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "r/*"
+          tag: "v1.0.${{github.run_number}}"
+          name: "Release v1.0.${{github.run_number}}"
+          body: "Automated distribution build from commit: ${{github.sha}}"
+          token: ${{secrets.GITHUB_TOKEN}}
+          allowUpdates: true
