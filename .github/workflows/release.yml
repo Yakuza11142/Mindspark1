@@ -10,7 +10,6 @@ permissions:
   contents: write
   actions: write
   packages: write
-
 jobs:
   b:
     runs-on: macos-14
@@ -37,58 +36,41 @@ jobs:
       SHA_3_384: ${{secrets.SHA_3_384}}
       SHA_3_512: ${{secrets.SHA_3_512}}
       V_NUM: "${{github.run_number}}"
-
     steps:
-      - name: Source Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Reset Existing Tags
+      - name: Clear Tag
         continue-on-error: true
         run: |
-          if gh release view "v1.0.$V_NUM" >/dev/null 2>&1; then 
-            gh release delete "v1.0.$V_NUM" --yes
-          fi
-          git tag -d "v1.0.$V_NUM" 2>/dev/null
-          git push --delete origin "v1.0.$V_NUM" 2>/dev/null
-
-      - name: Java SDK Setup
-        uses: actions/setup-java@v4
+          if gh release view "v1.0.$V_NUM" >/dev/null 2>&1;then gh release delete "v1.0.$V_NUM" --yes;fi
+          git tag -d "v1.0.$V_NUM" 2>/dev/null;git push --delete origin "v1.0.$V_NUM" 2>/dev/null
+      - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 17
-
-      - name: Flutter Environment Setup
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Clean & Prepare Environment
+      - name: Prep Env
         run: |
           flutter clean
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
-          mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios build/web
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks 2>/dev/null || true
-          fi
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
-          printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
+          mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
+          if [ -n "$KEYSTORE_BASE64" ];then echo "$KEYSTORE_BASE64"|base64 --decode >android/app/upload-keystore.jks 2>/dev/null||true;fi
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" >android/key.properties
+          printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' >shaders/hologram_glow.frag
           flutter config --enable-web --jdk-dir "$JAVA_HOME"
-
-      - name: Build All Targets (APK, AAB, Web, iOS)
+      - name: Heal & Build Core
         run: |
           python3 -c "
           import os, subprocess, re
-          
-          # 1. Surgical Self-Healing Code Cleanser
           if os.path.exists('pubspec.yaml'):
               with open('pubspec.yaml', 'r') as f: txt = f.read()
               txt = re.sub(r'^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*', r'  \1: any', txt, flags=re.M)
               txt = re.sub(r'flutter_test:\s*\n\s*sdk:\s*.*', 'flutter_test:\n    sdk: flutter', txt)
               with open('pubspec.yaml', 'w') as f: f.write(txt)
-          
           if os.path.exists('lib'):
               for r, d, fs in os.walk('lib'):
                   for f in fs:
@@ -98,72 +80,50 @@ jobs:
                           m = re.sub(r'import\s+[\'\"]dart:html[\'\"];', '//Removed\nimport \'package:web/web.dart\' as web_new;', t)
                           if m != t:
                               with open(p, 'w') as f_obj: f_obj.write(m)
-                              
           if os.path.exists('android/build.gradle'):
               with open('android/build.gradle', 'r+') as f:
                   c = f.read()
-                  if 'p.android.namespace' not in c:
-                      f.write('\nsubprojects { afterEvaluate { p -> if (p.hasProperty(\"android\") && p.android.namespace == null) { p.android.namespace = p.group } } }\n')
-                      
+                  if 'p.android.namespace' not in c: f.write('\nsubprojects { afterEvaluate { p -> if (p.hasProperty(\"android\") && p.android.namespace == null) { p.android.namespace = p.group } } }\n')
           if os.path.exists('android/app/build.gradle'):
               with open('android/app/build.gradle', 'r') as f: b_txt = f.read()
               b_txt = re.sub(r'(compile|target|min)SdkVersion.*', r'\1SdkVersion 34', b_txt)
               with open('android/app/build.gradle', 'w') as f: f.write(b_txt)
-              
           if os.path.exists('android/local.properties'):
-              with open('android/local.properties', 'a+') as f:
-                  f.write('\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n')
-                  
+              with open('android/local.properties', 'a+') as f: f.write('\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n')
           subprocess.run('flutter pub get', shell=True)
-          
-          # 2. Dynamic Secret Injections & Sanitization
           cl = lambda k: os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
           fs = ' '.join([f'--dart-define={n}={cl(k)}' for n, k in [('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), ('SIG_SHA3_512', 'SHA_3_512')]] + ['--build-name=1.0.' + os.environ['V_NUM'], '--build-number=' + os.environ['V_NUM']])
-          
-          # 3. Native Compile Execution Chamber with Infinite Eraser Fallbacks
           def execute_build(command, platform_name):
-              if not os.path.exists(platform_name):
-                  subprocess.run(f'flutter create . --platforms={platform_name}', shell=True)
+              if not os.path.exists(platform_name): subprocess.run(f'flutter create . --platforms={platform_name}', shell=True)
               res = subprocess.run(f'{command} {fs}', shell=True)
               if res.returncode != 0:
                   print(f'Warning: {platform_name} primary build broke. Activating self-fixing core bypass...')
-                  if platform_name == "ios":
-                      subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
+                  if platform_name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
                   fallback_cmd = command.split(' --obfuscate')[0] + f' --no-tree-shake-icons --no-pub --build-name=1.0.{os.environ[\"V_NUM\"]} --build-number={os.environ[\"V_NUM\"]}'
                   subprocess.run(fallback_cmd, shell=True)
-                  
           execute_build('flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
           execute_build('flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab', 'android')
           execute_build('flutter build web --release', 'web')
           execute_build('flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios', 'ios')
           "
-
-      - name: Extract & Stage Stored Binaries
+      - name: Stage Binaries
         run: |
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
-          iad=$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
-          if [ -n "$iad" ]; then 
-            cd "$(dirname "$iad")" && mkdir -p Payload && cp -r Runner.app Payload/ && zip -r ../../../build/ios/Runner.ipa Payload/ && cd -
-          fi
-
-      - name: Upload Workspace Mobile Artifacts
-        uses: actions/upload-artifact@v4
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null||true
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null||true
+          iad=$(find build -type d -name "Runner.app" 2>/dev/null|head -n 1)
+          if [ -n "$iad" ];then cd "$(dirname "$iad")"&&mkdir -p Payload&&cp -r Runner.app Payload/&&zip -r ../../../build/ios/Runner.ipa Payload/&&cd -;fi
+      - uses: actions/upload-artifact@v4
         with:
           name: app-mobile-builds-${{github.run_number}}
           path: |
             build/apk/
             build/bundle/
             build/ios/*.ipa
-
-      - name: Upload Workspace Web Artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: app-web-build-${{github.run_number}}
           path: build/web/
-
-      - name: Deploy Secure Production Release Dashboard
-        uses: ncipollo/release-action@v1
+      - uses: ncipollo/release-action@v1
         with:
           artifacts: "build/apk/*,build/bundle/*,build/ios/*.ipa"
           tag: "v1.0.${{github.run_number}}"
