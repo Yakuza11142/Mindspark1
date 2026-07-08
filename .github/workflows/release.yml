@@ -33,7 +33,7 @@ jobs:
       SUPABASE_URL: ${{secrets.SUPABASE_URL}}
       SUPABASE_ANON_KEY: ${{secrets.SUPABASE_ANON_KEY}}
       
-      # Cryptographic Integrity Signatures
+      # SHA-3 Cryptographic Integrity Injections
       SHA_3: ${{secrets.SHA_3}}
       SHA_3_256: ${{secrets.SHA_3_256}}
       SHA_3_384: ${{secrets.SHA_3_384}}
@@ -42,8 +42,8 @@ jobs:
       V_NAME: "1.0.${{github.run_number}}"
       V_NUM: "${{github.run_number}}"
       
-      # Combined Global Build Argument String
-      F: "--dart-define=MTN=${{secrets.MTN_API_KEY}} --dart-define=HEYGEN=${{secrets.HEYGEN_KEY}} --dart-define=TRIPO=${{secrets.TRIPO_API_KEY}} --dart-define=PEXEL=${{secrets.PEXELS_API_KEY}} --dart-define=ELEVENLABS=${{secrets.ELEVEN_LAB_API_KEY}} --dart-define=GEMINI=${{secrets.GEMINI_API_KEY}} --dart-define=OPENAI=${{secrets.OPENAI_API_KEY}} --dart-define=GROQ=${{secrets.GROQ_API_KEY}} --dart-define=VERTEX=${{secrets.VERTEX_API_KEY}} --dart-define=S_URL=${{secrets.SUPABASE_URL}} --dart-define=S_KEY=${{secrets.SUPABASE_ANON_KEY}} --dart-define=SIG_SHA3=${{secrets.SHA_3}} --dart-define=SIG_SHA3_256=${{secrets.SHA_3_256}} --dart-define=SIG_SHA3_384=${{secrets.SHA_3_384}} --dart-define=SIG_SHA3_512=${{secrets.SHA_3_512}} --build-name=1.0.${{github.run_number}} --build-number=${{github.run_number}}"
+      # Bound Obfuscated Arguments Definition String
+      F: "--dart-define=MTN=${{secrets.MTN_API_KEY}} --dart-define=HEYGEN=${{secrets.HEYGEN_KEY}} --dart-define=TRIPO=${{secrets.TRIPO_API_KEY}} --dart-define=PEXEL=${{secrets.PEXELS_API_KEY}} --dart-define=ELEVENLABS=${{secrets.ELEVEN_LAB_API_KEY}} --dart-define=GEMINI=${{secrets.GEMINI_API_KEY}} --dart-define=OPENAI=${{secrets.OPENAI_API_KEY}} --dart-define=GROQ=${{secrets.GROQ_API_KEY}} --dart-define=VERTEX=${{secrets.VERTEX_API_KEY}} --dart-define=SUPABASE_URL=${{secrets.SUPABASE_URL}} --dart-define=SUPABASE_ANON_KEY=${{secrets.SUPABASE_ANON_KEY}} --dart-define=SIG_SHA3=${{secrets.SHA_3}} --dart-define=SIG_SHA3_256=${{secrets.SHA_3_256}} --dart-define=SIG_SHA3_384=${{secrets.SHA_3_384}} --dart-define=SIG_SHA3_512=${{secrets.SHA_3_512}} --build-name=1.0.${{github.run_number}} --build-number=${{github.run_number}}"
 
     steps:
       - name: Source Checkout
@@ -128,6 +128,6 @@ jobs:
           artifacts: "r/apk/*,r/bundle/*,r/ios/*"
           tag: "v1.0.${{github.run_number}}"
           name: "Release v1.0.${{github.run_number}}"
-          body: "Production deployment compiled with full binary obfuscation, stripped symbols, and SHA-3 validation keys attached. Tracking commit: ${{github.sha}}"
+          body: "Production deployment with full binary obfuscation and compiled cryptographic tracking signatures for commit ${{github.sha}}"
           token: ${{secrets.GITHUB_TOKEN}}
           allowUpdates: true
