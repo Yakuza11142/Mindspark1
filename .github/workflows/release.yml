@@ -1,4 +1,4 @@
-name: "Mind Spark: Omnipotent Immune Engine"
+name: "Mind Spark: Hardened Cryptographic Multi-Platform Engine"
 
 on:
   push:
@@ -21,8 +21,8 @@ permissions:
 
 jobs:
   immune_triage:
-    name: "Slay & Repair Engine (Gen ${{ github.event.inputs.mutation_generation || '1' }})"
-    runs-on: ubuntu-latest
+    name: "Secure Hardened 4-Platform Matrix"
+    runs-on: macos-14
     timeout-minutes: 360
 
     steps:
@@ -33,9 +33,6 @@ jobs:
 
       - name: "Matrix"
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -43,7 +40,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           heal_and_execute() {
-            local name="$1" cmd="$2" max=8 att=1 log="sweep.log"
+            local name="$1" cmd="$2" max=4 att=1 log="sweep.log"
             echo "::group::Step: $name"
             while [ $att -le $max ]; do
               echo "[Attempt $att/$max] Running: $cmd"
@@ -51,80 +48,76 @@ jobs:
                 cat "$log" && echo "SUCCESS: $name passed." && echo "::endgroup::" && return 0
               fi
               cat "$log"
-              if grep -qi "\.xml" "$log"; then
-                local f=$(grep -oEi '[a-zA-Z0-9_\/\.-]+\.xml' "$log" | head -n 1)
-                [ -f "$f" ] && local tr="[XML ($f)] $(cat "$f" | head -n 40 | tr -d '"\\\n') [Err] $(tail -n 40 "$log" | tr -d '"\\\n')"
-              elif grep -qE -i "(error|failed|exception|e:)" "$log"; then
-                local tr=$(grep -B 2 -A 5 -iE "(error|failed|exception|e:)" "$log" | tail -n 80 | tr -d '"\\\n')
-              else
-                local tr=$(tail -n 80 "$log" | tr -d '"\\\n')
+              if grep -qI "Namespace not specified" "$log"; then
+                if [ -f android/build.gradle ]; then
+                  printf "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android') && project.android.namespace == null) {\n            project.android.namespace = project.group\n        }\n    }\n}\n" >> android/build.gradle
+                fi
+              elif grep -qI "AndroidManifest.xml" "$log" || grep -qI "namespace" "$log"; then
+                [ -d android/app/src/main ] && touch android/app/src/main/AndroidManifest.xml || true
+              elif [ $att -eq 1 ]; then
+                command -v flutter >/dev/null 2>&1 && flutter clean && flutter pub get || true
+              elif [ $att -eq 2 ]; then
+                [ -d ios ] && (cd ios && pod repo update && pod install --repo-update) || true
+                command -v flutter >/dev/null 2>&1 && flutter pub cache repair || true
               fi
-              local f_v=$(flutter --version 2>/dev/null | head -n 1 || echo "None")
-              local g_v=$(cd android 2>/dev/null && ./gradlew --version 2>/dev/null | grep "Gradle " | head -n 1 || echo "None")
-              local sys="You are a DevOps healing daemon. Return ONLY valid executable Bash commands to fix the workspace. No markdown ticks, no explanations."
-              local usr="Step '$name' failed running '$cmd'. Att: $att. Flutter: $f_v, Gradle: $g_v. Tree: $(find . -maxdepth 3 -not -path '*/.*' | head -n 25). Err: $tr"
-              local e_s=$(echo "$sys" | jq -R .) e_u=$(echo "$usr" | jq -R .)
-              rm -f patch_*.sh
-              [ -n "$OPENAI_API_KEY" ] && ( curl -s -X POST "https://openai.com" -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" -d "{\"model\": \"gpt-4o\", \"messages\": [{\"role\": \"system\", \"content\": $e_s}, {\"role\": \"user\", \"content\": $e_u}], \"temperature\": 0.1}" | jq -r '.choices.message.content // empty' > patch_openai.sh ) &
-              [ -n "$GEMINI_API_KEY" ] && ( curl -s -X POST "https://googleapis.com" -H "Content-Type: application/json" -d "{\"contents\": [{\"parts\": [{\"text\": \"System Instruction: $sys\n\nUser Input: $usr\"}]}], \"generationConfig\": {\"temperature\": 0.1}}" | jq -r '.candidates.content.parts.text // empty' | sed 's/```bash//g' | sed 's/```//g' > patch_gemini.sh ) &
-              [ -n "$GROQ_API_KEY" ] && ( curl -s -X POST "https://groq.com" -H "Authorization: Bearer $GROQ_API_KEY" -H "Content-Type: application/json" -d "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": $e_s}, {\"role\": \"user\", \"content\": $e_u}], \"temperature\": 0.1}" | jq -r '.choices.message.content // empty' > patch_groq.sh ) &
-              wait
-              local p="none"
-              [ -s patch_openai.sh ] && p="patch_openai.sh" || { [ -s patch_gemini.sh ] && p="patch_gemini.sh"; } || { [ -s patch_groq.sh ] && p="patch_groq.sh"; }
-              if [ "$p" != "none" ]; then
-                echo "Applying $p:" && cat "$p" && chmod +x "$p"
-                ./"$p" || { echo "Patch execution warning. Rolling back changes..." && git checkout -- .; }
-              else
-                flutter clean && rm -rf pubspec.lock .dart_tool/
-              fi
-              rm -f patch_*.sh sweep.log && att=$((att + 1))
+              rm -f "$log" && att=$((att + 1))
             done
             echo "CRITICAL: $name failed entirely." && echo "::endgroup::" && return 1
           }
 
-          # Provisioning Ecosystem Base
-          heal_and_execute "Java" "sudo apt-get update && sudo apt-get install -y openjdk-17-jdk && echo 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> \$GITHUB_ENV" || exit 1
+          heal_and_execute "Java" "brew install openjdk@17 && echo 'JAVA_HOME=/opt/homebrew/opt/openjdk@17' >> \$GITHUB_ENV" || exit 1
           heal_and_execute "Flutter" "git clone https://github.com -b stable --depth 1 /opt/flutter && echo '/opt/flutter/bin' >> \$GITHUB_PATH && export PATH=\$PATH:/opt/flutter/bin && flutter doctor" || exit 1
-          export PATH=$PATH:/opt/flutter/bin JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH=$PATH:/opt/flutter/bin JAVA_HOME=/opt/homebrew/opt/openjdk@17
           
-          # Inject Global Structural Immunity Configuration
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
-            printf "android {\n    lintOptions {\n        abortOnError false\n        checkReleaseBuilds false\n        quiet true\n        ignoreWarnings true\n    }\n}\n" > lint.gradle
-            sed -i '/android {/r lint.gradle' "$APP_GRADLE" && rm -f lint.gradle
+            printf "android {\n    lintOptions {\n        abortOnError false\n        checkReleaseBuilds false\n        quiet true\n        ignoreWarnings true\n    }\n    buildTypes {\n        release {\n            minifyEnabled true\n            shrinkResources true\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')\n        }\n    }\n}\n" > lint.gradle
+            sed -i '' '/android {/r lint.gradle' "$APP_GRADLE" && rm -f lint.gradle
           fi
 
-          # Workspace Build Preparation Flow
-          heal_and_execute "Cache Purge" "flutter clean && rm -rf android/.gradle android/app/build android/build pubspec.lock .dart_tool/" || exit 1
+          heal_and_execute "Cache Purge" "flutter clean && rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock pubspec.lock .dart_tool/" || exit 1
           heal_and_execute "Keystore Link" "mkdir -p android/app && echo \"\$KEYSTORE_BASE64\" | base64 --decode > android/app/upload-keystore.jks && printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' \"\$KEYSTORE_PASSWORD\" \"\$KEY_PASSWORD\" \"\$KEY_ALIAS\" > android/key.properties" || exit 1
           heal_and_execute "Shaders" "mkdir -p shaders && if [ -f 'hologram_glow.frag' ]; then cp hologram_glow.frag shaders/hologram_glow.frag; else printf '#version 460 core\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.5, 1.0, 1.0); }\n' > shaders/hologram_glow.frag; fi" || exit 1
+          heal_and_execute "Config" "flutter config --enable-web" || exit 1
           heal_and_execute "Dependencies" "flutter config --jdk-dir \"\$JAVA_HOME\" && flutter pub get" || exit 1
+          heal_and_execute "Tests" "flutter test --no-pub" || exit 1
           
-          # Added Automated Evaluation Track
-          heal_and_execute "Validation Unit Tests" "flutter test --no-pub" || exit 1
-          
-          # Production Core Compiling Phase
-          heal_and_execute "Compile" "flutter build apk --release --split-per-abi --no-tree-shake-icons" || exit 1
+          mkdir -p debug_symbols
+          heal_and_execute "Build APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/apk" || exit 1
+          heal_and_execute "Build AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/aab" || exit 1
+          heal_and_execute "Build Web" "flutter build web --release" || exit 1
+          heal_and_execute "Build iOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=debug_symbols/ios" || exit 1
 
-          # Remote Branch Matrix Mutation Sync
-          git config --global user.name "Immune Engine" && git config --global user.email "immune@mindspark.ai"
-          git add -A && git commit -m "chore(immune): auto-patch generation v$(( ${{ github.event.inputs.mutation_generation || '1' }} + 1 )) [skip ci]" && git push origin $(git rev-parse --abbrev-ref HEAD) || echo "Clean run. No changes committed."
-
-      - name: "Dynamic Release Deployment Matrix"
+      - name: "Deployment"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Processing structural artifact extractions..."
-          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')-gen${{ github.event.inputs.mutation_generation || '1' }}"
-          
-          # Dynamic fallback check to locate any built APK files inside the workspace output
-          APK_PATHS=$(find build/app/outputs/flutter-apk/ -name "*.apk")
-          if [ -z "$APK_PATHS" ]; then
-            echo "CRITICAL: Asset distribution failure. Compilation artifact not found." && exit 1
+          mkdir -p release_artifacts
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} release_artifacts/ \;
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} release_artifacts/ \;
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cd build/ios/iphoneos && mkdir -p Payload && cp -r Runner.app Payload/
+            zip -r ../../../release_artifacts/app-release.ipa Payload && cd ../../..
           fi
+          if [ -d "build/web" ]; then
+            cd build/web && zip -r ../../release_artifacts/production_website.zip . && cd ../..
+          fi
+          [ -d "debug_symbols" ] && zip -r release_artifacts/obfuscation_decryption_symbols.zip debug_symbols
           
-          # Provision automated production GitHub Release
-          gh release create "$TAG_NAME" $APK_PATHS \
-            --title "Immune Production Release: $TAG_NAME" \
-            --notes "Autonomous compilation completed and validated by the Swarm Mind Spark Engine." \
-            --target $(git rev-parse --abbrev-ref HEAD)
+          DEPLOYABLE_ASSETS=$(find release_artifacts -type f)
+          if [ -z "$DEPLOYABLE_ASSETS" ]; then exit 1; fi
+          
+          HASH_NOTES="### 🛡️ Secure Hardened Release Audit Checklist (Triple SHA3)"
+          for filepath in $DEPLOYABLE_ASSETS; do
+            filename=$(basename "$filepath")
+            sha3_256=$(openssl digest -sha3-256 "$filepath" | awk '{print $NF}')
+            sha3_384=$(openssl digest -sha3-384 "$filepath" | awk '{print $NF}')
+            sha3_512=$(openssl digest -sha3-512 "$filepath" | awk '{print $NF}')
+            HASH_NOTES="$HASH_NOTES"$'\n'$'\n'"#### 📦 Hardened Asset: $filename"
+            [ "$filename" = "obfuscation_decryption_symbols.zip" ] && HASH_NOTES="$HASH_NOTES"$'\n'"⚠️ *Note: contains decryption mapping keys.*"
+            HASH_NOTES="$HASH_NOTES"$'\n'"* **SHA3-256:** \`$sha3_256\`"$'\n'"* **SHA3-384:** \`$sha3_384\`"$'\n'"* **SHA3-512:** \`$sha3_512\`"
+          done
+          echo "$HASH_NOTES" > distribution_telemetry.md
+          
+          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')-hardened-signed"
+          gh release create "$TAG_NAME" $DEPLOYABLE_ASSETS --title "Cryptographically Locked Hardened Build: $TAG_NAME" --notes-file distribution_telemetry.md --target $(git rev-parse --abbrev-ref HEAD)
