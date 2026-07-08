@@ -99,6 +99,33 @@ jobs:
           heal_and_execute "Build Web" "flutter build web --release $DART_FLAGS" || exit 1
           heal_and_execute "Build iOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=debug_symbols/ios $DART_FLAGS" || exit 1
 
+      # =========================================================================
+      # 📂 SEGREGATED EXTRACTION OF RAW MACHINE BUILD DIRECTORIES
+      # =========================================================================
+      - name: "Upload APK Folder"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "raw_apk_build_directory"
+          path: build/app/outputs/flutter-apk/ [1]
+
+      - name: "Upload AAB Folder"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "raw_aab_build_directory"
+          path: build/app/outputs/bundle/release/ [1]
+
+      - name: "Upload Web Engine Folder"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "raw_web_build_directory"
+          path: build/web/ [1]
+
+      - name: "Upload iOS Construction Folder"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "raw_ios_build_directory"
+          path: build/ios/iphoneos/ [1]
+
       - name: "Deployment"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
