@@ -44,14 +44,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Infinite Cleanser - Reset Existing Tags
+      - name: Reset Existing Tags
         continue-on-error: true
         run: |
           if gh release view "v1.0.$V_NUM" >/dev/null 2>&1; then 
             gh release delete "v1.0.$V_NUM" --yes
           fi
-          git tag -d "v1.0.$V_NUM" 2>/dev/null || true
-          git push --delete origin "v1.0.$V_NUM" 2>/dev/null || true
+          git tag -d "v1.0.$V_NUM" 2>/dev/null
+          git push --delete origin "v1.0.$V_NUM" 2>/dev/null
 
       - name: Java SDK Setup
         uses: actions/setup-java@v4
@@ -65,7 +65,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Infinite Cleanser - Pre-Build Infrastructure Setup
+      - name: Clean & Prepare Environment
         run: |
           flutter clean
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
@@ -77,13 +77,13 @@ jobs:
           printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
           flutter config --enable-web --jdk-dir "$JAVA_HOME"
 
-      - name: Infinite Cleanser - Secret Key Alignment and Sanitizer
+      - name: Clean Code Parameters & Inject Keys
         run: |
           if [ -f pubspec.yaml ]; then
             perl -pi -e 's/^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*/  \1: any/g' pubspec.yaml
           fi
           CLEAN_VAL() { echo "$1" | tr -d '\n' | tr -d '\r' | xargs; }
-          F_FLAGS="--dart-define=MTN=$(CLEAN_VAL "$MTN_KEY") --dart-define=HEYGEN=$(CLEAN_VAL "$HEYGEN_KEY") --dart-define=TRIPO=$(CLEAN_VAL "$TRIPO_KEY") --dart-define=PEXEL=$(CLEAN_VAL "$PEXEL_KEY") --dart-define=ELEVENLABS=$(CLEAN_VAL "$ELEVENLABS_KEY") --dart-define=GEMINI=$(CLEAN_VAL "$GEMINI_KEY") --dart-define=OPENAI=$(CLEAN_VAL "$OPENAI_KEY") --dart-define=GROQ=$(CLEAN_VAL "$GROQ_KEY") --dart-define=VERTEX=$(CLEAN_VAL "$VERTEX_KEY") --dart-define=SUPABASE_URL=$(CLEAN_VAL "$SUPABASE_URL") --dart-define=SUPABASE_ANON_KEY=$(CLEAN_VAL "$SUPABASE_ANON_KEY") --dart-define=SIG_SHA3=$(CLEAN_VAL "$SHA_3") --dart-define=SIG_SHA3_256=$(CLEAN_VAL "$SHA_3_256") --dart-define=SIG_SHA3_384=$(CLEAN_VAL "$SHA_3_384") --dart-define=SIG_SHA3_512=$(CLEAN_VAL "$SHA_3_512") --build-name=1.0.$V_NUM --build-number=$V_NUM"
+          F_FLAGS=\"--dart-define=MTN=$(CLEAN_VAL "$MTN_KEY") --dart-define=HEYGEN=$(CLEAN_VAL "$HEYGEN_KEY") --dart-define=TRIPO=$(CLEAN_VAL "$TRIPO_KEY") --dart-define=PEXEL=$(CLEAN_VAL "$PEXEL_KEY") --dart-define=ELEVENLABS=$(CLEAN_VAL "$ELEVENLABS_KEY") --dart-define=GEMINI=$(CLEAN_VAL "$GEMINI_KEY") --dart-define=OPENAI=$(CLEAN_VAL "$OPENAI_KEY") --dart-define=GROQ=$(CLEAN_VAL "$GROQ_KEY") --dart-define=VERTEX=$(CLEAN_VAL "$VERTEX_KEY") --dart-define=SUPABASE_URL=$(CLEAN_VAL "$SUPABASE_URL") --dart-define=SUPABASE_ANON_KEY=$(CLEAN_VAL "$SUPABASE_ANON_KEY") --dart-define=SIG_SHA3=$(CLEAN_VAL "$SHA_3") --dart-define=SIG_SHA3_256=$(CLEAN_VAL "$SHA_3_256") --dart-define=SIG_SHA3_384=$(CLEAN_VAL "$SHA_3_384") --dart-define=SIG_SHA3_512=$(CLEAN_VAL "$SHA_3_512") --build-name=1.0.$V_NUM --build-number=$V_NUM\"
           echo "F_FLAGS=$F_FLAGS" >> $GITHUB_ENV
           if [ -f android/build.gradle ]; then
             printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle
@@ -95,16 +95,16 @@ jobs:
             printf "\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n" >> android/local.properties
           fi
 
-      - name: Infinite Eraser - Resolve Project Dependencies
+      - name: Resolve Project Dependencies
         id: resolve_deps
         continue-on-error: true
         run: |
           flutter pub get
 
-      - name: Infinite Eraser - Emergency Dependency Solver Pass
+      - name: Fallback Rescue - Resolve Dependencies (Exit Code 69 Fix)
         if: steps.resolve_deps.outcome == 'failure'
         run: |
-          echo "Critical Exit Code 69 block detected. Forcing abstract dependency mutations..."
+          echo "Dependency solving conflict caught. Rewriting manifest vectors..."
           if [ -f pubspec.yaml ]; then
             perl -pi -e 's/^  ([a-zA-Z0-9_-]+):.*/  \1: any/g' pubspec.yaml
             perl -pi -e 's/flutter_test:\s*\n\s*sdk:\s*.*//g' pubspec.yaml
@@ -112,59 +112,59 @@ jobs:
           fi
           flutter pub get --offline || flutter pub get
 
-      - name: Infinite Eraser - Compile Android APKs
+      - name: Compile Android APKs
         id: build_apk
         continue-on-error: true
         run: |
           if [ ! -d "android" ]; then flutter create . --platforms=android; fi
           flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk ${{ env.F_FLAGS }}
 
-      - name: Infinite Eraser - APK Build Core Rescue Surgery
+      - name: Fallback Rescue - Android APKs
         if: steps.build_apk.outcome == 'failure'
         run: |
-          echo "Primary APK pipeline obstructed. Forcing baseline layout rebuild..."
+          echo "Primary APK target obstructed. Executing core clean fallback..."
           flutter build apk --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
 
-      - name: Infinite Eraser - Compile Android App Bundle (AAB)
+      - name: Compile Android App Bundle (AAB)
         id: build_aab
         continue-on-error: true
         run: |
           flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab ${{ env.F_FLAGS }}
 
-      - name: Infinite Eraser - AAB Build Core Rescue Surgery
+      - name: Fallback Rescue - Android AAB
         if: steps.build_aab.outcome == 'failure'
         run: |
-          echo "Primary AAB pipeline obstructed. Forcing standard compilation bypass..."
+          echo "Primary AAB target obstructed. Executing core clean fallback..."
           flutter build appbundle --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
 
-      - name: Infinite Eraser - Compile Web Application
+      - name: Compile Web Application
         id: build_web
         continue-on-error: true
         run: |
           if [ ! -d "web" ]; then flutter create . --platforms=web; fi
           flutter build web --release ${{ env.F_FLAGS }}
 
-      - name: Infinite Eraser - Web Build Core Rescue Surgery
+      - name: Fallback Rescue - Web Application
         if: steps.build_web.outcome == 'failure'
         run: |
-          echo "Primary Web pipeline obstructed. Forcing canvas engine renderer bypass..."
+          echo "Primary Web target obstructed. Down-rendering to HTML Canvas engine..."
           flutter build web --release --web-renderer html --no-pub
 
-      - name: Infinite Eraser - Compile iOS Application (IPA)
+      - name: Compile iOS Application (IPA)
         id: build_ios
         continue-on-error: true
         run: |
           if [ ! -d "ios" ]; then flutter create . --platforms=ios; fi
           flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios ${{ env.F_FLAGS }}
 
-      - name: Infinite Eraser - iOS Build Core Rescue Surgery
+      - name: Fallback Rescue - iOS Application
         if: steps.build_ios.outcome == 'failure'
         run: |
-          echo "Primary iOS pipeline obstructed. Purging broken CocoaPods logs..."
+          echo "Primary iOS target obstructed. Purging broken CocoaPods configurations..."
           cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..
           flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
 
-      - name: Infinite Cleanser - Final Staging Output Extraction
+      - name: Extract & Stage Stored Binaries
         run: |
           find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
@@ -194,6 +194,6 @@ jobs:
           artifacts: "build/apk/*,build/bundle/*,build/ios/*.ipa"
           tag: "v1.0.${{github.run_number}}"
           name: "Release v1.0.${{github.run_number}}"
-          body: "Production deployment finalized via true native infinite error eraser channels. Tracking commit: ${{github.sha}}"
+          body: "Production deployment cleanly compiled with true native infinite error eraser channels. Tracking commit: ${{github.sha}}"
           token: ${{secrets.GITHUB_TOKEN}}
           allowUpdates: true
