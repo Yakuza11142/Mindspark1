@@ -72,19 +72,20 @@ jobs:
               fi
               cat "$log"
               if [ "$name" = "Dependencies" ]; then
+                echo "HEALING: Eradicating legacy locks and force-resolving version loops..."
+                rm -rf pubspec.lock pubspec_overrides.yaml .dart_tool/ .pub-cache/
                 local culprit=$(grep -oE "because [a-zA-Z0-9_]+" "$log" | head -n 1 | awk '{print $2}')
                 [ -z "$culprit" ] && culprit=$(grep -oE "depends on [a-zA-Z0-9_]+" "$log" | head -n 1 | awk '{print $3}')
                 if [ -n "$culprit" ] && [ -f pubspec.yaml ]; then
                   perl -pi -e "s/$culprit: .*/$culprit: any/g" pubspec.yaml
                 else
-                  rm -f pubspec.lock
                   if [ -f pubspec.yaml ]; then
                     perl -pi -e 's/flutter_plugin_android_lifecycle: .*/flutter_plugin_android_lifecycle: any/g' pubspec.yaml
                     perl -pi -e 's/camera: .*/camera: any/g' pubspec.yaml
                     perl -pi -e 's/arcore_flutter_plus: .*/arcore_flutter_plus: any/g' pubspec.yaml
                   fi
                 fi
-                rm -rf .dart_tool/ && cmd="flutter pub get --no-example"
+                cmd="flutter pub get --no-example"
               elif grep -qI "Namespace not specified" "$log"; then
                 if [ -f android/build.gradle ]; then
                   printf "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android') && project.android.namespace == null) {\n            project.android.namespace = project.group\n        }\n    }\n}\n" >> android/build.gradle
@@ -107,6 +108,7 @@ jobs:
             perl -0777 -pi -e 's/android \{/`cat lint.gradle`/e' "$APP_GRADLE" && rm -f lint.gradle
           fi
 
+          rm -f pubspec.lock pubspec_overrides.yaml
           heal_and_execute "Cache Purge" "flutter clean && rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock pubspec.lock .dart_tool/" || exit 1
           heal_and_execute "Keystore Link" "mkdir -p android/app && echo \"\$KEYSTORE_BASE64\" | base64 --decode > android/app/upload-keystore.jks && printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' \"\$KEYSTORE_PASSWORD\" \"\$KEY_PASSWORD\" \"\$KEY_ALIAS\" > android/key.properties" || exit 1
           heal_and_execute "Shaders" "mkdir -p shaders && if [ -f 'hologram_glow.frag' ]; then cp hologram_glow.frag shaders/hologram_glow.frag; else printf '#version 460 core\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.5, 1.0, 1.0); }\n' > shaders/hologram_glow.frag; fi" || exit 1
