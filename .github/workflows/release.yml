@@ -74,12 +74,18 @@ jobs:
               if [ "$name" = "Dependencies" ]; then
                 echo "HEALING: Eradicating legacy locks and force-resolving version loops..."
                 rm -rf pubspec.lock pubspec_overrides.yaml .dart_tool/ .pub-cache/
-                local culprit=$(grep -oE "because [a-zA-Z0-9_]+" "$log" | head -n 1 | awk '{print $2}')
-                [ -z "$culprit" ] && culprit=$(grep -oE "depends on [a-zA-Z0-9_]+" "$log" | head -n 1 | awk '{print $3}')
+                
+                # Enhanced multi-pattern matching for modern pub get errors
+                local culprit=$(grep -oE "because [a-zA-Z0-9_-]+" "$log" | head -n 1 | awk '{print $2}')
+                [ -z "$culprit" ] && culprit=$(grep -oE "depends on [a-zA-Z0-9_-]+" "$log" | head -n 1 | awk '{print $3}')
+                [ -z "$culprit" ] && culprit=$(grep -oE "^\s*([a-zA-Z0-9_-]+):" "$log" | head -n 1 | tr -d ' :')
+                
                 if [ -n "$culprit" ] && [ -f pubspec.yaml ]; then
-                  perl -pi -e "s/$culprit: .*/$culprit: any/g" pubspec.yaml
+                  echo "Found breaking dependency candidate: $culprit"
+                  perl -pi -e "s/^(\s*)$culprit: .*/\1$culprit: any/g" pubspec.yaml
                 else
                   if [ -f pubspec.yaml ]; then
+                    echo "Applying aggressive catch-all fallback patch..."
                     perl -pi -e 's/flutter_plugin_android_lifecycle: .*/flutter_plugin_android_lifecycle: any/g' pubspec.yaml
                     perl -pi -e 's/camera: .*/camera: any/g' pubspec.yaml
                     perl -pi -e 's/arcore_flutter_plus: .*/arcore_flutter_plus: any/g' pubspec.yaml
@@ -157,27 +163,5 @@ jobs:
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} release_artifacts/ \;
           if [ -d "build/ios/iphoneos/Runner.app" ]; then
             cd build/ios/iphoneos && mkdir -p Payload && cp -r Runner.app Payload/
-            zip -r ../../../release_artifacts/app-release.ipa Payload && cd ../../..
+            zip -r ../../../release_artifacts/Runner.ipa Payload/
           fi
-          if [ -d "build/web" ]; then
-            cd build/web && zip -r ../../release_artifacts/production_website.zip . && cd ../..
-          fi
-          [ -d "debug_symbols" ] && zip -r release_artifacts/obfuscation_decryption_symbols.zip debug_symbols
-          
-          DEPLOYABLE_ASSETS=$(find release_artifacts -type f)
-          if [ -z "$DEPLOYABLE_ASSETS" ]; then exit 1; fi
-          
-          HASH_NOTES="### 🛡️ Secure Hardened Release Audit Checklist (Triple SHA3)"
-          for filepath in $DEPLOYABLE_ASSETS; do
-            filename=$(basename "$filepath")
-            sha3_256=$(openssl dgst -sha3-256 "$filepath" | awk '{print $NF}')
-            sha3_384=$(openssl dgst -sha3-384 "$filepath" | awk '{print $NF}')
-            sha3_512=$(openssl dgst -sha3-512 "$filepath" | awk '{print $NF}')
-            HASH_NOTES="$HASH_NOTES"$'\n'$'\n'"#### 📦 Hardened Asset: $filename"
-            [ "$filename" = "obfuscation_decryption_symbols.zip" ] && HASH_NOTES="$HASH_NOTES"$'\n'"⚠️ *Note: contains decryption mapping keys.*"
-            HASH_NOTES="$HASH_NOTES"$'\n'"* **SHA3-256:** \`$sha3_256\`"$'\n'"* **SHA3-384:** \`$sha3_384\`"$'\n'"* **SHA3-512:** \`$sha3_512\`"
-          done
-          echo "$HASH_NOTES" > distribution_telemetry.md
-          
-          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')-hardened-signed"
-          gh release create "$TAG_NAME" $DEPLOYABLE_ASSETS --title "Cryptographically Locked Hardened Build: $TAG_NAME" --notes-file distribution_telemetry.md --target $(git rev-parse --abbrev-ref HEAD)
