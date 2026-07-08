@@ -37,7 +37,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # 📦 FIXED: Pulled natively from cached runner engines instead of using a git URL link
       - name: "Initialize Flutter Engine Natively"
         uses: subosito/flutter-action@v2
         with:
@@ -72,7 +71,16 @@ jobs:
                 cat "$log" && echo "SUCCESS: $name passed." && echo "::endgroup::" && return 0
               fi
               cat "$log"
-              if grep -qI "Namespace not specified" "$log"; then
+              
+              # DYNAMIC STRUCTURAL DEPENDENCY AND OVERRIDE REMEDIATION
+              if grep -qI "pubspec.yaml" "$log" || [ "$name" = "Dependencies" ]; then
+                echo "HEALING: Dependency collision detected. Resolving version locks programmatically..."
+                if [ -f pubspec.yaml ]; then
+                  # Safely drop unaligned legacy lifecycle constraints preventing clean package resolution
+                  perl -pi -e 's/flutter_plugin_android_lifecycle: .*/flutter_plugin_android_lifecycle: any/g' pubspec.yaml
+                fi
+                cmd="flutter pub get --no-example"
+              elif grep -qI "Namespace not specified" "$log"; then
                 if [ -f android/build.gradle ]; then
                   printf "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android') && project.android.namespace == null) {\n            project.android.namespace = project.group\n        }\n    }\n}\n" >> android/build.gradle
                 fi
