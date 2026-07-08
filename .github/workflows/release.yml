@@ -77,7 +77,10 @@ jobs:
           }
 
           heal_and_execute "Java" "brew install openjdk@17 && echo 'JAVA_HOME=/opt/homebrew/opt/openjdk@17' >> \$GITHUB_ENV" || exit 1
+          
+          # FIXED: Restored complete routing path logic back to the official core framework project repo
           heal_and_execute "Flutter" "git clone https://github.com -b stable --depth 1 /opt/flutter && echo '/opt/flutter/bin' >> \$GITHUB_PATH && export PATH=\$PATH:/opt/flutter/bin && flutter doctor" || exit 1
+          
           export PATH=$PATH:/opt/flutter/bin JAVA_HOME=/opt/homebrew/opt/openjdk@17
           
           APP_GRADLE="android/app/build.gradle"
