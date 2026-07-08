@@ -1,5 +1,5 @@
 name: mindspark1
-description: "AI TUTOR & AR LAB"
+description: "AI TUTOR & AR LAB - HARDENED COMPRESSED CORE"
 version: 1.0.0+1
 publish_to: 'none'
 
@@ -27,10 +27,12 @@ dependencies:
   crypto: 3.0.5
   uuid: 4.4.0
 
-  # Engine compatible versions (Strictly aligned for AR & Camera)
+  # Real-Time Cloud Pixel Streaming Engine Layer
+  flutter_webrtc: ^1.2.0
+
+  # Native Core Fallback Drivers
   arcore_flutter_plus: 1.0.2
   camera: 0.10.5+9
-
   flutter_plugin_android_lifecycle: 2.0.17
   webview_flutter: 4.7.0
   google_mobile_ads: 5.1.0
@@ -47,7 +49,7 @@ flutter:
   uses-material-design: true
   assets:
     - "image_e1762c49 (1).png"
-  
+
   shaders:
     - shaders/hologram_glow.frag
 
