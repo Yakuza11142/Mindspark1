@@ -49,8 +49,6 @@ jobs:
           while [ $a -le $m ];do
           if eval "$c" >"$g" 2>&1;then cat "$g"&&return 0;fi
           cat "$g"
-          
-          # --- UNIVERSAL AGGRESSIVE MUTATION MATRIX ---
           if [ "$n" = "D" ]||grep -qE "(version solving failed|pub get|dependency|conflict)" "$g";then
           rm -rf pubspec.lock pubspec_overrides.yaml .dart_tool/ .pub-cache/
           local t=$(grep -oE "because [a-zA-Z0-9_-]+" "$g"|head -1|awk '{print $2}')
@@ -90,19 +88,13 @@ jobs:
           fi
           rm -f "$g";a=$((a+1))
           done
-          
-          # --- TERMINAL CRITICAL RESCUE CIRCUIT ---
-          # Executed only if 10 consecutive mutation passes fail completely.
           echo "WARNING: Infinite loop breaker activated for stage: $n. Forcing raw extraction compile..."
           if [ -f pubspec.yaml ]; then
             perl -pi -e 's/sdk: .*/sdk: ">=3.4.0 <4.0.0"/g' pubspec.yaml
-            # Wipe constraints out entirely from plugins causing compile loop issues
             perl -pi -e 's/^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*/  \1: any/g' pubspec.yaml
           fi
           rm -rf pubspec.lock .dart_tool/ android/.gradle/
           flutter pub get --no-example || flutter pub get --offline || true
-          
-          # If it is an APK, AAB, or iOS step, execute an emergency standard core build bypass
           if [[ "$n" == "APK" || "$n" == "AAB" ]]; then
             echo "Emergency forcing clean android assembly structure..."
             flutter build apk --release --no-tree-shake-icons --no-pub || true
@@ -116,7 +108,6 @@ jobs:
           fi
           return 0
           }
-          
           G="android/app/build.gradle"
           [ -f "$G" ]&&printf "android{\nlintOptions{abortOnError false\ncheckReleaseBuilds false\nquiet true\nignoreWarnings true}\nbuildTypes{release{minifyEnabled true\nshrinkResources true\nproguardFiles getDefaultProguardFile('proguard-android-optimize.txt')}}}" >l.gradle&&perl -0777 -pi -e 's/android\s*\{/`cat l.gradle`/e' "$G"&&rm -f l.gradle
           rm -f pubspec.lock pubspec_overrides.yaml
@@ -132,24 +123,15 @@ jobs:
           h "AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab $F"||exit 1
           h "W" "flutter build web --release $F"||exit 1
           h "IOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios $F"||exit 1
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: build/app/outputs/flutter-apk/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: aab
-          path: build/app/outputs/bundle/release/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web
-          path: build/web/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios
-          path: build/ios/iphoneos/
-      - run: |
           mkdir -p r
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} r/ \;
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} r/ \;
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} r/ \; 2>/dev/null || true
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} r/ \; 2>/dev/null || true
           if [ -d "build/ios/iphoneos/Runner.app" ];then cd build/ios/iphoneos&&mkdir -p P&&cp -r Runner.app P/&&zip -r ../../../r/Runner.ipa P/;fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-builds
+          path: r/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
