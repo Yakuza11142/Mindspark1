@@ -82,24 +82,49 @@ jobs:
             echo "CRITICAL: $name failed entirely." && echo "::endgroup::" && return 1
           }
 
-          # Execution Matrix
+          # Provisioning Ecosystem Base
           heal_and_execute "Java" "sudo apt-get update && sudo apt-get install -y openjdk-17-jdk && echo 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> \$GITHUB_ENV" || exit 1
           heal_and_execute "Flutter" "git clone https://github.com -b stable --depth 1 /opt/flutter && echo '/opt/flutter/bin' >> \$GITHUB_PATH && export PATH=\$PATH:/opt/flutter/bin && flutter doctor" || exit 1
           export PATH=$PATH:/opt/flutter/bin JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           
-          # Inject global structural immunity rules
+          # Inject Global Structural Immunity Configuration
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
             printf "android {\n    lintOptions {\n        abortOnError false\n        checkReleaseBuilds false\n        quiet true\n        ignoreWarnings true\n    }\n}\n" > lint.gradle
             sed -i '/android {/r lint.gradle' "$APP_GRADLE" && rm -f lint.gradle
           fi
 
+          # Workspace Build Preparation Flow
           heal_and_execute "Cache Purge" "flutter clean && rm -rf android/.gradle android/app/build android/build pubspec.lock .dart_tool/" || exit 1
           heal_and_execute "Keystore Link" "mkdir -p android/app && echo \"\$KEYSTORE_BASE64\" | base64 --decode > android/app/upload-keystore.jks && printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' \"\$KEYSTORE_PASSWORD\" \"\$KEY_PASSWORD\" \"\$KEY_ALIAS\" > android/key.properties" || exit 1
           heal_and_execute "Shaders" "mkdir -p shaders && if [ -f 'hologram_glow.frag' ]; then cp hologram_glow.frag shaders/hologram_glow.frag; else printf '#version 460 core\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.5, 1.0, 1.0); }\n' > shaders/hologram_glow.frag; fi" || exit 1
           heal_and_execute "Dependencies" "flutter config --jdk-dir \"\$JAVA_HOME\" && flutter pub get" || exit 1
+          
+          # Added Automated Evaluation Track
+          heal_and_execute "Validation Unit Tests" "flutter test --no-pub" || exit 1
+          
+          # Production Core Compiling Phase
           heal_and_execute "Compile" "flutter build apk --release --split-per-abi --no-tree-shake-icons" || exit 1
 
-          # Commit Mutations Back
+          # Remote Branch Matrix Mutation Sync
           git config --global user.name "Immune Engine" && git config --global user.email "immune@mindspark.ai"
           git add -A && git commit -m "chore(immune): auto-patch generation v$(( ${{ github.event.inputs.mutation_generation || '1' }} + 1 )) [skip ci]" && git push origin $(git rev-parse --abbrev-ref HEAD) || echo "Clean run. No changes committed."
+
+      - name: "Dynamic Release Deployment Matrix"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Processing structural artifact extractions..."
+          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')-gen${{ github.event.inputs.mutation_generation || '1' }}"
+          
+          # Dynamic fallback check to locate any built APK files inside the workspace output
+          APK_PATHS=$(find build/app/outputs/flutter-apk/ -name "*.apk")
+          if [ -z "$APK_PATHS" ]; then
+            echo "CRITICAL: Asset distribution failure. Compilation artifact not found." && exit 1
+          fi
+          
+          # Provision automated production GitHub Release
+          gh release create "$TAG_NAME" $APK_PATHS \
+            --title "Immune Production Release: $TAG_NAME" \
+            --notes "Autonomous compilation completed and validated by the Swarm Mind Spark Engine." \
+            --target $(git rev-parse --abbrev-ref HEAD)
