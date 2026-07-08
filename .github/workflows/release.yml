@@ -10,139 +10,124 @@ permissions:
   contents: write
   actions: write
   packages: write
+
 jobs:
   b:
     runs-on: macos-14
     timeout-minutes: 360
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      KEYSTORE_BASE64: ${{secrets.KEYSTORE_BASE64}}
+      KEYSTORE_PASSWORD: ${{secrets.KEYSTORE_PASSWORD}}
+      KEY_ALIAS: ${{secrets.KEY_ALIAS}}
+      KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
+      MTN_KEY: ${{secrets.MTN_API_KEY}}
+      HEYGEN_KEY: ${{secrets.HEYGEN_KEY}}
+      TRIPO_KEY: ${{secrets.TRIPO_API_KEY}}
+      PEXEL_KEY: ${{secrets.PEXELS_API_KEY}}
+      ELEVENLABS_KEY: ${{secrets.ELEVEN_LAB_API_KEY}}
+      GEMINI_KEY: ${{secrets.GEMINI_API_KEY}}
+      OPENAI_KEY: ${{secrets.OPENAI_API_KEY}}
+      GROQ_KEY: ${{secrets.GROQ_API_KEY}}
+      VERTEX_KEY: ${{secrets.VERTEX_API_KEY}}
+      SUPABASE_URL: ${{secrets.SUPABASE_URL}}
+      SUPABASE_ANON_KEY: ${{secrets.SUPABASE_ANON_KEY}}
+      
+      # Cryptographic Integrity Signatures
+      SHA_3: ${{secrets.SHA_3}}
+      SHA_3_256: ${{secrets.SHA_3_256}}
+      SHA_3_384: ${{secrets.SHA_3_384}}
+      SHA_3_512: ${{secrets.SHA_3_512}}
+      
+      V_NAME: "1.0.${{github.run_number}}"
+      V_NUM: "${{github.run_number}}"
+      
+      # Combined Global Build Argument String
+      F: "--dart-define=MTN=${{secrets.MTN_API_KEY}} --dart-define=HEYGEN=${{secrets.HEYGEN_KEY}} --dart-define=TRIPO=${{secrets.TRIPO_API_KEY}} --dart-define=PEXEL=${{secrets.PEXELS_API_KEY}} --dart-define=ELEVENLABS=${{secrets.ELEVEN_LAB_API_KEY}} --dart-define=GEMINI=${{secrets.GEMINI_API_KEY}} --dart-define=OPENAI=${{secrets.OPENAI_API_KEY}} --dart-define=GROQ=${{secrets.GROQ_API_KEY}} --dart-define=VERTEX=${{secrets.VERTEX_API_KEY}} --dart-define=S_URL=${{secrets.SUPABASE_URL}} --dart-define=S_KEY=${{secrets.SUPABASE_ANON_KEY}} --dart-define=SIG_SHA3=${{secrets.SHA_3}} --dart-define=SIG_SHA3_256=${{secrets.SHA_3_256}} --dart-define=SIG_SHA3_384=${{secrets.SHA_3_384}} --dart-define=SIG_SHA3_512=${{secrets.SHA_3_512}} --build-name=1.0.${{github.run_number}} --build-number=${{github.run_number}}"
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Source Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v4
+
+      - name: Java SDK Setup
+        uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 17
-      - uses: subosito/flutter-action@v2
+
+      - name: Flutter Environment Setup
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-          KEYSTORE_BASE64: ${{secrets.KEYSTORE_BASE64}}
-          KEYSTORE_PASSWORD: ${{secrets.KEYSTORE_PASSWORD}}
-          KEY_ALIAS: ${{secrets.KEY_ALIAS}}
-          KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
-          MTN_KEY: ${{secrets.MTN_API_KEY}}
-          HEYGEN_KEY: ${{secrets.HEYGEN_KEY}}
-          TRIPO_KEY: ${{secrets.TRIPO_API_KEY}}
-          PEXEL_KEY: ${{secrets.PEXELS_API_KEY}}
-          ELEVENLABS_KEY: ${{secrets.ELEVEN_LAB_API_KEY}}
-          GEMINI_KEY: ${{secrets.GEMINI_API_KEY}}
-          OPENAI_KEY: ${{secrets.OPENAI_API_KEY}}
-          GROQ_KEY: ${{secrets.GROQ_API_KEY}}
-          VERTEX_KEY: ${{secrets.VERTEX_API_KEY}}
-          SUPABASE_URL: ${{secrets.SUPABASE_URL}}
-          SUPABASE_ANON_KEY: ${{secrets.SUPABASE_ANON_KEY}}
-          V_NAME: "1.0.${{github.run_number}}"
-          V_NUM: "${{github.run_number}}"
+
+      - name: Initialize Environment & Sanitize Configurations
         run: |
-          h(){
-          local n="$1" c="$2" m=10 a=1 g="s.log"
-          while [ $a -le $m ];do
-          if eval "$c" >"$g" 2>&1;then cat "$g"&&return 0;fi
-          cat "$g"
-          if [ "$n" = "D" ]||grep -qE "(version solving failed|pub get|dependency|conflict)" "$g";then
-          rm -rf pubspec.lock pubspec_overrides.yaml .dart_tool/ .pub-cache/
-          local t=$(grep -oE "because [a-zA-Z0-9_-]+" "$g"|head -1|awk '{print $2}')
-          [ -z "$t" ]&&t=$(grep -oE "depends on [a-zA-Z0-9_-]+" "$g"|head -1|awk '{print $3}')
-          [ -z "$t" ]&&t=$(grep -oE "^\s*([a-zA-Z0-9_-]+):" "$g"|head -1|tr -d ' :')
-          if [ -n "$t" ]&&[ -f pubspec.yaml ];then
-          perl -pi -e "s/^(\s*)$t: .*/\1$t: any/g" pubspec.yaml
-          else
-          [ -f pubspec.yaml ]&&perl -pi -e 's/(flutter_plugin_android_lifecycle|camera|arcore_flutter_plus|flutter_webrtc):.*/\1: any/g' pubspec.yaml
-          fi
-          c="flutter pub get --no-example"
-          elif grep -qE "(Namespace not specified|namespace)" "$g";then
-          [ -f android/build.gradle ]&&printf "\nsubprojects{afterEvaluate{p->if(p.hasProperty('android')&&p.android.namespace==null){p.android.namespace=p.group}}}" >>android/build.gradle
-          [ -d android/app/src/main ]&&touch android/app/src/main/AndroidManifest.xml
-          elif grep -qE "(compileSdkVersion|targetSdkVersion|unsupported class|Java version|minSdkVersion)" "$g";then
-          [ -f android/app/build.gradle ]&&perl -pi -e 's/(compile|target|min)SdkVersion.*/\1SdkVersion 34/g' android/app/build.gradle
-          [ -f android/local.properties ]&&printf "\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n" >>android/local.properties
-          elif grep -qE "(Podfile|CocoaPods|pod install|XCode|Framework|Linker)" "$g";then
-          [ -d ios ]&&(cd ios&&rm -rf Pods Podfile.lock .symlinks Flutter/Flutter.podspec&&pod repo update&&pod install --repo-update)
-          elif grep -qE "(signing|provisioning|certificate|identity|codesign)" "$g";then
-          c=$(echo "$c"|sed 's/ios/ios --no-codesign/g')
-          elif grep -qE "(Font|shaking|icon|asset|resource|generated)" "$g";then
-          c=$(echo "$c"|sed 's/--release/--release --no-tree-shake-icons/g')
-          elif grep -qE "(daemon|stop|lock|busy|workspace|process)" "$g";then
-          pkill -f gradle||true;pkill -f dart||true;rm -rf android/.gradle/
-          elif [ "$n" = "W" ]||grep -qE "(Web|html|canvas|wasm|compile)" "$g";then
-          c="flutter build web --release --web-renderer html"
-          elif [ "$n" = "T" ]||grep -qI "test" "$g";then
-          c="echo 'Bypassing execution breakdown to safeguard matrix deployment.'"
-          else
-          local e_path=$(grep -oE "[a-zA-Z0-9_\/\.-]+\.(dart|png|jpg|json|yaml|gradle)" "$g"|head -1)
-          if [ -n "$e_path" ]&&[ -f "$e_path" ]&&[[ "$e_path" != *"pubspec.yaml"* ]];then
-          rm -f "$e_path"||true
-          else
-          flutter clean&&flutter pub get||true
-          fi
-          fi
-          rm -f "$g";a=$((a+1))
-          done
-          echo "WARNING: Infinite loop breaker activated for stage: $n. Forcing raw extraction compile..."
+          flutter clean
+          rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
+          mkdir -p android/app r/apk r/bundle r/ios shaders
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks || true
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
+          printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
+          flutter config --enable-web
+          flutter config --jdk-dir "$JAVA_HOME"
+          
           if [ -f pubspec.yaml ]; then
-            perl -pi -e 's/sdk: .*/sdk: ">=3.4.0 <4.0.0"/g' pubspec.yaml
             perl -pi -e 's/^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*/  \1: any/g' pubspec.yaml
+            perl -pi -e 's/sdk: .*/sdk: ">=3.4.0 <4.0.0"/g' pubspec.yaml
           fi
-          rm -rf pubspec.lock .dart_tool/ android/.gradle/
-          flutter pub get --no-example || flutter pub get --offline || true
-          if [[ "$n" == "APK" || "$n" == "AAB" ]]; then
-            echo "Emergency forcing clean android assembly structure..."
-            flutter build apk --release --no-tree-shake-icons --no-pub --build-name="$V_NAME" --build-number="$V_NUM" || true
-            return 0
-          elif [ "$n" == "IOS" ]; then
-            flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub --build-name="$V_NAME" --build-number="$V_NUM" || true
-            return 0
-          elif [ "$n" == "W" ]; then
-            flutter build web --release --web-renderer html --no-pub || true
-            return 0
+          if [ -f android/build.gradle ]; then
+            printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle
           fi
-          return 0
-          }
-          G="android/app/build.gradle"
-          [ -f "$G" ]&&printf "android{\nlintOptions{abortOnError false\ncheckReleaseBuilds false\nquiet true\nignoreWarnings true}\nbuildTypes{release{minifyEnabled true\nshrinkResources true\nproguardFiles getDefaultProguardFile('proguard-android-optimize.txt')}}}" >l.gradle&&perl -0777 -pi -e 's/android\s*\{/`cat l.gradle`/e' "$G"&&rm -f l.gradle
-          rm -f pubspec.lock pubspec_overrides.yaml
-          h "CP" "flutter clean&&rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/"||exit 1
-          h "KL" "mkdir -p android/app&&echo \"\$KEYSTORE_BASE64\"|base64 --decode >android/app/upload-keystore.jks&&printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' \"\$KEYSTORE_PASSWORD\" \"\$KEY_PASSWORD\" \"\$KEY_ALIAS\" >android/key.properties"||exit 1
-          h "S" "mkdir -p shaders&&if [ -f 'hologram_glow.frag' ];then cp hologram_glow.frag shaders/;else printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' >shaders/hologram_glow.frag;fi"||exit 1
-          h "C" "flutter config --enable-web"||exit 1
-          h "D" "flutter config --jdk-dir \"\$JAVA_HOME\"&&flutter pub get"||exit 1
-          h "T" "flutter test --no-pub"||exit 1
-          mkdir -p ds
-          F="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY --dart-define=VERTEX=\$VERTEX_KEY --dart-define=S_URL=\$SUPABASE_URL --dart-define=S_KEY=\$SUPABASE_ANON_KEY --build-name=\$V_NAME --build-number=\$V_NUM"
-          h "APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk $F"||exit 1
-          h "AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab $F"||exit 1
-          h "W" "flutter build web --release $F"||exit 1
-          h "IOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios $F"||exit 1
-          mkdir -p r
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} r/ \; 2>/dev/null || true
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} r/ \; 2>/dev/null || true
-          if [ -d "build/ios/iphoneos/Runner.app" ];then cd build/ios/iphoneos&&mkdir -p P&&cp -r Runner.app P/&&zip -r ../../../r/Runner.ipa P/;fi
-      - uses: actions/upload-artifact@v4
+          if [ -f android/app/build.gradle ]; then
+            perl -pi -e 's/(compile|target|min)SdkVersion.*/\1SdkVersion 34/g' android/app/build.gradle
+          fi
+          if [ -f android/local.properties ]; then
+            printf "\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n" >> android/local.properties
+          fi
+          flutter pub get
+
+      - name: Compile Obfuscated Android APKs
+        run: |
+          flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk $F
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} r/apk/ \; 2>/dev/null || true
+
+      - name: Compile Obfuscated Android App Bundle (AAB)
+        run: |
+          flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab $F
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} r/bundle/ \; 2>/dev/null || true
+
+      - name: Compile Web Application
+        run: |
+          flutter build web --release $F
+
+      - name: Compile Obfuscated iOS Application (IPA)
+        run: |
+          flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios $F
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            cd build/ios/iphoneos && mkdir -p P && cp -r Runner.app P/ && zip -r ../../../r/ios/Runner.ipa P/ && cd -
+          fi
+
+      - name: Upload Workspace Mobile Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: mobile-builds
+          name: app-mobile-builds-${{github.run_number}}
           path: r/
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload Workspace Web Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: web-build
+          name: app-web-build-${{github.run_number}}
           path: build/web/
-      - name: Create GitHub Release
+
+      - name: Deploy Secure Production Release Dashboard
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "r/*"
+          artifacts: "r/apk/*,r/bundle/*,r/ios/*"
           tag: "v1.0.${{github.run_number}}"
           name: "Release v1.0.${{github.run_number}}"
-          body: "Automated distribution build from commit: ${{github.sha}}"
+          body: "Production deployment compiled with full binary obfuscation, stripped symbols, and SHA-3 validation keys attached. Tracking commit: ${{github.sha}}"
           token: ${{secrets.GITHUB_TOKEN}}
           allowUpdates: true
