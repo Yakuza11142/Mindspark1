@@ -38,15 +38,17 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          MTN_KEY: ${{ secrets.MTN_KEY }}
+          MTN_KEY: ${{ secrets.MTN_API_KEY }}
           HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          TRIPO_KEY: ${{ secrets.TRIPO_KEY }}
-          PEXEL_KEY: ${{ secrets.PEXEL_KEY }}
-          ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_KEY }}
-          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          GROQ_KEY: ${{ secrets.GROQ_KEY }}
+          TRIPO_KEY: ${{ secrets.TRIPO_API_KEY }}
+          PEXEL_KEY: ${{ secrets.PEXELS_API_KEY }}
+          ELEVENLABS_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          VERTEX_KEY: ${{ secrets.VERTEX_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           heal_and_execute() {
             local name="$1" cmd="$2" max=4 att=1 log="sweep.log"
@@ -92,39 +94,36 @@ jobs:
           heal_and_execute "Tests" "flutter test --no-pub" || exit 1
           
           mkdir -p debug_symbols
-          DART_FLAGS="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=SUPABASE=\$SUPABASE_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY"
+          DART_FLAGS="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY --dart-define=VERTEX=\$VERTEX_KEY --dart-define=S_URL=\$SUPABASE_URL --dart-define=S_KEY=\$SUPABASE_ANON_KEY"
 
           heal_and_execute "Build APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/apk $DART_FLAGS" || exit 1
           heal_and_execute "Build AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/aab $DART_FLAGS" || exit 1
           heal_and_execute "Build Web" "flutter build web --release $DART_FLAGS" || exit 1
           heal_and_execute "Build iOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=debug_symbols/ios $DART_FLAGS" || exit 1
 
-      # =========================================================================
-      # 📂 SEGREGATED EXTRACTION OF RAW MACHINE BUILD DIRECTORIES
-      # =========================================================================
       - name: "Upload APK Folder"
         uses: actions/upload-artifact@v4
         with:
           name: "raw_apk_build_directory"
-          path: build/app/outputs/flutter-apk/ [1]
+          path: build/app/outputs/flutter-apk/
 
       - name: "Upload AAB Folder"
         uses: actions/upload-artifact@v4
         with:
           name: "raw_aab_build_directory"
-          path: build/app/outputs/bundle/release/ [1]
+          path: build/app/outputs/bundle/release/
 
       - name: "Upload Web Engine Folder"
         uses: actions/upload-artifact@v4
         with:
           name: "raw_web_build_directory"
-          path: build/web/ [1]
+          path: build/web/
 
       - name: "Upload iOS Construction Folder"
         uses: actions/upload-artifact@v4
         with:
           name: "raw_ios_build_directory"
-          path: build/ios/iphoneos/ [1]
+          path: build/ios/iphoneos/
 
       - name: "Deployment"
         env:
