@@ -237,4 +237,30 @@ EOF
           rm -f android/app/upload-keystore.jks android/key.properties telemetry.log
           echo "Workspace security scrub completed."
           echo "::endgroup::"
+if: steps.step11.outcome == 'failure'
+env:
+OPENAL_APL_KEY: $((
+secrets.OPENAL_API_KEY ))
+run:
+echo "::group::Healing Step 11...
+SYSTEM_PROMPT="You are a DevOps
+daemon. Fix Step 11 (Artifact Export Setup).
+Return ONLY executable Bash layouts to pack
+files or build custom manual zip exports
+inside virtual sandbox folders. No markdown.
+USER_PROMPT="upload-artifact
+execution crashed. Found outputs map
+$(find build/app/outputs -maxdepth 4 =
+echo 'none)"
+if [-n "$OPENAL_APL_KEY"]; then
+jq -n --arg sp "$SYSTEM_PROMPT" -arg up
+$USER_PROMPT" '("model": "gpt-4o"
+messages": [("role": "system", "content": $sp),
+("role": "user", "content": $up)], "temperature"
+0.0) > step11_payload.json
+curl -s -X POST "openai.com" -H
+"Authorization: Bearer $OPENAL_APL_KEY"-H
+'Content-Type: application/json"
+d @step11_payload.json |jq -r
+choices.message.content/empty
 
