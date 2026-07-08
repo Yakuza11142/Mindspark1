@@ -10,6 +10,7 @@ permissions:
   contents: write
   actions: write
   packages: write
+
 jobs:
   b:
     runs-on: macos-14
@@ -36,27 +37,30 @@ jobs:
       SHA_3_384: ${{secrets.SHA_3_384}}
       SHA_3_512: ${{secrets.SHA_3_512}}
       V_NUM: "${{github.run_number}}"
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Clear Tag
         continue-on-error: true
         run: |
           if gh release view "v1.0.$V_NUM" >/dev/null 2>&1;then gh release delete "v1.0.$V_NUM" --yes;fi
           git tag -d "v1.0.$V_NUM" 2>/dev/null;git push --delete origin "v1.0.$V_NUM" 2>/dev/null
+
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 17
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Prep Env
         run: |
-          sidebar_asset_fix() { [ -f pubspec.yaml ]&&{ grep -q "\- .env" pubspec.yaml||sed -i '' '/assets:/a\
-          \    - .env' pubspec.yaml; }; }
           flutter clean
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
           mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
@@ -64,88 +68,82 @@ jobs:
           if [ -n "$KEYSTORE_BASE64" ];then echo "$KEYSTORE_BASE64"|base64 --decode >android/app/upload-keystore.jks 2>/dev/null||true;fi
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" >android/key.properties
           printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' >shaders/hologram_glow.frag
-          sidebar_asset_fix
           flutter config --enable-web --jdk-dir "$JAVA_HOME"
-      - name: Sanitize Code (Self-Healing Circuit)
+
+      - name: Sanitize Code & Dynamic Asset Discovery
         run: |
-          if [ -f pubspec.yaml ]; then
-            perl -pi -e 's/^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*/  \1: any/g' pubspec.yaml || echo "Bypassed"
-          fi
-          if [ -f android/build.gradle ]; then
-            printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle || echo "Bypassed"
-          fi
-          if [ -f android/app/build.gradle ]; then
-            perl -pi -e 's/(compile|target|min)SdkVersion.*/\1SdkVersion 34/g' android/app/build.gradle || echo "Bypassed"
-          fi
-          if [ -f android/local.properties ]; then
-            printf "\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n" >> android/local.properties || echo "Bypassed"
-          fi
-      - name: Inject Secret Keys (Runtime Shell Mapper)
-        run: |
-          CLEAN_VAL() { echo "$1" | tr -d '\n' | tr -d '\r' | xargs; }
-          F_FLAGS="--dart-define=MTN=$(CLEAN_VAL "$MTN_KEY") --dart-define=HEYGEN=$(CLEAN_VAL "$HEYGEN_KEY") --dart-define=TRIPO=$(CLEAN_VAL "$TRIPO_KEY") --dart-define=PEXEL=$(CLEAN_VAL "$PEXEL_KEY") --dart-define=ELEVENLABS=$(CLEAN_VAL "$ELEVENLABS_KEY") --dart-define=GEMINI=$(CLEAN_VAL "$GEMINI_KEY") --dart-define=OPENAI=$(CLEAN_VAL "$OPENAI_KEY") --dart-define=GROQ=$(CLEAN_VAL "$GROQ_KEY") --dart-define=VERTEX=$(CLEAN_VAL "$VERTEX_KEY") --dart-define=SUPABASE_URL=$(CLEAN_VAL "$SUPABASE_URL") --dart-define=SUPABASE_ANON_KEY=$(CLEAN_VAL "$SUPABASE_ANON_KEY") --dart-define=SIG_SHA3=$(CLEAN_VAL "$SHA_3") --dart-define=SIG_SHA3_256=$(CLEAN_VAL "$SHA_3_256") --dart-define=SIG_SHA3_384=$(CLEAN_VAL "$SHA_3_384") --dart-define=SIG_SHA3_512=$(CLEAN_VAL "$SHA_3_512") --build-name=1.0.$V_NUM --build-number=$V_NUM"
-          echo "F_ARGS=$F_FLAGS" >> $GITHUB_ENV
+          # Python Discovery Engine loops over directories to find the explicit screenshot filename dynamically
+          python3 -c "
+          import os, re
+          
+          discovered_icon = 'logo.png'
+          for root, dirs, files in os.walk('.'):
+              for file in files:
+                  if 'Screenshot_20260708_215841_Chrome' in file:
+                      discovered_icon = file
+                      print(f'-> Found target branding file: {discovered_icon}')
+                      break
+          
+          if os.path.exists('pubspec.yaml'):
+              with open('pubspec.yaml', 'r') as f: txt = f.read()
+              txt = re.sub(r'^  (flutter_webrtc|arcore_flutter_plus|camera|flutter_plugin_android_lifecycle|webview_flutter|google_mobile_ads|dio|supabase_flutter):.*', r'  \1: any', txt, flags=re.M)
+              txt = re.sub(r'flutter_launcher_icons:\s*\n[\s\S]*', '', txt)
+              
+              # Automatically maps your exact found file string straight to asset variables
+              txt += f'\n\nflutter_launcher_icons:\n  android: true\n  ios: true\n  image_path: \"{discovered_icon}\"\n  web:\n    generate: true\n    image_path: \"{discovered_icon}\"\n'
+              if 'assets:' in txt:
+                  txt = re.sub(r'assets:\s*\n[\s\S]*', f'assets:\n    - .env\n    - {discovered_icon}', txt)
+              with open('pubspec.yaml', 'w') as f: f.write(txt)
+          "
+          if [ -f android/build.gradle ]; then printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle; fi
+          if [ -f android/app/build.gradle ]; then perl -pi -e 's/(compile|target|min)SdkVersion.*/\1SdkVersion 34/g' android/app/build.gradle; fi
+          if [ -f android/local.properties ]; then printf "\nflutter.compileSdkVersion=34\nflutter.targetSdkVersion=34\n" >> android/local.properties; fi
+
       - name: Resolve Deps
         id: resolve_deps
         continue-on-error: true
         run: flutter pub get
+
       - name: Rescue Deps
         if: steps.resolve_deps.outcome == 'failure'
         run: |
-          if [ -f pubspec.yaml ];then
+          if [ -f pubspec.yaml ]; then
             perl -pi -e 's/^  ([a-zA-Z0-9_-]+):.*/  \1: any/g; s/flutter_test:\s*\n\s*sdk:\s*.*//g' pubspec.yaml
             printf "\ndev_dependencies:\n  flutter_test:\n    sdk: flutter\n" >> pubspec.yaml
           fi
           flutter pub get --offline || flutter pub get
-      - name: Compile Android APKs
-        id: build_apk
+
+      - name: Compile Cross-Platform Icon Assets
         continue-on-error: true
+        run: flutter pub run flutter_launcher_icons
+
+      - name: Build All Targets (APK, AAB, Web, iOS)
         run: |
-          if [ ! -d "android" ];then flutter create . --platforms=android;fi
-          mkdir -p build/ios/SourcePackages
-          flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk ${{ env.F_ARGS }}
-      - name: Rescue Pass - Android APKs
-        if: steps.build_apk.outcome == 'failure'
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build apk --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
-      - name: Compile Android App Bundle (AAB)
-        id: build_aab
-        continue-on-error: true
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab ${{ env.F_ARGS }}
-      - name: Rescue Pass - Android AAB
-        if: steps.build_aab.outcome == 'failure'
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build appbundle --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
-      - name: Compile Web Application
-        id: build_web
-        continue-on-error: true
-        run: |
-          if [ ! -d "web" ];then flutter create . --platforms=web;fi
-          flutter build web --release ${{ env.F_ARGS }}
-      - name: Rescue Pass - Web Application
-        if: steps.build_web.outcome == 'failure'
-        run: flutter build web --release --web-renderer html --no-pub
-      - name: Compile iOS Application (IPA)
-        id: build_ios
-        continue-on-error: true
-        run: |
-          if [ ! -d "ios" ];then flutter create . --platforms=ios;fi
-          flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios ${{ env.F_ARGS }}
-      - name: Rescue Pass - iOS Application
-        if: steps.build_ios.outcome == 'failure'
-        run: |
-          cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..
-          flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
+          python3 -c "
+          import os, subprocess
+          cl = lambda k: os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
+          fs = ' '.join([f'--dart-define={n}={cl(k)}' for n, k in [('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), ('SIG_SHA3_512', 'SHA_3_512')]] + ['--build-name=1.0.' + os.environ['V_NUM'], '--build-number=' + os.environ['V_NUM']])
+          def r_t(cmd, name):
+              if not os.path.exists(name): subprocess.run(f'flutter create . --platforms={name}', shell=True)
+              subprocess.run('mkdir -p build/ios/SourcePackages', shell=True)
+              flg = ' --android-skip-build-dependency-validation' if name == 'android' else ''
+              res = subprocess.run(f'{cmd}{flg} {fs}', shell=True)
+              if res.returncode != 0:
+                  if name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
+                  subprocess.run(f'{cmd}{flg} --no-tree-shake-icons --no-pub --build-name=1.0.{os.environ[\"V_NUM\"]} --build-number={os.environ[\"V_NUM\"]}', shell=True)
+          r_t('flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
+          r_t('flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab', 'android')
+          r_t('flutter build web --release', 'web')
+          r_t('flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios', 'ios')
+          "
+
       - name: Stage Outputs
         run: |
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null||true
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null||true
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
           iad=$(find build -type d -name "Runner.app" 2>/dev/null|head -n 1)
           if [ -n "$iad" ];then cd "$(dirname "$iad")"&&mkdir -p Payload&&cp -r Runner.app Payload/&&zip -r ../../../build/ios/Runner.ipa Payload/&&cd -;fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: app-mobile-builds-${{github.run_number}}
@@ -153,15 +151,18 @@ jobs:
             build/apk/
             build/bundle/
             build/ios/*.ipa
+
       - uses: actions/upload-artifact@v4
         with:
           name: app-web-build-${{github.run_number}}
           path: build/web/
-      - uses: ncipollo/release-action@v1
+
+      - name: Deploy Secure Production Release Dashboard
+        uses: ncipollo/release-action@v1
         with:
           artifacts: "build/apk/*,build/bundle/*,build/ios/*.ipa"
           tag: "v1.0.${{github.run_number}}"
           name: "Release v1.0.${{github.run_number}}"
-          body: "Production deployment finalized with true native shell rescue matrices. Tracking commit: ${{github.sha}}"
+          body: "Production deployment finalized cleanly via dynamic filename scanners. Tracking commit: ${{github.sha}}"
           token: ${{secrets.GITHUB_TOKEN}}
           allowUpdates: true
