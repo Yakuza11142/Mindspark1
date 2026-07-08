@@ -36,7 +36,6 @@ jobs:
       SHA_3_384: ${{secrets.SHA_3_384}}
       SHA_3_512: ${{secrets.SHA_3_512}}
       V_NUM: "${{github.run_number}}"
-      F: "--dart-define=MTN=${{secrets.MTN_API_KEY}} --dart-define=HEYGEN=${{secrets.HEYGEN_KEY}} --dart-define=TRIPO=${{secrets.TRIPO_API_KEY}} --dart-define=PEXEL=${{secrets.PEXELS_API_KEY}} --dart-define=ELEVENLABS=${{secrets.ELEVEN_LAB_API_KEY}} --dart-define=GEMINI=${{secrets.GEMINI_API_KEY}} --dart-define=OPENAI=${{secrets.OPENAI_API_KEY}} --dart-define=GROQ=${{secrets.GROQ_API_KEY}} --dart-define=VERTEX=${{secrets.VERTEX_API_KEY}} --dart-define=SUPABASE_URL=${{secrets.SUPABASE_URL}} --dart-define=SUPABASE_ANON_KEY=${{secrets.SUPABASE_ANON_KEY}} --dart-define=SIG_SHA3=${{secrets.SHA_3}} --dart-define=SIG_SHA3_256=${{secrets.SHA_3_256}} --dart-define=SIG_SHA3_384=${{secrets.SHA_3_384}} --dart-define=SIG_SHA3_512=${{secrets.SHA_3_512}} --build-name=1.0.${{github.run_number}} --build-number=${{github.run_number}}"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,49 +84,29 @@ jobs:
             printf "\ndev_dependencies:\n  flutter_test:\n    sdk: flutter\n" >> pubspec.yaml
           fi
           flutter pub get --offline||flutter pub get
-      - name: Build APK
-        id: build_apk
-        continue-on-error: true
+      - name: Build and Rescue All Modules (APK, AAB, Web, iOS)
         run: |
-          if [ ! -d "android" ];then flutter create . --platforms=android;fi
-          mkdir -p build/ios/SourcePackages
-          flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk $F
-      - name: Rescue APK
-        if: steps.build_apk.outcome == 'failure'
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build apk --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
-      - name: Build AAB
-        id: build_aab
-        continue-on-error: true
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab $F
-      - name: Rescue AAB
-        if: steps.build_aab.outcome == 'failure'
-        run: |
-          mkdir -p build/ios/SourcePackages
-          flutter build appbundle --release --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
-      - name: Build Web
-        id: build_web
-        continue-on-error: true
-        run: |
-          if [ ! -d "web" ];then flutter create . --platforms=web;fi
-          flutter build web --release $F
-      - name: Rescue Web
-        if: steps.build_web.outcome == 'failure'
-        run: flutter build web --release --web-renderer html --no-pub
-      - name: Build iOS
-        id: build_ios
-        continue-on-error: true
-        run: |
-          if [ ! -d "ios" ];then flutter create . --platforms=ios;fi
-          flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios $F
-      - name: Rescue iOS
-        if: steps.build_ios.outcome == 'failure'
-        run: |
-          cd ios&&rm -rf Pods Podfile.lock&&pod repo update&&pod install --repo-update&&cd ..
-          flutter build ios --release --no-codesign --no-tree-shake-icons --no-pub --build-name="1.0.$V_NUM" --build-number="$V_NUM"
+          python3 -c "
+          import os, subprocess
+          cl = lambda k: os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
+          fs = ' '.join([f'--dart-define={n}={cl(k)}' for n, k in [('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), ('SIG_SHA3_512', 'SHA_3_512')]] + ['--build-name=1.0.' + os.environ['V_NUM'], '--build-number=' + os.environ['V_NUM']])
+          
+          def run_target(cmd, platform_name):
+              if not os.path.exists(platform_name): subprocess.run(f'flutter create . --platforms={platform_name}', shell=True)
+              mkdir_cmd = 'mkdir -p build/ios/SourcePackages'
+              subprocess.run(mkdir_cmd, shell=True)
+              res = subprocess.run(f'{cmd} {fs}', shell=True)
+              if res.returncode != 0:
+                  print(f'Warning: {platform_name} primary track stalled. Activating rescue fallback...')
+                  if platform_name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
+                  fallback_clean_cmd = cmd.split(' --obfuscate') if ' --obfuscate' in cmd else cmd
+                  subprocess.run(f'{fallback_clean_cmd} --no-tree-shake-icons --no-pub --build-name=1.0.{os.environ[\"V_NUM\"]} --build-number={os.environ[\"V_NUM\"]}', shell=True)
+
+          run_target('flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
+          run_target('flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab', 'android')
+          run_target('flutter build web --release', 'web')
+          run_target('flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios', 'ios')
+          "
       - name: Stage Outputs
         run: |
           find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null||true
