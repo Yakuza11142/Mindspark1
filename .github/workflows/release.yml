@@ -38,6 +38,15 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          MTN_KEY: ${{ secrets.MTN_KEY }}
+          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          TRIPO_KEY: ${{ secrets.TRIPO_KEY }}
+          PEXEL_KEY: ${{ secrets.PEXEL_KEY }}
+          ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_KEY }}
         run: |
           heal_and_execute() {
             local name="$1" cmd="$2" max=4 att=1 log="sweep.log"
@@ -72,7 +81,7 @@ jobs:
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
             printf "android {\n    lintOptions {\n        abortOnError false\n        checkReleaseBuilds false\n        quiet true\n        ignoreWarnings true\n    }\n    buildTypes {\n        release {\n            minifyEnabled true\n            shrinkResources true\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')\n        }\n    }\n}\n" > lint.gradle
-            sed -i '' '/android {/r lint.gradle' "$APP_GRADLE" && rm -f lint.gradle
+            perl -0777 -pi -e 's/android \{/`cat lint.gradle`/e' "$APP_GRADLE" && rm -f lint.gradle
           fi
 
           heal_and_execute "Cache Purge" "flutter clean && rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock pubspec.lock .dart_tool/" || exit 1
@@ -83,10 +92,12 @@ jobs:
           heal_and_execute "Tests" "flutter test --no-pub" || exit 1
           
           mkdir -p debug_symbols
-          heal_and_execute "Build APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/apk" || exit 1
-          heal_and_execute "Build AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/aab" || exit 1
-          heal_and_execute "Build Web" "flutter build web --release" || exit 1
-          heal_and_execute "Build iOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=debug_symbols/ios" || exit 1
+          DART_FLAGS="--dart-define=MTN=\$MTN_KEY --dart-define=HEYGEN=\$HEYGEN_KEY --dart-define=SUPABASE=\$SUPABASE_KEY --dart-define=TRIPO=\$TRIPO_KEY --dart-define=PEXEL=\$PEXEL_KEY --dart-define=ELEVENLABS=\$ELEVENLABS_KEY --dart-define=GEMINI=\$GEMINI_KEY --dart-define=OPENAI=\$OPENAI_KEY --dart-define=GROQ=\$GROQ_KEY"
+
+          heal_and_execute "Build APK" "flutter build apk --release --split-per-abi --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/apk $DART_FLAGS" || exit 1
+          heal_and_execute "Build AAB" "flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=debug_symbols/aab $DART_FLAGS" || exit 1
+          heal_and_execute "Build Web" "flutter build web --release $DART_FLAGS" || exit 1
+          heal_and_execute "Build iOS" "flutter build ios --release --no-codesign --obfuscate --split-debug-info=debug_symbols/ios $DART_FLAGS" || exit 1
 
       - name: "Deployment"
         env:
@@ -110,9 +121,9 @@ jobs:
           HASH_NOTES="### 🛡️ Secure Hardened Release Audit Checklist (Triple SHA3)"
           for filepath in $DEPLOYABLE_ASSETS; do
             filename=$(basename "$filepath")
-            sha3_256=$(openssl digest -sha3-256 "$filepath" | awk '{print $NF}')
-            sha3_384=$(openssl digest -sha3-384 "$filepath" | awk '{print $NF}')
-            sha3_512=$(openssl digest -sha3-512 "$filepath" | awk '{print $NF}')
+            sha3_256=$(openssl dgst -sha3-256 "$filepath" | awk '{print $NF}')
+            sha3_384=$(openssl dgst -sha3-384 "$filepath" | awk '{print $NF}')
+            sha3_512=$(openssl dgst -sha3-512 "$filepath" | awk '{print $NF}')
             HASH_NOTES="$HASH_NOTES"$'\n'$'\n'"#### 📦 Hardened Asset: $filename"
             [ "$filename" = "obfuscation_decryption_symbols.zip" ] && HASH_NOTES="$HASH_NOTES"$'\n'"⚠️ *Note: contains decryption mapping keys.*"
             HASH_NOTES="$HASH_NOTES"$'\n'"* **SHA3-256:** \`$sha3_256\`"$'\n'"* **SHA3-384:** \`$sha3_384\`"$'\n'"* **SHA3-512:** \`$sha3_512\`"
