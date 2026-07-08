@@ -26,12 +26,25 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: "Clone"
+      - name: "Clone Code Streams"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: "Matrix"
+      - name: "Initialize Java Environment Natively"
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 📦 FIXED: Pulled natively from cached runner engines instead of using a git URL link
+      - name: "Initialize Flutter Engine Natively"
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: "Run Secure Self-Healing Compilation Matrix"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -59,9 +72,7 @@ jobs:
                 cat "$log" && echo "SUCCESS: $name passed." && echo "::endgroup::" && return 0
               fi
               cat "$log"
-              if [ "$name" = "Flutter" ]; then
-                cmd="rm -rf /opt/flutter \$HOME/flutter && git clone https://github.com -b stable --depth 1 \$HOME/flutter && echo '\$HOME/flutter/bin' >> \$GITHUB_PATH && export PATH=\$PATH:\$HOME/flutter/bin && flutter doctor"
-              elif grep -qI "Namespace not specified" "$log"; then
+              if grep -qI "Namespace not specified" "$log"; then
                 if [ -f android/build.gradle ]; then
                   printf "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android') && project.android.namespace == null) {\n            project.android.namespace = project.group\n        }\n    }\n}\n" >> android/build.gradle
                 fi
@@ -78,11 +89,6 @@ jobs:
             echo "CRITICAL: $name failed entirely." && echo "::endgroup::" && return 1
           }
 
-          heal_and_execute "Java" "brew install openjdk@17 && echo 'JAVA_HOME=/opt/homebrew/opt/openjdk@17' >> \$GITHUB_ENV" || exit 1
-          heal_and_execute "Flutter" "git clone https://github.com -b stable --depth 1 /opt/flutter && echo '/opt/flutter/bin' >> \$GITHUB_PATH && export PATH=\$PATH:/opt/flutter/bin && flutter doctor" || exit 1
-          [ -d "$HOME/flutter/bin" ] && export PATH=$PATH:$HOME/flutter/bin || export PATH=$PATH:/opt/flutter/bin
-          export JAVA_HOME=/opt/homebrew/opt/openjdk@17
-          
           APP_GRADLE="android/app/build.gradle"
           if [ -f "$APP_GRADLE" ]; then
             printf "android {\n    lintOptions {\n        abortOnError false\n        checkReleaseBuilds false\n        quiet true\n        ignoreWarnings true\n    }\n    buildTypes {\n        release {\n            minifyEnabled true\n            shrinkResources true\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')\n        }\n    }\n}\n" > lint.gradle
