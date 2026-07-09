@@ -180,12 +180,11 @@ jobs:
           echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
           echo "Production snapshot compiled automatically via virtual compilation pipelines." >> code-metrics.md
           echo "" >> code-metrics.md
-          echo "\`\`\`text" >> code-metrics.md
           
-          # Fixed line syntax using cloc 2.08 compliant global evaluation flags
+          # Fixed line syntax using clean block echoes to avoid backslash escaping issues
+          printf '```text\n' >> code-metrics.md
           cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md
-          
-          echo "\`\`\`" >> code-metrics.md
+          printf '```\n' >> code-metrics.md
 
       - name: Deploy Secure Production Release Dashboard
         uses: ncipollo/release-action@v1
@@ -193,5 +192,4 @@ jobs:
           artifacts: |
             build/apk/*.apk
             build/bundle/*.aab
-            build/ios/*.ipa
-code-metrics.mdtag: "v1.0.${{github.run_number}}"name: "Release v1.0.${{github.run_number}}"body: "Production deployment finalized cleanly via virtual workspace pipelines. Tracking commit: ${{github.sha}}"token: ${{secrets.GITHUB_TOKEN}}allowUpdates: true
+build/ios/*.ipacode-metrics.mdtag: "v1.0.${{github.run_number}}"name: "Release v1.0.${{github.run_number}}"body: "Production deployment finalized cleanly via virtual workspace pipelines. Tracking commit: ${{github.sha}}"token: ${{secrets.GITHUB_TOKEN}}allowUpdates: true
