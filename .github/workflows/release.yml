@@ -81,13 +81,13 @@ jobs:
 
       - name: Sanitize Assets & Configs
         run: |
-          # 1. Locate your exact image recursively across your directories and copy it
+          # 1. Locate your dynamic screenshot image recursively across your project paths
           find . -type f -name "Screenshot*" -exec cp {} logo.png \; 2>/dev/null || true
           if [ ! -f logo.png ]; then
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png
           fi
           
-          # 2. Automatically link the image asset references inside pubspec
+          # 2. Append required logo parameters to manifest without dropping core configuration paths
           python3 -c "
           import os, re
           if os.path.exists('pubspec.yaml'):
@@ -103,12 +103,11 @@ jobs:
               with open('pubspec.yaml', 'w') as f: f.write(txt)
           "
           
-          # 3. Inject "Mind Spark" directly into native Android build targets
+          # 3. Apply "Mind Spark" directly as the official label across production configurations
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
               perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml
           fi
           
-          # 4. Inject "Mind Spark" directly into native iOS build targets
           if [ -f ios/Runner/Info.plist ]; then
               python3 -c "
               with open('ios/Runner/Info.plist', 'r') as f: txt = f.read()
@@ -118,7 +117,7 @@ jobs:
               "
           fi
           
-          # 5. Clean non-destructive platform configurations
+          # 4. Clean non-destructive platform configurations
           if [ -f android/build.gradle ]; then printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle; fi
           if [ -f android/app/build.gradle ]; then perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/targetSdkVersion.*/targetSdkVersion 34/g;' android/app/build.gradle; fi
 
@@ -144,7 +143,7 @@ jobs:
                   if name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
                   subprocess.run(f'{cmd}{flg} --no-tree-shake-icons --no-pub --build-name=1.0.{os.environ[\"V_NUM\"]} --build-number={os.environ[\"V_NUM\"]}', shell=True)
           
-          # Compiles standard APK, AAB, Web and iOS distributions
+          # Universal architecture compile commands
           r_t('flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
           r_t('flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab', 'android')
           r_t('flutter build web --release', 'web')
@@ -173,6 +172,16 @@ jobs:
           name: app-web-build-${{github.run_number}}
           path: build/web/
 
+      - name: Analyze Project Volume and Generate Report
+        run: |
+          brew install cloc
+          echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
+          echo "Production snapshot compiled automatically via virtual compilation pipelines." >> code-metrics.md
+          echo "" >> code-metrics.md
+          echo "\`\`\`text" >> code-metrics.md
+          cloc . --exclude-dir=build,.dart_tool,.gradle,ios/Pods,node_modules >> code-metrics.md
+          echo "\`\`\`" >> code-metrics.md
+
       - name: Deploy Secure Production Release Dashboard
         uses: ncipollo/release-action@v1
         with:
@@ -180,6 +189,7 @@ jobs:
             build/apk/*.apk
             build/bundle/*.aab
             build/ios/*.ipa
+            code-metrics.md
           tag: "v1.0.${{github.run_number}}"
           name: "Release v1.0.${{github.run_number}}"
           body: "Production deployment finalized cleanly via virtual workspace pipelines. Tracking commit: ${{github.sha}}"
