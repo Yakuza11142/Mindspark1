@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{github.workflow}}-${{github.ref}}
+  group: github.workflow-{{github.ref}}
   cancel-in-progress: true
 
 permissions:
@@ -18,27 +18,25 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 360
     env:
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      KEYSTORE_BASE64: ${{secrets.KEYSTORE_BASE64}}
-      KEYSTORE_PASSWORD: ${{secrets.KEYSTORE_PASSWORD}}
-      KEY_ALIAS: ${{secrets.KEY_ALIAS}}
-      KEY_PASSWORD: ${{secrets.KEY_PASSWORD}}
-      MTN_KEY: ${{secrets.MTN_API_KEY}}
-      HEYGEN_KEY: ${{secrets.HEYGEN_KEY}}
-      TRIPO_KEY: ${{secrets.TRIPO_API_KEY}}
-      PEXEL_KEY: ${{secrets.PEXELS_API_KEY}}
-      ELEVENLABS_KEY: ${{secrets.ELEVEN_LAB_API_KEY}}
-      GEMINI_KEY: ${{secrets.GEMINI_API_KEY}}
-      OPENAI_KEY: ${{secrets.OPENAI_API_KEY}}
-      GROQ_KEY: ${{secrets.GROQ_API_KEY}}
-      VERTEX_KEY: ${{secrets.VERTEX_API_KEY}}
-      SUPABASE_URL: ${{secrets.SUPABASE_URL}}
-      SUPABASE_ANON_KEY: ${{secrets.SUPABASE_ANON_KEY}}
-      SHA_3: ${{secrets.SHA_3}}
-      SHA_3_256: ${{secrets.SHA_3_256}}
-      SHA_3_384: ${{secrets.SHA_3_384}}
-      SHA_3_512: ${{secrets.SHA_3_512}}
-      V_NUM: "${{github.run_number}}"
+      GITHUB_TOKEN: \${{secrets.GITHUB_TOKEN}}
+      KEYSTORE_BASE64: \${{secrets.KEYSTORE_BASE64}}
+      KEYSTORE_PASSWORD: \${{secrets.KEYSTORE_PASSWORD}}
+      KEY_ALIAS: \${{secrets.KEY_ALIAS}}
+      KEY_PASSWORD: \${{secrets.KEY_PASSWORD}}
+      MTN_KEY: \${{secrets.MTN_API_KEY}}
+      HEYGEN_KEY: \${{secrets.HEYGEN_KEY}}
+      TRIPO_KEY: \${{secrets.TRIPO_API_KEY}}
+      PEXEL_KEY: \${{secrets.PEXELS_API_KEY}}
+      ELEVENLABS_KEY: \${{secrets.ELEVEN_LAB_API_KEY}}
+      GEMINI_KEY: \${{secrets.GEMINI_API_KEY}}
+      OPENAI_KEY: \${{secrets.OPENAI_API_KEY}}
+      GROQ_KEY: \${{secrets.GROQ_API_KEY}}
+      VERTEX_KEY: \${{secrets.VERTEX_API_KEY}}
+      SUPABASE_URL: \${{secrets.SUPABASE_URL}}
+      SUPABASE_ANON_KEY: \${{secrets.SUPABASE_ANON_KEY}}
+      SHA_3: \({{secrets.SHA_3}}       SHA_3_256:\){{secrets.SHA_3_256}}
+      SHA_3_384: \({{secrets.SHA_3_384}}       SHA_3_512:\){{secrets.SHA_3_512}}
+      V_NUM: "\${{github.run_number}}"
 
     steps:
       - uses: actions/checkout@v4
@@ -48,9 +46,9 @@ jobs:
       - name: Clear Tag
         continue-on-error: true
         run: |
-          if gh release view "v1.0.$V_NUM" >/dev/null 2>&1; then gh release delete "v1.0.$V_NUM" --yes; fi
-          git tag -d "v1.0.$V_NUM" 2>/dev/null || true
-          git push --delete origin "v1.0.$V_NUM" 2>/dev/null || true
+          if gh release view "v1.0.\$V_NUM" >/dev/null 2>&1; then gh release delete "v1.0.\$V_NUM" --yes; fi
+          git tag -d "v1.0.\$V_NUM" 2>/dev/null || true
+          git push --delete origin "v1.0.\$V_NUM" 2>/dev/null || true
 
       - uses: actions/setup-java@v4
         with:
@@ -67,11 +65,11 @@ jobs:
           flutter clean
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
           mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
-          printf 'MTN_API_KEY=%s\nHEYGEN_KEY=%s\nTRIPO_API_KEY=%s\nPEXELS_API_KEY=%s\nELEVEN_LAB_API_KEY=%s\nGEMINI_API_KEY=%s\nOPENAI_API_KEY=%s\nGROQ_KEY=%s\nVERTEX_API_KEY=%s\nSUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nSHA_3=%s\nSHA_3_256=%s\nSHA_3_384=%s\nSHA_3_512=%s\n' "$MTN_KEY" "$HEYGEN_KEY" "$TRIPO_KEY" "$PEXEL_KEY" "$ELEVENLABS_KEY" "$GEMINI_KEY" "$OPENAI_KEY" "$GROQ_KEY" "$VERTEX_KEY" "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$SHA_3" "$SHA_3_256" "$SHA_3_384" "$SHA_3_512" > .env
-          if [ -n "$KEYSTORE_BASE64" ]; then echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks 2>/dev/null || true; fi
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
+          printf 'MTN_API_KEY=%s\nHEYGEN_KEY=%s\nTRIPO_API_KEY=%s\nPEXELS_API_KEY=%s\nELEVEN_LAB_API_KEY=%s\nGEMINI_API_KEY=%s\nOPENAI_API_KEY=%s\nGROQ_KEY=%s\nVERTEX_API_KEY=%s\nSUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nSHA_3=%s\nSHA_3_256=%s\nSHA_3_384=%s\nSHA_3_512=%s\n' "\$MTN_KEY" "\(HEYGEN_KEY" "\)TRIPO_KEY" "\(PEXEL_KEY" "\)ELEVENLABS_KEY" "\(GEMINI_KEY" "\)OPENAI_KEY" "\(GROQ_KEY" "\)VERTEX_KEY" "\(SUPABASE_URL" "\)SUPABASE_ANON_KEY" "SHA₃" "SHA_3_256" "SHA₃₃₈₄" "SHA_3_512" > .env
+          if [ -n "\(KEYSTORE_BASE64" ]; then echo "\)KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks 2>/dev/null || true; fi
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "\$KEYSTORE_PASSWORD" "\(KEY_PASSWORD" "\)KEY_ALIAS" > android/key.properties
           printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
-          flutter config --enable-web --jdk-dir "$JAVA_HOME"
+          flutter config --enable-web --jdk-dir "\$JAVA_HOME"
 
       - name: Sanitize Assets & Configs
         run: |
@@ -103,8 +101,9 @@ jobs:
               with open('ios/Runner/Info.plist', 'w') as f: f.write(txt)
               "
           fi
-          if [ -f android/build.gradle ]; then printf "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\n" >> android/build.gradle; fi
+          if [ -f android/build.gradle ]; then printf "\(\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }\\)n" >> android/build.gradle; fi
           if [ -f android/app/build.gradle ]; then perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/targetSdkVersion.*/targetSdkVersion 34/g;' android/app/build.gradle; fi
+
       - name: Resolve Dependencies
         run: flutter pub get
 
