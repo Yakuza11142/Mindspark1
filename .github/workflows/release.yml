@@ -175,9 +175,12 @@ jobs:
           find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
           iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
-          if [ -n "\$iad" ]; then 
-            cd "(dirname "iad")" && mkdir -p Payload && cp -r Runner.app Payload/
-            zip -r ../../build/ios/Runner.ipa Payload/ && cd -
+          if [ -n "\$iad" ]; then
+            cd "(dirname "iad")"
+            mkdir -p Payload
+            cp -r Runner.app Payload/
+            zip -r ../../../build/ios/Runner.ipa Payload/
+            cd -
           fi
 
       - name: Store Native Compilation Binaries
