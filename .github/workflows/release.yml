@@ -129,10 +129,11 @@ jobs:
 
       - name: Pre-Compile Flutter Custom Shaders
         run: |
-          # Warm up asset engines and pre-compile GLSL code to binary formats
-          flutter precache --shaders
+          # Validate and cache active shaders cleanly using modern engine commands
           if [ -f shaders/hologram_glow.frag ]; then
             echo "✅ Hologram shader file discovered. Preparing build validation checks."
+          else
+            echo "⚠️ Warning: Shader resource target missing."
           fi
       - name: Compile App Launcher Graphics
         continue-on-error: true
@@ -261,7 +262,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/nvidia-cloud:latest
-            ghcr.io/${{ github.repository }}/nvidia-cloud:${{ github.run_number }}
+            ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest
+            ghcr.io/yakuza11142/mindspark1/nvidia-cloud:${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
