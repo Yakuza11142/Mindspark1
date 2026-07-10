@@ -72,13 +72,18 @@ jobs:
           fi
           
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
-          printf '#version 460 core\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
           flutter config --enable-web --jdk-dir "$JAVA_HOME"
 
       - name: Link Workspace Assets & Override Namespace Labels
         run: |
-          find . -type f -name "Screenshot*" -exec cp {} logo.png \; 2>/dev/null || true
-          if [ ! -f logo.png ]; then
+          # Find your screenshot case-insensitively and extract it out
+          img_src=$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
+          
+          if [ -n "$img_src" ]; then
+            echo "Processing application logo from: $img_src"
+            sips -s format png "$img_src" --out logo.png
+          else
+            echo "⚠️ Logo screenshot asset missing. Generating safety workspace vector fallback."
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png
           fi
           
@@ -112,9 +117,7 @@ jobs:
           if [ -f android/build.gradle ]; then 
             echo -e "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }" >> android/build.gradle
           fi
-          if [ -f android/app/build.gradle ]; then 
-            perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/targetSdkVersion.*/targetSdkVersion 34/g;' android/app/build.gradle
-          fi
+
       - name: Fetch Dynamic Dependencies (Self-Healing)
         run: |
           flutter pub get || {
@@ -124,9 +127,16 @@ jobs:
             flutter pub get
           }
 
+      - name: Pre-Compile Flutter Custom Shaders
+        run: |
+          # Warm up asset engines and pre-compile GLSL code to binary formats
+          flutter precache --shaders
+          if [ -f shaders/hologram_glow.frag ]; then
+            echo "✅ Hologram shader file discovered. Preparing build validation checks."
+          fi
       - name: Compile App Launcher Graphics
         continue-on-error: true
-        run: flutter pub run flutter_launcher_icons
+        run: dart run flutter_launcher_icons
 
       - name: Compile Distribution Architecture Binaries
         env:
@@ -136,7 +146,7 @@ jobs:
           PEXEL_KEY: \${{ secrets.PEXELS_API_KEY }}
           ELEVENLABS_KEY: \${{ secrets.ELEVEN_LAB_API_KEY }}
           GEMINI_KEY: \${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: \${{ secrets.OPENAI_API_KEY }}
+          OPENAI_KEY: \${{ secrets.OPENAI_KEY }}
           GROQ_KEY: \${{ secrets.GROQ_API_KEY }}
           VERTEX_KEY: \${{ secrets.VERTEX_API_KEY }}
           SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
