@@ -14,6 +14,9 @@ permissions:
   packages: write
 
 jobs:
+  # ==========================================
+  # JOB 1: Cross-Platform Client App Builds (macOS)
+  # ==========================================
   b:
     runs-on: macos-14
     timeout-minutes: 360
@@ -176,7 +179,7 @@ jobs:
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
           iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
           if [ -n "\$iad" ]; then
-            cd "(dirname "iad")"
+            cd "\((dirname "\)iad")"
             mkdir -p Payload
             cp -r Runner.app Payload/
             zip -r ../../../build/ios/Runner.ipa Payload/
@@ -221,3 +224,34 @@ jobs:
           body: "Production deployment finalized cleanly via virtual workspace pipelines. Tracking commit: ${{ github.sha }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
+
+  # ==========================================
+  # JOB 2: NVIDIA GPU Cloud Container Build (Linux)
+  # ==========================================
+  cloud-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push NVIDIA Cloud Container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/nvidia-cloud:latest
+            ghcr.io/${{ github.repository }}/nvidia-cloud:${{ github.run_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
