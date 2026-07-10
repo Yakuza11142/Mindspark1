@@ -61,6 +61,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
+          set -e
           flutter clean || true
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
           mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
@@ -68,7 +69,7 @@ jobs:
           touch .env
           
           if [ -n "$KEYSTORE_BASE64" ]; then 
-            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks 2>/dev/null || true
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
           fi
           
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
@@ -76,9 +77,8 @@ jobs:
 
       - name: Link Workspace Assets & Override Namespace Labels
         run: |
-          # Find your screenshot case-insensitively and extract it out
+          set -e
           img_src=$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
-          
           if [ -n "$img_src" ]; then
             echo "Processing application logo from: $img_src"
             sips -s format png "$img_src" --out logo.png
@@ -127,14 +127,49 @@ jobs:
             flutter pub get
           }
 
-      - name: Pre-Compile Flutter Custom Shaders
+      - name: Execute Workspace Self-Healing Suite
         run: |
-          # Validate and cache active shaders cleanly using modern engine commands
-          if [ -f shaders/hologram_glow.frag ]; then
-            echo "✅ Hologram shader file discovered. Preparing build validation checks."
-          else
-            echo "⚠️ Warning: Shader resource target missing."
+          set -e
+          echo "🤖 Starting Automated Virtual Workspace Diagnostics..."
+          
+          # Fix 1: Ensure Web target folders exist to avoid asset copy errors
+          if [ ! -d web ]; then
+            flutter create . --platforms=web
           fi
+          
+          # Fix 2: Inject mandatory iOS Microphone settings if missing
+          if [ -f ios/Runner/Info.plist ] && ! grep -q "NSMicrophoneUsageDescription" ios/Runner/Info.plist; then
+            perl -pi -e 's/<\/dict>/\t<key>NSMicrophoneUsageDescription<\/key>\n\t<string>Voice access required for Spark Assistant<\/string>\n\t<key>NSCameraUsageDescription<\/key>\n\t<string>AR camera access required to paint hard light hologram<\/string>\n<\/dict>/g' ios/Runner/Info.plist
+          fi
+
+          # Fix 3: Injects missing dev_dependencies hooks cleanly via Python
+          python3 -c "
+          import os
+          if os.path.exists('pubspec.yaml'):
+              with open('pubspec.yaml', 'r') as f: txt = f.read()
+              if 'flutter_launcher_icons:' not in txt:
+                  txt += '\ndev_dependencies:\n  flutter_launcher_icons: ^0.14.2\n'
+                  with open('pubspec.yaml', 'w') as f: f.write(txt)
+          "
+          
+          # Fix 4: Force Android Manifest to bypass Impeller engine targets
+          if [ -f android/app/src/main/AndroidManifest.xml ]; then
+            perl -pi -e 's/<\/application>/\t<meta-data android:name="io.flutter.embedding.android.RenderingEngine" android:value="skia" \/>\n\t<\/application>/g' android/app/src/main/AndroidManifest.xml
+          fi
+          
+          # Fix 5: Cross-platform Perl sanitization for Android target SDK levels
+          if [ -f android/app/build.gradle ]; then
+            perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/compileSdk .*/compileSdk = 34/g;' android/app/build.gradle
+            perl -pi -e 's/targetSdkVersion.*/targetSdkVersion 34/g; s/targetSdk .*/targetSdk = 34/g;' android/app/build.gradle
+          fi
+          
+          # Fix 6: Enforce valid mobile compliant GLSL ES shader formats
+          mkdir -p shaders
+          if [ ! -f shaders/hologram_glow.frag ] || grep -q "460 core" shaders/hologram_glow.frag; then
+            printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
+          fi
+          
+          flutter pub get
       - name: Compile App Launcher Graphics
         continue-on-error: true
         run: dart run flutter_launcher_icons
@@ -156,36 +191,39 @@ jobs:
           SHA_3_384: \({{ secrets.SHA_3_384 }}           SHA_3_512:\){{ secrets.SHA_3_512 }}
           V_NUM: \${{ github.run_number }}
         run: |
-          python3 -c "
+          cat << 'EOF' > generate_env.py
           import os, subprocess
-          
           keys = ['MTN_KEY', 'HEYGEN_KEY', 'TRIPO_KEY', 'PEXEL_KEY', 'ELEVENLABS_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'GROQ_KEY', 'VERTEX_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SHA_3', 'SHA_3_256', 'SHA_3_384', 'SHA_3_512']
-          with open('.env', 'w') as env_f:
-              for k in keys:
-                  env_f.write(f'{k}={os.environ.get(k, \"\").strip()}\n')
-
           cl = lambda k: os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
-          fs = ' '.join([f'--dart-define={n}={cl(k)}' for n, k in [('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), ('SIG_SHA3_512', 'SHA_3_512')]])
-          b_cmd = ' --build-name=1.0.' + os.environ['V_NUM'] + ' --build-number=' + os.environ['V_NUM']
           
-          def r_t(cmd, name):
-              if not os.path.exists(name): subprocess.run(f'flutter create . --platforms={name}', shell=True)
-              flg = ' --android-skip-build-dependency-validation' if name == 'android' else ''
-              res = subprocess.run(f'{cmd}{flg} {fs}{b_cmd}', shell=True)
-              if res.returncode != 0:
-                  print(f'⚠️ [Self-Healing] Compilation dropped for {name}...')
-                  if name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
-                  if name == 'android': subprocess.run('cd android && ./gradlew clean && cd ..', shell=True)
-                  subprocess.run(f'{cmd}{flg} --no-tree-shake-icons --no-pub {b_cmd}', shell=True)
+          with open('.env', 'w') as f:
+              for k in keys:
+                  f.write(f"{k}={cl(k)}\n")
                   
-          r_t('flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
-          r_t('flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/aab', 'android')
-          r_t('flutter build web --release', 'web')
-          r_t('flutter build ios --release --no-codesign --obfuscate --split-debug-info=ds/ios', 'ios')
-          "
+          fs_list = [f"--dart-define={n}={cl(k)}" for n, k in [
+              ('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), 
+              ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), 
+              ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), 
+              ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), 
+              ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), 
+              ('SIG_SHA3_512', 'SHA_3_512')
+          ]]
+          b_cmd = [f"--build-name=1.0.{os.environ['V_NUM']}", f"--build-number={os.environ['V_NUM']}"]
+          
+          if os.path.exists('ios/Podfile'):
+              subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update', shell=True)
+              
+          subprocess.run(['flutter', 'build', 'apk', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=ds/apk', '--android-skip-build-dependency-validation'] + fs_list + b_cmd, check=True)
+          subprocess.run(['flutter', 'build', 'appbundle', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=ds/aab', '--android-skip-build-dependency-validation'] + fs_list + b_cmd, check=True)
+          subprocess.run(['flutter', 'build', 'web', '--release'] + fs_list, check=True) 
+          subprocess.run(['flutter', 'build', 'ios', '--release', '--no-codesign', '--obfuscate', '--split-debug-info=ds/ios'] + fs_list + b_cmd, check=True)
+          EOF
+          
+          python3 generate_env.py
 
       - name: Package Output Pipelines
         run: |
+          set -e
           find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
           iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
@@ -214,6 +252,7 @@ jobs:
 
       - name: Pull Architecture Volume Metrics
         run: |
+          set -e
           brew install cloc
           echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
           echo "Production snapshot compiled automatically via virtual compilation pipelines." >> code-metrics.md
@@ -241,6 +280,7 @@ jobs:
   # ==========================================
   cloud-container:
     runs-on: ubuntu-latest
+    needs: b
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
