@@ -26,9 +26,13 @@ jobs:
 
       - name: Reset Workspace Tags
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
-            gh release delete "v1.0.${{ github.run_number }}" --yes
+          if [ -n "$GITHUB_TOKEN" ]; then
+            if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
+              gh release delete "v1.0.${{ github.run_number }}" --yes || true
+            fi
           fi
           git tag -d "v1.0.${{ github.run_number }}" 2>/dev/null || true
           git push --delete origin "v1.0.${{ github.run_number }}" 2>/dev/null || true
@@ -38,12 +42,14 @@ jobs:
         with:
           distribution: zulu
           java-version: 17
+          cache: gradle
 
       - name: Setup Flutter Bundle Stable Engine
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
       - name: Configure Secure Execution Environment
         env:
@@ -52,11 +58,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          flutter clean
+          flutter clean || true
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
           mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
           
-          # Create an empty .env file that your build step will populate later
           touch .env
           
           if [ -n "$KEYSTORE_BASE64" ]; then 
@@ -107,9 +112,14 @@ jobs:
           if [ -f android/app/build.gradle ]; then 
             perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/targetSdkVersion.*/targetSdkVersion 34/g;' android/app/build.gradle
           fi
-
-      - name: Fetch Dynamic Dependencies
-        run: flutter pub get
+      - name: Fetch Dynamic Dependencies (Self-Healing)
+        run: |
+          flutter pub get || {
+            echo "⚠️ [Self-Healing] Dependency block corrupted. Restructuring cache engines..."
+            flutter pub cache clean --force
+            rm -rf .dart_tool/ pubspec.lock
+            flutter pub get
+          }
 
       - name: Compile App Launcher Graphics
         continue-on-error: true
@@ -117,27 +127,24 @@ jobs:
 
       - name: Compile Distribution Architecture Binaries
         env:
-          MTN_KEY: ${{ secrets.MTN_API_KEY }}
-          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
-          TRIPO_KEY: ${{ secrets.TRIPO_API_KEY }}
-          PEXEL_KEY: ${{ secrets.PEXELS_API_KEY }}
-          ELEVENLABS_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
-          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
-          VERTEX_KEY: ${{ secrets.VERTEX_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SHA_3: ${{ secrets.SHA_3 }}
-          SHA_3_256: ${{ secrets.SHA_3_256 }}
-          SHA_3_384: ${{ secrets.SHA_3_384 }}
-          SHA_3_512: ${{ secrets.SHA_3_512 }}
-          V_NUM: ${{ github.run_number }}
+          MTN_KEY: \${{ secrets.MTN_API_KEY }}
+          HEYGEN_KEY: \${{ secrets.HEYGEN_KEY }}
+          TRIPO_KEY: \${{ secrets.TRIPO_API_KEY }}
+          PEXEL_KEY: \${{ secrets.PEXELS_API_KEY }}
+          ELEVENLABS_KEY: \${{ secrets.ELEVEN_LAB_API_KEY }}
+          GEMINI_KEY: \${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY: \${{ secrets.OPENAI_API_KEY }}
+          GROQ_KEY: \${{ secrets.GROQ_API_KEY }}
+          VERTEX_KEY: \${{ secrets.VERTEX_API_KEY }}
+          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: \${{ secrets.SUPABASE_ANON_KEY }}
+          SHA_3: \({{ secrets.SHA_3 }}           SHA_3_256:\){{ secrets.SHA_3_256 }}
+          SHA_3_384: \({{ secrets.SHA_3_384 }}           SHA_3_512:\){{ secrets.SHA_3_512 }}
+          V_NUM: \${{ github.run_number }}
         run: |
           python3 -c "
           import os, subprocess
           
-          # Write the .env file safely here inside python to prevent script crashes
           keys = ['MTN_KEY', 'HEYGEN_KEY', 'TRIPO_KEY', 'PEXEL_KEY', 'ELEVENLABS_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'GROQ_KEY', 'VERTEX_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SHA_3', 'SHA_3_256', 'SHA_3_384', 'SHA_3_512']
           with open('.env', 'w') as env_f:
               for k in keys:
@@ -152,7 +159,9 @@ jobs:
               flg = ' --android-skip-build-dependency-validation' if name == 'android' else ''
               res = subprocess.run(f'{cmd}{flg} {fs}{b_cmd}', shell=True)
               if res.returncode != 0:
+                  print(f'⚠️ [Self-Healing] Compilation dropped for {name}. Rewriting dependencies...')
                   if name == 'ios': subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update && cd ..', shell=True)
+                  if name == 'android': subprocess.run('cd android && ./gradlew clean && cd ..', shell=True)
                   subprocess.run(f'{cmd}{flg} --no-tree-shake-icons --no-pub {b_cmd}', shell=True)
                   
           r_t('flutter build apk --release --no-tree-shake-icons --obfuscate --split-debug-info=ds/apk', 'android')
@@ -165,16 +174,16 @@ jobs:
         run: |
           find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
-          iad=$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
-          if [ -n "$iad" ]; then 
-            cd "$(dirname "$iad")" && mkdir -p Payload && cp -r Runner.app Payload/
+          iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
+          if [ -n "\$iad" ]; then 
+            cd "(dirname "iad")" && mkdir -p Payload && cp -r Runner.app Payload/
             zip -r ../../build/ios/Runner.ipa Payload/ && cd -
           fi
 
       - name: Store Native Compilation Binaries
         uses: actions/upload-artifact@v4
         with:
-          name: app-mobile-builds-${{ github.run_number }}
+          name: app-mobile-builds-\${{ github.run_number }}
           path: |
             build/apk/
             build/bundle/
@@ -183,7 +192,7 @@ jobs:
       - name: Store Production Web Dist
         uses: actions/upload-artifact@v4
         with:
-          name: app-web-build-${{ github.run_number }}
+          name: app-web-build-\${{ github.run_number }}
           path: build/web/
 
       - name: Pull Architecture Volume Metrics
