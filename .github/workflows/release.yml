@@ -71,7 +71,7 @@ jobs:
           rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
           mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
           
-          printf 'MTN_API_KEY=%s\nHEYGEN_KEY=%s\nTRIPO_API_KEY=%s\nPEXELS_API_KEY=%s\nELEVEN_LAB_API_KEY=%s\nGEMINI_API_KEY=%s\nOPENAI_API_KEY=%s\nGROQ_KEY=%s\nVERTEX_API_KEY=%s\nSUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nSHA_3=%s\nSHA_3_256=%s\nSHA_3_384=%s\nSHA_3_512=%s\n' "\$MTN_KEY" "\(HEYGEN_KEY" "\)TRIPO_KEY" "\(PEXEL_KEY" "\)ELEVENLABS_KEY" "\(GEMINI_KEY" "\)OPENAI_KEY" "\(GROQ_KEY" "\)VERTEX_KEY" "\(SUPABASE_URL" "\)SUPABASE_ANON_KEY" "SHA₃" "SHA_3_256" "SHA₃₃₈₄" "SHA_3_512" > .env
+          printf 'MTN_API_KEY=%s\nHEYGEN_KEY=%s\nTRIPO_API_KEY=%s\nPEXELS_API_KEY=%s\nELEVEN_LAB_API_KEY=%s\nGEMINI_API_KEY=%s\nOPENAI_API_KEY=%s\nGROQ_KEY=%s\nVERTEX_API_KEY=%s\nSUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nSHA_3=%s\nSHA_3_256=%s\nSHA_3_384=%s\nSHA_3_512=%s\n' "\$MTN_KEY" "\(HEYGEN_KEY" "\)TRIPO_KEY" "\(PEXEL_KEY" "\)ELEVENLABS_KEY" "\(GEMINI_KEY" "\)OPENAI_KEY" "\(GROQ_KEY" "\)VERTEX_KEY" "\(SUPABASE_URL" "\)SUPABASE_ANON_KEY" "\(SHA_3" "\)SHA_3_256" "\(SHA_3_384" "\)SHA_3_512" > .env
           
           if [ -n "\$KEYSTORE_BASE64" ]; then 
             echo "\$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks 2>/dev/null || true
@@ -157,7 +157,7 @@ jobs:
           find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
           iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
           if [ -n "\$iad" ]; then 
-            cd "(dirname "iad")" && mkdir -p Payload && cp -r Runner.app Payload/
+            cd "\((dirname "\)iad")" && mkdir -p Payload && cp -r Runner.app Payload/
             zip -r ../../../build/ios/Runner.ipa Payload/ && cd -
           fi
 
