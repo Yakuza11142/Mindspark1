@@ -12,6 +12,7 @@ permissions:
   contents: write
   actions: write
   packages: write
+  releases: write
 
 jobs:
   # ==========================================
@@ -27,15 +28,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reset Workspace Tags
+      - name: Fix Git Dubious Ownership
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Reset Workspace Tags & Self-Heal Core Release Locks
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "$GITHUB_TOKEN" ]; then
-            if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
-              gh release delete "v1.0.${{ github.run_number }}" --yes || true
-            fi
+          set -e
+          git fetch --tags --force
+          if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
+            gh release delete "v1.0.${{ github.run_number }}" --yes || true
           fi
           git tag -d "v1.0.${{ github.run_number }}" 2>/dev/null || true
           git push --delete origin "v1.0.${{ github.run_number }}" 2>/dev/null || true
@@ -54,7 +59,36 @@ jobs:
           cache: true
           cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
-      - name: Configure Secure Execution Environment
+      - name: Install Apple Provisioning Identity (iOS Code Signing)
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        run: |
+          set -e
+          if [ -n "$BUILD_CERTIFICATE_BASE64" ] && [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            echo "🔐 Production signing keys detected. Mounting macOS keychain..."
+            CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+            PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+            KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+            echo "$BUILD_CERTIFICATE_BASE64" | base64 --decode > $CERTIFICATE_PATH
+            echo "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode > $PP_PATH
+
+            security create-keychain -p "" $KEYCHAIN_PATH
+            security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+            security unlock-keychain -p "" $KEYCHAIN_PATH
+
+            security import $CERTIFICATE_PATH -k $KEYCHAIN_PATH -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/xcodebuild
+            security set-key-partition-list -S apple-tool:,apple: -s -k "" $KEYCHAIN_PATH
+
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+          else
+            echo "📱 [GitHub Mobile Fallback] No iOS credentials provided. Bypassing signing checks..."
+          fi
+
+      - name: Configure Secure Execution Environment & Self-Heal Keystores
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -62,28 +96,32 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -e
-          flutter clean || true
-          rm -rf android/.gradle android/app/build android/build ios/Pods ios/Podfile.lock .dart_tool/ pubspec.lock
-          mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios/SourcePackages build/web
-          
+          mkdir -p android/app shaders ds/apk ds/aab ds/ios build/apk build/bundle build/ios build/web
           touch .env
           
           if [ -n "$KEYSTORE_BASE64" ]; then 
             echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            sp="${KEYSTORE_PASSWORD}"
+            kp="${KEY_PASSWORD}"
+            ka="${KEY_ALIAS}"
+          else
+            echo "⚠️ Generating debug fallback keystore key signatures..."
+            keytool -genkey -v -keystore android/app/upload-keystore.jks -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            sp="android"
+            kp="android"
+            ka="androiddebugkey"
           fi
           
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$KEYSTORE_PASSWORD" "$KEY_PASSWORD" "$KEY_ALIAS" > android/key.properties
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "$sp" "$kp" "$ka" > android/key.properties
           flutter config --enable-web --jdk-dir "$JAVA_HOME"
 
-      - name: Link Workspace Assets & Override Namespace Labels
+      - name: Link Workspace Assets & Manage App Identity
         run: |
           set -e
           img_src=$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
           if [ -n "$img_src" ]; then
-            echo "Processing application logo from: $img_src"
-            sips -s format png "$img_src" --out logo.png
+            sips -s format png --deleteColorManagement "$img_src" --out logo.png
           else
-            echo "⚠️ Logo screenshot asset missing. Generating safety workspace vector fallback."
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png
           fi
           
@@ -99,7 +137,6 @@ jobs:
                   txt += '\n\nflutter_launcher_icons:\n  android: true\n  ios: true\n  image_path: \"logo.png\"\n  web:\n    generate: true\n    image_path: \"logo.png\"\n'
               with open('pubspec.yaml', 'w') as f: f.write(txt)
           "
-          
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
               perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml
           fi
@@ -110,18 +147,16 @@ jobs:
               with open('ios/Runner/Info.plist', 'r') as f: txt = f.read()
               txt = re.sub(r'<key>CFBundleDisplayName</key>\s*<string>[^<]*</string>', '<key>CFBundleDisplayName</key>\n\t<string>Mind Spark</string>', txt)
               txt = re.sub(r'<key>CFBundleName</key>\s*<string>[^<]*</string>', '<key>CFBundleName</key>\n\t<string>Mind Spark</string>', txt)
+              if '<key>ITSAppUsesNonExemptEncryption</key>' not in txt:
+                  txt = txt.replace('</dict>', '\t<key>ITSAppUsesNonExemptEncryption</key>\n\t<string>NO</string>\n</dict>')
               with open('ios/Runner/Info.plist', 'w') as f: f.write(txt)
               "
           fi
-          
-          if [ -f android/build.gradle ]; then 
-            echo -e "\nsubprojects { afterEvaluate { p -> if (p.hasProperty('android') && p.android.namespace == null) { p.android.namespace = p.group } } }" >> android/build.gradle
-          fi
 
-      - name: Fetch Dynamic Dependencies (Self-Healing)
+      - name: Fetch Dynamic Dependencies
         run: |
+          set -e
           flutter pub get || {
-            echo "⚠️ [Self-Healing] Dependency cache reset..."
             flutter pub cache clean --force
             rm -rf .dart_tool/ pubspec.lock
             flutter pub get
@@ -130,46 +165,34 @@ jobs:
       - name: Execute Workspace Self-Healing Suite
         run: |
           set -e
-          echo "🤖 Starting Automated Virtual Workspace Diagnostics..."
-          
-          # Fix 1: Ensure Web target folders exist to avoid asset copy errors
           if [ ! -d web ]; then
-            flutter create . --platforms=web
+            flutter create --platforms=web .
           fi
           
-          # Fix 2: Inject mandatory iOS Microphone settings if missing
           if [ -f ios/Runner/Info.plist ] && ! grep -q "NSMicrophoneUsageDescription" ios/Runner/Info.plist; then
             perl -pi -e 's/<\/dict>/\t<key>NSMicrophoneUsageDescription<\/key>\n\t<string>Voice access required for Spark Assistant<\/string>\n\t<key>NSCameraUsageDescription<\/key>\n\t<string>AR camera access required to paint hard light hologram<\/string>\n<\/dict>/g' ios/Runner/Info.plist
           fi
 
-          # Fix 3: Injects missing dev_dependencies hooks cleanly via Python
           python3 -c "
           import os
           if os.path.exists('pubspec.yaml'):
               with open('pubspec.yaml', 'r') as f: txt = f.read()
-              if 'flutter_launcher_icons:' not in txt:
+              if 'flutter_launcher_icons:' not in txt and 'dev_dependencies:' not in txt:
                   txt += '\ndev_dependencies:\n  flutter_launcher_icons: ^0.14.2\n'
                   with open('pubspec.yaml', 'w') as f: f.write(txt)
           "
           
-          # Fix 4: Force Android Manifest to bypass Impeller engine targets
-          if [ -f android/app/src/main/AndroidManifest.xml ]; then
-            perl -pi -e 's/<\/application>/\t<meta-data android:name="io.flutter.embedding.android.RenderingEngine" android:value="skia" \/>\n\t<\/application>/g' android/app/src/main/AndroidManifest.xml
-          fi
-          
-          # Fix 5: Cross-platform Perl sanitization for Android target SDK levels
           if [ -f android/app/build.gradle ]; then
             perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 34/g; s/compileSdk .*/compileSdk = 34/g;' android/app/build.gradle
             perl -pi -e 's/targetSdkVersion.*/targetSdkVersion 34/g; s/targetSdk .*/targetSdk = 34/g;' android/app/build.gradle
           fi
           
-          # Fix 6: Enforce valid mobile compliant GLSL ES shader formats
           mkdir -p shaders
           if [ ! -f shaders/hologram_glow.frag ] || grep -q "460 core" shaders/hologram_glow.frag; then
             printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
           fi
-          
           flutter pub get
+
       - name: Compile App Launcher Graphics
         continue-on-error: true
         run: dart run flutter_launcher_icons
@@ -189,49 +212,51 @@ jobs:
           SUPABASE_ANON_KEY: \${{ secrets.SUPABASE_ANON_KEY }}
           SHA_3: \({{ secrets.SHA_3 }}           SHA_3_256:\){{ secrets.SHA_3_256 }}
           SHA_3_384: \({{ secrets.SHA_3_384 }}           SHA_3_512:\){{ secrets.SHA_3_512 }}
+          BUILD_CERTIFICATE_BASE64: \${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           V_NUM: \${{ github.run_number }}
         run: |
           cat << 'EOF' > generate_env.py
           import os, subprocess
           keys = ['MTN_KEY', 'HEYGEN_KEY', 'TRIPO_KEY', 'PEXEL_KEY', 'ELEVENLABS_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'GROQ_KEY', 'VERTEX_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SHA_3', 'SHA_3_256', 'SHA_3_384', 'SHA_3_512']
-          cl = lambda k: os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
           
           with open('.env', 'w') as f:
               for k in keys:
-                  f.write(f"{k}={cl(k)}\n")
+                  val = os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
+                  f.write(f"{k}={val}\n")
+          
+          fs_list = []
+          for k in keys:
+              val = os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
+              name = k.replace('_KEY', '')
+              if k.startswith('SHA_3'):
+                  name = k.replace('SHA_3', 'SIG_SHA3')
+              fs_list.append(f"--dart-define={name}={val}")
                   
-          fs_list = [f"--dart-define={n}={cl(k)}" for n, k in [
-              ('MTN', 'MTN_KEY'), ('HEYGEN', 'HEYGEN_KEY'), ('TRIPO', 'TRIPO_KEY'), 
-              ('PEXEL', 'PEXEL_KEY'), ('ELEVENLABS', 'ELEVENLABS_KEY'), ('GEMINI', 'GEMINI_KEY'), 
-              ('OPENAI', 'OPENAI_KEY'), ('GROQ', 'GROQ_KEY'), ('VERTEX', 'VERTEX_KEY'), 
-              ('SUPABASE_URL', 'SUPABASE_URL'), ('SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY'), 
-              ('SIG_SHA3', 'SHA_3'), ('SIG_SHA3_256', 'SHA_3_256'), ('SIG_SHA3_384', 'SHA_3_384'), 
-              ('SIG_SHA3_512', 'SHA_3_512')
-          ]]
           b_cmd = [f"--build-name=1.0.{os.environ['V_NUM']}", f"--build-number={os.environ['V_NUM']}"]
+          ios_sign_flag = ['--no-codesign'] if not os.environ.get('BUILD_CERTIFICATE_BASE64') else []
           
-          if os.path.exists('ios/Podfile'):
-              subprocess.run('cd ios && rm -rf Pods Podfile.lock && pod repo update && pod install --repo-update', shell=True)
-              
-          subprocess.run(['flutter', 'build', 'apk', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=ds/apk', '--android-skip-build-dependency-validation'] + fs_list + b_cmd, check=True)
-          subprocess.run(['flutter', 'build', 'appbundle', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=ds/aab', '--android-skip-build-dependency-validation'] + fs_list + b_cmd, check=True)
+          subprocess.run(['flutter', 'build', 'apk', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=build/apk'] + fs_list + b_cmd, check=True)
+          subprocess.run(['flutter', 'build', 'appbundle', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=build/bundle'] + fs_list + b_cmd, check=True)
           subprocess.run(['flutter', 'build', 'web', '--release'] + fs_list, check=True) 
-          subprocess.run(['flutter', 'build', 'ios', '--release', '--no-codesign', '--obfuscate', '--split-debug-info=ds/ios'] + fs_list + b_cmd, check=True)
+          subprocess.run(['flutter', 'build', 'ios', '--release', '--obfuscate', '--split-debug-info=build/ios'] + ios_sign_flag + fs_list + b_cmd, check=True)
           EOF
-          
           python3 generate_env.py
 
       - name: Package Output Pipelines
         run: |
           set -e
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} build/apk/ \; 2>/dev/null || true
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} build/bundle/ \; 2>/dev/null || true
-          iad=\$(find build -type d -name "Runner.app" 2>/dev/null | head -n 1)
+          mkdir -p ds/apk ds/aab ds/ios
+          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} ds/apk/ \; 2>/dev/null || true
+          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} ds/aab/ \; 2>/dev/null || true
+          
+          iad=\$(find build/ios -type d -name "Runner.app" 2>/dev/null | head -n 1)
           if [ -n "\$iad" ]; then
-            cd "(dirname "iad")"
+            xattr -cr "\$iad" || true
+            parent_dir=(dirname "iad")
+            cd "\$parent_dir"
             mkdir -p Payload
             cp -r Runner.app Payload/
-            zip -r ../../../build/ios/Runner.ipa Payload/
+            zip -r ../../../ds/ios/MindSpark-Release.ipa Payload/
             cd -
           fi
 
@@ -239,10 +264,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-mobile-builds-\${{ github.run_number }}
-          path: |
-            build/apk/
-            build/bundle/
-            build/ios/*.ipa
+          path: ds/
 
       - name: Store Production Web Dist
         uses: actions/upload-artifact@v4
@@ -253,10 +275,8 @@ jobs:
       - name: Pull Architecture Volume Metrics
         run: |
           set -e
-          brew install cloc
+          brew install cloc || true
           echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
-          echo "Production snapshot compiled automatically via virtual compilation pipelines." >> code-metrics.md
-          echo "" >> code-metrics.md
           printf '```text\n' >> code-metrics.md
           cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md
           printf '```\n' >> code-metrics.md
@@ -265,13 +285,13 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: |
-            build/apk/*.apk
-            build/bundle/*.aab
-            build/ios/*.ipa
+            ds/apk/*.apk
+            ds/aab/*.aab
+            ds/ios/*.ipa
             code-metrics.md
           tag: "v1.0.${{ github.run_number }}"
           name: "Release v1.0.${{ github.run_number }}"
-          body: "Production deployment finalized cleanly via virtual workspace pipelines. Tracking commit: ${{ github.sha }}"
+          body: "Production deployment finalized cleanly. Tracking commit: ${{ github.sha }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
 
@@ -305,4 +325,4 @@ jobs:
             ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest
             ghcr.io/yakuza11142/mindspark1/nvidia-cloud:${{ github.run_number }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
