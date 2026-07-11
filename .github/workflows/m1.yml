@@ -34,21 +34,57 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create .env file
+      - name: Create Missing Assets
         run: |
+          # Create .env file
           touch .env
-          echo "# Environment file for build" > .env
+          echo "# Environment configuration" > .env
           echo "BUILD_MODE=release" >> .env
+          
+          # Create logo.png (1x1 transparent PNG)
+          python3 << 'EOF'
+          import struct
+          import zlib
+          
+          # Create a minimal 1x1 transparent PNG
+          png_data = bytes.fromhex(
+              '89504e470d0a1a0a'  # PNG signature
+              '0000000d'  # IHDR chunk size
+              '49484452'  # IHDR
+              '00000001000000010802000000'  # 1x1, 8-bit RGBA
+              '9057c400'  # CRC
+              '0000000c'  # IDAT chunk size
+              '49444154'  # IDAT
+              '08d3638000000200010001'  # compressed data
+              '9b6c4a00'  # CRC
+              '0000000049454e44ae426082'  # IEND
+          )
+          
+          with open('logo.png', 'wb') as f:
+              f.write(png_data)
+          EOF
+          
+          ls -la .env logo.png
 
-      - name: Verify Tools
+      - name: Fix Gradle Wrapper
         run: |
-          flutter --version
-          java -version
+          cd android
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Downloading Gradle wrapper..."
+            mkdir -p gradle/wrapper
+            # Download gradle-wrapper.jar for Gradle 8.1.0
+            curl -L -o gradle/wrapper/gradle-wrapper.jar \
+              https://services.gradle.org/distributions/gradle-8.1-wrapper.jar 2>/dev/null || \
+            wget -O gradle/wrapper/gradle-wrapper.jar \
+              https://services.gradle.org/distributions/gradle-8.1-wrapper.jar
+          fi
+          chmod +x gradlew
+          ls -la gradle/wrapper/
+          cd ..
 
       - name: Clean Project
         run: |
           flutter clean
-          cd android && chmod +x gradlew && ./gradlew clean --stacktrace || true
           rm -rf build/
 
       - name: Get Dependencies
@@ -56,7 +92,7 @@ jobs:
           flutter pub get
         timeout-minutes: 30
 
-      - name: Create Directories
+      - name: Create Output Directories
         run: mkdir -p ds/apk ds/aab ds/web
 
       - name: Build Web
@@ -70,6 +106,7 @@ jobs:
             exit 1
           fi
         timeout-minutes: 60
+        continue-on-error: false
 
       - name: Upload Web Artifact
         if: always()
@@ -83,8 +120,7 @@ jobs:
         run: |
           echo "Starting APK build..."
           cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tail -100
+          ./gradlew assembleRelease --no-daemon -Pandroid.useAndroidX=true 2>&1 | tail -100
           cd ..
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             echo "✅ APK build successful"
@@ -93,6 +129,7 @@ jobs:
             exit 1
           fi
         timeout-minutes: 90
+        continue-on-error: false
 
       - name: Copy APK
         run: |
@@ -112,8 +149,7 @@ jobs:
         run: |
           echo "Starting AAB build..."
           cd android
-          chmod +x gradlew
-          ./gradlew bundleRelease --no-daemon --stacktrace 2>&1 | tail -100
+          ./gradlew bundleRelease --no-daemon -Pandroid.useAndroidX=true 2>&1 | tail -100
           cd ..
           if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
             echo "✅ AAB build successful"
@@ -122,6 +158,7 @@ jobs:
             exit 1
           fi
         timeout-minutes: 90
+        continue-on-error: false
 
       - name: Copy AAB
         run: |
