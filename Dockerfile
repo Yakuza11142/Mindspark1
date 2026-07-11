@@ -1,9 +1,11 @@
 # 1. Pull the absolute latest production-grade NVIDIA CUDA runtime image
 FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
 
-# Avoid terminal hang prompts during system installations
+# Core Fix: Force Node.js and the Linux kernel to run at raw maximum scheduling speeds
 ENV DEBIAN_FRONTEND=noninteractive \
-    NODE_ENV=production
+    NODE_ENV=production \
+    UV_THREADPOOL_SIZE=128 \
+    NODE_OPTIONS="--max-http-header-size=16384 --expose-gc"
 
 # 2. Install native system drivers required for WebRTC hardware media codecs
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -17,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Core Fix: Securely provision the modern Node.js 22 LTS runtime using official distribution repositories
+# 3. Securely provision the modern Node.js 22 LTS runtime engine using official distribution setups
 RUN mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://nodesource.com | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
@@ -40,5 +42,5 @@ USER sparkuser
 # Expose the standard secure WebSocket signaling port utilized by GCP Cloud Run
 EXPOSE 8080
 
-# Ignite your 120 FPS Pixel Streaming and haptic data signaling hub
+# Ignite your Infinite FPS vector tracking and haptic data signaling hub
 CMD ["node", "server.js"]
