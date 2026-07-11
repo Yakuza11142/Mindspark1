@@ -128,14 +128,15 @@ jobs:
           username: "${{ github.actor }}"
           password: "${{ secrets.GITHUB_TOKEN }}"
       - uses: docker/setup-buildx-action@v3
-      - run: |
+      - name: Generate Dockerfile, Build and Push
+        run: |
           cat << 'EOF' > GeneratedDockerfile
-          FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
-          RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
-          RUN rm -rf /var/www/html/*
-          COPY build/web /var/www/html
+          FROM nginx:alpine
+          RUN rm -rf /usr/share/nginx/html/*
+          COPY build/web /usr/share/nginx/html
           EXPOSE 80
           CMD ["nginx", "-g", "daemon off;"]
           EOF
+
           docker build --file GeneratedDockerfile --tag ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest .
           docker push ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest
