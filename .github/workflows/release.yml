@@ -111,7 +111,6 @@ jobs:
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
               perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml
           fi
-
       - name: Fetch Dynamic Dependencies
         run: |
           set -e
