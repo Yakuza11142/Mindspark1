@@ -104,11 +104,11 @@ jobs:
         run: |
           flutter build apk --release --no-tree-shake-icons --no-split-per-abi --obfuscate --split-debug-info=build/apk \
             --build-name="1.0.\${{ github.run_number }}" \
-            --build-number="\(\text{\${{ github.run\_number }}}\)" \
+            --build-number="\${{ github.run_number }}" \
             --dart-define=SUPABASE_URL="\${{ secrets.SUPABASE_URL }}" \
             --dart-define=SUPABASE_ANON_KEY="\${{ secrets.SUPABASE_ANON_KEY }}" \
             --dart-define=GEMINI_KEY="\${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="\(\text{\${{ secrets.OPENAI\_KEY }}}\)" \
+            --dart-define=OPENAI_KEY="\${{ secrets.OPENAI_KEY }}" \
             --dart-define=GROQ_KEY="\${{ secrets.GROQ_API_KEY }}" \
             --dart-define=VERTEX_KEY="\${{ secrets.VERTEX_API_KEY }}" \
             --dart-define=MTN_KEY="\${{ secrets.MTN_API_KEY }}" \
@@ -124,7 +124,7 @@ jobs:
       - name: Compile AppBundle Target
         run: |
           flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=build/bundle \
-            --build-name="\(1.0.\text{\${{ github.run\_number }}}\)" \
+            --build-name="1.0.\${{ github.run_number }}" \
             --build-number="\${{ github.run_number }}" \
             --dart-define=SUPABASE_URL="\${{ secrets.SUPABASE_URL }}" \
             --dart-define=SUPABASE_ANON_KEY="\${{ secrets.SUPABASE_ANON_KEY }}" \
