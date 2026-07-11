@@ -1,6 +1,6 @@
 name: m1-debug-pipeline
 on:
-  workflow_dispatch: # Forces manual execution only. No automatic loops.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -9,145 +9,195 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 180
+    
+    env:
+      GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
+      JAVA_OPTS: "-Xmx4096m"
+      ANDROID_GRADLE_PLUGIN_VERSION: "8.1.0"
 
-      - name: Setup Java Environment
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+          cache-dependency-path: android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Setup Flutter Build Engine
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-          cache-key: 'flutter-${{ runner.os }}-${{ hashFiles("**/pubspec.lock") }}'
-          cache-path: '${{ runner.tool_cache }}/flutter/:channel:${{ runner.arch }}'
+          cache-key: flutter-${{ hashFiles('**/pubspec.lock') }}
+          cache-path: ${{ runner.tool_cache }}/flutter
 
-      - name: Verify Flutter Installation
+      - name: Verify Tools
         run: |
+          echo "=== Flutter Info ==="
           flutter --version
           flutter doctor -v
-          dart --version
+          echo "=== Java Info ==="
+          java -version
+          echo "=== Gradle Info ==="
+          cd android && ./gradlew --version || gradle --version
 
-      - name: Prep Project Paths
-        run: |
-          mkdir -p ds/apk ds/aab ds/web build
-          echo "Project directories created successfully"
-
-      - name: Resolve Project Dependencies
+      - name: Clean Project
         run: |
           flutter clean
+          cd android && ./gradlew clean --stacktrace || true
+          rm -rf build/
+
+      - name: Get Dependencies
+        run: |
           flutter pub get
           flutter pub upgrade --major-versions
-        continue-on-error: false
+        timeout-minutes: 30
 
-      - name: Generate Code (if needed)
+      - name: Create Directories
         run: |
-          if grep -q "build_runner" pubspec.yaml; then
-            flutter pub run build_runner build --delete-conflicting-outputs
-          fi
-        continue-on-error: true
+          mkdir -p ds/apk ds/aab ds/web
+          mkdir -p build/web build/app/outputs
 
-      - name: Execute Web Target Compilation
+      - name: Build Web
         run: |
-          flutter build web --release --verbose
-          echo "✅ Web build completed successfully"
-
-      - name: Verify Web Build Output
-        run: |
-          if [ -d "build/web" ]; then
-            ls -lah build/web/
-            echo "✅ Web build artifacts verified"
+          echo "Starting web build..."
+          flutter build web --release --verbose 2>&1 | tee web_build.log
+          echo "Web build completed"
+          if [ -d "build/web" ] && [ "$(ls -A build/web)" ]; then
+            echo "✅ Web build successful"
           else
-            echo "❌ Web build directory not found"
+            echo "❌ Web build failed"
+            cat web_build.log
             exit 1
           fi
+        timeout-minutes: 60
+        continue-on-error: false
 
-      - name: Upload Web Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Web Artifact
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: build/web/
-          if-no-files-found: warn
+          retention-days: 30
 
-      - name: Execute APK Target Compilation
+      - name: Build APK
         run: |
-          flutter build apk --release --no-tree-shake-icons --verbose
-          echo "✅ APK build completed successfully"
-
-      - name: Verify APK Build Output
-        run: |
+          echo "Starting APK build..."
+          cd android
+          ./gradlew assembleRelease --stacktrace -Pcom.android.tools.r8.dontminify --no-daemon 2>&1 | tee apk_build.log
+          cd ..
+          echo "APK build completed"
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            ls -lah build/app/outputs/flutter-apk/app-release.apk
-            echo "✅ APK build artifacts verified"
+            echo "✅ APK build successful"
           else
-            echo "❌ APK file not found"
+            echo "❌ APK build failed"
+            cat android/apk_build.log
             exit 1
           fi
+        timeout-minutes: 90
+        continue-on-error: false
 
-      - name: Consolidate APK Output
+      - name: Copy APK
         run: |
           mkdir -p ds/apk
           cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk
           ls -lah ds/apk/
 
-      - name: Upload APK Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload APK Artifact
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: apk-build
           path: ds/apk/
-          if-no-files-found: warn
+          retention-days: 30
 
-      - name: Execute AAB Target Compilation
+      - name: Build AAB
         run: |
-          flutter build appbundle --release --verbose
-          echo "✅ AAB build completed successfully"
-
-      - name: Verify AAB Build Output
-        run: |
+          echo "Starting AAB build..."
+          cd android
+          ./gradlew bundleRelease --stacktrace -Pcom.android.tools.r8.dontminify --no-daemon 2>&1 | tee aab_build.log
+          cd ..
+          echo "AAB build completed"
           if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
-            ls -lah build/app/outputs/bundle/release/app-release.aab
-            echo "✅ AAB build artifacts verified"
+            echo "✅ AAB build successful"
           else
-            echo "❌ AAB file not found"
+            echo "❌ AAB build failed"
+            cat android/aab_build.log
             exit 1
           fi
+        timeout-minutes: 90
+        continue-on-error: false
 
-      - name: Consolidate AAB Output
+      - name: Copy AAB
         run: |
           mkdir -p ds/aab
           cp build/app/outputs/bundle/release/app-release.aab ds/aab/mind_spark.aab
           ls -lah ds/aab/
 
-      - name: Upload AAB Build Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload AAB Artifact
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: aab-build
           path: ds/aab/
-          if-no-files-found: warn
+          retention-days: 30
 
-      - name: Final Build Summary
+      - name: Final Report
         if: always()
         run: |
-          echo "==================================="
-          echo "   BUILD SUMMARY"
-          echo "==================================="
           echo ""
-          echo "📱 Web Build:"
-          [ -d "build/web" ] && echo "  ✅ SUCCESS - $(find build/web -type f | wc -l) files" || echo "  ❌ FAILED"
+          echo "╔════════════════════════════════════╗"
+          echo "║     BUILD COMPLETION REPORT        ║"
+          echo "╚════════════════════════════════════╝"
           echo ""
-          echo "📦 APK Build:"
-          [ -f "ds/apk/mind_spark.apk" ] && echo "  ✅ SUCCESS - $(ls -lh ds/apk/mind_spark.apk | awk '{print $5}')" || echo "  ❌ FAILED"
+          
+          echo "📱 WEB BUILD:"
+          if [ -d "build/web" ] && [ "$(ls -A build/web)" ]; then
+            FILE_COUNT=$(find build/web -type f | wc -l)
+            SIZE=$(du -sh build/web | cut -f1)
+            echo "   ✅ SUCCESS"
+            echo "   📊 Files: $FILE_COUNT"
+            echo "   📦 Size: $SIZE"
+          else
+            echo "   ❌ FAILED - No files found"
+          fi
+          
           echo ""
-          echo "📋 AAB Build:"
-          [ -f "ds/aab/mind_spark.aab" ] && echo "  ✅ SUCCESS - $(ls -lh ds/aab/mind_spark.aab | awk '{print $5}')" || echo "  ❌ FAILED"
+          echo "📦 APK BUILD:"
+          if [ -f "ds/apk/mind_spark.apk" ]; then
+            SIZE=$(ls -lh ds/apk/mind_spark.apk | awk '{print $5}')
+            echo "   ✅ SUCCESS"
+            echo "   📦 Size: $SIZE"
+          else
+            echo "   ❌ FAILED - APK not found"
+          fi
+          
           echo ""
-          echo "==================================="
+          echo "📋 AAB BUILD:"
+          if [ -f "ds/aab/mind_spark.aab" ]; then
+            SIZE=$(ls -lh ds/aab/mind_spark.aab | awk '{print $5}')
+            echo "   ✅ SUCCESS"
+            echo "   📦 Size: $SIZE"
+          else
+            echo "   ❌ FAILED - AAB not found"
+          fi
+          
+          echo ""
+          echo "════════════════════════════════════"
+          
+          # Exit with success only if all 3 builds exist
+          if [ -d "build/web" ] && [ -f "ds/apk/mind_spark.apk" ] && [ -f "ds/aab/mind_spark.aab" ]; then
+            echo "🎉 ALL BUILDS SUCCESSFUL!"
+            exit 0
+          else
+            echo "⚠️  Some builds failed"
+            exit 1
+          fi
