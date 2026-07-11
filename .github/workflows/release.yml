@@ -3,243 +3,132 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-
 concurrency:
   group: m1-build-pipeline
   cancel-in-progress: true
-
 permissions:
   contents: write
   actions: write
   packages: write
   releases: write
-
 jobs:
-  # =========================================================================
-  # UNSTOPPABLE ENGINEERING ENGINE: Auto-Heals Environment and Compiles All
-  # =========================================================================
   unified-build-pipeline:
     runs-on: ubuntu-latest
     timeout-minutes: 360
-
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Fix Git Dubious Ownership
+      - run: git config --global --add safe.directory "*"
+      - continue-on-error: true
         run: |
-          git config --global --add safe.directory "*"
-
-      - name: Reset Workspace Tags & Self-Heal Core Release Locks
-        continue-on-error: true
-        run: |
-          set -e
-          git fetch --tags --force || echo "Tags unavailable"
-          if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
-            gh release delete "v1.0.${{ github.run_number }}" --yes || true
-          fi
-          git tag -d "v1.0.${{ github.run_number }}" 2>/dev/null || true
-          git push --delete origin "v1.0.${{ github.run_number }}" 2>/dev/null || true
+          set -e; git fetch --tags --force || true
+          if gh release view "v1.0.\${{ github.run_number }}" >/dev/null 2>&1; then gh release delete "v1.0.\${{ github.run_number }}" --yes || true; fi
+          git tag -d "v1.0.\${{ github.run_number }}" 2>/dev/null || true
+          git push --delete origin "v1.0.\${{ github.run_number }}" 2>/dev/null || true
         env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Install Java Environments
-        uses: actions/setup-java@v4
+          GITHUB_TOKEN: "\${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 17
           cache: gradle
-
-      - name: Setup Flutter Bundle Stable Engine
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Re-Generate Missing Platforms & Directory Trees
-        run: |
+      - run: |
+          set -e; mkdir -p android/app shaders ds/apk ds/aab build/apk build/bundle build/web
+          [ ! -d web ] && flutter create --platforms=web . || true
+          [ ! -d android ] && flutter create --platforms=android . || true
+      - run: |
           set -e
-          mkdir -p android/app shaders ds/apk ds/aab build/apk build/bundle build/web
-          if [ ! -d web ]; then
-            flutter create --platforms=web .
-          fi
-          if [ ! -d android ]; then
-            flutter create --platforms=android .
-          fi
-
-      - name: Auto-Heal Project Configuration Manifests & Logo Pipeline
-        run: |
-          set -e
-          
-          # 1. Self-heal Logo Asset Pipeline
-          img_src=$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
-          if [ -n "$img_src" ]; then
-            cp "$img_src" logo.png
-          elif [ ! -f logo.png ]; then
-            echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png
-          fi
-
-          # 2. Structural Fixes for pubspec.yaml (Ensures Assets and Launcher Icons Exist Safely)
-          if [ -f pubspec.yaml ]; then
-            python3 -c "
+          img_src=\$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
+          if [ -n "\(img_src" ]; then cp "\)img_src" logo.png; elif [ ! -f logo.png ]; then echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png; fi
+          if [ -f pubspec.yaml ]; then python3 -c "
           import os, re
           with open('pubspec.yaml', 'r') as f: txt = f.read()
           if 'assets:' in txt:
-              if 'logo.png' not in txt:
-                  txt = re.sub(r'assets:\s*\n', 'assets:\n    - .env\n    - logo.png\n', txt)
+              if 'logo.png' not in txt: txt = re.sub(r'assets:\s*\n', 'assets:\n    - .env\n    - logo.png\n', txt)
           else:
-              if 'flutter:' in txt:
-                  txt = txt.replace('flutter:', 'flutter:\n  assets:\n    - .env\n    - logo.png')
-              else:
-                  txt += '\n\nflutter:\n  assets:\n    - .env\n    - logo.png\n'
-          if 'flutter_launcher_icons:' not in txt:
-              txt += '\n\nflutter_launcher_icons:\n  android: true\n  image_path: \"logo.png\"\n  web:\n    generate: true\n    image_path: \"logo.png\"\n'
+              txt = txt.replace('flutter:', 'flutter:\n  assets:\n    - .env\n    - logo.png') if 'flutter:' in txt else txt + '\n\nflutter:\n  assets:\n    - .env\n    - logo.png\n'
+          if 'flutter_launcher_icons:' not in txt: txt += '\n\nflutter_launcher_icons:\n  android: true\n  image_path: \"logo.png\"\n  web:\n    generate: true\n    image_path: \"logo.png\"\n'
           with open('pubspec.yaml', 'w') as f: f.write(txt)
-          "
-          fi
-
-          # 3. Synchronize Android XML and App Name Parameters
-          if [ -f android/app/src/main/AndroidManifest.xml ]; then
-              perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml
-          fi
-
-          # 4. Enforce SDK 35 & Kotlin 1.9.22 (Bypasses Camera and AR Tracker Plugin Compilation Errors)
+          "; fi
+          [ -f android/app/src/main/AndroidManifest.xml ] && perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml || true
           if [ -f android/app/build.gradle ]; then
-            sed -i 's/compileSdkVersion.*/compileSdkVersion 35/g' android/app/build.gradle || true
-            sed -i 's/compileSdk .*/compileSdk = 35/g;' android/app/build.gradle || true
-            sed -i 's/targetSdkVersion.*/targetSdkVersion 35/g' android/app/build.gradle || true
-            sed -i 's/targetSdk .*/targetSdk = 35/g;' android/app/build.gradle || true
+            sed -i 's/compileSdkVersion.*/compileSdkVersion 35/g; s/compileSdk .*/compileSdk = 35/g' android/app/build.gradle || true
+            sed -i 's/targetSdkVersion.*/targetSdkVersion 35/g; s/targetSdk .*/targetSdk = 35/g' android/app/build.gradle || true
             sed -i 's/ext.kotlin_version.*/ext.kotlin_version = "1.9.22"/g' android/build.gradle || true
           fi
-          
-          # 5. Guarantee Standalone Fragment Shader Compliance
-          mkdir -p shaders
-          printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
-
-      - name: Force Clean Cache & Fix Project Dependencies
-        run: |
-          set -e
-          rm -rf .dart_tool/ pubspec.lock .packages build/
-          flutter pub cache clean --force || true
-          flutter pub get
-
-      - name: Compile App Launcher Graphics
-        continue-on-error: true
-        run: dart run flutter_launcher_icons || echo "Bypassing icon compiler step safely"
-
-      - name: Build Web Production Files
-        run: |
-          set -e
+          mkdir -p shaders && printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
+      - run: rm -rf .dart_tool/ pubspec.lock .packages build/ && flutter pub cache clean --force || true && flutter pub get
+      - continue-on-error: true
+        run: dart run flutter_launcher_icons || true
+      - run: |
           flutter build web --release \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
-            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
-            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
-            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
-            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
-            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
-            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
-            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
-
-      - name: Build Android Release FAT APK (Universal Architecture)
-        run: |
-          set -e
+            --dart-define=SUPABASE_URL="\({{ secrets.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="\){{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="\({{ secrets.GEMINI_API_KEY }}" --dart-define=OPENAI_KEY="\){{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="\({{ secrets.GROQ_API_KEY }}" --dart-define=VERTEX_KEY="\){{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="\({{ secrets.MTN_API_KEY }}" --dart-define=HEYGEN_KEY="\){{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="\({{ secrets.TRIPO_API_KEY }}" --dart-define=PEXEL_KEY="\){{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="\${{ secrets.ELEVEN_LAB_API_KEY }}"
+      - run: |
           flutter build apk --release --no-tree-shake-icons --no-split-per-abi --obfuscate --split-debug-info=build/apk \
-            --build-name="1.0.${{ github.run_number }}" --build-number="${{ github.run_number }}" \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
-            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
-            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
-            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
-            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
-            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
-            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
-            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}" \
-            --dart-define=SIG_SHA3="${{ secrets.SHA_3 }}" \
-            --dart-define=SIG_SHA3_256="${{ secrets.SHA_3_256 }}" \
-            --dart-define=SIG_SHA3_384="${{ secrets.SHA_3_384 }}" \
-            --dart-define=SIG_SHA3_512="${{ secrets.SHA_3_512 }}"
-
-      - name: Build Android Release App Bundle (AAB Distribution Target)
-        run: |
-          set -e
+            --build-name="1.0.\({{ github.run_number }}" --build-number="\){{ github.run_number }}" \
+            --dart-define=SUPABASE_URL="\({{ secrets.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="\){{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="\({{ secrets.GEMINI_API_KEY }}" --dart-define=OPENAI_KEY="\){{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="\({{ secrets.GROQ_API_KEY }}" --dart-define=VERTEX_KEY="\){{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="\({{ secrets.MTN_API_KEY }}" --dart-define=HEYGEN_KEY="\){{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="\({{ secrets.TRIPO_API_KEY }}" --dart-define=PEXEL_KEY="\){{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="\${{ secrets.ELEVEN_LAB_API_KEY }}" \
+            --dart-define=SIG_SHA3="\({{ secrets.SHA_3 }}" --dart-define=SIG_SHA3_256="\){{ secrets.SHA_3_256 }}" \
+            --dart-define=SIG_SHA3_384="\({{ secrets.SHA_3_384 }}" --dart-define=SIG_SHA3_512="\){{ secrets.SHA_3_512 }}"
+      - run: |
           flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=build/bundle \
-            --build-name="1.0.${{ github.run_number }}" --build-number="${{ github.run_number }}" \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
-            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
-            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
-            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
-            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
-            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
-            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
-            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}" \
-            --dart-define=SIG_SHA3="${{ secrets.SHA_3 }}" \
-            --dart-define=SIG_SHA3_256="${{ secrets.SHA_3_256 }}" \
-            --dart-define=SIG_SHA3_384="${{ secrets.SHA_3_384 }}" \
-            --dart-define=SIG_SHA3_512="${{ secrets.SHA_3_512 }}"
-      - name: Package Output Binaries
-        run: |
-          set -e
+            --build-name="1.0.\({{ github.run_number }}" --build-number="\){{ github.run_number }}" \
+            --dart-define=SUPABASE_URL="\({{ secrets.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="\){{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="\({{ secrets.GEMINI_API_KEY }}" --dart-define=OPENAI_KEY="\){{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="\({{ secrets.GROQ_API_KEY }}" --dart-define=VERTEX_KEY="\){{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="\({{ secrets.MTN_API_KEY }}" --dart-define=HEYGEN_KEY="\){{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="\({{ secrets.TRIPO_API_KEY }}" --dart-define=PEXEL_KEY="\){{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="\${{ secrets.ELEVEN_LAB_API_KEY }}" \
+            --dart-define=SIG_SHA3="\({{ secrets.SHA_3 }}" --dart-define=SIG_SHA3_256="\){{ secrets.SHA_3_256 }}" \
+            --dart-define=SIG_SHA3_384="\({{ secrets.SHA_3_384 }}" --dart-define=SIG_SHA3_512="\){{ secrets.SHA_3_512 }}"
+      - run: |
           mkdir -p ds/apk ds/aab
           cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk || true
           cp build/app/outputs/bundle/release/app-release.aab ds/aab/mind_spark.aab || true
-
-      - name: Pull Architecture Volume Metrics
-        continue-on-error: true
+      - continue-on-error: true
         run: |
-          set -e
-          sudo apt-get update && sudo apt-get install -y cloc || echo "cloc mapping skipped"
+          sudo apt-get update && sudo apt-get install -y cloc
           echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
           printf '```text\n' >> code-metrics.md
-          cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md 2>/dev/null || echo "Metrics error bypassed" >> code-metrics.md
+          cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md 2>/dev/null || true
           printf '```\n' >> code-metrics.md
-
-      - name: Broadcast Release Dashboards Natively
-        uses: ncipollo/release-action@v1
+      - uses: ncipollo/release-action@v1
         with:
-          artifacts: |
-            ds/apk/*.apk
-            ds/aab/*.aab
-            code-metrics.md
+          artifacts: "ds/apk/*.apk,ds/aab/*.aab,code-metrics.md"
           tag: "v1.0.${{ github.run_number }}"
           name: "Release v1.0.${{ github.run_number }}"
           body: "Production deployment finalized cleanly. Tracking commit: ${{ github.sha }}"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: "${{ secrets.GITHUB_TOKEN }}"
           allowUpdates: true
-
-      - name: Store Native Compilation Binaries
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: app-mobile-builds
           path: ds/
-
-      - name: Store Production Web Dist
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: app-web-build
           path: build/web/
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: "${{ github.actor }}"
           password: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate and Build On-The-Fly Container
-        run: |
+      - uses: docker/setup-buildx-action@v3
+      - run: |
           cat << 'EOF' > GeneratedDockerfile
           FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
           RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
@@ -248,10 +137,5 @@ jobs:
           EXPOSE 80
           CMD ["nginx", "-g", "daemon off;"]
           EOF
-
-          docker build \
-            --file GeneratedDockerfile \
-            --tag ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest \
-            .
-
+          docker build --file GeneratedDockerfile --tag ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest .
           docker push ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest
