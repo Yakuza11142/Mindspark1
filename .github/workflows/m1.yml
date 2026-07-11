@@ -27,7 +27,7 @@ jobs:
 
       - name: Prep Project Paths
         run: |
-          mkdir -p ds/apk build/web
+          mkdir -p ds/apk ds/aab ds/web
           [ ! -d web ] && flutter create --platforms=web . || true
           [ ! -d android ] && flutter create --platforms=android . || true
 
@@ -37,16 +37,36 @@ jobs:
       - name: Execute Web Target Compilation
         run: flutter build web --release
 
+      - name: Upload Web Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web/
+
       - name: Execute APK Target Compilation
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: Consolidate Compiled Output Assets
+      - name: Consolidate APK Output
         run: |
           mkdir -p ds/apk
           cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk || true
 
-      - name: Preserve Build Artifact Backup
+      - name: Upload APK Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: compiled-mobile-and-web-apps
-          path: ds/
+          name: apk-build
+          path: ds/apk/
+
+      - name: Execute AAB Target Compilation
+        run: flutter build appbundle --release
+
+      - name: Consolidate AAB Output
+        run: |
+          mkdir -p ds/aab
+          cp build/app/outputs/bundle/release/app-release.aab ds/aab/mind_spark.aab || true
+
+      - name: Upload AAB Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aab-build
+          path: ds/aab/
