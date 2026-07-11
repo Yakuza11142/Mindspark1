@@ -1,4 +1,4 @@
-name: m1
+3name: m1
 on:
   push:
     branches: [main]
@@ -27,7 +27,7 @@ jobs:
           git tag -d "v1.0.\${{ github.run_number }}" 2>/dev/null || true
           git push --delete origin "v1.0.\${{ github.run_number }}" 2>/dev/null || true
         env:
-          GITHUB_TOKEN: "\${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
