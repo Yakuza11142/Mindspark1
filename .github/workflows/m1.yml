@@ -36,28 +36,18 @@ jobs:
 
       - name: Create Missing Assets
         run: |
-          # Create .env file
           touch .env
           echo "# Environment configuration" > .env
           echo "BUILD_MODE=release" >> .env
           
-          # Create logo.png (1x1 transparent PNG)
+          # Create minimal logo.png (1x1 transparent PNG)
           python3 << 'EOF'
           import struct
           import zlib
           
-          # Create a minimal 1x1 transparent PNG
           png_data = bytes.fromhex(
-              '89504e470d0a1a0a'  # PNG signature
-              '0000000d'  # IHDR chunk size
-              '49484452'  # IHDR
-              '00000001000000010802000000'  # 1x1, 8-bit RGBA
-              '9057c400'  # CRC
-              '0000000c'  # IDAT chunk size
-              '49444154'  # IDAT
-              '08d3638000000200010001'  # compressed data
-              '9b6c4a00'  # CRC
-              '0000000049454e44ae426082'  # IEND
+              '89504e470d0a1a0a0000000d49484452000000010000000108020000009057c4000000000c49444154'
+              '08d3638000000200010001000000000049454e44ae426082'
           )
           
           with open('logo.png', 'wb') as f:
@@ -66,21 +56,10 @@ jobs:
           
           ls -la .env logo.png
 
-      - name: Fix Gradle Wrapper
+      - name: Verify Tools
         run: |
-          cd android
-          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "Downloading Gradle wrapper..."
-            mkdir -p gradle/wrapper
-            # Download gradle-wrapper.jar for Gradle 8.1.0
-            curl -L -o gradle/wrapper/gradle-wrapper.jar \
-              https://services.gradle.org/distributions/gradle-8.1-wrapper.jar 2>/dev/null || \
-            wget -O gradle/wrapper/gradle-wrapper.jar \
-              https://services.gradle.org/distributions/gradle-8.1-wrapper.jar
-          fi
-          chmod +x gradlew
-          ls -la gradle/wrapper/
-          cd ..
+          flutter --version
+          java -version
 
       - name: Clean Project
         run: |
@@ -116,12 +95,10 @@ jobs:
           path: build/web/
           retention-days: 30
 
-      - name: Build APK
+      - name: Build APK (Flutter)
         run: |
           echo "Starting APK build..."
-          cd android
-          ./gradlew assembleRelease --no-daemon -Pandroid.useAndroidX=true 2>&1 | tail -100
-          cd ..
+          flutter build apk --release 2>&1 | tail -100
           if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
             echo "✅ APK build successful"
           else
@@ -145,12 +122,10 @@ jobs:
           path: ds/apk/
           retention-days: 30
 
-      - name: Build AAB
+      - name: Build AAB (Flutter)
         run: |
           echo "Starting AAB build..."
-          cd android
-          ./gradlew bundleRelease --no-daemon -Pandroid.useAndroidX=true 2>&1 | tail -100
-          cd ..
+          flutter build appbundle --release 2>&1 | tail -100
           if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
             echo "✅ AAB build successful"
           else
