@@ -49,6 +49,15 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - logo.png  # 👈 Added explicitly to match your CI/CD pipeline automation criteria
 
   shaders:
     - shaders/hologram_glow.frag
+
+flutter_launcher_icons:  # 👈 Declared here as a base blueprint to safeguard dynamic string runs
+  android: true
+  ios: true
+  image_path: "logo.png"
+  web:
+    generate: true
+    image_path: "logo.png"
