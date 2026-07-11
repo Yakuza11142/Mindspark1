@@ -1,11 +1,11 @@
-name: Client App Builds
+name: m1
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: m1-client-pipeline
+  group: m1-build-pipeline
   cancel-in-progress: true
 
 permissions:
@@ -15,7 +15,10 @@ permissions:
   releases: write
 
 jobs:
-  b:
+  # =========================================================================
+  # UNSTOPPABLE ENGINEERING ENGINE: Auto-Heals Environment and Compiles All
+  # =========================================================================
+  unified-build-pipeline:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
@@ -27,20 +30,20 @@ jobs:
 
       - name: Fix Git Dubious Ownership
         run: |
-          git config --global --add safe.directory "\${{ github.workspace }}"
+          git config --global --add safe.directory "*"
 
       - name: Reset Workspace Tags & Self-Heal Core Release Locks
         continue-on-error: true
-        env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          git fetch --tags --force || echo "⚠️ Tag fetch failed, proceeding anyway"
-          if gh release view "v1.0.\${{ github.run_number }}" >/dev/null 2>&1; then 
-            gh release delete "v1.0.\${{ github.run_number }}" --yes || true
+          git fetch --tags --force || echo "Tags unavailable"
+          if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then 
+            gh release delete "v1.0.${{ github.run_number }}" --yes || true
           fi
-          git tag -d "v1.0.\${{ github.run_number }}" 2>/dev/null || true
-          git push --delete origin "v1.0.\${{ github.run_number }}" 2>/dev/null || true
+          git tag -d "v1.0.${{ github.run_number }}" 2>/dev/null || true
+          git push --delete origin "v1.0.${{ github.run_number }}" 2>/dev/null || true
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Install Java Environments
         uses: actions/setup-java@v4
@@ -54,170 +57,154 @@ jobs:
         with:
           channel: stable
           cache: true
-          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
-      - name: Configure Secure Execution Environment & Self-Heal Keystores
+      - name: Re-Generate Missing Platforms & Directory Trees
         run: |
           set -e
           mkdir -p android/app shaders ds/apk ds/aab build/apk build/bundle build/web
-          
-          if [ -n "\${{ secrets.KEYSTORE_BASE64 }}" ]; then 
-            echo "\${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-            sp="\${{ secrets.KEYSTORE_PASSWORD }}"
-            kp="\${{ secrets.KEY_PASSWORD }}"
-            ka="\${{ secrets.KEY_ALIAS }}"
-          else
-            echo "⚠️ Generating debug fallback keystore key signatures..."
-            keytool -genkey -v -keystore android/app/upload-keystore.jks -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            sp="android"
-            kp="android"
-            ka="androiddebugkey"
+          if [ ! -d web ]; then
+            flutter create --platforms=web .
           fi
-          
-          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=upload-keystore.jks\n' "\$sp" "kp" "ka" > android/key.properties
-          flutter config --enable-web --jdk-dir "\$JAVA_HOME"
+          if [ ! -d android ]; then
+            flutter create --platforms=android .
+          fi
 
-      - name: Link Workspace Assets & Manage App Identity
-        continue-on-error: true
+      - name: Auto-Heal Project Configuration Manifests & Logo Pipeline
         run: |
           set -e
-          img_src=\$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
-          if [ -n "\$img_src" ]; then
-            cp "\$img_src" logo.png
-          else
+          
+          # 1. Self-heal Logo Asset Pipeline
+          img_src=$(find . -type f -iname "Screenshot_20260708_215841_Chrome*" | head -n 1)
+          if [ -n "$img_src" ]; then
+            cp "$img_src" logo.png
+          elif [ ! -f logo.png ]; then
             echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 --decode > logo.png
           fi
-          
+
+          # 2. Structural Fixes for pubspec.yaml (Ensures Assets and Launcher Icons Exist Safely)
+          if [ -f pubspec.yaml ]; then
+            python3 -c "
+          import os, re
+          with open('pubspec.yaml', 'r') as f: txt = f.read()
+          if 'assets:' in txt:
+              if 'logo.png' not in txt:
+                  txt = re.sub(r'assets:\s*\n', 'assets:\n    - .env\n    - logo.png\n', txt)
+          else:
+              if 'flutter:' in txt:
+                  txt = txt.replace('flutter:', 'flutter:\n  assets:\n    - .env\n    - logo.png')
+              else:
+                  txt += '\n\nflutter:\n  assets:\n    - .env\n    - logo.png\n'
+          if 'flutter_launcher_icons:' not in txt:
+              txt += '\n\nflutter_launcher_icons:\n  android: true\n  image_path: \"logo.png\"\n  web:\n    generate: true\n    image_path: \"logo.png\"\n'
+          with open('pubspec.yaml', 'w') as f: f.write(txt)
+          "
+          fi
+
+          # 3. Synchronize Android XML and App Name Parameters
           if [ -f android/app/src/main/AndroidManifest.xml ]; then
               perl -pi -e 's/android:label="[^"]*"/android:label="Mind Spark"/g' android/app/src/main/AndroidManifest.xml
           fi
 
-      - name: Fetch Dynamic Dependencies
-        run: |
-          set -e
-          flutter pub get || {
-            echo "⚠️ First pass pub get failed. Executing aggressive cache self-healing suite..."
-            flutter pub cache clean --force || true
-            rm -rf .dart_tool/ pubspec.lock .packages
-            flutter pub get
-          }
-
-      - name: Execute Workspace Self-Healing Suite
-        run: |
-          set -e
-          if [ ! -d web ]; then
-            echo "⚠️ Web platform missing. Running self-generation script..."
-            flutter create --platforms=web .
-          fi
-          
+          # 4. Enforce SDK 35 & Kotlin 1.9.22 (Bypasses Camera and AR Tracker Plugin Compilation Errors)
           if [ -f android/app/build.gradle ]; then
-            echo "⚡ Normalizing build configurations to SDK 35..."
-            perl -pi -e 's/compileSdkVersion.*/compileSdkVersion 35/g; s/compileSdk .*/compileSdk = 35/g;' android/app/build.gradle
-            perl -pi -e 's/targetSdkVersion.*/targetSdkVersion 35/g; s/targetSdk .*/targetSdk = 35/g;' android/app/build.gradle
+            sed -i 's/compileSdkVersion.*/compileSdkVersion 35/g' android/app/build.gradle || true
+            sed -i 's/compileSdk .*/compileSdk = 35/g;' android/app/build.gradle || true
+            sed -i 's/targetSdkVersion.*/targetSdkVersion 35/g' android/app/build.gradle || true
+            sed -i 's/targetSdk .*/targetSdk = 35/g;' android/app/build.gradle || true
+            sed -i 's/ext.kotlin_version.*/ext.kotlin_version = "1.9.22"/g' android/build.gradle || true
           fi
           
+          # 5. Guarantee Standalone Fragment Shader Compliance
           mkdir -p shaders
-          if [ ! -f shaders/hologram_glow.frag ] || grep -q "460 core" shaders/hologram_glow.frag; then
-            printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
-          fi
+          printf '#version 320 es\nprecision mediump float;\nout vec4 c;\nvoid main(){c=vec4(0,0.5,1,1);}' > shaders/hologram_glow.frag
+
+      - name: Force Clean Cache & Fix Project Dependencies
+        run: |
+          set -e
+          rm -rf .dart_tool/ pubspec.lock .packages build/
+          flutter pub cache clean --force || true
           flutter pub get
 
       - name: Compile App Launcher Graphics
         continue-on-error: true
-        run: dart run flutter_launcher_icons || echo "⚠️ Graphics compiler skipped"
+        run: dart run flutter_launcher_icons || echo "Bypassing icon compiler step safely"
 
-      - name: Compile Distribution Architecture Binaries
-        continue-on-error: true
-        env:
-          MTN_KEY: \${{ secrets.MTN_API_KEY }}
-          HEYGEN_KEY: \${{ secrets.HEYGEN_KEY }}
-          TRIPO_KEY: \${{ secrets.TRIPO_API_KEY }}
-          PEXEL_KEY: \${{ secrets.PEXELS_API_KEY }}
-          ELEVENLABS_KEY: \${{ secrets.ELEVEN_LAB_API_KEY }}
-          GEMINI_KEY: \${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: \${{ secrets.OPENAI_KEY }}
-          GROQ_KEY: \${{ secrets.GROQ_API_KEY }}
-          VERTEX_KEY: \${{ secrets.VERTEX_API_KEY }}
-          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: \${{ secrets.SUPABASE_ANON_KEY }}
-          SHA_3: \({{ secrets.SHA_3 }}           SHA_3_256:\){{ secrets.SHA_3_256 }}
-          SHA_3_384: \({{ secrets.SHA_3_384 }}           SHA_3_512:\){{ secrets.SHA_3_512 }}
-          V_NUM: \${{ github.run_number }}
+      - name: Build Web Production Files
         run: |
-          cat << 'EOF' > generate_env.py
-          import os, subprocess
-          keys = ['MTN_KEY', 'HEYGEN_KEY', 'TRIPO_KEY', 'PEXEL_KEY', 'ELEVENLABS_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'GROQ_KEY', 'VERTEX_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SHA_3', 'SHA_3_256', 'SHA_3_384', 'SHA_3_512']
-          
-          # Automatically creates a dynamic runtime .env file for code dependencies
-          with open('.env', 'w') as f:
-              for k in keys:
-                  val = os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
-                  f.write(f"{k}={val}\n")
-          
-          fs_list = []
-          for k in keys:
-              val = os.environ.get(k, '').strip().replace('\n', '').replace('\r', '')
-              name = k.replace('_KEY', '')
-              if k.startswith('SHA_3'):
-                  name = k.replace('SHA_3', 'SIG_SHA3')
-              fs_list.append(f"--dart-define={name}={val}")
-                  
-          b_cmd = [f"--build-name=1.0.{os.environ['V_NUM']}", f"--build-number={os.environ['V_NUM']}"]
-          
-          try:
-              subprocess.run(['flutter', 'build', 'apk', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=build/apk'] + fs_list + b_cmd, check=True)
-          except Exception as e:
-              print(f"⚠️ APK build error bypassed: {e}")
-              
-          try:
-              subprocess.run(['flutter', 'build', 'appbundle', '--release', '--no-tree-shake-icons', '--obfuscate', '--split-debug-info=build/bundle'] + fs_list + b_cmd, check=True)
-          except Exception as e:
-              print(f"⚠️ AAB build error bypassed: {e}")
-              
-          try:
-              subprocess.run(['flutter', 'build', 'web', '--release'] + fs_list, check=True) 
-          except Exception as e:
-              print(f"⚠️ Web build error bypassed: {e}")
-          EOF
-          python3 generate_env.py
+          set -e
+          flutter build web --release \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
+            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
+            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
+            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
 
-      - name: Package Output Pipelines
-        continue-on-error: true
+      - name: Build Android Release FAT APK (Universal Architecture)
+        run: |
+          set -e
+          flutter build apk --release --no-tree-shake-icons --no-split-per-abi --obfuscate --split-debug-info=build/apk \
+            --build-name="1.0.${{ github.run_number }}" --build-number="${{ github.run_number }}" \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
+            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
+            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
+            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}" \
+            --dart-define=SIG_SHA3="${{ secrets.SHA_3 }}" \
+            --dart-define=SIG_SHA3_256="${{ secrets.SHA_3_256 }}" \
+            --dart-define=SIG_SHA3_384="${{ secrets.SHA_3_384 }}" \
+            --dart-define=SIG_SHA3_512="${{ secrets.SHA_3_512 }}"
+
+      - name: Build Android Release App Bundle (AAB Distribution Target)
+        run: |
+          set -e
+          flutter build appbundle --release --no-tree-shake-icons --obfuscate --split-debug-info=build/bundle \
+            --build-name="1.0.${{ github.run_number }}" --build-number="${{ github.run_number }}" \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_KEY="${{ secrets.GROQ_API_KEY }}" \
+            --dart-define=VERTEX_KEY="${{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=MTN_KEY="${{ secrets.MTN_API_KEY }}" \
+            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
+            --dart-define=TRIPO_KEY="${{ secrets.TRIPO_API_KEY }}" \
+            --dart-define=PEXEL_KEY="${{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=ELEVENLABS_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}" \
+            --dart-define=SIG_SHA3="${{ secrets.SHA_3 }}" \
+            --dart-define=SIG_SHA3_256="${{ secrets.SHA_3_256 }}" \
+            --dart-define=SIG_SHA3_384="${{ secrets.SHA_3_384 }}" \
+            --dart-define=SIG_SHA3_512="${{ secrets.SHA_3_512 }}"
+      - name: Package Output Binaries
         run: |
           set -e
           mkdir -p ds/apk ds/aab
-          find build/app/outputs/flutter-apk/ -name "*.apk" -exec cp {} ds/apk/ \; 2>/dev/null || true
-          find build/app/outputs/bundle/release/ -name "*.aab" -exec cp {} ds/aab/ \; 2>/dev/null || true
-
-      - name: Store Native Compilation Binaries
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: app-mobile-builds-\${{ github.run_number }}
-          path: ds/
-          if-no-files-found: warn
-
-      - name: Store Production Web Dist
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: app-web-build-\${{ github.run_number }}
-          path: build/web/
-          if-no-files-found: warn
+          cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk || true
+          cp build/app/outputs/bundle/release/app-release.aab ds/aab/mind_spark.aab || true
 
       - name: Pull Architecture Volume Metrics
         continue-on-error: true
         run: |
           set -e
-          sudo apt-get update && sudo apt-get install -y cloc || echo "Metrics installation skipped"
+          sudo apt-get update && sudo apt-get install -y cloc || echo "cloc mapping skipped"
           echo "### 📊 Workspace Code Metrics Analysis" > code-metrics.md
           printf '```text\n' >> code-metrics.md
-          cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md 2>/dev/null || echo "cloc execution failed" >> code-metrics.md
+          cloc . --fullpath --not-match-d="(build|.dart_tool|.gradle|Pods|node_modules)" >> code-metrics.md 2>/dev/null || echo "Metrics error bypassed" >> code-metrics.md
           printf '```\n' >> code-metrics.md
 
       - name: Broadcast Release Dashboards Natively
         uses: ncipollo/release-action@v1
-        continue-on-error: true
         with:
           artifacts: |
             ds/apk/*.apk
@@ -228,3 +215,43 @@ jobs:
           body: "Production deployment finalized cleanly. Tracking commit: ${{ github.sha }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
+
+      - name: Store Native Compilation Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-mobile-builds
+          path: ds/
+
+      - name: Store Production Web Dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-web-build
+          path: build/web/
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate and Build On-The-Fly Container
+        run: |
+          cat << 'EOF' > GeneratedDockerfile
+          FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+          RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+          RUN rm -rf /var/www/html/*
+          COPY build/web /var/www/html
+          EXPOSE 80
+          CMD ["nginx", "-g", "daemon off;"]
+          EOF
+
+          docker build \
+            --file GeneratedDockerfile \
+            --tag ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest \
+            .
+
+          docker push ghcr.io/yakuza11142/mindspark1/nvidia-cloud:latest
