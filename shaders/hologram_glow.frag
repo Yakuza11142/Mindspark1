@@ -16,8 +16,10 @@ out vec4 fragColor;
 
 void main() {
     // 1. Core Fix: Transform global coordinates into perfect scale-invariant widget space
+    // FIX: Flipped Y-Axis to align coordinate space back to standard cartesian logic
     vec2 globalCoord = FlutterFragCoord().xy;
-    
+    globalCoord.y = uViewportDimensions.y - globalCoord.y; 
+
     // Normalize coordinates using the structural transformation boundary mapping hooks
     vec2 normalizedUV = globalCoord / uViewportDimensions;
 
@@ -108,5 +110,6 @@ void main() {
     float isSparkAlpha = step(0.001, totalSparkComposition);
     float finalAlpha = mix(clamp(backgroundIntensity, 0.0, 0.85), 0.95, isSparkAlpha);
 
-    fragColor = vec4(finalColorOutput, finalAlpha);
+    // FIX: Enforce alpha pre-multiplication to comply with Flutter/Skia blend modes
+    fragColor = vec4(finalColorOutput * finalAlpha, finalAlpha);
 }
