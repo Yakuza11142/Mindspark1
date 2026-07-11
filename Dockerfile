@@ -17,10 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Securely provision the modern Node.js 22 LTS runtime engine using official distribution setups
+# 3. Core Fix: Securely provision the modern Node.js 22 LTS runtime using official distribution repositories
 RUN mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://nodesource.com | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" | tee /etc/apt/etc/apt/sources.list.d/nodesource.list \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
     && apt-get update && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
@@ -32,6 +32,10 @@ RUN npm ci --only=production && npm cache clean --force
 
 # 5. Pull your application files and your custom fragment shader
 COPY . .
+
+# 6. Security Layer: Enforce a secure, non-root system user profile
+RUN useradd -m sparkuser && chown -R sparkuser:sparkuser /app
+USER sparkuser
 
 # Expose the standard secure WebSocket signaling port utilized by GCP Cloud Run
 EXPOSE 8080
