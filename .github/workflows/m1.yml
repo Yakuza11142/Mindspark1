@@ -1,103 +1,50 @@
-name: m1
+name: m1-debug-pipeline
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-concurrency:
-  group: m1-build-pipeline
-  cancel-in-progress: true
+  workflow_dispatch: # Forces manual execution only. No automatic loops.
+
 permissions:
   contents: write
   actions: write
-  packages: write
-  releases: write
+
 jobs:
-  unified-build-pipeline:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Java Environment
+        uses: actions/setup-java@v4
         with:
-          fetch-depth: 0
+          distribution: 'zulu'
+          java-version: '17'
 
-      - run: git config --global --add safe.directory "*"
+      - name: Setup Flutter Build Engine
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
 
-      - name: Clean Old Releases
-        continue-on-error: true
+      - name: Prep Project Paths
         run: |
-          set -e; git fetch --tags --force || true
-          if gh release view "v1.0.${{ github.run_number }}" >/dev/null 2>&1; then gh release delete "v1.0.${{ github.run_number }}" --yes || true; fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: zulu
-          java-version: 17
-          cache: gradle
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Prep Directories
-        run: |
-          mkdir -p android/app shaders ds/apk ds/aab build/apk build/bundle build/web
+          mkdir -p ds/apk build/web
           [ ! -d web ] && flutter create --platforms=web . || true
           [ ! -d android ] && flutter create --platforms=android . || true
 
-      - name: Fetch Dependencies
-        run: |
-          flutter pub get
+      - name: Resolve Project Dependencies
+        run: flutter pub get
 
-      - name: Compile Web Target
-        run: |
-          flutter build web --release \
-            --dart-define=SUPABASE_URL='${{ secrets.SUPABASE_URL }}' \
-            --dart-define=SUPABASE_ANON_KEY='${{ secrets.SUPABASE_ANON_KEY }}' \
-            --dart-define=GEMINI_KEY='${{ secrets.GEMINI_API_KEY }}' \
-            --dart-define=OPENAI_KEY='${{ secrets.OPENAI_KEY }}' \
-            --dart-define=GROQ_KEY='${{ secrets.GROQ_API_KEY }}' \
-            --dart-define=VERTEX_KEY='${{ secrets.VERTEX_API_KEY }}' \
-            --dart-define=MTN_KEY='${{ secrets.MTN_API_KEY }}' \
-            --dart-define=HEYGEN_KEY='${{ secrets.HEYGEN_KEY }}' \
-            --dart-define=TRIPO_KEY='${{ secrets.TRIPO_API_KEY }}' \
-            --dart-define=PEXEL_KEY='${{ secrets.PEXELS_API_KEY }}' \
-            --dart-define=ELEVENLABS_KEY='${{ secrets.ELEVEN_LAB_API_KEY }}'
+      - name: Execute Web Target Compilation
+        run: flutter build web --release
 
-      - name: Compile APK Target
-        run: |
-          flutter build apk --release --no-tree-shake-icons --no-split-per-abi \
-            --dart-define=SUPABASE_URL='${{ secrets.SUPABASE_URL }}' \
-            --dart-define=SUPABASE_ANON_KEY='${{ secrets.SUPABASE_ANON_KEY }}' \
-            --dart-define=GEMINI_KEY='${{ secrets.GEMINI_API_KEY }}' \
-            --dart-define=OPENAI_KEY='${{ secrets.OPENAI_KEY }}' \
-            --dart-define=GROQ_KEY='${{ secrets.GROQ_API_KEY }}' \
-            --dart-define=VERTEX_KEY='${{ secrets.VERTEX_API_KEY }}' \
-            --dart-define=MTN_KEY='${{ secrets.MTN_API_KEY }}' \
-            --dart-define=HEYGEN_KEY='${{ secrets.HEYGEN_KEY }}' \
-            --dart-define=TRIPO_KEY='${{ secrets.TRIPO_API_KEY }}' \
-            --dart-define=PEXEL_KEY='${{ secrets.PEXELS_API_KEY }}' \
-            --dart-define=ELEVENLABS_KEY='${{ secrets.ELEVEN_LAB_API_KEY }}'
+      - name: Execute APK Target Compilation
+        run: flutter build apk --release --no-tree-shake-icons --no-split-per-abi
 
-      - name: Consolidate Deliverables
+      - name: Consolidate Compiled Output Assets
         run: |
           mkdir -p ds/apk
           cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk || true
 
-      - name: Publish GitHub Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "ds/apk/*.apk"
-          tag: "v1.0.${{ github.run_number }}"
-          name: "Release v1.0.${{ github.run_number }}"
-          body: "Production deployment finalized cleanly. Tracking commit: ${{ github.sha }}"
-          token: "${{ secrets.GITHUB_TOKEN }}"
-          allowUpdates: true
-
-      - name: Backup Mobile Artifacts
+      - name: Preserve Build Artifact Backup
         uses: actions/upload-artifact@v4
         with:
-          name: app-mobile-builds
+          name: compiled-mobile-and-web-apps
           path: ds/
