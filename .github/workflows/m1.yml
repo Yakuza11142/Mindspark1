@@ -160,7 +160,7 @@ jobs:
         with:
           artifacts: "ds/apk/*.apk,ds/aab/*.aab,code-metrics.md"
           tag: "v1.0.${{ github.run_number }}"
-          name: "Release v1.0.${{ github.run_job || github.run_number }}"
+          name: "Release v1.0.${{ github.run_number }}"
           body: "Production deployment finalized cleanly. Tracking commit: ${{ github.sha }}"
           token: "${{ secrets.GITHUB_TOKEN }}"
           allowUpdates: true
