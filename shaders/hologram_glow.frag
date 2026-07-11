@@ -2,6 +2,7 @@
 precision mediump float;
 #include <flutter/runtime_effect.glsl>
 
+// Coordinate space mapping parameters passed from the local widget layer
 uniform vec2 uViewportDimensions;
 uniform float uTimelineDelta;
 
@@ -14,8 +15,11 @@ uniform vec4 uDataTrackB;
 out vec4 fragColor;
 
 void main() {
-    // 1. Calculate standard viewport coordinates
-    vec2 normalizedUV = FlutterFragCoord().xy / uViewportDimensions;
+    // 1. Core Fix: Transform global coordinates into perfect scale-invariant widget space
+    vec2 globalCoord = FlutterFragCoord().xy;
+    
+    // Normalize coordinates using the structural transformation boundary mapping hooks
+    vec2 normalizedUV = globalCoord / uViewportDimensions;
 
     // 2. Extract operational parameters injected from the QuantumNexus layer
     float localScaleFactor = uDataTrackA.w;
@@ -35,7 +39,7 @@ void main() {
     // =========================================================================
     // BRANCHLESS VECTOR LOGIC: CALCULATE ALL LAYERS SIMULTANEOUSLY VIA MATRICES
     // =========================================================================
-    
+
     // LAYER A: HEAD & FACE REGION (0.85 to 1.0)
     float isHead = step(0.85, bodyUV.y) * step(bodyUV.y, 1.0);
     vec2 headUV = bodyUV - vec2(0.0, 0.925);
