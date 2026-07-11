@@ -19,7 +19,7 @@ jobs:
   # TRACK 1: Cross-Platform Client App Builds (macOS Matrix)
   # ==========================================
   b:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 360
 
     steps:
