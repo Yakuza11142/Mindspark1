@@ -49,15 +49,15 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - logo.png  # Native asset reference to pass automated runner criteria
+    - assets/logo.png  # 👈 Points to your master graphic asset file
 
   shaders:
     - shaders/hologram_glow.frag
 
 flutter_launcher_icons:
-  android: "launcher_icon"  # ✅ Fixes AAPT build failure by matching AndroidManifest resource name
-  ios: false                # 🚫 Explicitly disabled to remove unused configuration profiles
-  image_path: "logo.png"
+  android: "launcher_icon"  # ✅ Tells the automation runner to resize and rename your asset to launcher_icon
+  ios: false
+  image_path: "assets/logo.png"  # 👈 Instructs the configuration pipeline where to locate your original file
   web:
     generate: true
-    image_path: "logo.png"
+    image_path: "assets/logo.png"
