@@ -49,15 +49,12 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/logo.png  # 👈 Points to your master graphic asset file
-
-  shaders:
-    - shaders/hologram_glow.frag
+    - "assets/Screenshot_20260708_215841_Chrome...."  # ✅ Matches your screenshot file path precisely
 
 flutter_launcher_icons:
-  android: "launcher_icon"  # ✅ Tells the automation runner to resize and rename your asset to launcher_icon
+  android: "launcher_icon"  # ✅ Instructs the asset tool to take your screenshot and output standard launcher_icon formats
   ios: false
-  image_path: "assets/logo.png"  # 👈 Instructs the configuration pipeline where to locate your original file
+  image_path: "assets/Screenshot_20260708_215841_Chrome...."  # 👈 Points directly to your image asset layout
   web:
     generate: true
-    image_path: "assets/logo.png"
+    image_path: "assets/Screenshot_20260708_215841_Chrome...."
