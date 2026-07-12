@@ -34,27 +34,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Missing Assets
+      - name: Create Missing Environment Variables
         run: |
           touch .env
           echo "# Environment configuration" > .env
           echo "BUILD_MODE=release" >> .env
-          
-          # Create minimal logo.png (1x1 transparent PNG)
-          python3 << 'EOF'
-          import struct
-          import zlib
-          
-          png_data = bytes.fromhex(
-              '89504e470d0a1a0a0000000d49484452000000010000000108020000009057c4000000000c49444154'
-              '08d3638000000200010001000000000049454e44ae426082'
-          )
-          
-          with open('logo.png', 'wb') as f:
-              f.write(png_data)
-          EOF
-          
-          ls -la .env logo.png
+          ls -la .env
 
       - name: Verify Tools
         run: |
@@ -71,14 +56,15 @@ jobs:
           flutter pub get
         timeout-minutes: 30
 
-      # 🛠️ NEW CRITICAL STEP: Unpacks your logo into native app launcher icon paths
-      - name: Generate Native Application Icons
+      # 🛠️ AUTOMATION ENGINE STEP: Finds your asset file, resizes it, and renames it to launcher_icon
+      - name: Auto Resize and Rename Launcher Icons
         run: |
-          echo "Compiling structural application icons..."
+          echo "Locating asset graphic, resizing, and matching Android requirements..."
           dart run flutter_launcher_icons
         timeout-minutes: 5
 
-       Moreton: mkdir -p ds/apk ds/aab ds/web
+      - name: Create Output Directories
+        run: mkdir -p ds/apk ds/aab ds/web
 
       - name: Build Web
         run: |
