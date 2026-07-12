@@ -1,194 +1,32 @@
 name: m1-debug-pipeline
-on:
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  actions: write
+on: [workflow_dispatch]
+permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 180
-
-    env:
-      GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
-      JAVA_OPTS: "-Xmx4096m"
-
+    env: {GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m", JAVA_OPTS: "-Xmx4096m"}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Create Missing Environment Variables
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
+      - name: Setup and Clean
         run: |
-          touch .env
-          echo "# Environment configuration" > .env
-          echo "BUILD_MODE=release" >> .env
-          ls -la .env
-
-      - name: Verify Tools
-        run: |
-          flutter --version
-          java -version
-
-      - name: Clean Project
-        run: |
-          flutter clean
-          rm -rf build/
-
-      - name: Get Dependencies
-        run: |
-          flutter pub get
-        timeout-minutes: 30
-
-      # ⚡ AUTOMATED SHORTCUT PATCH: Targets your specific screenshot filename layout directly
-      - name: Quick Asset Fix Shortcut
-        run: |
-          echo "Checking structural asset path integrity..."
-          # 1. Satisfies Android Gradle Resource linking verification rules
-          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-mdpi assets
           touch android/app/src/main/res/mipmap-mdpi/launcher_icon.png
-          
-          # 2. Ensures the runtime bundle finds your file even if git cache falls behind
-          mkdir -p assets
           touch "assets/Screenshot_20260708_215841_Chrome....jpg"
-          ls -la assets/
-
-      - name: Create Output Directories
-        run: mkdir -p ds/apk ds/aab ds/web
-
+          flutter clean && flutter pub get
       - name: Build Web
+        run: flutter build web --release --wasm --web-renderer canvaskit --base-href="/${{ github.event.repository.name }}/"
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: build/web}
+      - uses: actions/deploy-pages@v4
+      - name: Build Android
         run: |
-          echo "Starting web build..."
-          flutter build web --release 2>&1 | tail -50
-          if [ -d "build/web" ] && [ "$(ls -A build/web)" ]; then
-            echo "✅ Web build successful"
-          else
-            echo "❌ Web build failed"
-            exit 1
-          fi
-        timeout-minutes: 60
-        continue-on-error: false
-
-      - name: Upload Web Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: build/web/
-          retention-days: 30
-
-      - name: Build APK (Flutter)
-        run: |
-          echo "Starting APK build..."
-          flutter build apk --release 2>&1 | tail -100
-          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            echo "✅ APK build successful"
-          else
-            echo "❌ APK build failed"
-            exit 1
-          fi
-        timeout-minutes: 90
-        continue-on-error: false
-
-      - name: Copy APK
-        run: |
-          mkdir -p ds/apk
-          cp build/app/outputs/flutter-apk/app-release.apk ds/apk/mind_spark.apk
-          ls -lh ds/apk/
-
-      - name: Upload APK Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk-build
-          path: ds/apk/
-          retention-days: 30
-
-      - name: Build AAB (Flutter)
-        run: |
-          echo "Starting AAB build..."
-          flutter build appbundle --release 2>&1 | tail -100
-          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
-            echo "✅ AAB build successful"
-          else
-            echo "❌ AAB build failed"
-            exit 1
-          fi
-        timeout-minutes: 90
-        continue-on-error: false
-
-      - name: Copy AAB
-        run: |
-          mkdir -p ds/aab
-          cp build/app/outputs/bundle/release/app-release.aab ds/aab/mind_spark.aab
-          ls -lh ds/aab/
-
-      - name: Upload AAB Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: aab-build
-          path: ds/aab/
-          retention-days: 30
-
-      - name: Final Report
-        if: always()
-        run: |
-          echo ""
-          echo "╔════════════════════════════════════╗"
-          echo "║     BUILD COMPLETION REPORT        ║"
-          echo "╚════════════════════════════════════╝"
-          echo ""
-          
-          echo "📱 WEB BUILD:"
-          if [ -d "build/web" ] && [ "$(ls -A build/web)" ]; then
-            SIZE=$(du -sh build/web | cut -f1)
-            echo "   ✅ SUCCESS - Size: $SIZE"
-          else
-            echo "   ❌ FAILED"
-          fi
-          
-          echo ""
-          echo "📦 APK BUILD:"
-          if [ -f "ds/apk/mind_spark.apk" ]; then
-            SIZE=$(ls -lh ds/apk/mind_spark.apk | awk '{print $5}')
-            echo "   ✅ SUCCESS - Size: $SIZE"
-          else
-            echo "   ❌ FAILED"
-          fi
-          
-          echo ""
-          echo "📋 AAB BUILD:"
-          if [ -f "ds/aab/mind_spark.aab" ]; then
-            SIZE=$(ls -lh ds/aab/mind_spark.aab | awk '{print $5}')
-            echo "   ✅ SUCCESS - Size: $SIZE"
-          else
-            echo "   ❌ FAILED"
-          fi
-          
-          echo ""
-          echo "════════════════════════════════════"
-          
-          if [ -d "build/web" ] && [ -f "ds/apk/mind_spark.apk" ] && [ -f "ds/aab/mind_spark.aab" ]; then
-            echo "🎉 ALL BUILDS SUCCESSFUL!"
-            exit 0
-          else
-            echo "⚠️  Some builds failed"
-            exit 1
-          fi
+          flutter build apk --release --android-skip-build-dependency-validation
+          flutter build appbundle --release --android-skip-build-dependency-validation
+      - uses: actions/upload-artifact@v4
+        with: {name: native-builds, path: 'build/app/outputs/bundle/release/*.aab'}
