@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 180
-    
+
     env:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
       JAVA_OPTS: "-Xmx4096m"
@@ -71,8 +71,14 @@ jobs:
           flutter pub get
         timeout-minutes: 30
 
-      - name: Create Output Directories
-        run: mkdir -p ds/apk ds/aab ds/web
+      # 🛠️ NEW CRITICAL STEP: Unpacks your logo into native app launcher icon paths
+      - name: Generate Native Application Icons
+        run: |
+          echo "Compiling structural application icons..."
+          dart run flutter_launcher_icons
+        timeout-minutes: 5
+
+       Moreton: mkdir -p ds/apk ds/aab ds/web
 
       - name: Build Web
         run: |
