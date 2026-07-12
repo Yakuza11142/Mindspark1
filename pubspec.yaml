@@ -49,12 +49,12 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - "assets/Screenshot_20260708_215841_Chrome...."  # ✅ Matches your screenshot file path precisely
+    - "assets/Screenshot_20260708_215841_Chrome....jpg"  # ✅ Fixed with the true .jpg extension format
 
 flutter_launcher_icons:
-  android: "launcher_icon"  # ✅ Instructs the asset tool to take your screenshot and output standard launcher_icon formats
+  android: "launcher_icon"  # ✅ The generator reads this file, handles resizing, and renames it to launcher_icon
   ios: false
-  image_path: "assets/Screenshot_20260708_215841_Chrome...."  # 👈 Points directly to your image asset layout
+  image_path: "assets/Screenshot_20260708_215841_Chrome....jpg"  # 👈 Direct path configuration blueprint
   web:
     generate: true
-    image_path: "assets/Screenshot_20260708_215841_Chrome...."
+    image_path: "assets/Screenshot_20260708_215841_Chrome....jpg"
