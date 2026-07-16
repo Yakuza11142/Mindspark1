@@ -16,15 +16,16 @@ jobs:
 
       - name: Setup and Clean
         run: |
-          # 1. Structure raw mandatory system and asset paths
-          mkdir -p android/app/src/main/res/mipmap-mdpi assets
-          touch android/app/src/main/res/mipmap-mdpi/launcher_icon.png
+          # 1. Structure exactly the asset directory declared in your pubspec.yaml
+          mkdir -p assets
+          
+          # 2. Touch the exact screenshot path utilized by the launcher icon generator
           touch "assets/Screenshot_20260708_215841_Chrome....jpg"
           
-          # 2. Instantly generate a baseline .env to pass pubspec.yaml validation checks
+          # 3. Create the mandatory .env tracking asset
           touch .env
           
-          # 3. Securely pack your repository secrets context matrix into a temporary compile target
+          # 4. Pack your repository secrets dashboard securely into a temporary compile target
           echo '${{ toJSON(secrets) }}' > secrets.json
           
           flutter clean && flutter pub get
@@ -34,12 +35,17 @@ jobs:
           # Convert your Base64 secret text string back into a functional binary signing file
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           
-          # Map key properties dynamically so Gradle can find and execute the code certificates
+          # Map key properties dynamically so Gradle can execute the code certificates
           echo "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > android/key.properties
           echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=upload-keystore.jks" >> android/key.properties
-          
+
+      - name: Generate App Launcher Icons
+        run: |
+          # Runs the build generator to resize and build your Android/Web platform launch assets
+          flutter pub run flutter_launcher_icons:main
+
       - name: Build Web
         run: |
           # Compiles the optimized WASM release using your secure repository secrets mappings
