@@ -20,7 +20,7 @@ jobs:
           touch "assets/Screenshot_20260708_215841_Chrome....jpg"
           flutter clean && flutter pub get
       - name: Build Web
-        run: flutter build web --release --wasm --web-renderer canvaskit --base-href="/${{ github.event.repository.name }}/"
+        run: flutter build web --release --wasm --base-href="/${{ github.event.repository.name }}/"
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
       - uses: actions/deploy-pages@v4
@@ -29,4 +29,8 @@ jobs:
           flutter build apk --release --android-skip-build-dependency-validation
           flutter build appbundle --release --android-skip-build-dependency-validation
       - uses: actions/upload-artifact@v4
-        with: {name: native-builds, path: 'build/app/outputs/bundle/release/*.aab'}
+        with: 
+          name: native-builds
+          path: |
+            build/app/outputs/bundle/release/*.aab
+            build/app/outputs/flutter-apk/*.apk
