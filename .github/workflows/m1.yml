@@ -20,7 +20,11 @@ jobs:
           touch "assets/Screenshot_20260708_215841_Chrome....jpg"
           flutter clean && flutter pub get
       - name: Build Web
-        run: flutter build web --release --wasm --base-href="/${{ github.event.repository.name }}/"
+        run: |
+          # Compiles the optimized WASM release
+          flutter build web --release --wasm
+          # Safely injects the base href paths for GitHub Pages subfolder handling
+          sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
       - uses: actions/deploy-pages@v4
