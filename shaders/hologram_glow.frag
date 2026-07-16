@@ -5,9 +5,10 @@ precision mediump float;
 // =========================================================================
 // UNIVERSAL UNIFORM BINDING MATRIX
 // =========================================================================
-uniform vec2 uViewportDimensions; 
-uniform float uTimelineDelta;     
+uniform vec2 uViewportDimensions; // Adapts automatically to ANY camera screen resolution
+uniform float uTimelineDelta;     // Scaled system timeline delta tracking
 
+// HOLOGRAM STATS MATRIX: [CentroidX, CentroidY, CoreGlow, LocalScaleFactor]
 uniform vec4 uHologramStats; 
 
 // UNROLLED DATA MATRIX: Flawless cross-platform device compilation stability
@@ -18,6 +19,7 @@ uniform vec4 uEntity3;
 uniform vec4 uEntity4; 
 uniform vec4 uEntity5; 
 
+// HARDWARE SYSTEM EFFECTS: [ScanSpeed, ScanIntensity, TeleportGlitchTrigger, NoiseDensity]
 uniform vec4 uHoloSystemFX;
 
 out vec4 fragColor;
@@ -37,40 +39,14 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     float enforcedScale = entityTrack.z;
     float entityLife = entityTrack.w;
 
-    if (entityLife <= 0.0 || enforcedScale <= 0.0) {
-        return vec4(0.0);
+    if (entityLife  0.90) {
+        float waveRip = sin(universalUV.y * 30.0 + uTimelineDelta * 50.0) * noiseDensity * jumpIntensity * 5.0;
+        universalUV.x += (randomNoise - 0.5) * (noiseDensity * 12.0 * jumpIntensity) + waveRip;
     }
 
-    vec2 localEntityUV = (universalUV - entityCoordinates) / enforcedScale;
-    float centerDistance = length(localEntityUV);
-
-    vec2 boxBounds = smoothstep(vec2(0.12), vec2(0.10), abs(localEntityUV));
-    float structuralMask = boxBounds.x * boxBounds.y;
-
-    float corePulse = smoothstep(0.05, 0.0, centerDistance);
-    float combinedMask = clamp(structuralMask + corePulse, 0.0, 1.0) * entityLife;
-
-    vec3 entityColor = vec3(0.0, 1.0, 0.5);
-
-    return vec4(entityColor * combinedMask, combinedMask);
-}
-
-void main() {
-    vec2 globalCoord = FlutterFragCoord().xy;
-    globalCoord.y = uViewportDimensions.y - globalCoord.y; 
-    vec2 universalUV = globalCoord / uViewportDimensions;  
-
-    float scanSpeed = uHoloSystemFX.x;
-    float scanIntensity = uHoloSystemFX.y;
-    float glitchTrigger = uHoloSystemFX.z;
-    float noiseDensity = uHoloSystemFX.w;
-
-    float hologramScale = uHologramStats.w;
-    float baseThickness = uHologramStats.z;
-    vec2 hologramOrigin = vec2(uHologramStats.x, uHologramStats.y);
-
+    // Map local space vectors for the primary parent avatar structure
     vec2 localSpaceUV = (universalUV - hologramOrigin) * hologramScale;
-    vec2 bodyUV = localSpaceUV + vec2(0.0, 0.5); 
+    vec2 bodyUV = localSpaceUV + vec2(0.0, 0.5); // Align anatomy height mapping arrays
 
     float anatomyMask = 0.0;
     float skeletalGlow = 0.0;
@@ -112,6 +88,7 @@ void main() {
     float footSpread = mix(0.12, 0.06, bodyUV.y / 0.05);
     float feetMask = smoothstep(footSpread, 0.0, abs(bodyUV.x));
 
+    // Compile absolute anatomy channels branchlessly
     anatomyMask = (isHead * headMask) + (isNeck * neckMask) + (isTorso * torsoMask) + (isLegs * legsMask) + (isFeet * feetMask);
     skeletalGlow = (isHead * headGlow) + (isTorso * torsoGlow) + (isLegs * legsGlow);
 
@@ -120,18 +97,15 @@ void main() {
     float initialVolume = isInsideBody * (anatomyMask * 0.5 * scanlines);
     float totalHologramDensity = clamp(initialVolume + skeletalGlow, 0.0, 1.0);
 
-    // Procedural laser scanning bar traveling down the 6-foot projection axis
+    // Traveling electronic laser scan bar tracking
     float scanBarY = fract(uTimelineDelta * scanSpeed);
     float scanBarLine = smoothstep(0.02, 0.0, abs(universalUV.y - scanBarY));
     totalHologramDensity += scanBarLine * scanIntensity * isInsideBody;
 
-    // Camera feedback glitch pipeline
-    float randomNoise = generateHoloNoise(vec2(uTimelineDelta, universalUV.y));
-    if (randomNoise < glitchTrigger) {
-        universalUV.x += (randomNoise - 0.5) * noiseDensity;
-    }
+    // Dematerialization alpha drop if teleporting
+    totalHologramDensity *= mix(1.0, 0.15, jumpIntensity);
 
-    vec3 hologramBaseColor = vec3(0.0, 0.85, 1.0); 
+    vec3 hologramBaseColor = vec3(0.0, 0.85, 1.0); // Cybernetic Neon Cyan
     vec4 finalParentFrame = vec4(hologramBaseColor * totalHologramDensity, totalHologramDensity);
 
     // =========================================================================
@@ -148,5 +122,6 @@ void main() {
     vec3 blendedRGB = mix(finalParentFrame.rgb, childAccumulator.rgb, childAccumulator.a);
     float blendedAlpha = clamp(finalParentFrame.a + childAccumulator.a, 0.0, 0.95);
 
+    // Enforce pre-multiplied alpha layout validation for Skia/Impeller hardware performance stability
     fragColor = vec4(blendedRGB * blendedAlpha, blendedAlpha);
 }
