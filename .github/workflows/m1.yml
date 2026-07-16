@@ -18,23 +18,26 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-mdpi assets
           touch android/app/src/main/res/mipmap-mdpi/launcher_icon.png
           touch "assets/Screenshot_20260708_215841_Chrome....jpg"
+          # Dynamically create the missing .env file required by pubspec.yaml assets
+          touch .env
           flutter clean && flutter pub get
       - name: Build Web
         run: |
-          # Compiles the optimized WASM release
+          # Compiles the high-performance WebAssembly release target
           flutter build web --release --wasm
-          # Safely injects the base href paths for GitHub Pages subfolder handling
+          # Automatically rewrites the base href link path for host routing structure mapping
           sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
       - uses: actions/deploy-pages@v4
       - name: Build Android
         run: |
-          flutter build apk --release --android-skip-build-dependency-validation
+          # Compiles split architecture APK structures and full delivery bundle matrices
+          flutter build apk --release --android-skip-build-dependency-validation --split-per-abi
           flutter build appbundle --release --android-skip-build-dependency-validation
       - uses: actions/upload-artifact@v4
         with: 
-          name: native-builds
+          name: holomatics-native-builds
           path: |
             build/app/outputs/bundle/release/*.aab
             build/app/outputs/flutter-apk/*.apk
