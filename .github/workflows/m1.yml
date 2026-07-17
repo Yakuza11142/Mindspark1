@@ -36,21 +36,36 @@ jobs:
           cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
 
       # =========================================================================
-      # THE ENTERPRISE INJECTION TRICK: ZERO-FILE CONFIGURATION INTERCEPTOR
+      # THE ENTERPRISE FIX: ISOLATE CREDENTIAL LAYERS FROM COMPILER MATRIX
       # =========================================================================
-      - name: Inject Project Infrastructure Core & Generate .env
+      - name: Inject Project Infrastructure Core & Clean JSON Target
         run: |
           mkdir -p assets
           touch assets/icon_launcher.png
           
-          # 🌟 DYNAMICALLY INJECT SECRET DATA INTO THE REQUIRED COMPILATION .ENV ASSET
-          # This pulls directly from your GitHub Secrets panel so you don't commit keys to git
+          # 1. Generate the local asset config tracking file
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           
-          # Pass your global system variable bundle to Flutter's --dart-define compiler
-          echo '${{ toJSON(secrets) }}' > secrets.json
+          # 2. Map ONLY your application text secrets directly into a safe flat JSON dictionary.
+          # This strips out bad formatting properties and isolates keystore variables.
+          cat <<EOF > secrets.json
+          {
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
+            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
+            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
+            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
+            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
+            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
+            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
+            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
+            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
+          }
+          EOF
 
       - name: Fetch Dependencies & Compile Assets
         run: |
@@ -58,7 +73,7 @@ jobs:
           dart run flutter_launcher_icons
 
       # ---------------------------------------------------------------------
-      # PARALLEL COMPILE RUNNERS (ISOLATED MATRIX PLATFORMS)
+      # PARALLEL COMPILATION TASKS (SHARDED MACHINE RUNNERS)
       # ---------------------------------------------------------------------
       - name: Compile Web Target
         if: matrix.target == 'web'
