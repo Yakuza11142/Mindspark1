@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   # =========================================================================
-  # RUNNER 1: STABLE NATIVE ANDROID ENGINE (APK & AAB)
+  # RUNNER 1: STABLE NATIVE ANDROID ENGINE (APK & AAB GENERATION)
   # =========================================================================
   build-android:
     runs-on: ubuntu-latest
@@ -23,19 +23,31 @@ jobs:
       JAVA_OPTS: "-Xmx4096m"
     steps:
       - uses: actions/checkout@v4
+
+      # 🌟 THE TRICK: Ensures .env check handles safely before Flutter builds dependencies
+      - name: Self-Heal Local Workspace Assets
+        run: |
+          touch .env
+          mkdir -p assets
+          touch assets/icon_launcher.png
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-      - name: Inject Secrets & Configs
+
+      - name: Inject Configuration Maps
         run: |
-          mkdir -p assets
-          touch assets/icon_launcher.png
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          
           cat <<EOF > secrets.json
           {
             "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
@@ -43,16 +55,25 @@ jobs:
             "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}"
           }
           EOF
-      - name: Build Assets
+
+      - name: Fetch Core Packages & Icons
         run: |
           flutter pub get
           dart run flutter_launcher_icons
+
+      - name: Download Engine Artifacts
+        run: |
+          flutter precache --android
+          rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
       - name: Auto-Heal Keystore Credentials
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+
       - name: Compile Secure Android Binary
         run: flutter build ${{ matrix.target }} --release --dart-define-from-file=secrets.json
+
       - name: Deliver Native Artifacts
         uses: actions/upload-artifact@v4
         with: 
@@ -69,11 +90,19 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - name: Self-Heal Local Workspace Assets
+        run: |
+          touch .env
+          mkdir -p assets
+          touch assets/icon_launcher.png
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-      - name: Inject Secrets
+
+      - name: Inject Configuration Maps
         run: |
           cat <<EOF > secrets.json
           {
@@ -82,11 +111,13 @@ jobs:
             "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}"
           }
           EOF
+
       - name: Install Project Packages
         run: flutter pub get
+
       - name: Compile Production Web Static Files
-        # REPAIRED: Injected --base-href for GitHub Actions deployment
         run: flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.json
+
       - name: Upload Web Artifact
         uses: actions/upload-pages-artifact@v3
         with:
