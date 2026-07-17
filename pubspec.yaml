@@ -49,12 +49,12 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - "assets/Screenshot_20260708_215841_Chrome....jpg"  # ✅ Fixed with the true .jpg extension format
+    - "assets/icon_launcher.png"
 
 flutter_launcher_icons:
-  android: "launcher_icon"  # ✅ The generator reads this file, handles resizing, and renames it to launcher_icon
-  ios: false
-  image_path: "assets/Screenshot_20260708_215841_Chrome....jpg"  # 👈 Direct path configuration blueprint
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon_launcher.png"
   web:
     generate: true
-    image_path: "assets/Screenshot_20260708_215841_Chrome....jpg"
+    image_path: "assets/icon_launcher.png"
