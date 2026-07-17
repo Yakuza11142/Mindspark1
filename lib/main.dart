@@ -1,28 +1,32 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'dart:math' as math;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final initAdmob = MobileAds.instance.initialize();
 
-  // Safe fallback configurations since .env file asset bundling is removed
   String supabaseUrl = '';
   String supabaseKey = '';
 
-  try {
-    // Attempts to load .env safely if present locally during development
-    await dotenv.load(fileName: ".env");
-    supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-    supabaseKey = dotenv.env['SUPABASE_KEY'] ?? '';
-  } catch (e) {
-    debugPrint("⚠️ .env file asset absent. Emplementing fallback runtime parameters.");
-    // 💡 TIP: You can paste your production keys directly into these fallback variables if needed:
-    supabaseUrl = "https://supabase.co";
+  // 1. First Priority: Try loading from dart-define-from-file or explicit AppConfig constants (CI/CD)
+  // This extracts the environment strings injected by your GitHub workflow secrets.
+  supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  supabaseKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+
+  // 2. Second Priority: Fall back to local .env file parsing (Local development environment)
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
+    try {
+      await dotenv.load(fileName: ".env");
+      supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+      // Corrected map from SUPABASE_KEY to match your workflows asset configuration
+      supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? dotenv.env['SUPABASE_KEY'] ?? ''; 
+    } catch (e) {
+      debugPrint("⚠️ .env asset file unreadable. Checking hardcoded config fallbacks.");
+    }
+  }
+
+  // 3. Third Priority: Explicitly test against hardcoded project configurations if available
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
+    // Falls back gracefully to your local or fallback project production keys
+    supabaseUrl = "https://your-supabase-project.supabase.co"; 
     supabaseKey = "your-anon-key-here";
   }
 
@@ -32,12 +36,12 @@ void main() async {
         url: supabaseUrl,
         anonKey: supabaseKey,
       );
-      debugPrint("☁️ Supabase initialized");
+      debugPrint("☁️ Supabase production engine initialized successfully.");
     } else {
-      debugPrint("⚠️ Supabase skipped: Set your production keys inside main.dart variables.");
+      debugPrint("⚠️ Supabase compilation setup skipped: Set matching production keys inside initialization blocks.");
     }
   } catch (e) {
-    debugPrint("❌ Supabase error: $e");
+    debugPrint("❌ Supabase critical initialization failure: $e");
   }
 
   await initAdmob;
@@ -52,90 +56,4 @@ void main() async {
       child: const MindSparkApp(),
     ),
   );
-}
-
-class MindSparkApp extends StatelessWidget {
-  const MindSparkApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mind Spark',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), 
-      home: const MainDevelopmentPage(),
-    );
-  }
-}
-
-// EMBEDDED PROVIDERS (Temporary placeholders so the app builds without the missing files)
-class AppAuthProvider extends ChangeNotifier {}
-class AITutorProvider extends ChangeNotifier {}
-class ArLabProvider extends ChangeNotifier {}
-
-class MainDevelopmentPage extends StatefulWidget {
-  const MainDevelopmentPage({super.key});
-
-  @override
-  State<MainDevelopmentPage> createState() => _MainDevelopmentPageState();
-}
-
-class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
-  final String statusMessage = 'System initialization complete successfully.';
-  String formattedTime = '';
-  double calculatedSine = 0.0;
-  double utilityResult = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _runCalculations();
-  }
-
-  void _runCalculations() {
-    final DateTime now = DateTime.now();
-
-    setState(() {
-      formattedTime = now.toIso8601String();
-    });
-
-    double idx = 45.0;
-    setState(() {
-      calculatedSine = math.sin(idx);
-    });
-
-    final RealMathCalculator calculator = RealMathCalculator();
-    setState(() {
-      utilityResult = calculator.executeValidComputation(idx);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('MindSpark Workspace')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Status: $statusMessage', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text('ISO Timestamp: $formattedTime'),
-            const SizedBox(height: 10),
-            Text('Sine Value (idx): $calculatedSine'),
-            const SizedBox(height: 10),
-            Text('Calculator Output: $utilityResult'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class RealMathCalculator {
-  double executeValidComputation(double input) {
-    if (input <= 0) return 0.0;
-    return (input * math.pi) / 180.0;
-  }
 }
