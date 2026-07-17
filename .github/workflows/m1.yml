@@ -23,47 +23,19 @@ jobs:
       JAVA_OPTS: "-Xmx4096m"
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'gradle'
-
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-
-      - name: Inject Android Workspace Core & AOT Secrets
+      - name: Inject Secrets & Configs
         run: |
           mkdir -p assets
           touch assets/icon_launcher.png
-          
-          # Generate local .env tracking layer for asset manifest compliance
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          
-          # Ahead-Of-Time (AOT) file assembly configuration
-          cat <<EOF > lib/secrets.dart
-          class AppConfig {
-            static const String supabaseUrl = "${{ secrets.SUPABASE_URL }}";
-            static const String supabaseAnonKey = "${{ secrets.SUPABASE_ANON_KEY }}";
-            static const String geminiApiKey = "${{ secrets.GEMINI_API_KEY }}";
-            static const String openaiKey = "${{ secrets.OPENAI_KEY }}";
-            static const String groqApiKey = "${{ secrets.GROQ_API_KEY }}";
-            static const String vertexApiKey = "${{ secrets.VERTEX_API_KEY }}";
-            static const String heygenKey = "${{ secrets.HEYGEN_KEY }}";
-            static const String runwaymlApiSecret = "${{ secrets.RUNWAYML_API_SECRET }}";
-            static const String tripoApiKey = "${{ secrets.TRIPO_API_KEY }}";
-            static const String pexelsApiKey = "${{ secrets.PEXELS_API_KEY }}";
-            static const String mtnApiKey = "${{ secrets.MTN_API_KEY }}";
-            static const String elevenLabApiKey = "${{ secrets.ELEVEN_LAB_API_KEY }}";
-          }
-          EOF
-          
-          # Safe string format for direct compiler ingestion maps
           cat <<EOF > secrets.json
           {
             "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
@@ -71,26 +43,16 @@ jobs:
             "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}"
           }
           EOF
-
-      - name: Fetch Dependencies & Build Assets
+      - name: Build Assets
         run: |
           flutter pub get
           dart run flutter_launcher_icons
-
-      - name: Precache Android Artifacts & Clean Reg
-        # This completely fixes the 'GeneratedPluginRegistrant package does not exist' error
-        run: |
-          flutter precache --android
-          rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-
       - name: Auto-Heal Keystore Credentials
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-
-      - name: Compile Secure Android Binary (Direct Compilation Check)
+      - name: Compile Secure Android Binary
         run: flutter build ${{ matrix.target }} --release --dart-define-from-file=secrets.json
-
       - name: Deliver Native Artifacts
         uses: actions/upload-artifact@v4
         with: 
@@ -107,38 +69,12 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
-
-      - name: Inject Sanitized Web Configs via AOT Dart Engine
+      - name: Inject Secrets
         run: |
-          mkdir -p assets
-          touch assets/icon_launcher.png
-          
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          
-          cat <<EOF > lib/secrets.dart
-          class AppConfig {
-            static const String supabaseUrl = "${{ secrets.SUPABASE_URL }}";
-            static const String supabaseAnonKey = "${{ secrets.SUPABASE_ANON_KEY }}";
-            static const String geminiApiKey = "${{ secrets.GEMINI_API_KEY }}";
-            static const String openaiKey = "${{ secrets.OPENAI_KEY }}";
-            static const String groqApiKey = "${{ secrets.GROQ_API_KEY }}";
-            static const String vertexApiKey = "${{ secrets.VERTEX_API_KEY }}";
-            static const String heygenKey = "${{ secrets.HEYGEN_KEY }}";
-            static const String runwaymlApiSecret = "${{ secrets.RUNWAYML_API_SECRET }}";
-            static const String tripoApiKey = "${{ secrets.TRIPO_API_KEY }}";
-            static const String pexelsApiKey = "${{ secrets.PEXELS_API_KEY }}";
-            static const String mtnApiKey = "${{ secrets.MTN_API_KEY }}";
-            static const String elevenLabApiKey = "${{ secrets.ELEVEN_LAB_API_KEY }}";
-          }
-          EOF
-          
           cat <<EOF > secrets.json
           {
             "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
@@ -146,18 +82,11 @@ jobs:
             "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}"
           }
           EOF
-
       - name: Install Project Packages
         run: flutter pub get
-
-      - name: Compile Production Web Static Files (Direct Stable Code Generation)
-        # REPAIRED: Stripped invalid '--no-wasm' parameters and implemented '--no-wasm-dry-run' 
-        # to cleanly bypass the package-level JS interop type checking lint violations.
-        run: flutter build web --release --no-wasm-dry-run --target=lib/main.dart --dart-define-from-file=secrets.json
-
-      - name: Rewrite Index Frame Path Routing
-        run: sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html
-
+      - name: Compile Production Web Static Files
+        # REPAIRED: Injected --base-href for GitHub Actions deployment
+        run: flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.json
       - name: Upload Web Artifact
         uses: actions/upload-pages-artifact@v3
         with:
