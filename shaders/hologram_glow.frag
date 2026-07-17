@@ -39,7 +39,7 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     float enforcedScale = entityTrack.z;
     float entityLife = entityTrack.w;
 
-    // ✅ FIXED: Corrected broken validation comparison logic
+    // Strict boundary checks for active artifact lifetime tracks
     if (entityLife  1.0) {
         return vec4(0.0);
     }
@@ -55,7 +55,7 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
 }
 
 // =========================================================================
-// SYSTEM MAIN EXECUTABLE ENVIRONMENT
+// SYSTEM MAIN EXECUTABLE ENVIRONMENT (LOCKED TO 6FT PROPORTIONS)
 // =========================================================================
 void main() {
     // Standardize fragment mapping metrics
@@ -87,7 +87,7 @@ void main() {
     float anatomyMask = 0.0;
     float skeletalGlow = 0.0;
 
-    // REGION 1: HEAD & FACE
+    // REGION 1: HEAD & FACE [Height Span: 5.14ft to 6.00ft] (27.4 cm / 10.8 in)
     float isHead = step(0.85, bodyUV.y) * step(bodyUV.y, 1.0);
     vec2 headUV = bodyUV - vec2(0.0, 0.925);
     float headMask = smoothstep(0.14, 0.0, length(headUV * vec2(1.0, 1.25)));
@@ -97,11 +97,11 @@ void main() {
     float mouth = smoothstep(0.008, 0.0, abs(headUV.y + 0.03 + (headUV.x * headUV.x * 2.5))) * smoothstep(0.05, 0.0, abs(headUV.x));
     float headGlow = (eyes * 0.8) + (mouth * 0.9);
 
-    // REGION 2: NECK
+    // REGION 2: NECK [Height Span: 4.80ft to 5.14ft] (9.2 cm / 3.6 in)
     float isNeck = step(0.80, bodyUV.y) * step(bodyUV.y, 0.85);
     float neckMask = smoothstep(0.05, 0.0, abs(bodyUV.x));
 
-    // REGION 3: TORSO
+    // REGION 3: TORSO & SHOULDERS [Height Span: 2.70ft to 4.80ft] (64.0 cm / 25.2 in)
     float isTorso = step(0.45, bodyUV.y) * step(bodyUV.y, 0.80);
     float torsoHeightFactor = (bodyUV.y - 0.45) / 0.35;
     float dynamicShoulderWidth = mix(0.12, 0.22, smoothstep(0.0, 0.8, torsoHeightFactor));
@@ -110,7 +110,7 @@ void main() {
     float torsoMask = smoothstep(calculatedTorsoWidth, 0.0, abs(bodyUV.x));
     float torsoGlow = smoothstep(0.02, 0.0, abs(bodyUV.x)) * 0.4;
 
-    // REGION 4: LOWER EXTENSIONS / LEGS
+    // REGION 4: LOWER LEGS [Height Span: 0.30ft to 2.70ft] (73.2 cm / 28.8 in)
     float isLegs = step(0.05, bodyUV.y) * step(bodyUV.y, 0.45);
     float legSpacing = 0.07;
     float activeLegAxis = min(abs(bodyUV.x - legSpacing), abs(bodyUV.x + legSpacing));
@@ -119,12 +119,12 @@ void main() {
     float legsMask = smoothstep(dynamicLegThick, 0.0, activeLegAxis);
     float legsGlow = smoothstep(0.008, 0.0, activeLegAxis) * 0.3;
 
-    // REGION 5: STABILITY BASE / FEET
+    // REGION 5: STABILITY BASE / FEET [Height Span: 0.00ft to 0.30ft] (9.2 cm / 3.6 in)
     float isFeet = step(0.0, bodyUV.y) * step(bodyUV.y, 0.05);
     float footSpread = mix(0.12, 0.06, bodyUV.y / 0.05);
     float feetMask = smoothstep(footSpread, 0.0, abs(bodyUV.x));
 
-    // Compile absolute anatomy channels branchlessly
+    // Compile absolute anatomy channels branchlessly for optimized GPU profiling
     anatomyMask = (isHead * headMask) + (isNeck * neckMask) + (isTorso * torsoMask) + (isLegs * legsMask) + (isFeet * feetMask);
     skeletalGlow = (isHead * headGlow) + (isTorso * torsoGlow) + (isLegs * legsGlow);
 
