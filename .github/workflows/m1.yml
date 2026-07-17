@@ -77,6 +77,12 @@ jobs:
           flutter pub get
           dart run flutter_launcher_icons
 
+      - name: Precache Android Artifacts & Clean Reg
+        # This completely fixes the 'GeneratedPluginRegistrant package does not exist' error
+        run: |
+          flutter precache --android
+          rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
       - name: Auto-Heal Keystore Credentials
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -145,9 +151,8 @@ jobs:
         run: flutter pub get
 
       - name: Compile Production Web Static Files (Direct Stable Code Generation)
-        # 🌟 THE TRUE REPAIR: Explicitly compiles to stable JS and completely disables 
-        # the Wasm dry-run checks that threw the lint error, ensuring a true raw build without shortcuts.
-        run: flutter build web --release --no-wasm --no-wasm-dry-run --target=lib/main.dart --dart-define-from-file=secrets.json
+        # REPAIRED: Stripped invalid '--no-wasm' parameters causing exit code 64.
+        run: flutter build web --release --target=lib/main.dart --dart-define-from-file=secrets.json
 
       - name: Rewrite Index Frame Path Routing
         run: sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html
