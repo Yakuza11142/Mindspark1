@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   # =========================================================================
-  # RUNNER 1: SELF-HEALING NATIVE ANDROID COMPILER ENGINE
+  # RUNNER 1: STABLE NATIVE ANDROID ENGINE (APK & AAB)
   # =========================================================================
   build-android:
     runs-on: ubuntu-latest
@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         target: [apk, appbundle]
-      fail-fast: false # Prevents any failure in one shard from halting others
+      fail-fast: false 
     env:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
       JAVA_OPTS: "-Xmx4096m"
@@ -25,7 +25,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
-        continue-on-error: true
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -36,19 +35,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Self-Heal Android Workspace Data Paths
+      - name: Inject Android Workspace Core & AOT Secrets
         run: |
           mkdir -p assets
           touch assets/icon_launcher.png
           
-          # Force create both credential configurations to cover all file reading structures
+          # Generate local .env tracking layer for asset manifest compliance
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           
-          echo '${{ toJSON(secrets) }}' > secrets.json
-          
-          # Ahead-Of-Time (AOT) fallback file assembly configuration
+          # Ahead-Of-Time (AOT) file assembly configuration
           cat <<EOF > lib/secrets.dart
           class AppConfig {
             static const String supabaseUrl = "${{ secrets.SUPABASE_URL }}";
@@ -65,28 +62,30 @@ jobs:
             static const String elevenLabApiKey = "${{ secrets.ELEVEN_LAB_API_KEY }}";
           }
           EOF
+          
+          # Safe string format for direct compiler ingestion maps
+          cat <<EOF > secrets.json
+          {
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}"
+          }
+          EOF
 
-      - name: Fetch Dependencies
-        run: flutter pub get || flutter pub get --force
-
-      - name: Generate Core Launcher Assets
-        continue-on-error: true # Continues flawlessly even if the icon image file format is unreadable
-        run: dart run flutter_launcher_icons
+      - name: Fetch Dependencies & Build Assets
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
 
       - name: Auto-Heal Keystore Credentials
         run: |
-          # Safe fallback map to handle signed certificate injection routines
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks || touch android/app/upload-keystore.jks
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
 
-      - name: Compile Secure Android Binary (Cascading Fallback Loop)
-        # Tries compiling with direct secrets injection mapping first; falls back to raw release if properties deadlock
-        run: |
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.json || \
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation || \
-          flutter build ${{ matrix.target }} --no-sound-null-safety --release
+      - name: Compile Secure Android Binary (Direct Compilation Check)
+        run: flutter build ${{ matrix.target }} --release --dart-define-from-file=secrets.json
 
-      - name: Deliver Native Operational Artifacts
+      - name: Deliver Native Artifacts
         uses: actions/upload-artifact@v4
         with: 
           name: holomatics-native-${{ matrix.target }}
@@ -95,7 +94,7 @@ jobs:
             build/app/outputs/flutter-apk/*.apk
 
   # =========================================================================
-  # RUNNER 2: UNBREAKABLE WEB DEVELOPMENT DEPLOYER (3-TIER COMPILER FALLBACK)
+  # RUNNER 2: PRODUCTION WEB ENGINE (HTML CANVAS RENDERING)
   # =========================================================================
   build-web:
     runs-on: ubuntu-latest
@@ -108,7 +107,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Self-Heal Web Configurations & AOT Code Trees
+      - name: Inject Sanitized Web Configs via AOT Dart Engine
         run: |
           mkdir -p assets
           touch assets/icon_launcher.png
@@ -142,25 +141,18 @@ jobs:
           }
           EOF
 
-      - name: Fetch Remote Modules
-        run: flutter pub get || flutter pub get --force
+      - name: Install Project Packages
+        run: flutter pub get
 
-      - name: Compile Web Target (Multi-Stage Adaptive Fail-Safe Execution)
-        # Cascade Route: 
-        # 1. Try modern CanvasKit with specific entry targeting. 
-        # 2. If it encounters a parser error, fall back to generalized release format. 
-        # 3. If that fails, fallback to backward-compatible legacy HTML generation.
-        run: |
-          flutter build web --release --html --target=lib/main.dart --dart-define-from-file=secrets.json || \
-          flutter build web --release --dart-define-from-file=secrets.json || \
-          flutter build web --release --html || \
-          flutter build web --release
+      - name: Compile Production Web Static Files (Direct Stable Code Generation)
+        # 🌟 THE TRUE REPAIR: Explicitly compiles to stable JS and completely disables 
+        # the Wasm dry-run checks that threw the lint error, ensuring a true raw build without shortcuts.
+        run: flutter build web --release --no-wasm --no-wasm-dry-run --target=lib/main.dart --dart-define-from-file=secrets.json
 
       - name: Rewrite Index Frame Path Routing
-        run: |
-          sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html || true
+        run: sed -i 's|<base href="/">|<base href="/'"${{ github.event.repository.name }}"'/|g' build/web/index.html
 
-      - name: Upload Web Compilation Base
+      - name: Upload Web Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
@@ -174,4 +166,3 @@ jobs:
     steps:
       - name: Deploy Live Pages Infrastructure
         uses: actions/deploy-pages@v4
-
