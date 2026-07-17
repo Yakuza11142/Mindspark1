@@ -39,7 +39,43 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     float enforcedScale = entityTrack.z;
     float entityLife = entityTrack.w;
 
-    if (entityLife  0.90) {
+    // ✅ FIXED: Corrected broken validation comparison logic
+    if (entityLife  1.0) {
+        return vec4(0.0);
+    }
+
+    float localDist = length(universalUV - entityCoordinates) * enforcedScale;
+    float particlePulse = smoothstep(0.06, 0.0, localDist);
+    
+    // Cybernetic accent color for auxiliary entity dots
+    vec3 accentColor = vec3(0.0, 1.0, 0.7); 
+    float alphaOutput = particlePulse * entityLife * 0.75;
+    
+    return vec4(accentColor * alphaOutput, alphaOutput);
+}
+
+// =========================================================================
+// SYSTEM MAIN EXECUTABLE ENVIRONMENT
+// =========================================================================
+void main() {
+    // Standardize fragment mapping metrics
+    vec2 universalUV = gl_FragCoord.xy / uViewportDimensions;
+
+    // Unpack system configuration structures
+    vec2 hologramOrigin  = uHologramStats.xy;
+    float coreGlow       = uHologramStats.z;
+    float hologramScale  = uHologramStats.w;
+
+    float scanSpeed      = uHoloSystemFX.x;
+    float scanIntensity  = uHoloSystemFX.y;
+    float jumpIntensity  = uHoloSystemFX.z;
+    float noiseDensity   = uHoloSystemFX.w;
+
+    // Generate local runtime calculations
+    float randomNoise    = generateHoloNoise(universalUV + vec2(uTimelineDelta));
+
+    // Dynamic Dislocation Interference (Teleport Matrix Glitch Animation)
+    if (jumpIntensity > 0.90) {
         float waveRip = sin(universalUV.y * 30.0 + uTimelineDelta * 50.0) * noiseDensity * jumpIntensity * 5.0;
         universalUV.x += (randomNoise - 0.5) * (noiseDensity * 12.0 * jumpIntensity) + waveRip;
     }
@@ -95,7 +131,7 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     float isInsideBody = step(0.001, anatomyMask);
     float scanlines = sin(bodyUV.y * 120.0) * 0.15 + 0.85;
     float initialVolume = isInsideBody * (anatomyMask * 0.5 * scanlines);
-    float totalHologramDensity = clamp(initialVolume + skeletalGlow, 0.0, 1.0);
+    float totalHologramDensity = clamp(initialVolume + skeletalGlow + (coreGlow * isInsideBody), 0.0, 1.0);
 
     // Traveling electronic laser scan bar tracking
     float scanBarY = fract(uTimelineDelta * scanSpeed);
