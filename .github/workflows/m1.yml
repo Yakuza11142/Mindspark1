@@ -16,16 +16,13 @@ jobs:
 
       - name: Setup and Clean
         run: |
-          # 1. Structure exactly the asset directory declared in your pubspec.yaml
+          # 1. Structure the explicit assets storage layer declared in your pubspec.yaml
           mkdir -p assets
           
-          # 2. Touch the exact screenshot path utilized by the launcher icon generator
-          touch "assets/Screenshot_20260708_215841_Chrome....jpg"
-          
-          # 3. Create the mandatory .env tracking asset
+          # 2. Safety bypass for the local credentials file omitted from git tracking
           touch .env
           
-          # 4. Pack your repository secrets dashboard securely into a temporary compile target
+          # 3. Securely pack environment variables into compile paths
           echo '${{ toJSON(secrets) }}' > secrets.json
           
           flutter clean && flutter pub get
@@ -43,8 +40,8 @@ jobs:
 
       - name: Generate App Launcher Icons
         run: |
-          # Runs the build generator to resize and build your Android/Web platform launch assets
-          flutter pub run flutter_launcher_icons:main
+          # Executes the modern generation entry-point for your cleaned icon asset layout
+          dart run flutter_launcher_icons
 
       - name: Build Web
         run: |
@@ -55,7 +52,7 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
       - uses: actions/deploy-pages@v4
-      
+
       - name: Build Android
         run: |
           # Compiles signed multi-architecture APK assets and target release production bundles securely
