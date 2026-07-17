@@ -16,13 +16,13 @@ jobs:
 
       - name: Setup and Clean
         run: |
-          # 1. Structure the explicit assets storage layer declared in your pubspec.yaml
+          # 1. Structure the explicit asset folder layout required for the project assets
           mkdir -p assets
           
-          # 2. Safety bypass for the local credentials file omitted from git tracking
+          # 2. Local environment credential file verification patch
           touch .env
           
-          # 3. Securely pack environment variables into compile paths
+          # 3. Securely pass repository variable targets into build configurations
           echo '${{ toJSON(secrets) }}' > secrets.json
           
           flutter clean && flutter pub get
@@ -40,7 +40,7 @@ jobs:
 
       - name: Generate App Launcher Icons
         run: |
-          # Executes the modern generation entry-point for your cleaned icon asset layout
+          # Executes the modern generation entry-point for your clean icon asset layout
           dart run flutter_launcher_icons
 
       - name: Build Web
