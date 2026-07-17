@@ -53,7 +53,7 @@ flutter:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
+  ios: false # 🛠️ Fully disabled to skip iOS processing layers entirely
   image_path: "assets/icon_launcher.png"
   web:
     generate: true
