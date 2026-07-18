@@ -31,12 +31,13 @@ dependencies:
   flutter_webrtc: ^1.2.0
 
   # Native Core Fallback Drivers
+  app_links: ^6.3.2                # 🌟 FIXED: Added missing core linking dependency here
   arcore_flutter_plus: ^1.0.2     
   camera: ^0.11.0                 
-  camera_android_camerax: ^0.6.30  # TRICK FIX: Added missing native Android architecture mapping
+  camera_android_camerax: ^0.6.30  
   flutter_plugin_android_lifecycle: ^2.0.24 
   webview_flutter: ^4.9.0         
-  webview_flutter_android: ^4.8.0  # TRICK FIX: Added missing native Android engine mapping
+  webview_flutter_android: ^4.8.0  
   google_mobile_ads: ^5.2.0       
 
 dev_dependencies:
