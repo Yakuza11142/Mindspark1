@@ -21,7 +21,6 @@ jobs:
           mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
           touch .env assets/icon_launcher.png
           
-          # Use Secrets class name to match app-wide dependencies
           cat << 'EOF' > lib/secrets.dart
           class Secrets {
             static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -117,7 +116,6 @@ jobs:
           
           flutter create . --platforms=web
           
-          # Changed class name from AppConfig back to Secrets
           cat << 'EOF' > lib/secrets.dart
           class Secrets {
             static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -176,3 +174,19 @@ jobs:
         run: |
           flutter pub get
           flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.json
+
+      - name: Upload Web Build Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy-web:
+    needs: build-web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
