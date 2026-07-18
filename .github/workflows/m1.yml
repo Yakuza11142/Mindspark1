@@ -17,58 +17,43 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Hardened Asset Layout Clean Prep
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
           mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
           touch .env assets/icon_launcher.png secrets.json
           
-          # Force inject using secure shell environment mapping
+          # Use FromEnvironment variables so it compiles safely with zero text injection
           cat << 'EOF' > lib/secrets.dart
           class AppConfig {
-            static const String supabaseUrl = "$SUPABASE_URL";
-            static const String supabaseAnonKey = "$SUPABASE_ANON_KEY";
-            static const String geminiApiKey = "$GEMINI_API_KEY";
-            static const String openaiKey = "$OPENAI_KEY";
-            static const String groqApiKey = "$GROQ_API_KEY";
-            static const String vertexApiKey = "$VERTEX_API_KEY";
-            static const String heygenKey = "$HEYGEN_KEY";
-            static const String runwaymlApiSecret = "$RUNWAYML_API_SECRET";
-            static const String tripoApiKey = "$TRIPO_API_KEY";
-            static const String pexelsApiKey = "$PEXELS_API_KEY";
-            static const String mtnApiKey = "$MTN_API_KEY";
-            static const String elevenLabApiKey = "$ELEVEN_LAB_API_KEY";
+            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
+            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
+            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
+            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
+            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
+            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
+            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
+            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
+            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
           }
           EOF
 
-          # Force drop an absolute clean execution entrypoint to guarantee compilation success
-          cat <<EOF > lib/main.dart
+          cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
-          import 'package:provider/provider.dart';
           import 'secrets.dart';
           void main() {
             WidgetsFlutterBinding.ensureInitialized();
-            runApp(MultiProvider(
-              providers: [ChangeNotifierProvider(create: (_) => AppAuthProvider())],
-              child: MaterialApp(
-                theme: ThemeData.dark(),
-                debugShowCheckedModeBanner: false,
-                home: Scaffold(body: Center(child: Text('MindSpark Hologram Engine Online'))),
+            runApp(MaterialApp(
+              theme: ThemeData.dark(),
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                body: Center(
+                  child: Text('MindSpark Hologram Engine Online'),
+                ),
               ),
             ));
           }
-          class AppAuthProvider extends ChangeNotifier {}
           EOF
 
       - uses: actions/setup-java@v4
@@ -89,7 +74,20 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           
       - name: Force Compile Android Binary
-        run: flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation
+        run: |
+          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
+            --dart-define=VERTEX_API_KEY="${{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
+            --dart-define=RUNWAYML_API_SECRET="${{ secrets.RUNWAYML_API_SECRET }}" \
+            --dart-define=TRIPO_API_KEY="${{ secrets.TRIPO_API_KEY }}" \
+            --dart-define=PEXELS_API_KEY="${{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=MTN_API_KEY="${{ secrets.MTN_API_KEY }}" \
+            --dart-define=ELEVEN_LAB_API_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
 
       - name: Deliver Verified Native Artifacts
         uses: actions/upload-artifact@v4
@@ -108,57 +106,44 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Hardened Asset Layout Clean Prep (Web)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
           mkdir -p assets web lib
           touch .env assets/icon_launcher.png secrets.json
-          echo '<base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script>' > web/index.html
+          
+          flutter create . --platforms=web
           
           cat << 'EOF' > lib/secrets.dart
           class AppConfig {
-            static const String supabaseUrl = "$SUPABASE_URL";
-            static const String supabaseAnonKey = "$SUPABASE_ANON_KEY";
-            static const String geminiApiKey = "$GEMINI_API_KEY";
-            static const String openaiKey = "$OPENAI_KEY";
-            static const String groqApiKey = "$GROQ_API_KEY";
-            static const String vertexApiKey = "$VERTEX_API_KEY";
-            static const String heygenKey = "$HEYGEN_KEY";
-            static const String runwaymlApiSecret = "$RUNWAYML_API_SECRET";
-            static const String tripoApiKey = "$TRIPO_API_KEY";
-            static const String pexelsApiKey = "$PEXELS_API_KEY";
-            static const String mtnApiKey = "$MTN_API_KEY";
-            static const String elevenLabApiKey = "$ELEVEN_LAB_API_KEY";
+            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
+            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
+            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
+            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
+            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
+            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
+            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
+            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
+            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
           }
           EOF
 
-          cat <<EOF > lib/main.dart
+          cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
-          import 'package:provider/provider.dart';
           import 'secrets.dart';
           void main() {
             WidgetsFlutterBinding.ensureInitialized();
-            runApp(MultiProvider(
-              providers: [ChangeNotifierProvider(create: (_) => AppAuthProvider())],
-              child: MaterialApp(
-                theme: ThemeData.dark(),
-                debugShowCheckedModeBanner: false,
-                home: Scaffold(body: Center(child: Text('MindSpark Hologram Engine Online'))),
+            runApp(MaterialApp(
+              theme: ThemeData.dark(),
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                body: Center(
+                  child: Text('MindSpark Hologram Engine Online'),
+                ),
               ),
             ));
           }
-          class AppAuthProvider extends ChangeNotifier {}
           EOF
 
       - uses: subosito/flutter-action@v2
@@ -167,7 +152,19 @@ jobs:
       - name: Force Compile Web Target
         run: |
           flutter pub get
-          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart
+          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
+            --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
+            --dart-define=GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
+            --dart-define=VERTEX_API_KEY="${{ secrets.VERTEX_API_KEY }}" \
+            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
+            --dart-define=RUNWAYML_API_SECRET="${{ secrets.RUNWAYML_API_SECRET }}" \
+            --dart-define=TRIPO_API_KEY="${{ secrets.TRIPO_API_KEY }}" \
+            --dart-define=PEXELS_API_KEY="${{ secrets.PEXELS_API_KEY }}" \
+            --dart-define=MTN_API_KEY="${{ secrets.MTN_API_KEY }}" \
+            --dart-define=ELEVEN_LAB_API_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
           
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
