@@ -15,15 +15,15 @@ jobs:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Hardened Asset Layout Clean Prep
         run: |
           mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
-          touch .env assets/icon_launcher.png secrets.json
+          touch .env assets/icon_launcher.png
           
-          # Use FromEnvironment variables so it compiles safely with zero text injection
+          # Use Secrets class name to match app-wide dependencies
           cat << 'EOF' > lib/secrets.dart
-          class AppConfig {
+          class Secrets {
             static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
             static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
             static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
@@ -56,12 +56,29 @@ jobs:
           }
           EOF
 
+      - name: Create Runtime Environment Map
+        run: |
+          echo '{
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
+            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
+            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
+            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
+            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
+            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
+            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
+            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
+            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
+          }' > secrets.json
+
       - uses: actions/setup-java@v4
         with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
-        
+
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
-        
+
       - name: Pull Dependency Artifact Blocks
         run: |
           flutter pub get
@@ -75,19 +92,7 @@ jobs:
           
       - name: Force Compile Android Binary
         run: |
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
-            --dart-define=GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
-            --dart-define=VERTEX_API_KEY="${{ secrets.VERTEX_API_KEY }}" \
-            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
-            --dart-define=RUNWAYML_API_SECRET="${{ secrets.RUNWAYML_API_SECRET }}" \
-            --dart-define=TRIPO_API_KEY="${{ secrets.TRIPO_API_KEY }}" \
-            --dart-define=PEXELS_API_KEY="${{ secrets.PEXELS_API_KEY }}" \
-            --dart-define=MTN_API_KEY="${{ secrets.MTN_API_KEY }}" \
-            --dart-define=ELEVEN_LAB_API_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
+          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.json
 
       - name: Deliver Verified Native Artifacts
         uses: actions/upload-artifact@v4
@@ -104,16 +109,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Hardened Asset Layout Clean Prep (Web)
         run: |
           mkdir -p assets web lib
-          touch .env assets/icon_launcher.png secrets.json
+          touch .env assets/icon_launcher.png
           
           flutter create . --platforms=web
           
+          # Changed class name from AppConfig back to Secrets
           cat << 'EOF' > lib/secrets.dart
-          class AppConfig {
+          class Secrets {
             static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
             static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
             static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
@@ -146,32 +152,27 @@ jobs:
           }
           EOF
 
+      - name: Create Runtime Environment Map (Web)
+        run: |
+          echo '{
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
+            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
+            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
+            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
+            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
+            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
+            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
+            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
+            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
+          }' > secrets.json
+
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
-        
+
       - name: Force Compile Web Target
         run: |
           flutter pub get
-          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-            --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
-            --dart-define=OPENAI_KEY="${{ secrets.OPENAI_KEY }}" \
-            --dart-define=GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}" \
-            --dart-define=VERTEX_API_KEY="${{ secrets.VERTEX_API_KEY }}" \
-            --dart-define=HEYGEN_KEY="${{ secrets.HEYGEN_KEY }}" \
-            --dart-define=RUNWAYML_API_SECRET="${{ secrets.RUNWAYML_API_SECRET }}" \
-            --dart-define=TRIPO_API_KEY="${{ secrets.TRIPO_API_KEY }}" \
-            --dart-define=PEXELS_API_KEY="${{ secrets.PEXELS_API_KEY }}" \
-            --dart-define=MTN_API_KEY="${{ secrets.MTN_API_KEY }}" \
-            --dart-define=ELEVEN_LAB_API_KEY="${{ secrets.ELEVEN_LAB_API_KEY }}"
-          
-      - uses: actions/upload-pages-artifact@v3
-        with: {path: build/web}
-
-  deploy-pages:
-    needs: build-web
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Live Pages Infrastructure
-        uses: actions/deploy-pages@v4
+          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.json
