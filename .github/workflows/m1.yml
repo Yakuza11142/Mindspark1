@@ -22,28 +22,44 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Create Workspace Files
+      - name: Global Codebase Cleaner & Prep (Android)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
           mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
           touch .env assets/icon_launcher.png
+
+          # TRICK: This cleans absolutely ALL incoming keys of breaks and fixes the whole file structure at once
+          python3 -c '
+          import os
+          keys = [
+              "SUPABASE_URL", "SUPABASE_ANON_KEY", "GEMINI_API_KEY", "OPENAI_KEY",
+              "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET",
+              "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"
+          ]
           
-          # TRICK: Direct injection using Dart raw string format 'r' stops control symbol breaks
-          cat << 'EOF' > lib/secrets.dart
-          class Secrets {
-            static const String supabaseUrl = r"${{ secrets.SUPABASE_URL }}";
-            static const String supabaseAnonKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
-            static const String geminiApiKey = r"${{ secrets.GEMINI_API_KEY }}";
-            static const String openaiKey = r"${{ secrets.OPENAI_KEY }}";
-            static const String groqApiKey = r"${{ secrets.GROQ_API_KEY }}";
-            static const String vertexApiKey = r"${{ secrets.VERTEX_API_KEY }}";
-            static const String heygenKey = r"${{ secrets.HEYGEN_KEY }}";
-            static const String runwaymlApiSecret = r"${{ secrets.RUNWAYML_API_SECRET }}";
-            static const String tripoApiKey = r"${{ secrets.TRIPO_API_KEY }}";
-            static const String pexelsApiKey = r"${{ secrets.PEXELS_API_KEY }}";
-            static const String mtnApiKey = r"${{ secrets.MTN_API_KEY }}";
-            static const String elevenLabApiKey = r"${{ secrets.ELEVEN_LAB_API_KEY }}";
-          }
-          EOF
+          code = "class Secrets {\n"
+          for k in keys:
+              raw_value = os.environ.get(k, "")
+              clean_value = raw_value.replace("\r", "").replace("\n", "").strip()
+              var_name = k.lower().replace("_a", "A").replace("_u", "U").replace("_k", "K").replace("_s", "S")
+              code += f"  static const String {var_name} = r\"{clean_value}\";\n"
+          code += "}\n"
+          
+          with open("lib/secrets.dart", "w") as f:
+              f.write(code)
+          '
 
           cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
@@ -66,7 +82,6 @@ jobs:
           flutter precache --android
           rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
           
-      # KEYSTORE STATUS: Restored here to decode your signing files dynamically
       - name: Load Android Signatures
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -92,34 +107,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TRICK: Put Flutter Action first so the terminal always finds the "flutter" command
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Create Web Workspace
+      - name: Global Codebase Cleaner & Prep (Web)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
           mkdir -p assets web lib
           touch .env assets/icon_launcher.png
           
           flutter create . --platforms=web
           
-          # TRICK: Same raw string 'r' injection format applied here to prevent Web compilation crashes
-          cat << 'EOF' > lib/secrets.dart
-          class Secrets {
-            static const String supabaseUrl = r"${{ secrets.SUPABASE_URL }}";
-            static const String supabaseAnonKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
-            static const String geminiApiKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
-            static const String openaiKey = r"${{ secrets.OPENAI_KEY }}";
-            static const String groqApiKey = r"${{ secrets.GROQ_API_KEY }}";
-            static const String vertexApiKey = r"${{ secrets.VERTEX_API_KEY }}";
-            static const String heygenKey = r"${{ secrets.HEYGEN_KEY }}";
-            static const String runwaymlApiSecret = r"${{ secrets.RUNWAYML_API_SECRET }}";
-            static const String tripoApiKey = r"${{ secrets.TRIPO_API_KEY }}";
-            static const String pexelsApiKey = r"${{ secrets.PEXELS_API_KEY }}";
-            static const String mtnApiKey = r"${{ secrets.MTN_API_KEY }}";
-            static const String elevenLabApiKey = r"${{ secrets.ELEVEN_LAB_API_KEY }}";
-          }
-          EOF
+          # TRICK: This cleans absolutely ALL incoming keys for web as well
+          python3 -c '
+          import os
+          keys = [
+              "SUPABASE_URL", "SUPABASE_ANON_KEY", "GEMINI_API_KEY", "OPENAI_KEY",
+              "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET",
+              "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"
+          ]
+          
+          code = "class Secrets {\n"
+          for k in keys:
+              raw_value = os.environ.get(k, "")
+              clean_value = raw_value.replace("\r", "").replace("\n", "").strip()
+              var_name = k.lower().replace("_a", "A").replace("_u", "U").replace("_k", "K").replace("_s", "S")
+              code += f"  static const String {var_name} = r\"{clean_value}\";\n"
+          code += "}\n"
+          
+          with open("lib/secrets.dart", "w") as f:
+              f.write(code)
+          '
 
           cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
