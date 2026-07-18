@@ -3,29 +3,26 @@ on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
-  # =========================================================================
-  # TARGET 1 & 2: NATIVE ANDROID (APK & APPBUNDLE)
-  # =========================================================================
-  build-android:
+  compile-engine:
     runs-on: ubuntu-latest
     strategy:
-      matrix: {target: [apk, appbundle]}
+      matrix: {target: [apk, appbundle, web]}
       fail-fast: false
     env:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
+      - if: matrix.target != 'web'
+        uses: actions/setup-java@v4
         with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
-
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Create Workspace Files
+      - name: Dynamic Workspace Generation
         run: |
-          mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
+          mkdir -p assets web lib
           touch .env assets/icon_launcher.png
+          flutter create . --platforms=${{ matrix.target == 'web' && 'web' || 'android' }}
           
           cat << 'EOF' > lib/secrets.dart
           class Secrets {
@@ -46,21 +43,41 @@ jobs:
 
           cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
-          import 'secrets.dart';
-          void main() {
+          import 'package:provider/provider.dart';
+          import 'package:flutter_dotenv/flutter_dotenv.dart';
+          import 'package:supabase_flutter/supabase_flutter.dart';
+          import 'package:google_mobile_ads/google_mobile_ads.dart';
+          import 'dart:math' as math;
+          void main() async {
             WidgetsFlutterBinding.ensureInitialized();
-            runApp(MaterialApp(
-              theme: ThemeData.dark(),
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                body: Center(child: Text('MindSpark Hologram Engine Online')),
-              ),
-            ));
+            final initAdmob = MobileAds.instance.initialize();
+            String supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+            String supabaseKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+            if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
+              try { await dotenv.load(fileName: ".env"); supabaseUrl = dotenv.env['SUPABASE_URL'] ?? ''; supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? ''; } catch (e) {}
+            }
+            try { if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey); } catch (e) {}
+            await initAdmob;
+            runApp(MultiProvider(providers: [ChangeNotifierProvider(create: (_) => AppAuthProvider()), ChangeNotifierProvider(create: (_) => AITutorProvider()), ChangeNotifierProvider(create: (_) => ArLabProvider())], child: const MindSparkApp()));
+          }
+          class MindSparkApp extends StatelessWidget {
+            const MindSparkApp({super.key});
+            @override Widget build(BuildContext context) => MaterialApp(title: 'Mind Spark', debugShowCheckedModeBanner: false, theme: ThemeData.dark(), home: const MainDevelopmentPage());
+          }
+          class AppAuthProvider extends ChangeNotifier {}
+          class AITutorProvider extends ChangeNotifier {}
+          class ArLabProvider extends ChangeNotifier {}
+          class MainDevelopmentPage extends StatefulWidget {
+            const MainDevelopmentPage({super.key});
+            @override State<MainDevelopmentPage> createState() => _MainDevelopmentPageState();
+          }
+          class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
+            String t = ''; double s = 0.0, u = 0.0;
+            @override void initState() { super.initState(); setState(() { t = DateTime.now().toIso8601String(); s = math.sin(45.0); u = (45.0 * math.pi) / 180.0; }); }
+            @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('MindSpark Workspace')), body: Column(children: [Text('Timestamp: $t'), Text('Sine: $s'), Text('Output: $u')]));
           }
           EOF
 
-      - name: Inject Keys to Env File
-        run: |
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
@@ -76,28 +93,27 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      - name: Force Android Icon Native Fallback Redirection
+      - name: Execute Optimization Patches
         run: |
-          sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
-          sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
+          if [ "${{ matrix.target }}" != "web" ]; then
+            sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
+            sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+            echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          fi
 
-      # TRICK: Using assemble links native engines safely without code registration crashes
-      - name: Clean and Fetch Cache
+      - name: Cache Reset and Build Execution
         run: |
+          flutter clean
           flutter pub get
-          flutter precache --android
-          flutter assemble -dTargetPlatform=android-arm64 release_bundle
-          
-      - name: Load Android Signatures
-        run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-          
-      - name: Build Android App
-        run: |
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+          if [ "${{ matrix.target }}" = "web" ]; then
+            flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.env
+          else
+            flutter precache --android
+            flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+          fi
 
-      - name: Save Build Results
+      - if: matrix.target != 'web'
         uses: actions/upload-artifact@v4
         with:
           name: holomatics-native-${{ matrix.target }}
@@ -105,90 +121,14 @@ jobs:
             build/app/outputs/bundle/release/*.aab
             build/app/outputs/flutter-apk/*.apk
 
-  # =========================================================================
-  # TARGET 3 & 4: WEB COMPILE & LIVE DEPLOYMENT
-  # =========================================================================
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
-
-      - name: Create Web Workspace
-        run: |
-          mkdir -p assets web lib
-          touch .env assets/icon_launcher.png
-          
-          flutter create . --platforms=web
-          
-          cat << 'EOF' > lib/secrets.dart
-          class Secrets {
-            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
-            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
-            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
-            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
-            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
-            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
-            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
-            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
-            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
-            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
-          }
-          EOF
-
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          import 'secrets.dart';
-          void main() {
-            WidgetsFlutterBinding.ensureInitialized();
-            runApp(MaterialApp(
-              theme: ThemeData.dark(),
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                body: Center(child: Text('MindSpark Hologram Engine Online')),
-              ),
-            ));
-          }
-          EOF
-
-      - name: Inject Keys to Env File (Web)
-        run: |
-          cat << 'EOF' > secrets.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-
-      - name: Build Web App
-        run: |
-          flutter pub get
-          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.env
-
-      - name: Save Web Files
+      - if: matrix.target == 'web'
         uses: actions/upload-pages-artifact@v4
-        with:
-          path: build/web
+        with: {path: build/web}
 
   deploy-web:
-    needs: build-web
+    needs: compile-engine
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
