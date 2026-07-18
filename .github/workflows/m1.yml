@@ -4,7 +4,7 @@ permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
   # =========================================================================
-  # TARGET 1 & 2: GUARANTEED NATIVE ANDROID ENGINE (APK & AAB MANIFEST)
+  # TARGET 1 & 2: NATIVE ANDROID (APK & APPBUNDLE)
   # =========================================================================
   build-android:
     runs-on: ubuntu-latest
@@ -16,25 +16,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Hardened Asset Layout Clean Prep
+      - uses: actions/setup-java@v4
+        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
+
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
+
+      - name: Create Workspace Files
         run: |
           mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
           touch .env assets/icon_launcher.png
           
+          # TRICK: Direct injection using Dart raw string format 'r' stops control symbol breaks
           cat << 'EOF' > lib/secrets.dart
           class Secrets {
-            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
-            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
-            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
-            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
-            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
-            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
-            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
-            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
-            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
-            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
+            static const String supabaseUrl = r"${{ secrets.SUPABASE_URL }}";
+            static const String supabaseAnonKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
+            static const String geminiApiKey = r"${{ secrets.GEMINI_API_KEY }}";
+            static const String openaiKey = r"${{ secrets.OPENAI_KEY }}";
+            static const String groqApiKey = r"${{ secrets.GROQ_API_KEY }}";
+            static const String vertexApiKey = r"${{ secrets.VERTEX_API_KEY }}";
+            static const String heygenKey = r"${{ secrets.HEYGEN_KEY }}";
+            static const String runwaymlApiSecret = r"${{ secrets.RUNWAYML_API_SECRET }}";
+            static const String tripoApiKey = r"${{ secrets.TRIPO_API_KEY }}";
+            static const String pexelsApiKey = r"${{ secrets.PEXELS_API_KEY }}";
+            static const String mtnApiKey = r"${{ secrets.MTN_API_KEY }}";
+            static const String elevenLabApiKey = r"${{ secrets.ELEVEN_LAB_API_KEY }}";
           }
           EOF
 
@@ -47,53 +54,29 @@ jobs:
               theme: ThemeData.dark(),
               debugShowCheckedModeBanner: false,
               home: Scaffold(
-                body: Center(
-                  child: Text('MindSpark Hologram Engine Online'),
-                ),
+                body: Center(child: Text('MindSpark Hologram Engine Online')),
               ),
             ));
           }
           EOF
 
-      - name: Create Runtime Environment Map
-        run: |
-          echo '{
-            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
-            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
-            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
-            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
-            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
-            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
-            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
-            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
-            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
-            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
-            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
-            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
-          }' > secrets.json
-
-      - uses: actions/setup-java@v4
-        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
-
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
-
-      - name: Pull Dependency Artifact Blocks
+      - name: Clean and Fetch Cache
         run: |
           flutter pub get
           flutter precache --android
           rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
           
-      - name: Auto-Heal Signing Keystore Credentials
+      # KEYSTORE STATUS: Restored here to decode your signing files dynamically
+      - name: Load Android Signatures
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           
-      - name: Force Compile Android Binary
+      - name: Build Android App
         run: |
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.json
+          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation
 
-      - name: Deliver Verified Native Artifacts
+      - name: Save Build Results
         uses: actions/upload-artifact@v4
         with:
           name: holomatics-native-${{ matrix.target }}
@@ -102,34 +85,39 @@ jobs:
             build/app/outputs/flutter-apk/*.apk
 
   # =========================================================================
-  # TARGET 3 & 4: GUARANTEED WEB ENGINE COMPILE & AUTOMATED LIVE DEPLOYMENT
+  # TARGET 3 & 4: WEB COMPILE & LIVE DEPLOYMENT
   # =========================================================================
   build-web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Hardened Asset Layout Clean Prep (Web)
+      # TRICK: Put Flutter Action first so the terminal always finds the "flutter" command
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
+
+      - name: Create Web Workspace
         run: |
           mkdir -p assets web lib
           touch .env assets/icon_launcher.png
           
           flutter create . --platforms=web
           
+          # TRICK: Same raw string 'r' injection format applied here to prevent Web compilation crashes
           cat << 'EOF' > lib/secrets.dart
           class Secrets {
-            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
-            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
-            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
-            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
-            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
-            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
-            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
-            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
-            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
-            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
+            static const String supabaseUrl = r"${{ secrets.SUPABASE_URL }}";
+            static const String supabaseAnonKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
+            static const String geminiApiKey = r"${{ secrets.SUPABASE_ANON_KEY }}";
+            static const String openaiKey = r"${{ secrets.OPENAI_KEY }}";
+            static const String groqApiKey = r"${{ secrets.GROQ_API_KEY }}";
+            static const String vertexApiKey = r"${{ secrets.VERTEX_API_KEY }}";
+            static const String heygenKey = r"${{ secrets.HEYGEN_KEY }}";
+            static const String runwaymlApiSecret = r"${{ secrets.RUNWAYML_API_SECRET }}";
+            static const String tripoApiKey = r"${{ secrets.TRIPO_API_KEY }}";
+            static const String pexelsApiKey = r"${{ secrets.PEXELS_API_KEY }}";
+            static const String mtnApiKey = r"${{ secrets.MTN_API_KEY }}";
+            static const String elevenLabApiKey = r"${{ secrets.ELEVEN_LAB_API_KEY }}";
           }
           EOF
 
@@ -142,41 +130,19 @@ jobs:
               theme: ThemeData.dark(),
               debugShowCheckedModeBanner: false,
               home: Scaffold(
-                body: Center(
-                  child: Text('MindSpark Hologram Engine Online'),
-                ),
+                body: Center(child: Text('MindSpark Hologram Engine Online')),
               ),
             ));
           }
           EOF
 
-      - name: Create Runtime Environment Map (Web)
-        run: |
-          echo '{
-            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
-            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
-            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
-            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
-            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
-            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
-            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
-            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
-            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
-            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
-            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
-            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
-          }' > secrets.json
-
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
-
-      - name: Force Compile Web Target
+      - name: Build Web App
         run: |
           flutter pub get
-          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.json
+          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart
 
-      - name: Upload Web Build Artifacts
-        uses: actions/upload-pages-artifact@v3
+      - name: Save Web Files
+        uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
 
