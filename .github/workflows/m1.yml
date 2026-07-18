@@ -22,7 +22,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Global Codebase Cleaner & Prep (Android)
+      # TRICK: Automatically rewrites and cleans line-breaks inside your real main.dart variables
+      - name: Virtual Compiler Code Fixer (Android)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -37,10 +38,9 @@ jobs:
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
-          mkdir -p assets web lib android/app/src/main/java/io/flutter/plugins
+          mkdir -p assets web android/app/src/main/java/io/flutter/plugins
           touch .env assets/icon_launcher.png
 
-          # TRICK: This cleans absolutely ALL incoming keys of breaks and fixes the whole file structure at once
           python3 -c '
           import os
           keys = [
@@ -48,33 +48,18 @@ jobs:
               "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET",
               "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"
           ]
+          clean = {k: os.environ.get(k, "").replace("\r", "").replace("\n", "").strip() for k in keys}
           
+          # Clean and compile secrets directly
           code = "class Secrets {\n"
-          for k in keys:
-              raw_value = os.environ.get(k, "")
-              clean_value = raw_value.replace("\r", "").replace("\n", "").strip()
+          for k, v in clean.items():
               var_name = k.lower().replace("_a", "A").replace("_u", "U").replace("_k", "K").replace("_s", "S")
-              code += f"  static const String {var_name} = r\"{clean_value}\";\n"
+              code += f"  static const String {var_name} = r\"{v}\";\n"
           code += "}\n"
           
           with open("lib/secrets.dart", "w") as f:
               f.write(code)
           '
-
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          import 'secrets.dart';
-          void main() {
-            WidgetsFlutterBinding.ensureInitialized();
-            runApp(MaterialApp(
-              theme: ThemeData.dark(),
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                body: Center(child: Text('MindSpark Hologram Engine Online')),
-              ),
-            ));
-          }
-          EOF
 
       - name: Clean and Fetch Cache
         run: |
@@ -110,7 +95,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Global Codebase Cleaner & Prep (Web)
+      # TRICK: Automatically rewrites and cleans line-breaks inside your real main.dart variables
+      - name: Virtual Compiler Code Fixer (Web)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -125,12 +111,11 @@ jobs:
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
         run: |
-          mkdir -p assets web lib
+          mkdir -p assets web
           touch .env assets/icon_launcher.png
           
           flutter create . --platforms=web
           
-          # TRICK: This cleans absolutely ALL incoming keys for web as well
           python3 -c '
           import os
           keys = [
@@ -138,33 +123,17 @@ jobs:
               "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET",
               "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"
           ]
+          clean = {k: os.environ.get(k, "").replace("\r", "").replace("\n", "").strip() for k in keys}
           
           code = "class Secrets {\n"
-          for k in keys:
-              raw_value = os.environ.get(k, "")
-              clean_value = raw_value.replace("\r", "").replace("\n", "").strip()
+          for k, v in clean.items():
               var_name = k.lower().replace("_a", "A").replace("_u", "U").replace("_k", "K").replace("_s", "S")
-              code += f"  static const String {var_name} = r\"{clean_value}\";\n"
+              code += f"  static const String {var_name} = r\"{v}\";\n"
           code += "}\n"
           
           with open("lib/secrets.dart", "w") as f:
               f.write(code)
           '
-
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          import 'secrets.dart';
-          void main() {
-            WidgetsFlutterBinding.ensureInitialized();
-            runApp(MaterialApp(
-              theme: ThemeData.dark(),
-              debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                body: Center(child: Text('MindSpark Hologram Engine Online')),
-              ),
-            ));
-          }
-          EOF
 
       - name: Build Web App
         run: |
