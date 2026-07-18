@@ -76,17 +76,17 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      # TRICK: Fixes the Android Manifest error by redirecting the icon to a guaranteed system asset
       - name: Force Android Icon Native Fallback Redirection
         run: |
           sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
           sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
 
+      # TRICK: Using assemble links native engines safely without code registration crashes
       - name: Clean and Fetch Cache
         run: |
           flutter pub get
           flutter precache --android
-          rm -f android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+          flutter assemble -dTargetPlatform=android-arm64 release_bundle
           
       - name: Load Android Signatures
         run: |
