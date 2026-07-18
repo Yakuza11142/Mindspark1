@@ -12,10 +12,8 @@ jobs:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
     steps:
       - uses: actions/checkout@v4
-      
       - uses: actions/setup-java@v4
         with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
-        
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
@@ -98,6 +96,13 @@ jobs:
         run: |
           if [ "${{ matrix.target }}" != "web" ]; then
             rm -f android/build.gradle.kts android/app/build.gradle.kts
+            rm -rf android/app/src/main/kotlin/com/example/*
+            mkdir -p android/app/src/main/kotlin/com/example/mindspark1
+            cat << 'EOF' > android/app/src/main/kotlin/com/example/mindspark1/MainActivity.kt
+            package com.example.mindspark1
+            import io.flutter.embedding.android.FlutterActivity
+            class MainActivity: FlutterActivity() {}
+            EOF
             sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
             sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
@@ -129,6 +134,8 @@ jobs:
 
   deploy-web:
     needs: compile-engine
+    # TRICK FIX: "if: always()" prevents the deployment phase from being skipped due to unrelated native matrix fails
+    if: always() && !cancelled()
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
