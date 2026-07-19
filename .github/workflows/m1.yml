@@ -71,7 +71,7 @@ jobs:
           flutter clean
           flutter pub get
           
-          # 🌟 PRISTINE OVERRIDE TRICK: Write a 100% clean, error-free build configuration directly over the broken cache file
+          # 🌟 PRISTINE OVERRIDE TRICK: Injecting the mandatory namespace to satisfy the new modern AGP compiler
           ARCORE_GRADLE_PATH="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
           if [ -f "$ARCORE_GRADLE_PATH" ]; then
           cat << 'EOF' > "$ARCORE_GRADLE_PATH"
@@ -98,6 +98,7 @@ jobs:
           apply plugin: 'com.android.library'
 
           android {
+              namespace "com.muzammil.arcore.flutter.plus"
               compileSdk 34
               defaultConfig {
                   minSdk 24
