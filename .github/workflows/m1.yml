@@ -101,17 +101,20 @@ jobs:
           EOF
           fi
           
-          # 🌟 OMNIPOTENT MULTI-LINE STRIPPER: Erases legacy code blocks cleanly without leaving stray braces behind
+          # 🌟 BULLETPROOF REPLACEMENT PATCH: Safely updates legacy syntax loops across all downloaded caches line-by-line
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
-              if grep -q "configurations\.all" "$file" || grep -q "configurations\.configureEach" "$file"; then
-                  echo "Executing advanced regular expression strip on cache asset: $file"
-                  sed -z -i 's/configurations\.all\s*{[^}]*}//g' "$file"
-                  sed -z -i 's/configurations\.configureEach\s*{[^}]*}//g' "$file"
-                  # Cleanup trailing artifact remnants that cause structural compilation panics
-                  sed -z -i 's/rootProject\.allprojects\s*{[^}]*configurations\.all\s*{[^}]*}[^}]*}//g' "$file"
+              if grep -q "configurations\.all" "$file"; then
+                  echo "Upgrading configuration container syntax inside: $file"
+                  sed -i 's/configurations\.all\s* {/configurations.configureEach {/g' "$file"
+                  sed -i 's/configurations\.all{/configurations.configureEach{/g' "$file"
               fi
           done
           
+          # Force the Android Gradle Plugin target down to a stable 8.2 compatibility matrix
+          if [ -f android/build.gradle ]; then
+              sed -i 's/com.android.application" version ".*"/com.android.application" version "8.2.2"/g' android/build.gradle
+          fi
+
           flutter precache --android
           flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
 
