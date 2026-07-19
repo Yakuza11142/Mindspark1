@@ -72,6 +72,8 @@ jobs:
             echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
       - run: |
+          # Nuclear cache reset: Obliterates hidden compiler artifacts to stop configuration injection loops
+          rm -rf .dart_tool/
           flutter clean && flutter pub get
           if [ "${{ matrix.target }}" != "web" ]; then
             AG="/home/runner/.pub-cache/hosted/pub.dev/google_mobile_ads-5.3.1/android/build.gradle"
