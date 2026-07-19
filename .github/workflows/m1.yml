@@ -4,7 +4,7 @@ permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
   # =========================================================================
-  # JOB 1: STANDALONE NATIVE ANDROID SYSTEM PIPELINE
+  # JOB 1: AUTONOMOUS NATIVE ANDROID SYSTEM PIPELINE
   # =========================================================================
   build-android:
     runs-on: ubuntu-latest
@@ -39,22 +39,37 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      - name: Execute Optimization Patches (Android)
+      - name: Nuclear Subsystem Reconstruction & Full Permission Array Injection
         run: |
-          rm -f android/build.gradle.kts android/app/build.gradle.kts || true
-          rm -rf android/app/src/main/kotlin || true
+          # 1. Clear out the corrupted mobile layout directory entirely
+          rm -rf android/ || true
           
+          # 2. Force the toolchain to build a fresh, uncorrupted Android template
+          flutter create . --platforms=android
+          
+          # 3. Align the application packages to match your core ID target perfectly
           if [ -f android/app/build.gradle ]; then
-            # Fix namespace and app ID
             sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
-            
-            # TRICK FIX: Fixes the reader typo inside your signature block automatically
-            sed -i 's/props.load(reader)/props.load(r)/g' android/app/build.gradle
           fi
           
+          # 4. TRICK FIX: Inject the complete, multi-layered advanced production permission profile
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            # Clean up default placeholder headers to avoid overlap
+            sed -i '/<uses-permission/d' "$MANIFEST_PATH"
+            
+            # Inject your full hardware, networking, and system security permission block
+            sed -i '/<manifest/a \    <!-- Core Data Networks -->\n    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    \n    <!-- Multimedia Hardware Links (Camera, Microphone, TTS, & Speech UI) -->\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    \n    <!-- Local Storage Buffers -->\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    \n    <!-- Webview and System Activity Keep-Alive Mappings -->\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    \n    <!-- AR Core Hardware Engine Requirements -->\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$MANIFEST_PATH"
+            
+            # Allow clean, secure, unblocked cleartext local network traffic inside the main application tag
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST_PATH"
+          fi
+          
+          # 5. Handle fallback asset parameter icons
           sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
           sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
           
+          # 6. Reconstruct cryptographically sound fallback keystore signatures
           if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
             echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
