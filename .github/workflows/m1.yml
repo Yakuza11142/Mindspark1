@@ -41,10 +41,10 @@ jobs:
 
       - name: Nuclear Subsystem Reconstruction & Full Permission Array Injection
         run: |
-          # 1. Clear out the corrupted mobile layout directory entirely
+          # 1. Clear out the corrupted mobile directory completely
           rm -rf android/ || true
           
-          # 2. Force the toolchain to build a fresh, uncorrupted Android template
+          # 2. Force the SDK to build a pristine, modern Android harness
           flutter create . --platforms=android
           
           # 3. Align the application packages to match your core ID target perfectly
@@ -52,16 +52,11 @@ jobs:
             sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
           fi
           
-          # 4. TRICK FIX: Inject the complete, multi-layered advanced production permission profile
+          # 4. Inject your full hardware, networking, and system security permission block
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # Clean up default placeholder headers to avoid overlap
             sed -i '/<uses-permission/d' "$MANIFEST_PATH"
-            
-            # Inject your full hardware, networking, and system security permission block
-            sed -i '/<manifest/a \    <!-- Core Data Networks -->\n    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    \n    <!-- Multimedia Hardware Links (Camera, Microphone, TTS, & Speech UI) -->\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    \n    <!-- Local Storage Buffers -->\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    \n    <!-- Webview and System Activity Keep-Alive Mappings -->\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    \n    <!-- AR Core Hardware Engine Requirements -->\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$MANIFEST_PATH"
-            
-            # Allow clean, secure, unblocked cleartext local network traffic inside the main application tag
+            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$MANIFEST_PATH"
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST_PATH"
           fi
           
@@ -78,10 +73,17 @@ jobs:
             echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
 
-      - name: Compile Native Binaries
+      - name: Compile Native Binaries with Dependency Hot-Fixes
         run: |
           flutter clean
           flutter pub get
+          
+          # 🌟 TRICK FIX: Intercept the broken arcore package inside the hidden cache and patch its deprecated lines before Gradle runs!
+          ARCORE_GRADLE_PATH="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
+          if [ -f "$ARCORE_GRADLE_PATH" ]; then
+            sed -i 's/configurations.all/configurations.configureEach/g' "$ARCORE_GRADLE_PATH"
+          fi
+          
           flutter precache --android
           flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
 
