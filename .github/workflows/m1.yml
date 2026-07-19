@@ -44,7 +44,7 @@ jobs:
               namespace "com.example.mindspark1"
               compileSdk 34
               defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0" }
-              buildTypes { release { minifyEnabled true; shrinkResources true; proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro" } }
+              buildTypes { release { signingConfig signingConfigs.debug } }
           }
           EOF
             cat << 'EOF' > android/settings.gradle
@@ -59,12 +59,6 @@ jobs:
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
           include ":app"
-          EOF
-            cat << 'EOF' > android/app/proguard-rules.pro
-          -keep class com.google.android.gms.internal.ads.** { *; }
-          -keep class com.google.android.gms.ads.** { *; }
-          -keep class com.muzammil.arcore.flutter.plus.** { *; }
-          -dontwarn com.google.android.gms.**
           EOF
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
@@ -107,7 +101,7 @@ jobs:
               flutter build appbundle --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
             fi
           else
-            sed -i 's|<head>|<head><base href="/'"${{ github.event.repository.name }}"'/|' web/index.html || true
+            sed -i 's|<head>|<head><base href="/|' web/index.html || true
             flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
             if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
           fi
