@@ -12,7 +12,8 @@ jobs:
         with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
-      - run: |
+      - name: Keys
+        run: |
           mkdir -p assets && touch .env assets/icon_launcher.png
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -28,38 +29,16 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-      - run: |
+      - name: Init
+        run: |
           if [ "${{ matrix.target }}" != "web" ]; then
-            rm -rf android/ || true; flutter create . --platforms=android --android-language java
-            rm -f android/*.kts android/app/*.kts || true
-            cat << 'EOF' > android/build.gradle
-          allprojects { repositories { google(); mavenCentral() } }
-          rootProject.buildDir = '../build'
-          subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}"; project.evaluationDependsOn(':app') }
-          tasks.register("clean", Delete) { delete rootProject.buildDir }
-          EOF
-            cat << 'EOF' > android/app/build.gradle
-          plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
-          android {
-              namespace "com.example.mindspark1"
-              compileSdk 34
-              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0" }
-              buildTypes { release { signingConfig signingConfigs.debug } }
-          }
-          EOF
-            cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
-                  return properties.getProperty("flutter.sdk")
-              }()
-              includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
-          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
-          include ":app"
-          EOF
+            rm -rf android/ || true
+            flutter create . --platforms=android
+            if [ -f android/app/build.gradle.kts ]; then
+              sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle.kts
+            elif [ -f android/app/build.gradle ]; then
+              sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
+            fi
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -71,36 +50,18 @@ jobs:
             keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
             echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
-      - run: |
-          # Nuclear cache reset: Obliterates hidden compiler artifacts to stop configuration injection loops
-          rm -rf .dart_tool/
+      - name: Build
+        run: |
           flutter clean && flutter pub get
           if [ "${{ matrix.target }}" != "web" ]; then
-            AG="/home/runner/.pub-cache/hosted/pub.dev/google_mobile_ads-5.3.1/android/build.gradle"
-            if [ -f "$AG" ]; then
-            cat << 'EOF' > "$AG"
-          group 'com.google.android.gms.ads'; version '1.0-SNAPSHOT'
-          buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }
-          rootProject.allprojects { repositories { google(); mavenCentral() } }; apply plugin: 'com.android.library'
-          android { namespace "com.google.android.gms.ads"; compileSdk 34; defaultConfig { minSdk 21 } }
-          dependencies { implementation 'com.google.android.gms:play-services-ads:23.0.0'; implementation 'androidx.annotation:annotation:1.7.1' }
-          EOF
-            fi
-            AC="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
-            if [ -f "$AC" ]; then
-            cat << 'EOF' > "$AC"
-          group 'com.muzammil.arcore.flutter.plus'; version '1.0-SNAPSHOT'
-          buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.2' } }
-          rootProject.allprojects { repositories { google(); mavenCentral() } }; apply plugin: 'com.android.library'
-          android { namespace "com.muzammil.arcore.flutter.plus"; compileSdk 34; defaultConfig { minSdk 24 }; compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 } }
-          dependencies { implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"; implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'com.google.ar:core:1.40.0'; implementation 'com.google.ar.sceneform:core:1.17.1'; implementation 'com.google.ar.sceneform:assets:1.17.1'; implementation ('com.google.ar.sceneform.ux:sceneform-ux:1.17.1') { exclude group: 'com.android.support' }; implementation 'androidx.core:core-ktx:1.12.0' }
-          EOF
-            fi
+            find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -o -name "build.gradle.kts" | while read -r file; do
+              sed -i 's/configurations\.all/configurations.configureEach/g' "$file" 2>/dev/null || true
+            done
             flutter precache --android
             if [ "${{ matrix.target }}" = "apk" ]; then
-              flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --split-per-abi --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+              flutter build apk --release --split-per-abi --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
             else
-              flutter build appbundle --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+              flutter build appbundle --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
             fi
           else
             sed -i 's|<head>|<head><base href="/|' web/index.html || true
@@ -110,9 +71,6 @@ jobs:
       - if: matrix.target != 'web'
         uses: actions/upload-artifact@v4
         with: {name: "native-${{ matrix.target }}", path: "build/app/outputs/bundle/release/*.aab\nbuild/app/outputs/flutter-apk/*.apk\n"}
-      - if: matrix.target != 'web'
-        uses: actions/upload-artifact@v4
-        with: {name: "symbols-${{ matrix.target }}", path: "build/app/outputs/symbols/"}
       - if: matrix.target == 'web'
         uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
