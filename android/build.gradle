@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -25,9 +25,7 @@ subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
-                if (namespace == null) {
-                    namespace = "com.example.mindspark.${project.name.replaceAll(/[^a-zA-Z0-9_]/, '')}"
-                }
+                compileSdk 34
             }
         }
     }

@@ -1,169 +1,137 @@
-name: m1-debug-pipeline
-on: [workflow_dispatch]
-permissions: {contents: write, actions: write, pages: write, id-token: write}
+name: Flutter Build Pipeline
+on: workflow_dispatch
+
+permissions:
+  contents: write
+  actions: write
 
 jobs:
-  # =========================================================================
-  # JOB 1: AUTONOMOUS NATIVE ANDROID SYSTEM PIPELINE
-  # =========================================================================
-  build-android:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix: {target: [apk, appbundle]}
-      fail-fast: false
+    timeout-minutes: 180
+    
     env:
-      GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
+      GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
+      JAVA_OPTS: "-Xmx4096m"
+
+    strategy:
+      matrix:
+        target: [web, apk, appbundle]
+      fail-fast: false
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Inject Configuration Environment Keys
-        run: |
-          mkdir -p assets
-          touch .env assets/icon_launcher.png
-          cat << 'EOF' > secrets.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
 
-      - name: Nuclear Subsystem Reconstruction & Full Permission Array Injection
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Create Required Assets
         run: |
-          rm -rf android/ || true
-          flutter create . --platforms=android
-          
-          if [ -f android/app/build.gradle ]; then
-            sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
-          fi
-          
-          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST_PATH" ]; then
-            sed -i '/<uses-permission/d' "$MANIFEST_PATH"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$MANIFEST_PATH"
-            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST_PATH"
-          fi
-          
-          sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
-          sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
-          
-          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
-            echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
+          touch .env logo.png
+          echo "APP_ENV=release" > .env
+
+      - name: Clean All Build Artifacts
+        run: |
+          flutter clean
+          rm -rf build/
+          cd android && ./gradlew clean --no-daemon || true
+          cd ..
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get
+        timeout-minutes: 30
+
+      - name: Build Web
+        if: matrix.target == 'web'
+        run: |
+          echo "🌐 Building Web..."
+          flutter build web --release
+          if [ -d "build/web" ]; then
+            echo "✅ Web build complete"
           else
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-            echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+            echo "❌ Web build failed"
+            exit 1
           fi
+        timeout-minutes: 60
 
-      - name: Compile Native Binaries with Dependency Hot-Fixes
+      - name: Build APK
+        if: matrix.target == 'apk'
         run: |
-          flutter clean
-          flutter pub get
-          
-          # 🌟 PRISTINE OVERRIDE TRICK: Fixes the arcore plugin layout explicitly
-          ARCORE_GRADLE_PATH="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
-          if [ -f "$ARCORE_GRADLE_PATH" ]; then
-          cat << 'EOF' > "$ARCORE_GRADLE_PATH"
-          group 'com.muzammil.arcore.flutter.plus'
-          version '1.0-SNAPSHOT'
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
-          }
-          rootProject.allprojects { repositories { google(); mavenCentral() } }
-          apply plugin: 'com.android.library'
-          android {
-              namespace "com.muzammil.arcore.flutter.plus"
-              compileSdk 34
-              defaultConfig { minSdk 24 }
-              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-          }
-          dependencies {
-              implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.ar:core:1.40.0'
-              implementation 'com.google.ar.sceneform:core:1.17.1'
-              implementation 'com.google.ar.sceneform:assets:1.17.1'
-              implementation ('com.google.ar.sceneform.ux:sceneform-ux:1.17.1') { exclude group: 'com.android.support' }
-              implementation 'androidx.core:core-ktx:1.12.0'
-          }
-          EOF
+          echo "📱 Building APK..."
+          flutter build apk --release
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            echo "✅ APK build complete"
+          else
+            echo "❌ APK build failed"
+            exit 1
           fi
-          
-          # 🌟 BULLETPROOF REPLACEMENT PATCH: Safe updates that ignore google_mobile_ads
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
-              if [[ "$file" == *"google_mobile_ads"* ]]; then
-                  continue
-              fi
-              if grep -q "configurations\.all" "$file"; then
-                  echo "Upgrading configuration container syntax inside: $file"
-                  sed -i 's/configurations\.all\s* {/configurations.configureEach {/g' "$file"
-                  sed -i 's/configurations\.all{/configurations.configureEach{/g' "$file"
-              fi
-          done
-          
-          # Force the Android Gradle Plugin target down to a stable 8.2 compatibility matrix
-          if [ -f android/build.gradle ]; then
-              sed -i 's/com.android.application" version ".*"/com.android.application" version "8.2.2"/g' android/build.gradle
+        timeout-minutes: 90
+
+      - name: Build AAB
+        if: matrix.target == 'appbundle'
+        run: |
+          echo "📦 Building AAB..."
+          flutter build appbundle --release
+          if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+            echo "✅ AAB build complete"
+          else
+            echo "❌ AAB build failed"
+            exit 1
           fi
+        timeout-minutes: 90
 
-          flutter precache --android
-          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: holomatics-native-${{ matrix.target }}
+          name: mindspark-${{ matrix.target }}
           path: |
-            build/app/outputs/bundle/release/*.aab
-            build/app/outputs/flutter-apk/*.apk
+            build/web/
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
 
-  # =========================================================================
-  # JOB 2: COMPLETELY DECOUPLED WEB PIPELINE
-  # =========================================================================
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
-
-      - name: Inject Configuration Keys (Web)
+      - name: Build Status Report
+        if: always()
         run: |
-          mkdir -p assets
-          touch .env assets/icon_launcher.png
-          cat << 'EOF' > secrets.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-
-      - name: Build Flutter Web Production Package
-        run: |
-          flutter clean
-          flutter pub get
-          flutter build web --release --dart-define-from-file=secrets.env
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: holomatics-web-package
-          path: build/web/
+          echo ""
+          echo "════════════════════════════════════"
+          echo "  BUILD REPORT - ${{ matrix.target }}"
+          echo "════════════════════════════════════"
+          case "${{ matrix.target }}" in
+            web)
+              if [ -d "build/web" ]; then
+                echo "✅ Web: SUCCESS ($(du -sh build/web | cut -f1))"
+              else
+                echo "❌ Web: FAILED"
+              fi
+              ;;
+            apk)
+              if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+                echo "✅ APK: SUCCESS ($(ls -lh build/app/outputs/flutter-apk/app-release.apk | awk '{print $5}'))"
+              else
+                echo "❌ APK: FAILED"
+              fi
+              ;;
+            appbundle)
+              if [ -f "build/app/outputs/bundle/release/app-release.aab" ]; then
+                echo "✅ AAB: SUCCESS ($(ls -lh build/app/outputs/bundle/release/app-release.aab | awk '{print $5}'))"
+              else
+                echo "❌ AAB: FAILED"
+              fi
+              ;;
+          esac
+          echo "════════════════════════════════════"

@@ -15,7 +15,6 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
-    // 🌟 FIXED: Mapped namespace perfectly to match your true project target
     namespace "com.example.mindspark1"
     compileSdk 34
 
@@ -29,7 +28,6 @@ android {
     }
 
     defaultConfig {
-        // 🌟 FIXED: Changed ID configuration to resolve the 35 plugin mapping errors
         applicationId "com.example.mindspark1"
         minSdk 24
         targetSdk 34
@@ -38,26 +36,9 @@ android {
         multiDexEnabled true
     }
 
-    // 🌟 FIXED: Set up proper release signing keys to bind with your pipeline secrets
-    signingConfigs {
-        release {
-            def ksFile = rootProject.file("key.properties")
-            if (ksFile.exists()) {
-                def props = new Properties()
-                ksFile.withReader('UTF-8') { r -> props.load(reader) }
-                storeFile = file(props.getProperty('storeFile'))
-                storePassword = props.getProperty('storePassword')
-                keyAlias = props.getProperty('keyAlias')
-                keyPassword = props.getProperty('keyPassword')
-            }
-        }
-    }
-
     buildTypes {
         release {
-            // 🌟 FIXED: Swapped out debug certificates for secure production signatures
-            signingConfig signingConfigs.release
-
+            signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

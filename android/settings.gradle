@@ -26,8 +26,8 @@ pluginManagement {
 
 plugins {
     id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-    id "com.android.application" version "8.6.1" apply false 
-    id "org.jetbrains.kotlin.android" version "2.0.0" apply false 
+    id "com.android.application" version "8.2.1" apply false
+    id "org.jetbrains.kotlin.android" version "2.0.0" apply false
 }
 
 dependencyResolutionManagement {
@@ -38,5 +38,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Mind Spark"
+rootProject.name = "mindspark1"
 include ':app'
