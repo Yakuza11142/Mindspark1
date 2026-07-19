@@ -101,7 +101,7 @@ jobs:
           EOF
           fi
           
-          # 🌟 BULLETPROOF REPLACEMENT PATCH: Upgrades container closures safely without breaking google_mobile_ads
+          # 🌟 BULLETPROOF REPLACEMENT PATCH: Safe updates that ignore google_mobile_ads
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
               if [[ "$file" == *"google_mobile_ads"* ]]; then
                   continue
@@ -156,3 +156,14 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
+
+      - name: Build Flutter Web Production Package
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build web --release --dart-define-from-file=secrets.env
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: holomatics-web-package
+          path: build/web/
