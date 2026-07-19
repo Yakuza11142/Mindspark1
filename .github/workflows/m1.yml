@@ -101,8 +101,11 @@ jobs:
           EOF
           fi
           
-          # 🌟 BULLETPROOF REPLACEMENT PATCH: Safely updates legacy syntax loops across all downloaded caches line-by-line
+          # 🌟 BULLETPROOF REPLACEMENT PATCH: Upgrades container closures safely without breaking google_mobile_ads
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
+              if [[ "$file" == *"google_mobile_ads"* ]]; then
+                  continue
+              fi
               if grep -q "configurations\.all" "$file"; then
                   echo "Upgrading configuration container syntax inside: $file"
                   sed -i 's/configurations\.all\s* {/configurations.configureEach {/g' "$file"
@@ -153,25 +156,3 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-
-      - name: Compile Web Application
-        run: |
-          flutter clean
-          flutter pub get
-          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --dart-define-from-file=secrets.env
-
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: build/web
-
-  # =========================================================================
-  # JOB 3: LIVE HOSTING DEPLOYMENT
-  # =========================================================================
-  deploy-web:
-    needs: build-web
-    runs-on: ubuntu-latest
-    environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
-    steps:
-      - name: Deploy Live Site Artifacts
-        id: deployment
-        uses: actions/deploy-pages@v4
