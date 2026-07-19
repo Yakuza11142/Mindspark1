@@ -71,12 +71,55 @@ jobs:
           flutter clean
           flutter pub get
           
-          # 🌟 ULTIMATE TRICK: Find the exact broken block inside arcore and wipe the lines entirely
+          # 🌟 PRISTINE OVERRIDE TRICK: Write a 100% clean, error-free build configuration directly over the broken cache file
           ARCORE_GRADLE_PATH="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
           if [ -f "$ARCORE_GRADLE_PATH" ]; then
-            # Use sed to target and delete any configurations blocks that crash the evaluation engine
-            sed -i '/configurations\.all/,/}/d' "$ARCORE_GRADLE_PATH"
-            sed -i '/configurations\.configureEach/,/}/d' "$ARCORE_GRADLE_PATH"
+          cat << 'EOF' > "$ARCORE_GRADLE_PATH"
+          group 'com.muzammil.arcore.flutter.plus'
+          version '1.0-SNAPSHOT'
+
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.2'
+              }
+          }
+
+          rootProject.allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          apply plugin: 'com.android.library'
+
+          android {
+              compileSdk 34
+              defaultConfig {
+                  minSdk 24
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          dependencies {
+              implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.ar:core:1.40.0'
+              implementation 'com.google.ar.sceneform:core:1.17.1'
+              implementation 'com.google.ar.sceneform:assets:1.17.1'
+              implementation ('com.google.ar.sceneform.ux:sceneform-ux:1.17.1') {
+                  exclude group: 'com.android.support'
+              }
+              implementation 'androidx.core:core-ktx:1.12.0'
+          }
+          EOF
           fi
           
           flutter precache --android
