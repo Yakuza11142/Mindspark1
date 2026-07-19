@@ -87,14 +87,18 @@ jobs:
           }
           EOF
           fi
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
-              if grep -q "configurations\.all\s*{" "$file"; then
-                  echo "Upgrading configuration container syntax inside: $file"
-                  sed -i 's/configurations\.all\s*{/configurations.configureEach {/g' "$file"
-              fi
-          done
           if [ -f android/build.gradle ]; then
               sed -i 's/com.android.application" version ".*"/com.android.application" version "8.2.2"/g' android/build.gradle
+              # Dynamic injection to force compliant configuration engine behavior downstream across plugin modules natively
+              cat << 'EOF' >> android/build.gradle
+              subprojects {
+                  project.configurations.configureEach {
+                      resolutionStrategy {
+                          cacheChangingModulesFor 0, 'seconds'
+                      }
+                  }
+              }
+          EOF
           fi
           flutter precache --android
           flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
@@ -132,6 +136,7 @@ jobs:
         run: |
           flutter clean
           flutter pub get
+          sed -i 's|<head>|<head><base href="/'"${{ github.event.repository.name }}"'/|' web/index.html || true
           echo "🌐 Generating Web Compilation Engine Layers..."
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
           if [ -d "build/web" ]; then
