@@ -3,10 +3,13 @@ on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
-  compile-engine:
+  # =========================================================================
+  # JOB 1: STANDALONE NATIVE ANDROID SYSTEM PIPELINE
+  # =========================================================================
+  build-android:
     runs-on: ubuntu-latest
     strategy:
-      matrix: {target: [apk, appbundle, web]}
+      matrix: {target: [apk, appbundle]}
       fail-fast: false
     env:
       GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
@@ -17,66 +20,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
 
-      - name: Dynamic Workspace Generation
+      - name: Inject Configuration Environment Keys
         run: |
-          mkdir -p assets web lib
+          mkdir -p assets
           touch .env assets/icon_launcher.png
-          flutter create . --platforms=${{ matrix.target == 'web' && 'web' || 'android' }}
-          
-          cat << 'EOF' > lib/secrets.dart
-          class Secrets {
-            static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-            static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-            static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
-            static const String openaiKey = String.fromEnvironment('OPENAI_KEY');
-            static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY');
-            static const String vertexApiKey = String.fromEnvironment('VERTEX_API_KEY');
-            static const String heygenKey = String.fromEnvironment('HEYGEN_KEY');
-            static const String runwaymlApiSecret = String.fromEnvironment('RUNWAYML_API_SECRET');
-            static const String tripoApiKey = String.fromEnvironment('TRIPO_API_KEY');
-            static const String pexelsApiKey = String.fromEnvironment('PEXELS_API_KEY');
-            static const String mtnApiKey = String.fromEnvironment('MTN_API_KEY');
-            static const String elevenLabApiKey = String.fromEnvironment('ELEVEN_LAB_API_KEY');
-          }
-          EOF
-
-          cat << 'EOF' > lib/main.dart
-          import 'package:flutter/material.dart';
-          import 'package:provider/provider.dart';
-          import 'package:flutter_dotenv/flutter_dotenv.dart';
-          import 'package:supabase_flutter/supabase_flutter.dart';
-          import 'package:google_mobile_ads/google_mobile_ads.dart';
-          import 'dart:math' as math;
-          void main() async {
-            WidgetsFlutterBinding.ensureInitialized();
-            final initAdmob = MobileAds.instance.initialize();
-            String supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-            String supabaseKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-            if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
-              try { await dotenv.load(fileName: ".env"); supabaseUrl = dotenv.env['SUPABASE_URL'] ?? ''; supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? ''; } catch (e) {}
-            }
-            try { if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey); } catch (e) {}
-            await initAdmob;
-            runApp(MultiProvider(providers: [ChangeNotifierProvider(create: (_) => AppAuthProvider()), ChangeNotifierProvider(create: (_) => AITutorProvider()), ChangeNotifierProvider(create: (_) => ArLabProvider())], child: const MindSparkApp()));
-          }
-          class MindSparkApp extends StatelessWidget {
-            const MindSparkApp({super.key});
-            @override Widget build(BuildContext context) => MaterialApp(title: 'Mind Spark', debugShowCheckedModeBanner: false, theme: ThemeData.dark(), home: const MainDevelopmentPage());
-          }
-          class AppAuthProvider extends ChangeNotifier {}
-          class AITutorProvider extends ChangeNotifier {}
-          class ArLabProvider extends ChangeNotifier {}
-          class MainDevelopmentPage extends StatefulWidget {
-            const MainDevelopmentPage({super.key});
-            @override State<MainDevelopmentPage> createState() => _MainDevelopmentPageState();
-          }
-          class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
-            String t = ''; double s = 0.0, u = 0.0;
-            @override void initState() { super.initState(); setState(() { t = DateTime.now().toIso8601String(); s = math.sin(45.0); u = (45.0 * math.pi) / 180.0; }); }
-            @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('MindSpark Workspace')), body: Column(children: [Text('Timestamp: $t'), Text('Sine: $s'), Text('Output: $u')]));
-          }
-          EOF
-
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
@@ -92,47 +39,79 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      - name: Execute Optimization Patches
+      - name: Execute Optimization Patches (Android)
         run: |
-          if [ "${{ matrix.target }}" != "web" ]; then
-            rm -f android/build.gradle.kts android/app/build.gradle.kts
-            
-            # TRICK FIX: Wipe the duplicate conflicting Kotlin directory so Java can compile cleanly
-            rm -rf android/app/src/main/kotlin
-            
-            sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
-            sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml
+          rm -f android/build.gradle.kts android/app/build.gradle.kts || true
+          rm -rf android/app/src/main/kotlin || true
+          sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
+          sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
+          
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
+            echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
+          else
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
             echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
 
-      - name: Cache Reset and Build Execution
+      - name: Compile Native Binaries
         run: |
-          set +e
           flutter clean
           flutter pub get
-          if [ "${{ matrix.target }}" = "web" ]; then
-            flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --target=lib/main.dart --dart-define-from-file=secrets.env
-          else
-            flutter precache --android
-            flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
-          fi
+          flutter precache --android
+          flutter build ${{ matrix.target }} --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
 
-      - if: matrix.target != 'web'
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: holomatics-native-${{ matrix.target }}
           path: |
             build/app/outputs/bundle/release/*.aab
             build/app/outputs/flutter-apk/*.apk
 
-      - if: matrix.target == 'web'
-        uses: actions/upload-pages-artifact@v4
-        with: {path: build/web}
+  # =========================================================================
+  # JOB 2: COMPLETELY DECOUPLED WEB PIPELINE
+  # =========================================================================
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
 
+      - name: Inject Configuration Keys (Web)
+        run: |
+          mkdir -p assets
+          touch .env assets/icon_launcher.png
+          cat << 'EOF' > secrets.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
+          EOF
+
+      - name: Compile Web Application
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build web --release --no-wasm-dry-run --base-href "/mindspark1/" --dart-define-from-file=secrets.env
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  # =========================================================================
+  # JOB 3: LIVE HOSTING DEPLOYMENT (Triggers Instantly on Web Success)
+  # =========================================================================
   deploy-web:
-    needs: compile-engine
-    if: always() && !cancelled()
+    needs: build-web
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
