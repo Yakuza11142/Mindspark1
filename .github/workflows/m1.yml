@@ -88,10 +88,9 @@ jobs:
           EOF
           fi
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -type f | while read -r file; do
-              if grep -q "configurations\.all" "$file"; then
+              if grep -q "configurations\.all\s*{" "$file"; then
                   echo "Upgrading configuration container syntax inside: $file"
-                  sed -i 's/configurations\.all\s* {/configurations.configureEach {/g' "$file"
-                  sed -i 's/configurations\.all{/configurations.configureEach{/g' "$file"
+                  sed -i 's/configurations\.all\s*{/configurations.configureEach {/g' "$file"
               fi
           done
           if [ -f android/build.gradle ]; then
