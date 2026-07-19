@@ -54,7 +54,8 @@ jobs:
         run: |
           flutter clean && flutter pub get
           if [ "${{ matrix.target }}" != "web" ]; then
-            find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -o -name "build.gradle.kts" | while read -r file; do
+            # Safe replacement patterns explicitly targeting ONLY the google_mobile_ads package tree
+            find /home/runner/.pub-cache/hosted/pub.dev/google_mobile_ads*/ -name "build.gradle" -o -name "build.gradle.kts" 2>/dev/null | while read -r file; do
               sed -i 's/configurations\.all/configurations.configureEach/g' "$file" 2>/dev/null || true
             done
             flutter precache --android
