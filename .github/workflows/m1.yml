@@ -33,12 +33,43 @@ jobs:
         run: |
           if [ "${{ matrix.target }}" != "web" ]; then
             rm -rf android/ || true
-            flutter create . --platforms=android
-            if [ -f android/app/build.gradle.kts ]; then
-              sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle.kts
-            elif [ -f android/app/build.gradle ]; then
-              sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
-            fi
+            flutter create . --platforms=android --android-language java
+            rm -f android/*.kts android/app/*.kts || true
+            
+            # Master build file setting standard modern repositories cleanly
+            cat << 'EOF' > android/build.gradle
+          allprojects { repositories { google(); mavenCentral() } }
+          rootProject.buildDir = '../build'
+          subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}"; project.evaluationDependsOn(':app') }
+          tasks.register("clean", Delete) { delete rootProject.buildDir }
+          EOF
+          
+            # Core app configuration with completely cleaned buildTypes block
+            cat << 'EOF' > android/app/build.gradle
+          plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
+          android {
+              namespace "com.example.mindspark1"
+              compileSdk 34
+              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0" }
+              buildTypes { release { signingConfig signingConfigs.debug } }
+          }
+          EOF
+          
+            # Absolute root settings file with modern plugin management handlers
+            cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
+                  return properties.getProperty("flutter.sdk")
+              }()
+              includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
+          include ":app"
+          EOF
+          
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -54,10 +85,6 @@ jobs:
         run: |
           flutter clean && flutter pub get
           if [ "${{ matrix.target }}" != "web" ]; then
-            # Safe replacement patterns explicitly targeting ONLY the google_mobile_ads package tree
-            find /home/runner/.pub-cache/hosted/pub.dev/google_mobile_ads*/ -name "build.gradle" -o -name "build.gradle.kts" 2>/dev/null | while read -r file; do
-              sed -i 's/configurations\.all/configurations.configureEach/g' "$file" 2>/dev/null || true
-            done
             flutter precache --android
             if [ "${{ matrix.target }}" = "apk" ]; then
               flutter build apk --release --split-per-abi --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
