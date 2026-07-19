@@ -35,16 +35,12 @@ jobs:
             rm -rf android/ || true
             flutter create . --platforms=android --android-language java
             rm -f android/*.kts android/app/*.kts || true
-            
-            # Master build file setting standard modern repositories cleanly
             cat << 'EOF' > android/build.gradle
           allprojects { repositories { google(); mavenCentral() } }
           rootProject.buildDir = '../build'
           subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}"; project.evaluationDependsOn(':app') }
           tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
-          
-            # Core app configuration with completely cleaned buildTypes block
             cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
           android {
@@ -54,8 +50,6 @@ jobs:
               buildTypes { release { signingConfig signingConfigs.debug } }
           }
           EOF
-          
-            # Absolute root settings file with modern plugin management handlers
             cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -69,7 +63,6 @@ jobs:
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
           include ":app"
           EOF
-          
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -87,9 +80,9 @@ jobs:
           if [ "${{ matrix.target }}" != "web" ]; then
             flutter precache --android
             if [ "${{ matrix.target }}" = "apk" ]; then
-              flutter build apk --release --split-per-abi --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+              flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
             else
-              flutter build appbundle --release --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
+              flutter build appbundle --release --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
             fi
           else
             sed -i 's|<head>|<head><base href="/|' web/index.html || true
