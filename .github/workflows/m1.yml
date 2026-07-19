@@ -134,7 +134,7 @@ jobs:
           flutter clean
           flutter pub get
           echo "🌐 Generating Web Compilation Engine Layers..."
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --web-renderer html --dart-define-from-file=secrets.env
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
           if [ -d "build/web" ]; then
             cp build/web/index.html build/web/404.html
             echo "✅ Web build operation verified"
