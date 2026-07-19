@@ -15,22 +15,22 @@ def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '
 def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
 
 android {
-    namespace "com.example.mindspark"
+    // 🌟 FIXED: Mapped namespace perfectly to match your true project target
+    namespace "com.example.mindspark1"
     compileSdk 34
 
-    // Fixed: Upgraded from Java 1.8 to Java 17 to match your new Kotlin version
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // Fixed: Added explicit JVM target version for the Kotlin compiler
     kotlinOptions {
         jvmTarget = '17'
     }
 
     defaultConfig {
-        applicationId "com.example.mindspark"
+        // 🌟 FIXED: Changed ID configuration to resolve the 35 plugin mapping errors
+        applicationId "com.example.mindspark1"
         minSdk 24
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
@@ -38,11 +38,26 @@ android {
         multiDexEnabled true
     }
 
+    // 🌟 FIXED: Set up proper release signing keys to bind with your pipeline secrets
+    signingConfigs {
+        release {
+            def ksFile = rootProject.file("key.properties")
+            if (ksFile.exists()) {
+                def props = new Properties()
+                ksFile.withReader('UTF-8') { r -> props.load(reader) }
+                storeFile = file(props.getProperty('storeFile'))
+                storePassword = props.getProperty('storePassword')
+                keyAlias = props.getProperty('keyAlias')
+                keyPassword = props.getProperty('keyPassword')
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
-            
-            // Fixed: Enabled R8/ProGuard shrinking and linked your custom rules file
+            // 🌟 FIXED: Swapped out debug certificates for secure production signatures
+            signingConfig signingConfigs.release
+
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
