@@ -89,7 +89,7 @@ jobs:
           fi
           if [ -f android/build.gradle ]; then
               sed -i 's/com.android.application" version ".*"/com.android.application" version "8.2.2"/g' android/build.gradle
-              # Dynamic injection to force compliant configuration engine behavior downstream across plugin modules natively
+              # Safely force compliant compilation configurations into the root Gradle scope after clean routines resolve
               cat << 'EOF' >> android/build.gradle
               subprojects {
                   project.configurations.configureEach {
