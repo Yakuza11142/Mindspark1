@@ -41,18 +41,13 @@ jobs:
 
       - name: Nuclear Subsystem Reconstruction & Full Permission Array Injection
         run: |
-          # 1. Clear out the corrupted mobile directory completely
           rm -rf android/ || true
-          
-          # 2. Force the SDK to build a pristine, modern Android harness
           flutter create . --platforms=android
           
-          # 3. Align the application packages to match your core ID target perfectly
           if [ -f android/app/build.gradle ]; then
             sed -i 's/com.example.mindspark/com.example.mindspark1/g' android/app/build.gradle
           fi
           
-          # 4. Inject your full hardware, networking, and system security permission block
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
             sed -i '/<uses-permission/d' "$MANIFEST_PATH"
@@ -60,11 +55,9 @@ jobs:
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST_PATH"
           fi
           
-          # 5. Handle fallback asset parameter icons
           sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
           sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
           
-          # 6. Reconstruct cryptographically sound fallback keystore signatures
           if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
             echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
@@ -78,10 +71,12 @@ jobs:
           flutter clean
           flutter pub get
           
-          # 🌟 TRICK FIX: Intercept the broken arcore package inside the hidden cache and patch its deprecated lines before Gradle runs!
+          # 🌟 ULTIMATE TRICK: Find the exact broken block inside arcore and wipe the lines entirely
           ARCORE_GRADLE_PATH="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle"
           if [ -f "$ARCORE_GRADLE_PATH" ]; then
-            sed -i 's/configurations.all/configurations.configureEach/g' "$ARCORE_GRADLE_PATH"
+            # Use sed to target and delete any configurations blocks that crash the evaluation engine
+            sed -i '/configurations\.all/,/}/d' "$ARCORE_GRADLE_PATH"
+            sed -i '/configurations\.configureEach/,/}/d' "$ARCORE_GRADLE_PATH"
           fi
           
           flutter precache --android
