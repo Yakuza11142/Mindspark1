@@ -69,7 +69,6 @@ jobs:
           flutter create . --platforms=android --android-language java
           rm -f android/*.kts android/app/*.kts || true
           
-          # DIRECT ROUTING: Pure isolated project setup without early evaluation loops
           cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -106,6 +105,7 @@ jobs:
           }
           EOF
 
+          # VALIDATION UPGRADE FIXED: Re-mapped the engine foundation to version 8.6.0 to satisfy the Flutter compiler validation check
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -116,7 +116,7 @@ jobs:
               includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
               repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
-          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
+          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "1.9.24" apply false }
           include ":app"
           EOF
 
@@ -129,7 +129,6 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
       
-      # UNMUTABLE FIX: Pre-compiles the direct bundle layer and invokes raw gradle assembly to build the APK cleanly
       - name: Compile APK via Isolated Wrapper
         run: |
           flutter clean
