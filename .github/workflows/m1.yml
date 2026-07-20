@@ -12,6 +12,7 @@ jobs:
         with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
+        
       - name: Keys
         run: |
           mkdir -p assets && touch .env assets/icon_launcher.png
@@ -29,40 +30,101 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
+
       - name: Init
         run: |
           if [ "${{ matrix.target }}" != "web" ]; then
             rm -rf android/ || true
             flutter create . --platforms=android --android-language java
             rm -f android/*.kts android/app/*.kts || true
+            
+            # Root-level build.gradle (Fixes configuration dependency mutation issues)
             cat << 'EOF' > android/build.gradle
-          allprojects { repositories { google(); mavenCentral() } }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           rootProject.buildDir = '../build'
-          subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}"; project.evaluationDependsOn(':app') }
-          tasks.register("clean", Delete) { delete rootProject.buildDir }
+          subprojects {
+              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
+          }
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.evaluationDependsOn(':app')
+                  }
+              }
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
           EOF
+
+            # App-level build.gradle with dynamic production signing configuration
             cat << 'EOF' > android/app/build.gradle
-          plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file('key.properties')
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
           android {
               namespace "com.example.mindspark1"
               compileSdk 34
-              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0" }
-              buildTypes { release { signingConfig signingConfigs.debug } }
+              defaultConfig {
+                  applicationId "com.example.mindspark1"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+              signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
           }
           EOF
+
+            # Settings.gradle configuration mapping
             cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
-                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
+                  def properties = new Properties()
+                  def file = new File(settingsDir, "local.properties")
                   if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
                   return properties.getProperty("flutter.sdk")
               }()
               includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
           }
-          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
+          plugins {
+              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+              id "com.android.application" version "8.2.2" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.22" apply false
+          }
           include ":app"
           EOF
+
+            # Inject permissions and hardware requirements into AndroidManifest safely
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -71,9 +133,12 @@ jobs:
             fi
             sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
             sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
-            keytool -genkey -v -keystore android/app/upload-keystore.jks -alias fallbackAlias -keyalg RSA -keysize 2048 -validity 10000 -storepass fallbackPassword -keypass fallbackPassword -dname "CN=Mindspark, OU=Dev, O=Core, L=Workspace, S=Global, C=US"
-            echo -e "storePassword=fallbackPassword\nkeyPassword=fallbackPassword\nkeyAlias=fallbackAlias\nstoreFile=upload-keystore.jks" > android/key.properties
+            
+            # Decodes your official keystore from GitHub Secrets and generates key.properties
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+            echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
+
       - name: Build
         run: |
           flutter clean && flutter pub get
@@ -89,9 +154,15 @@ jobs:
             flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
             if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
           fi
+
       - if: matrix.target != 'web'
         uses: actions/upload-artifact@v4
-        with: {name: "native-${{ matrix.target }}", path: "build/app/outputs/bundle/release/*.aab\nbuild/app/outputs/flutter-apk/*.apk\n"}
+        with:
+          name: "native-${{ matrix.target }}"
+          path: |
+            build/app/outputs/bundle/release/*.aab
+            build/app/outputs/flutter-apk/*.apk
+            
       - if: matrix.target == 'web'
         uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
