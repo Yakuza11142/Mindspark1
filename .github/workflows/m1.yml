@@ -1,18 +1,15 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
+
 jobs:
-  build:
+  build_web:
+    name: Build Web Client
     runs-on: ubuntu-latest
-    strategy: {matrix: {target: [apk, web]}, fail-fast: false}
-    env: {GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
-        
       - name: Keys
         run: |
           mkdir -p assets && touch .env assets/icon_launcher.png
@@ -30,58 +27,65 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-
-      - name: Init
+      - name: Compile Web
         run: |
-          if [ "${{ matrix.target }}" != "web" ]; then
-            rm -rf android/ || true
-            flutter create . --platforms=android --android-language java
-            rm -f android/*.kts android/app/*.kts || true
-            
-            # BYPASS FIXED: Stripped out all subproject evaluation loops entirely
-            cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          flutter clean
+          flutter pub get
+          sed -i 's|<head>|<head><base href="/|' web/index.html || true
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
+          if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: build/web}
+
+  build_apk:
+    name: Build Mobile APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
+      - name: Keys
+        run: |
+          mkdir -p assets && touch .env assets/icon_launcher.png
+          cat << 'EOF' > secrets.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
+          EOF
+      - name: Setup Clear Project Layout
+        run: |
+          rm -rf android/ || true
+          flutter create . --platforms=android --android-language java
+          rm -f android/*.kts android/app/*.kts || true
+          
+          cat << 'EOF' > android/build.gradle
+          allprojects { repositories { google(); mavenCentral() } }
           rootProject.buildDir = '../build'
-          subprojects {
-              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
-          }
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
-          }
+          subprojects { project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name)) }
+          tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
 
-            # App-level build.gradle with strict namespace mapping
-            cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
+          cat << 'EOF' > android/app/build.gradle
+          plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
           def keystorePropertiesFile = rootProject.file('key.properties')
-          if (keystorePropertiesFile.exists()) {
-              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-          }
+          if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
           android {
               namespace "com.example.mindspark1"
               compileSdk 34
-              defaultConfig {
-                  applicationId "com.example.mindspark1"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0.0"
-                  multiDexEnabled true
-              }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
+              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0"; multiDexEnabled true }
+              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
               signingConfigs {
                   release {
                       keyAlias keystoreProperties['keyAlias']
@@ -90,78 +94,46 @@ jobs:
                       storePassword keystoreProperties['storePassword']
                   }
               }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
-                  }
-              }
+              buildTypes { release { signingConfig signingConfigs.release } }
           }
           EOF
 
-            # Settings.gradle engine definition
-            cat << 'EOF' > android/settings.gradle
+          cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
-                  def properties = new Properties()
-                  def file = new File(settingsDir, "local.properties")
+                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
                   if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
                   return properties.getProperty("flutter.sdk")
               }()
               includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
-          plugins {
-              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-              id "com.android.application" version "8.2.2" apply false
-              id "org.jetbrains.kotlin.android" version "1.9.22" apply false
-          }
+          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.2.2" apply false; id "org.jetbrains.kotlin.android" version "1.9.22" apply false }
           include ":app"
           EOF
 
-            # Android Manifest permission settings
-            M="android/app/src/main/AndroidManifest.xml"
-            if [ -f "$M" ]; then
-              sed -i '/<uses-permission/d' "$M"
-              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
-              sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
-            fi
-            sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
-            sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
-            
-            # Base64 Keystore handling
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-            echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          M="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$M" ]; then
+            sed -i '/<uses-permission/d' "$M"
+            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
           fi
-
-      - name: Build
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+      - name: Compile APK
         run: |
-          flutter clean && flutter pub get
-          if [ "${{ matrix.target }}" = "apk" ]; then
-            flutter precache --android
-            # FORCE FIX: Added global dependency validation bypass flags to stop the internal mutation crash
-            flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
-          else
-            sed -i 's|<head>|<head><base href="/|' web/index.html || true
-            flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
-            if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
-          fi
-
-      - if: matrix.target == 'apk'
-        uses: actions/upload-artifact@v4
+          flutter clean
+          flutter pub get
+          flutter precache --android
+          flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
+      - uses: actions/upload-artifact@v4
         with:
           name: "native-apk"
           path: build/app/outputs/flutter-apk/*.apk
-            
-      - if: matrix.target == 'web'
-        uses: actions/upload-pages-artifact@v3
-        with: {path: build/web}
 
-  deploy:
-    needs: build
+  deploy_pages:
+    name: Publish Web App
+    needs: build_web
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
