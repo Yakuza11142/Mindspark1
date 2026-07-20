@@ -38,7 +38,7 @@ jobs:
             flutter create . --platforms=android --android-language java
             rm -f android/*.kts android/app/*.kts || true
             
-            # FIXED: Avoids circular reference evaluation loops by bypassing :app itself
+            # Root-level build.gradle with dynamic multi-plugin compilation compliance patches
             cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -52,8 +52,19 @@ jobs:
           }
           subprojects {
               afterEvaluate { project ->
-                  if (project.hasProperty('android') && project.name != 'app') {
-                      project.evaluationDependsOn(':app')
+                  if (project.hasProperty('android')) {
+                      if (project.name != 'app') {
+                          project.evaluationDependsOn(':app')
+                      }
+                      project.android {
+                          if (namespace == null) {
+                              namespace = "com.example.mindspark1.${project.name.replaceAll(/[^a-zA-Z0-9]/, '')}"
+                          }
+                          compileOptions {
+                              sourceCompatibility JavaVersion.VERSION_17
+                              targetCompatibility JavaVersion.VERSION_17
+                          }
+                      }
                   }
               }
           }
@@ -62,7 +73,7 @@ jobs:
           }
           EOF
 
-            # App-level build.gradle with dynamic production signing configuration
+            # App-level build.gradle configured for multi-dex tracking and secure production signing
             cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
@@ -83,6 +94,11 @@ jobs:
                   targetSdk 34
                   versionCode 1
                   versionName "1.0.0"
+                  multiDexEnabled true
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
               }
               signingConfigs {
                   release {
@@ -100,7 +116,7 @@ jobs:
           }
           EOF
 
-            # Settings.gradle configuration mapping
+            # Declarative settings.gradle plugin routing
             cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -124,7 +140,7 @@ jobs:
           include ":app"
           EOF
 
-            # Inject permissions and hardware requirements into AndroidManifest safely
+            # Handle permissions injection and cleartext traffic layers safely
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -134,7 +150,7 @@ jobs:
             sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
             sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
             
-            # Decodes your official keystore from GitHub Secrets and generates key.properties
+            # Extract production keystore asset binary safely from encrypted secrets array
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
             echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
