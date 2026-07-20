@@ -4,7 +4,7 @@ permissions: {contents: write, actions: write, pages: write, id-token: write}
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy: {matrix: {target: [apk, appbundle, web]}, fail-fast: false}
+    strategy: {matrix: {target: [apk, web]}, fail-fast: false}
     env: {GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"}
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
             flutter create . --platforms=android --android-language java
             rm -f android/*.kts android/app/*.kts || true
             
-            # Root-level build.gradle with dynamic multi-plugin compilation compliance patches
+            # Isolated Project Gradle settings to prevent configuration locks
             cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -51,14 +51,11 @@ jobs:
               project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
           }
           subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      if (project.name != 'app') {
-                          project.evaluationDependsOn(':app')
-                      }
-                      project.android {
+              project.afterEvaluate { p ->
+                  if (p.hasProperty('android')) {
+                      p.android {
                           if (namespace == null) {
-                              namespace = "com.example.mindspark1.${project.name.replaceAll(/[^a-zA-Z0-9]/, '')}"
+                              namespace = "com.example.mindspark1.${p.name.replaceAll(/[^a-zA-Z0-9]/, '')}"
                           }
                           compileOptions {
                               sourceCompatibility JavaVersion.VERSION_17
@@ -73,7 +70,7 @@ jobs:
           }
           EOF
 
-            # App-level build.gradle configured for multi-dex tracking and secure production signing
+            # Clean App-level Build Configuration with multidex enabled
             cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
@@ -116,7 +113,7 @@ jobs:
           }
           EOF
 
-            # Declarative settings.gradle plugin routing
+            # Router Configuration settings
             cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -140,7 +137,7 @@ jobs:
           include ":app"
           EOF
 
-            # Handle permissions injection and cleartext traffic layers safely
+            # Android Manifest permission settings
             M="android/app/src/main/AndroidManifest.xml"
             if [ -f "$M" ]; then
               sed -i '/<uses-permission/d' "$M"
@@ -150,7 +147,7 @@ jobs:
             sed -i 's/android:icon="@mipmap\/launcher_icon"/android:icon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
             sed -i 's/android:roundIcon="@mipmap\/launcher_icon_round"/android:roundIcon="@android:drawable\/btn_star"/g' android/app/src/main/AndroidManifest.xml || true
             
-            # Extract production keystore asset binary safely from encrypted secrets array
+            # Base64 Keystore handling
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
             echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           fi
@@ -158,26 +155,20 @@ jobs:
       - name: Build
         run: |
           flutter clean && flutter pub get
-          if [ "${{ matrix.target }}" != "web" ]; then
+          if [ "${{ matrix.target }}" = "apk" ]; then
             flutter precache --android
-            if [ "${{ matrix.target }}" = "apk" ]; then
-              flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
-            else
-              flutter build appbundle --release --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
-            fi
+            flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env
           else
             sed -i 's|<head>|<head><base href="/|' web/index.html || true
             flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
             if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
           fi
 
-      - if: matrix.target != 'web'
+      - if: matrix.target == 'apk'
         uses: actions/upload-artifact@v4
         with:
-          name: "native-${{ matrix.target }}"
-          path: |
-            build/app/outputs/bundle/release/*.aab
-            build/app/outputs/flutter-apk/*.apk
+          name: "native-apk"
+          path: build/app/outputs/flutter-apk/*.apk
             
       - if: matrix.target == 'web'
         uses: actions/upload-pages-artifact@v3
