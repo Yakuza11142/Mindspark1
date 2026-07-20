@@ -69,10 +69,18 @@ jobs:
           flutter create . --platforms=android --android-language java
           rm -f android/*.kts android/app/*.kts || true
           
+          # DIRECT ROUTING: Pure isolated project setup without early evaluation loops
           cat << 'EOF' > android/build.gradle
-          allprojects { repositories { google(); mavenCentral() } }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           rootProject.buildDir = '../build'
-          subprojects { project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name)) }
+          subprojects {
+              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
+          }
           tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
 
@@ -120,12 +128,16 @@ jobs:
           fi
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-      - name: Compile APK
+      
+      # UNMUTABLE FIX: Pre-compiles the direct bundle layer and invokes raw gradle assembly to build the APK cleanly
+      - name: Compile APK via Isolated Wrapper
         run: |
           flutter clean
           flutter pub get
-          flutter precache --android
-          flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
+          flutter build bundle --release --dart-define-from-file=secrets.env
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -Dorg.gradle.configureondemand=true
       - uses: actions/upload-artifact@v4
         with:
           name: "native-apk"
