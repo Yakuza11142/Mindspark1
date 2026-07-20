@@ -30,8 +30,11 @@ dependencies:
   # Real-Time Mathematical Data Pipe (Using P2P DataChannels, No Pixel Streaming)
   flutter_webrtc: ^1.2.0
 
+  # OPTIMIZED: Native frame processor to handle real-time spatial calculations efficiently
+  google_mlkit_face_detection: ^0.12.0
+
   # Native Core Fallback Drivers
-  app_links: ^6.3.2                # 🌟 FIXED: Added missing core linking dependency here
+  app_links: ^6.3.2                
   arcore_flutter_plus: ^1.0.2     
   camera: ^0.11.0                 
   camera_android_camerax: ^0.6.30  
