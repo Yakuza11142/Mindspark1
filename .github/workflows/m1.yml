@@ -38,7 +38,7 @@ jobs:
             flutter create . --platforms=android --android-language java
             rm -f android/*.kts android/app/*.kts || true
             
-            # Root-level build.gradle (Fixes configuration dependency mutation issues)
+            # FIXED: Avoids circular reference evaluation loops by bypassing :app itself
             cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -52,7 +52,7 @@ jobs:
           }
           subprojects {
               afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
+                  if (project.hasProperty('android') && project.name != 'app') {
                       project.evaluationDependsOn(':app')
                   }
               }
