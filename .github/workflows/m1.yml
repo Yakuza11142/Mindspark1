@@ -68,66 +68,8 @@ jobs:
           rm -rf android/ || true
           flutter create . --platforms=android --android-language java
           rm -f android/*.kts android/app/*.kts || true
-          
-          cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.buildDir = '../build'
-          subprojects {
-              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
-          }
-          tasks.register("clean", Delete) { delete rootProject.buildDir }
-          EOF
-
-          cat << 'EOF' > android/app/build.gradle
-          plugins { id "com.android.application"; id "kotlin-android"; id "dev.flutter.flutter-gradle-plugin" }
-          def keystoreProperties = new Properties()
-          def keystorePropertiesFile = rootProject.file('key.properties')
-          if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
-          android {
-              namespace "com.example.mindspark1"
-              compileSdk 34
-              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0.0"; multiDexEnabled true }
-              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-              signingConfigs {
-                  release {
-                      keyAlias keystoreProperties['keyAlias']
-                      keyPassword keystoreProperties['keyPassword']
-                      storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-                      storePassword keystoreProperties['storePassword']
-                  }
-              }
-              buildTypes { release { signingConfig signingConfigs.release } }
-          }
-          EOF
-
-          # VALIDATION UPGRADE FIXED: Re-mapped the engine foundation to version 8.6.0 to satisfy the Flutter compiler validation check
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              def flutterSdkPath = {
-                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
-                  return properties.getProperty("flutter.sdk")
-              }()
-              includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
-          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "1.9.24" apply false }
-          include ":app"
-          EOF
-
-          M="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$M" ]; then
-            sed -i '/<uses-permission/d' "$M"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
-            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
-          fi
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
       
       - name: Compile APK via Isolated Wrapper
         run: |
