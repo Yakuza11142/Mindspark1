@@ -63,9 +63,10 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           
-          # Build directly from your real project source files without deleting folders
+          # Run native build commands with your project files exactly as they are
           flutter clean
           flutter pub get
+          flutter pub run flutter_launcher_icons
           flutter build apk --release --dart-define-from-file=secrets.env
           
       - uses: actions/upload-artifact@v4
