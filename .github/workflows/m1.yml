@@ -53,6 +53,7 @@ jobs:
           rm -rf android/ || true
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
+          
           cat << 'EOF' > android/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
           android.useAndroidX=true
@@ -60,6 +61,7 @@ jobs:
           org.gradle.daemon=false
           android.nonTransitiveRClass=false
           EOF
+          
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -67,6 +69,7 @@ jobs:
           zipStorePath=wrapper/dists
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-all.zip
           EOF
+          
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -78,6 +81,7 @@ jobs:
           allprojects { repositories { google(); mavenCentral() } }
           subprojects { afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } } }
           EOF
+          
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def kp = new Properties()
@@ -92,15 +96,18 @@ jobs:
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
           dependencies {
+              // INJECTS ANNOTATION ENGINE: Resolves the NonNull class missing symbol compile flags across all dependencies
               implementation "androidx.annotation:annotation:1.7.1"
+              implementation "androidx.appcompat:androidx.appcompat:1.6.1"
           }
           flutter { source '../..' }
           EOF
+          
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def sP = {
-                  def p = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
+                  def p = new Properties(); def f = new File(settingsDir, "local.properties")
+                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
@@ -113,6 +120,7 @@ jobs:
           }
           include ':app'
           EOF
+          
           M="android/app/src/main/AndroidManifest.xml"
           if [ -f "$M" ]; then
             sed -i '/<uses-permission/d' "$M"
@@ -124,11 +132,12 @@ jobs:
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
           flutter pub get && flutter precache --android && flutter pub run flutter_launcher_icons
           
-          # DEEP TEMPLATE INJECTION: Patches Flutter's internal blueprint script inside the runner cache environment. 
-          # This forces Flutter to write "import android.util.Log;" directly into the registrant file it creates during compilation.
+          # FORCED SUB-PROJECT INJECTION INTERCEPTOR: Traverses down into the subproject compile templates
+          # and injects the absolute java log import into Flutter's core framework generation engines before compile
           G_FILE="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle.dart"
           if [ -f "$G_FILE" ]; then
             sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport android.util.Log;|g' "$G_FILE" || true
+            sed -i 's|class GeneratedPluginRegistrant|import android.util.Log;\nclass GeneratedPluginRegistrant|g' "$G_FILE" || true
           fi
           
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
