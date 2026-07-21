@@ -76,14 +76,14 @@ jobs:
           dependencies { implementation "androidx.annotation:annotation:1.7.0"; implementation "androidx.multidex:multidex:2.0.1" }
           flutter { source '../..' }
           EOF
-          
-          # HARDENED EXPLICIT REPOSITORIES MAP: Dynamically loads the variable strings correctly
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
                   def properties = new Properties(); def file = new File(settingsDir, "local.properties")
                   if (file.exists()) { file.withReader("UTF-8") { reader -> properties.load(reader) } }
-                  return properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
+                  def sdkPath = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
+                  if (sdkPath == null) { throw new GradleException("Flutter SDK not found.") }
+                  return sdkPath
               }()
               includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
               repositories { google(); mavenCentral(); gradlePluginPortal() }
