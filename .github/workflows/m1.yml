@@ -64,10 +64,10 @@ jobs:
           EOF
           rm -rf android/ || true
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
-          rm -f android/*.kts android/app/*.kts || true
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-          echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          
+          # CRITICAL FIXED LINE: Deletes the default Kotlin Script (.kts) overrides so Gradle uses your Groovy files instead
+          rm -f android/*.kts android/app/*.kts android/settings.gradle.kts android/build.gradle.kts android/app/build.gradle.kts || true
+          
           cat << 'EOF' > android/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
           android.useAndroidX=true
@@ -121,7 +121,7 @@ jobs:
           pluginManagement {
               def sP = {
                   def p = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
+                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
