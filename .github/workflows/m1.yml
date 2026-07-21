@@ -52,7 +52,9 @@ jobs:
       - name: Setup Android Ecosystem
         run: |
           rm -rf android/ || true
-          flutter create . --platforms=android --android-language java --project-name=mindspark1
+          
+          # FIXED: Switched from java to kotlin to resolve the arcore_flutter_plus GeneratedPluginRegistrant compilation crashes
+          flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
           
           # 1. Hard-Locked Production JVM Settings
@@ -77,7 +79,7 @@ jobs:
           validateDistributionUrl=true
           EOF
           
-          # 3. Flattened Root build.gradle Structure
+          # 3. Flattened Root build.gradle Structure (With Automatic Plugin SDK Overrides)
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories {
@@ -98,7 +100,16 @@ jobs:
           rootProject.buildDir = '../build'
           subprojects {
               project.buildDir = "${rootProject.buildDir}/${project.name}"
-              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } }
+              afterEvaluate { p -> 
+                  if (p.hasProperty('android')) { 
+                      p.android { 
+                          compileSdk 35
+                          defaultConfig {
+                              minSdkVersion 24
+                          }
+                      } 
+                  } 
+              } 
           }
           tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
@@ -162,7 +173,6 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
 
-          # CLEAN COLD BOOT: Let Flutter download dependencies cleanly inside its own runtime
           flutter precache --android
 
       - name: Compile APK
