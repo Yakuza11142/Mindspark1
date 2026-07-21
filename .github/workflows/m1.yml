@@ -32,7 +32,7 @@ jobs:
         with: {path: build/web}
         continue-on-error: true
   deploy-web:
-    needs: compile-web
+    needs: web
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
@@ -121,7 +121,7 @@ jobs:
           pluginManagement {
               def sP = {
                   def p = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
+                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
