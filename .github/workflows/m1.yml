@@ -77,7 +77,7 @@ jobs:
           validateDistributionUrl=true
           EOF
           
-          # 3. Root build.gradle layout structure (Upgraded Versions)
+          # 3. Root build.gradle layout structure
           cat << 'EOF' > android/build.gradle
           buildscript {
               ext.kotlin_version = '2.2.20'
@@ -98,7 +98,7 @@ jobs:
           tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
           
-          # 4. App-level build.gradle variables mapping (Fixed compilerOptions syntax)
+          # 4. App-level build.gradle variables mapping
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -125,7 +125,7 @@ jobs:
           flutter { source '../..' }
           EOF
           
-          # 5. Fixed settings: Centralize versions inside plugins array block
+          # 5. Central settings proxy mapping rules
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -162,8 +162,11 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
 
-          # Rebuilds wrapper binary executable target using localized system variables
-          cd android && gradle wrapper --gradle-version 8.14.5 --distribution-type all && chmod +x gradlew && cd ..
+          # HARD DOWNGRADE: Bypass global runner defaults using the wrapper bundle included inside the SDK structure
+          cd android
+          java -jar $FLUTTER_ROOT/packages/flutter_tools/gradle/hw/gradle-wrapper.jar wrapper --gradle-version 8.14.5 --distribution-type all || gradle wrapper --gradle-version 8.14.5 --distribution-type all
+          chmod +x gradlew
+          cd ..
 
       - name: Compile APK
         run: |
