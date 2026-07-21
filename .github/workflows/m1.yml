@@ -65,20 +65,39 @@ jobs:
           EOF
       - name: Setup Clear Project Layout
         run: |
+          # 📲 CLEAN INITIALIZATION: Let Flutter build the exact modern native structures it needs
           rm -rf android/ || true
           flutter create . --platforms=android --android-language java
-          rm -f android/*.kts android/app/*.kts || true
+          
+          # Inject production signing keys and environment variables cleanly into local.properties
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-      
-      - name: Compile APK via Isolated Wrapper
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          
+          # Force adjust AndroidManifest permissions safely without breaking the source trees
+          M="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$M" ]; then
+            sed -i '/<uses-permission/d' "$M"
+            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
+          fi
+          
+          # Dynamically force multidex inside your build configuration to protect against the 64k method limit
+          sed -i 's/minSdkVersion.*/minSdkVersion 24\n        multiDexEnabled true/g' android/app/build.gradle
+          
+          # Inject the production signing configurations securely into the default release channel template
+          sed -i 's/buildTypes {/signingConfigs { release { keyAlias keystoreProperties["keyAlias"] \n keyPassword keystoreProperties["keyPassword"] \n storeFile keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null \n storePassword keystoreProperties["storePassword"] } }\n    buildTypes {/g' android/app/build.gradle
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' android/app/build.gradle
+          
+          # Map environment pointers safely
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
+
+      - name: Compile APK via Flutter Native Assembly
         run: |
-          flutter clean
           flutter pub get
-          flutter build bundle --release --dart-define-from-file=secrets.env
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon -Dorg.gradle.configureondemand=true
+          flutter precache --android
+          flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
+
       - uses: actions/upload-artifact@v4
         with:
           name: "native-apk"
