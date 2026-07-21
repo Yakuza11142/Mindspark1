@@ -62,15 +62,21 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-          rm -rf android/ || true
-          flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
+          
+          # Clean build artifacts
+          flutter clean
           flutter pub get
-          sed -i '/defaultConfig {/a \        multiDexEnabled true' android/app/build.gradle
-          cat << 'EOF' >> android/app/build.gradle
-
-          dependencies {
-              implementation "androidx.annotation:annotation:1.7.1"
-              implementation "androidx.appcompat:appcompat:1.7.0"
-          }
-          EOF
+          
+          # Directly target and fix the exact string error inside your repository file
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/androidx.appcompat:androidx.appcompat:1.7.0/androidx.appcompat:appcompat:1.6.1/g' android/app/build.gradle
+            sed -i '/defaultConfig {/a \        multiDexEnabled true' android/app/build.gradle
+          fi
+          
+          # Compile without adding heavy configurations
           flutter build apk --release --dart-define-from-file=secrets.env
+          
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
