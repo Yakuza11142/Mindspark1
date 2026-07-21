@@ -65,15 +65,94 @@ jobs:
           EOF
       - name: Setup Clear Project Layout
         run: |
-          # 📲 CLEAN INITIALIZATION: Let Flutter build the exact modern native structures it needs
           rm -rf android/ || true
           flutter create . --platforms=android --android-language java
           
-          # Inject production signing keys and environment variables cleanly into local.properties
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          # Delete any auto-generated .kts scripts to force standard Groovy compatibility
+          rm -f android/*.kts android/app/*.kts || true
           
-          # Force adjust AndroidManifest permissions safely without breaking the source trees
+          # Re-inject verified standard build.gradle layout
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url 'https://googleapis.com' }
+              }
+          }
+          rootProject.buildDir = '../build'
+          subprojects {
+              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
+          }
+          tasks.register("clean", Delete) { delete rootProject.buildDir }
+          EOF
+
+          # Re-inject verified standard app-level build.gradle layout with release signatures
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+          def keystoreProperties = new Properties()
+          def keystorePropertiesFile = rootProject.file('key.properties')
+          if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
+          android {
+              namespace "com.example.mindspark1"
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.example.mindspark1"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+                  multiDexEnabled true
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          dependencies {
+              implementation "androidx.annotation:annotation:1.7.0"
+              implementation "androidx.multidex:multidex:2.0.1"
+          }
+          EOF
+
+          # Re-inject verified standard settings.gradle layout pointing to AGP 8.6.0
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
+                  return properties.getProperty("flutter.sdk")
+              }()
+              includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          plugins {
+              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+              id "com.android.application" version "8.6.0" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+          }
+          include ":app"
+          EOF
+
+          # Handle permissions injection safely inside the stable Manifest file
           M="android/app/src/main/AndroidManifest.xml"
           if [ -f "$M" ]; then
             sed -i '/<uses-permission/d' "$M"
@@ -81,14 +160,11 @@ jobs:
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
           fi
           
-          # Dynamically force multidex inside your build configuration to protect against the 64k method limit
-          sed -i 's/minSdkVersion.*/minSdkVersion 24\n        multiDexEnabled true/g' android/app/build.gradle
+          # Handle Keystore Extraction
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           
-          # Inject the production signing configurations securely into the default release channel template
-          sed -i 's/buildTypes {/signingConfigs { release { keyAlias keystoreProperties["keyAlias"] \n keyPassword keystoreProperties["keyPassword"] \n storeFile keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null \n storePassword keystoreProperties["storePassword"] } }\n    buildTypes {/g' android/app/build.gradle
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/g' android/app/build.gradle
-          
-          # Map environment pointers safely
+          # Initialize explicit properties paths
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
 
