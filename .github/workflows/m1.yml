@@ -63,8 +63,6 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           
-          # Native execution block on raw repository code 
-          flutter clean
           flutter pub get
           flutter pub run flutter_launcher_icons
           flutter build apk --release --dart-define-from-file=secrets.env
