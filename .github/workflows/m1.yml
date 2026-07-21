@@ -53,11 +53,11 @@ jobs:
         run: |
           rm -rf android/ || true
           
-          # FIXED: Switched from java to kotlin to resolve the arcore_flutter_plus GeneratedPluginRegistrant compilation crashes
+          # 1. Generate clean native Kotlin project structure from the matching active SDK template
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
           
-          # 1. Hard-Locked Production JVM Settings
+          # 2. Hard-Locked Production JVM Settings (Disables the memory leaking background worker)
           cat << 'EOF' > android/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
           android.useAndroidX=true
@@ -68,7 +68,7 @@ jobs:
           android.nonTransitiveRClass=false
           EOF
 
-          # 2. Hard-Locked Properties Matrix (Bypasses Gradle 9 Override)
+          # 3. Hard-Locked Gradle Properties (Overrides Gradle 9 system default)
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -79,7 +79,7 @@ jobs:
           validateDistributionUrl=true
           EOF
           
-          # 3. Flattened Root build.gradle Structure (With Automatic Plugin SDK Overrides)
+          # 4. Flattened Root build.gradle Structure (Satisfies strict Flutter version checks)
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories {
@@ -114,7 +114,7 @@ jobs:
           tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
           
-          # 4. Streamlined App build.gradle (Bypasses Compiler-Option Deprecations)
+          # 5. Streamlined App build.gradle (Bypasses compilation deprecation blocks)
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -136,7 +136,7 @@ jobs:
           flutter { source '../..' }
           EOF
           
-          # 5. Open-Access settings.gradle Resolution Strategy
+          # 6. Open-Access settings.gradle (Enforces project-preferred mapping layer)
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -173,11 +173,13 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
 
-          flutter precache --android
-
       - name: Compile APK
         run: |
+          flutter clean
           flutter pub get
+          flutter precache --android
+          
+          # STABLE DIRECT COMPILATION: Uses absolute skips to pass plugin registries flawlessly
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
 
       - name: Archive Android Production APK Assets
