@@ -1,5 +1,11 @@
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.5-all.zip
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
+android.useAndroidX=true
+android.enableJetifier=true
+org.gradle.caching=true
+org.gradle.parallel=true
+
+# CRITICAL FOR GITHUB ACTIONS: Disables the background worker process
+org.gradle.daemon=false
+
+# WARNING: Set to false if older third-party Flutter packages throw "Resource not found" compilation errors
+android.nonTransitiveRClass=true
