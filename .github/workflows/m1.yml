@@ -1,44 +1,9 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
 jobs:
-  build_web:
-    name: Build Web Client
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with: {channel: 'stable', cache: true}
-      - name: Keys
-        run: |
-          mkdir -p assets && touch .env assets/icon_launcher.png
-          cat << 'EOF' > secrets.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-      - name: Compile Web
-        run: |
-          flutter clean
-          flutter pub get
-          sed -i 's|<head>|<head><base href="/|' web/index.html || true
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
-          if [ -d "build/web" ]; then cp build/web/index.html build/web/404.html; else exit 1; fi
-      - uses: actions/upload-pages-artifact@v3
-        with: {path: build/web}
-
-  build_apk:
-    name: Build Mobile APK
+  pipeline:
+    name: Core Build Engine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,125 +28,90 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-      - name: Setup Clear Project Layout
+      - name: Compile Web
+        run: |
+          flutter clean && flutter pub get
+          sed -i 's|<head>|<head><base href="/|' web/index.html || true
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
+          cp build/web/index.html build/web/404.html || true
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: build/web}
+      - name: Setup Android Ecosystem
         run: |
           rm -rf android/ || true
           flutter create . --platforms=android --android-language java
-          
-          # Delete any auto-generated .kts scripts to force standard Groovy compatibility
           rm -f android/*.kts android/app/*.kts || true
-          
-          # Re-inject verified standard build.gradle layout
           cat << 'EOF' > android/build.gradle
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-                  maven { url 'https://googleapis.com' }
-              }
+          buildscript {
+              ext.kotlin_version = '2.0.0'
+              repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } }
+              dependencies { classpath 'com.android.tools.build:gradle:8.6.0'; classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" }
           }
+          allprojects { repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } } }
           rootProject.buildDir = '../build'
           subprojects {
-              project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 34 } } }
           }
           tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
-
-          # Re-inject verified standard app-level build.gradle layout with release signatures
           cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
+          plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
           def keystorePropertiesFile = rootProject.file('key.properties')
           if (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) { localPropertiesFile.withReader('UTF-8') { reader -> localProperties.load(reader) } }
+          def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+          def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
           android {
               namespace "com.example.mindspark1"
               compileSdk 34
-              defaultConfig {
-                  applicationId "com.example.mindspark1"
-                  minSdk 24
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0.0"
-                  multiDexEnabled true
-              }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-              signingConfigs {
-                  release {
-                      keyAlias keystoreProperties['keyAlias']
-                      keyPassword keystoreProperties['keyPassword']
-                      storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-                      storePassword keystoreProperties['storePassword']
-                  }
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.release
-                  }
-              }
+              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode flutterVersionCode.toInteger(); versionName flutterVersionName; multiDexEnabled true }
+              signingConfigs { release { keyAlias keystoreProperties['keyAlias']; keyPassword keystoreProperties['keyPassword']; storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null; storePassword keystoreProperties['storePassword'] } }
+              buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
-          dependencies {
-              implementation "androidx.annotation:annotation:1.7.0"
-              implementation "androidx.multidex:multidex:2.0.1"
-          }
+          dependencies { implementation "androidx.annotation:annotation:1.7.0"; implementation "androidx.multidex:multidex:2.0.1" }
+          flutter { source '../..' }
           EOF
-
-          # Re-inject verified standard settings.gradle layout pointing to AGP 8.6.0
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
-                  def properties = new Properties()
-                  def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { properties.load(it) } }
-                  return properties.getProperty("flutter.sdk")
+                  def properties = new Properties(); def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) { file.withReader("UTF-8") { r -> properties.load(reader) } }
+                  def sdkPath = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
+                  if (sdkPath == null) { throw new GradleException("Flutter SDK not found.") }
+                  return sdkPath
               }()
-              includeBuild("${flutterSdkPath}/packages/flutter_tools/gradle")
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
               repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
-          plugins {
-              id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
-              id "com.android.application" version "8.6.0" apply false
-              id "org.jetbrains.kotlin.android" version "1.9.24" apply false
-          }
-          include ":app"
+          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "2.0.0" apply false }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_PROJECT); repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } } }
+          rootProject.name = "mindspark1"
+          include ':app'
           EOF
-
-          # Handle permissions injection safely inside the stable Manifest file
           M="android/app/src/main/AndroidManifest.xml"
           if [ -f "$M" ]; then
             sed -i '/<uses-permission/d' "$M"
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
           fi
-          
-          # Handle Keystore Extraction
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-          
-          # Initialize explicit properties paths
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
-
-      - name: Compile APK via Flutter Native Assembly
+          echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
+      - name: Compile APK
         run: |
-          flutter pub get
-          flutter precache --android
+          flutter pub get && flutter precache --android
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
-
       - uses: actions/upload-artifact@v4
-        with:
-          name: "native-apk"
-          path: build/app/outputs/flutter-apk/*.apk
+        with: {name: "native-apk", path: "build/app/outputs/flutter-apk/*.apk"}
 
-  deploy_pages:
-    name: Publish Web App
-    needs: build_web
+  deploy_web:
+    name: Deploy Live Page
+    needs: pipeline
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
