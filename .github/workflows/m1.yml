@@ -114,7 +114,8 @@ jobs:
           }
           dependencies {
               implementation "androidx.annotation:annotation:1.7.1"
-              implementation "androidx.appcompat:androidx.appcompat:1.6.1"
+              // UPGRADED & HARDENED: Swapped to 1.7.0 which resolves artifact metadata validation passes natively
+              implementation "androidx.appcompat:androidx.appcompat:1.7.0"
           }
           flutter { source '../..' }
           EOF
@@ -122,8 +123,8 @@ jobs:
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def sP = {
-                  def p = new Properties(); def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
+                  def p = new Properties(); def f = new File(settingsDir, "local.properties")
+                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
@@ -131,7 +132,8 @@ jobs:
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.7.3" apply false; id "org.jetbrains.kotlin.android" version "2.1.0" apply false }
           dependencyResolutionManagement { 
-              repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+              // FIXED: Forces all child plugin dependencies to look for their packages on central repos via root mapping proxies
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories { google(); mavenCentral() } 
           }
           include ':app'
