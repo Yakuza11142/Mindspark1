@@ -63,51 +63,10 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           
-          # Clean build state and setup scaffolding
-          rm -rf android/ || true
-          flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
+          # Native execution block on raw repository code 
+          flutter clean
           flutter pub get
-          
-          # Run icon asset compilation pass
           flutter pub run flutter_launcher_icons
-          
-          # Inject configurations cleanly on straight lines without using backslash escapes
-          if [ -f android/app/build.gradle.kts ]; then
-            sed -i '/defaultConfig {/a \        multiDexEnabled = true' android/app/build.gradle.kts
-            sed -i '/defaultConfig {/a \        minSdk = 24' android/app/build.gradle.kts
-            sed -i '/defaultConfig {/a \        targetSdk = 35' android/app/build.gradle.kts
-            sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@mipmap\/launcher_icon"/g' android/app/src/main/AndroidManifest.xml
-          fi
-          
-          # Synchronize subproject versions to match SDK demands smoothly
-          if [ -f android/build.gradle.kts ]; then
-            cat << 'EOF' >> android/build.gradle.kts
-
-            subprojects {
-                afterEvaluate {
-                    if (plugins.hasPlugin("com.android.application") || plugins.hasPlugin("com.android.library")) {
-                        extensions.configure<com.android.build.gradle.BaseExtension> {
-                            compileSdkVersion(35)
-                            defaultConfig {
-                                minSdk = 24
-                                targetSdk = 35
-                            }
-                        }
-                    }
-                }
-            }
-          EOF
-          fi
-
-          # Append stable appcompat requirements matching core expectations
-          cat << 'EOF' >> android/app/build.gradle.kts
-
-          dependencies {
-              implementation("androidx.annotation:annotation:1.7.1")
-              implementation("androidx.appcompat:appcompat:1.7.0")
-          }
-          EOF
-          
           flutter build apk --release --dart-define-from-file=secrets.env
           
       - uses: actions/upload-artifact@v4
