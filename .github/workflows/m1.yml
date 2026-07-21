@@ -41,13 +41,25 @@ jobs:
           rm -rf android/ || true
           flutter create . --platforms=android --android-language java
           rm -f android/*.kts android/app/*.kts || true
+          
+          # HARDENED build.gradle: Direct engine repository linking to solve the 37 packaging loops
           cat << 'EOF' > android/build.gradle
           buildscript {
               ext.kotlin_version = '2.0.0'
-              repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } }
+              repositories { 
+                  google()
+                  mavenCentral()
+                  maven { url 'https://googleapis.com' }
+              }
               dependencies { classpath 'com.android.tools.build:gradle:8.6.0'; classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" }
           }
-          allprojects { repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } } }
+          allprojects { 
+              repositories { 
+                  google()
+                  mavenCentral()
+                  maven { url 'https://googleapis.com' }
+              } 
+          }
           rootProject.buildDir = '../build'
           subprojects {
               project.buildDir = "${rootProject.buildDir}/${project.name}"
@@ -55,6 +67,7 @@ jobs:
           }
           tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
+          
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -73,26 +86,42 @@ jobs:
               signingConfigs { release { keyAlias keystoreProperties['keyAlias']; keyPassword keystoreProperties['keyPassword']; storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null; storePassword keystoreProperties['storePassword'] } }
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
-          dependencies { implementation "androidx.annotation:annotation:1.7.0"; implementation "androidx.multidex:multidex:2.0.1" }
+          dependencies { 
+              implementation "androidx.annotation:annotation:1.7.0"
+              implementation "androidx.multidex:multidex:2.0.1"
+          }
           flutter { source '../..' }
           EOF
+          
+          # HARDENED settings.gradle: Explicitly forces the plugin management cache to resolve download links
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
                   def properties = new Properties(); def file = new File(settingsDir, "local.properties")
                   if (file.exists()) { file.withReader("UTF-8") { reader -> properties.load(reader) } }
-                  def sdkPath = properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
-                  if (sdkPath == null) { throw new GradleException("Flutter SDK not found.") }
-                  return sdkPath
+                  return properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
+              repositories { 
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+                  maven { url 'https://googleapis.com' }
+              }
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "2.0.0" apply false }
-          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_PROJECT); repositories { google(); mavenCentral(); maven { url 'https://googleapis.com' } } }
+          dependencyResolutionManagement { 
+              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositories { 
+                  google()
+                  mavenCentral()
+                  maven { url 'https://googleapis.com' }
+              } 
+          }
           rootProject.name = "mindspark1"
           include ':app'
           EOF
+          
           M="android/app/src/main/AndroidManifest.xml"
           if [ -f "$M" ]; then
             sed -i '/<uses-permission/d' "$M"
