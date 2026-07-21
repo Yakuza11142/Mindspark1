@@ -3,23 +3,13 @@ on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
 
 jobs:
-  pipeline:
-    name: Core Build Engine
+  compile-web:
+    name: Web Engine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
-          
       - uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
+        with: {channel: 'stable', cache: true}
       - name: Keys
         run: |
           mkdir -p assets && touch .env assets/icon_launcher.png
@@ -37,27 +27,49 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-
       - name: Compile Web
+        continue-on-error: true
         run: |
           flutter clean && flutter pub get
           sed -i 's|<head>|<head><base href="/|' web/index.html || true
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
           cp build/web/index.html build/web/404.html || true
-
       - uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
+        continue-on-error: true
+        with: {path: build/web}
 
+  compile-android:
+    name: Android Engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: 'temurin', java-version: '17', cache: 'gradle'}
+      - uses: subosito/flutter-action@v2
+        with: {channel: 'stable', cache: true}
+      - name: Keys
+        run: |
+          mkdir -p assets && touch .env assets/icon_launcher.png
+          cat << 'EOF' > secrets.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
+          EOF
       - name: Setup Android Ecosystem
         run: |
           rm -rf android/ || true
-          
-          # 1. Generate clean native Kotlin project structure from the matching active SDK template
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
           
-          # 2. Hard-Locked Production JVM Settings (Disables the memory leaking background worker)
           cat << 'EOF' > android/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
           android.useAndroidX=true
@@ -68,7 +80,6 @@ jobs:
           android.nonTransitiveRClass=false
           EOF
 
-          # 3. Hard-Locked Gradle Properties (Overrides Gradle 9 system default)
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -79,42 +90,23 @@ jobs:
           validateDistributionUrl=true
           EOF
           
-          # 4. Flattened Root build.gradle Structure (Satisfies strict Flutter version checks)
           cat << 'EOF' > android/build.gradle
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
               dependencies { 
                   classpath 'com.android.tools.build:gradle:8.7.3'
                   classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0" 
               }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           rootProject.buildDir = '../build'
           subprojects {
               project.buildDir = "${rootProject.buildDir}/${project.name}"
-              afterEvaluate { p -> 
-                  if (p.hasProperty('android')) { 
-                      p.android { 
-                          compileSdk 35
-                          defaultConfig {
-                              minSdkVersion 24
-                          }
-                      } 
-                  } 
-              } 
+              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } }
           }
           tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
           
-          # 5. Streamlined App build.gradle (Bypasses compilation deprecation blocks)
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -130,13 +122,12 @@ jobs:
               compileSdk 35
               compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
               signingConfigs { release { keyAlias keystoreProperties['keyAlias']; keyPassword keystoreProperties['keyPassword']; storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null; storePassword keystoreProperties['storePassword'] } }
-              defaultConfig { applicationId "com.example.mindspark1" ; minSdk 24 ; targetSdk 35 ; versionCode flutterVersionCode.toInteger() ; versionName flutterVersionName ; multiDexEnabled true }
+              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 35; versionCode flutterVersionCode.toInteger(); versionName flutterVersionName; multiDexEnabled true }
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
           flutter { source '../..' }
           EOF
           
-          # 6. Open-Access settings.gradle (Enforces project-preferred mapping layer)
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -145,19 +136,12 @@ jobs:
                   return properties.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-              repositories { 
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.7.3" apply false; id "org.jetbrains.kotlin.android" version "2.1.0" apply false }
           dependencyResolutionManagement { 
               repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-              repositories { 
-                  google()
-                  mavenCentral()
-              } 
+              repositories { google(); mavenCentral() } 
           }
           rootProject.name = "mindspark1"
           include ':app'
@@ -172,18 +156,11 @@ jobs:
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
-
       - name: Compile APK
         run: |
           flutter clean
           flutter pub get
           flutter precache --android
-          
-          # STABLE DIRECT COMPILATION: Uses absolute skips to pass plugin registries flawlessly
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
-
-      - name: Archive Android Production APK Assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apks
-          path: build/app/outputs/flutter-apk/*.apk
+      - uses: actions/upload-artifact@v4
+        with: {name: release-apks, path: build/app/outputs/flutter-apk/*.apk}
