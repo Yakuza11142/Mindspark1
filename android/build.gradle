@@ -3,9 +3,11 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://googleapis.com' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.1'
+        // Hardened: Set to 8.6.0 to pass modern Flutter validation checks
+        classpath 'com.android.tools.build:gradle:8.6.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -14,6 +16,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://googleapis.com' }
     }
 }
 
@@ -21,7 +24,6 @@ rootProject.buildDir = '../build'
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
