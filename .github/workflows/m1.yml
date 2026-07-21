@@ -1,35 +1,50 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
+
 jobs:
-  web:
+  compile-web:
+    name: Web Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
       - run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > secrets.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> secrets.env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> secrets.env
-          echo "OPENAI_KEY=${{ secrets.OPENAI_KEY }}" >> secrets.env
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> secrets.env
-          echo "VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}" >> secrets.env
-          echo "HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}" >> secrets.env
-          echo "RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}" >> secrets.env
-          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> secrets.env
-          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> secrets.env
-          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> secrets.env
-          echo "ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}" >> secrets.env
+          cat << 'EOF' > secrets.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
+          EOF
           flutter clean && flutter pub get
           sed -i 's|<head>|<head><base href="/|' web/index.html || true
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
           cp build/web/index.html build/web/404.html || true
         continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
-        with: {path: build/web}
         continue-on-error: true
-  android:
+        with: {path: build/web}
+
+  deploy-web:
+    name: Web Deploy
+    needs: compile-web
+    runs-on: ubuntu-latest
+    environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  compile-android:
+    name: Android Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,18 +53,20 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
       - run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > secrets.env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> secrets.env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> secrets.env
-          echo "OPENAI_KEY=${{ secrets.OPENAI_KEY }}" >> secrets.env
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> secrets.env
-          echo "VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}" >> secrets.env
-          echo "HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}" >> secrets.env
-          echo "RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}" >> secrets.env
-          echo "TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}" >> secrets.env
-          echo "PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}" >> secrets.env
-          echo "MTN_API_KEY=${{ secrets.MTN_API_KEY }}" >> secrets.env
-          echo "ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}" >> secrets.env
+          cat << 'EOF' > secrets.env
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
+          EOF
           rm -rf android/ || true
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
@@ -61,7 +78,7 @@ jobs:
           org.gradle.daemon=false
           android.nonTransitiveRClass=false
           EOF
-          
+
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -96,7 +113,6 @@ jobs:
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
           dependencies {
-              // INJECTS ANNOTATION ENGINE: Resolves the NonNull class missing symbol compile flags across all dependencies
               implementation "androidx.annotation:annotation:1.7.1"
               implementation "androidx.appcompat:androidx.appcompat:1.6.1"
           }
@@ -106,8 +122,8 @@ jobs:
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def sP = {
-                  def p = new Properties(); def f = new File(settingsDir, "local.properties")
-                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
+                  def p = new Properties(); def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
@@ -132,14 +148,11 @@ jobs:
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
           flutter pub get && flutter precache --android && flutter pub run flutter_launcher_icons
           
-          # FORCED SUB-PROJECT INJECTION INTERCEPTOR: Traverses down into the subproject compile templates
-          # and injects the absolute java log import into Flutter's core framework generation engines before compile
           G_FILE="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle.dart"
           if [ -f "$G_FILE" ]; then
             sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport android.util.Log;|g' "$G_FILE" || true
             sed -i 's|class GeneratedPluginRegistrant|import android.util.Log;\nclass GeneratedPluginRegistrant|g' "$G_FILE" || true
           fi
-          
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
       - uses: actions/upload-artifact@v4
         with: {name: release-apks, path: build/app/outputs/flutter-apk/*.apk}
