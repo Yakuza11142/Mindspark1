@@ -39,10 +39,11 @@ jobs:
       - name: Setup Android Ecosystem
         run: |
           rm -rf android/ || true
-          flutter create . --platforms=android --android-language java
+          
+          # FORCED IDENTITY MAPPING: Generates the project structure with your exact namespace match to stop the 37 errors
+          flutter create . --platforms=android --android-language java --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
           
-          # HARDENED build.gradle: Direct engine repository linking to solve the 37 packaging loops
           cat << 'EOF' > android/build.gradle
           buildscript {
               ext.kotlin_version = '2.0.0'
@@ -93,7 +94,6 @@ jobs:
           flutter { source '../..' }
           EOF
           
-          # HARDENED settings.gradle: Explicitly forces the plugin management cache to resolve download links
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
