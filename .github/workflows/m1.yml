@@ -66,7 +66,7 @@ jobs:
           flutter pub get
           flutter pub run flutter_launcher_icons
 
-          # 1. Recursive fix: Scan every single Android manifest file to add missing namespaces
+          # 1. In-place manifest syntax force-correction across all project structures
           find android/ -name "AndroidManifest.xml" -type f | while read -r manifest; do
             sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g' "$manifest" || true
             sed -i 's/"android:name"=/"/g' "$manifest" || true
@@ -74,19 +74,21 @@ jobs:
             sed -i 's/android:android:/android:/g' "$manifest" || true
           done
 
-          # 2. Force compliance: Elevate SDK targets dynamically inside Groovy scripts to fulfill ARCore demands
+          # 2. Upgrade SDK targets inline to 35 to match ARCore demands and suppress error limits
           find android/ -name "build.gradle" -type f | while read -r gradle_file; do
             if grep -q "android {" "$gradle_file"; then
               sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }\n    packagingOptions { jniLibs { pickFirsts.add("**/*.so") } }' "$gradle_file" || true
             fi
+            sed -i 's/compileSdk\s\+[0-9]\+/compileSdk 35/g' "$gradle_file" || true
+            sed -i 's/targetSdk\s\+[0-9]\+/targetSdk 35/g' "$gradle_file" || true
             sed -i 's/compileSdkVersion\s\+[0-9]\+/compileSdkVersion 35/g' "$gradle_file" || true
             sed -i 's/targetSdkVersion\s\+[0-9]\+/targetSdkVersion 35/g' "$gradle_file" || true
             sed -i 's/minSdkVersion\s\+[0-9]\+/minSdkVersion 24/g' "$gradle_file" || true
+            sed -i 's/minSdk\s\+[0-9]\+/minSdk 24/g' "$gradle_file" || true
           done
 
-          # 3. Synchronize configurations into subprojects to clean out secondary build failures
-          GRADLE_APP_FILE="android/app/build.gradle"
-          if [ -f "$GRADLE_APP_FILE" ]; then
+          # 3. Synchronize versions deeply to third-party subproject structures
+          if [ -f android/build.gradle ]; then
             cat << 'EOF' >> android/build.gradle
 
             subprojects {
@@ -113,7 +115,7 @@ jobs:
           storeFile=../upload-keystore.jks
           EOF
 
-          # 5. Safely inject your signing credential payload
+          # 5. Safely inject your signing credential payload into the workspace
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
           else
