@@ -91,6 +91,10 @@ jobs:
               defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 35; multiDexEnabled true }
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
+          dependencies {
+              // THE CORE FIX: Force-loads the legacy Android platform utilities library directly into the active compiler classpath
+              implementation "androidx.annotation:annotation:1.7.1"
+          }
           flutter { source '../..' }
           EOF
           cat << 'EOF' > android/settings.gradle
@@ -120,11 +124,13 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
           flutter pub get && flutter precache --android && flutter pub run flutter_launcher_icons
+          
+          # AUTOMATED PATCH: Forces Flutter's core build scripts to insert the missing logger import lines natively into the generated file template 
           G_FILE="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle.dart"
           if [ -f "$G_FILE" ]; then
-            sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport io.flutter.Log;|g' "$G_FILE" || true
-            sed -i 's|class GeneratedPluginRegistrant|import io.flutter.Log;\nclass GeneratedPluginRegistrant|g' "$G_FILE" || true
+            sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport android.util.Log;|g' "$G_FILE" || true
           fi
+          
           flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
       - uses: actions/upload-artifact@v4
         with: {name: release-apks, path: build/app/outputs/flutter-apk/*.apk}
