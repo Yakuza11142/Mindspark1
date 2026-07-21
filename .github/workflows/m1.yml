@@ -92,7 +92,6 @@ jobs:
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
           dependencies {
-              // THE CORE FIX: Force-loads the legacy Android platform utilities library directly into the active compiler classpath
               implementation "androidx.annotation:annotation:1.7.1"
           }
           flutter { source '../..' }
@@ -100,8 +99,8 @@ jobs:
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def sP = {
-                  def p = new Properties(); def f = new File(settingsDir, "local.properties")
-                  if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
+                  def p = new Properties(); def file = new File(settingsDir, "local.properties")
+                  if (file.exists()) { file.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
               includeBuild("$sP/packages/flutter_tools/gradle")
@@ -125,7 +124,8 @@ jobs:
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
           flutter pub get && flutter precache --android && flutter pub run flutter_launcher_icons
           
-          # AUTOMATED PATCH: Forces Flutter's core build scripts to insert the missing logger import lines natively into the generated file template 
+          # DEEP TEMPLATE INJECTION: Patches Flutter's internal blueprint script inside the runner cache environment. 
+          # This forces Flutter to write "import android.util.Log;" directly into the registrant file it creates during compilation.
           G_FILE="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle.dart"
           if [ -f "$G_FILE" ]; then
             sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport android.util.Log;|g' "$G_FILE" || true
