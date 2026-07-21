@@ -1,10 +1,8 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
 jobs:
-  compile-web:
-    name: Web Build
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,20 +29,16 @@ jobs:
           cp build/web/index.html build/web/404.html || true
         continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
-        continue-on-error: true
         with: {path: build/web}
-
+        continue-on-error: true
   deploy-web:
-    name: Web Deploy
     needs: compile-web
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
-  compile-android:
-    name: Android Build
+  android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +47,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: 'stable', cache: true}
       - run: |
+          mkdir -p assets && touch .env
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
@@ -70,7 +65,9 @@ jobs:
           rm -rf android/ || true
           flutter create . --platforms=android --android-language kotlin --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
-          
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
+          echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
           cat << 'EOF' > android/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseParallelGC
           android.useAndroidX=true
@@ -78,7 +75,6 @@ jobs:
           org.gradle.daemon=false
           android.nonTransitiveRClass=false
           EOF
-
           cat << 'EOF' > android/gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -86,7 +82,6 @@ jobs:
           zipStorePath=wrapper/dists
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-all.zip
           EOF
-          
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -96,14 +91,18 @@ jobs:
               }
           }
           allprojects { repositories { google(); mavenCentral() } }
-          subprojects { afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } } }
+          rootProject.buildDir = '../build'
+          subprojects {
+              project.buildDir = "${rootProject.buildDir}/${project.name}"
+              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } }
+          }
+          tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
-          
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def kp = new Properties()
           def kpf = rootProject.file('key.properties')
-          if (kpf.exists()) { kp.load(new FileInputStream(kpf)) }
+          if (kpf.exists()) { kpf.withReader('UTF-8') { reader -> kp.load(reader) } }
           android {
               namespace "com.example.mindspark1"
               compileSdk 35
@@ -114,16 +113,14 @@ jobs:
           }
           dependencies {
               implementation "androidx.annotation:annotation:1.7.1"
-              // UPGRADED & HARDENED: Swapped to 1.7.0 which resolves artifact metadata validation passes natively
               implementation "androidx.appcompat:androidx.appcompat:1.7.0"
           }
           flutter { source '../..' }
           EOF
-          
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def sP = {
-                  def p = new Properties(); def f = new File(settingsDir, "local.properties")
+                  def p = new Properties(); def file = new File(settingsDir, "local.properties")
                   if (f.exists()) { f.withReader("UTF-8") { r -> p.load(r) } }
                   return p.getProperty("flutter.sdk") ?: System.getenv("FLUTTER_ROOT")
               }()
@@ -131,30 +128,41 @@ jobs:
               repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.7.3" apply false; id "org.jetbrains.kotlin.android" version "2.1.0" apply false }
-          dependencyResolutionManagement { 
-              // FIXED: Forces all child plugin dependencies to look for their packages on central repos via root mapping proxies
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() } 
-          }
+          rootProject.name = "mindspark1"
           include ':app'
           EOF
-          
-          M="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$M" ]; then
-            sed -i '/<uses-permission/d' "$M"
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"\/>\n    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"\/>\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" \/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"\/>\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID"\/>\n    <uses-feature android:name="android.hardware.camera.ar" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera" android:required="true"\/>\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"\/>' "$M"
-            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$M"
-          fi
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
-          echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://android.com">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+              <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+              <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
+              <uses-feature android:name="android.hardware.camera" android:required="true"/>
+              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+              <application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
+                      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data android:name="flutterEmbedding" android:value="2"/>
+              </application>
+          </manifest>
+          EOF
           flutter pub get && flutter precache --android && flutter pub run flutter_launcher_icons
-          
           G_FILE="$FLUTTER_ROOT/packages/flutter_tools/lib/src/android/gradle.dart"
           if [ -f "$G_FILE" ]; then
             sed -i 's|import androidx.annotation.NonNull;|import androidx.annotation.NonNull;\nimport android.util.Log;|g' "$G_FILE" || true
             sed -i 's|class GeneratedPluginRegistrant|import android.util.Log;\nclass GeneratedPluginRegistrant|g' "$G_FILE" || true
           fi
-          flutter build apk --release --split-per-abi --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
+          flutter build apk --release --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
       - uses: actions/upload-artifact@v4
-        with: {name: release-apks, path: build/app/outputs/flutter-apk/*.apk}
+        with: {name: release-apk, path: build/app/outputs/flutter-apk/app-release.apk}
