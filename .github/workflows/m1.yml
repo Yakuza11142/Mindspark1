@@ -39,27 +39,17 @@ jobs:
       - name: Setup Android Ecosystem
         run: |
           rm -rf android/ || true
-          
-          # FORCED IDENTITY MAPPING: Generates the project structure with your exact namespace match to stop the 37 errors
           flutter create . --platforms=android --android-language java --project-name=mindspark1
           rm -f android/*.kts android/app/*.kts || true
           
+          # Root build.gradle: Aligned clean layout paths
           cat << 'EOF' > android/build.gradle
           buildscript {
               ext.kotlin_version = '2.0.0'
-              repositories { 
-                  google()
-                  mavenCentral()
-                  maven { url 'https://googleapis.com' }
+              dependencies { 
+                  classpath 'com.android.tools.build:gradle:8.6.0'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" 
               }
-              dependencies { classpath 'com.android.tools.build:gradle:8.6.0'; classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" }
-          }
-          allprojects { 
-              repositories { 
-                  google()
-                  mavenCentral()
-                  maven { url 'https://googleapis.com' }
-              } 
           }
           rootProject.buildDir = '../build'
           subprojects {
@@ -69,6 +59,7 @@ jobs:
           tasks.register("clean", Delete) { delete rootProject.buildDir }
           EOF
           
+          # App-level build.gradle: Native multi-dex tracking
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -94,6 +85,7 @@ jobs:
           flutter { source '../..' }
           EOF
           
+          # FIXED SETTINGS: Forces FAIL_ON_PROJECT_REPOS to compel the plugins to download through the central storage proxy mirror
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -111,7 +103,7 @@ jobs:
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "2.0.0" apply false }
           dependencyResolutionManagement { 
-              repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories { 
                   google()
                   mavenCentral()
