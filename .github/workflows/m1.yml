@@ -116,14 +116,8 @@ jobs:
           EOF
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
-              def flutterSdkPath = System.getenv("FLUTTER_ROOT") ?: ""
-              if (flutterSdkPath == "") {
-                  def properties = new Properties()
-                  def file = new File(settingsDir, "local.properties")
-                  if (file.exists()) { file.withReader("UTF-8") { reader -> properties.load(reader) } }
-                  flutterSdkPath = properties.getProperty("flutter.sdk") ?: ""
-              }
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+              def sP = System.getenv("FLUTTER_ROOT") ?: ""
+              includeBuild("$sP/packages/flutter_tools/gradle")
               repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
           plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.7.3" apply false; id "org.jetbrains.kotlin.android" version "2.1.0" apply false }
@@ -167,3 +161,4 @@ jobs:
           fi
           flutter build apk --release --no-shrink --android-skip-build-dependency-validation --dart-define-from-file=secrets.env --pub --build-number=1
       - uses: actions/upload-artifact@v4
+        with: {name: release-apk, path: build/app/outputs/flutter-apk/app-release.apk}
