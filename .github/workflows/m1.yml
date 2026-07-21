@@ -77,28 +77,28 @@ jobs:
           validateDistributionUrl=true
           EOF
           
-          # 3. Root build.gradle layout structure
+          # 3. Root build.gradle layout structure (Upgraded Versions)
           cat << 'EOF' > android/build.gradle
           buildscript {
-              ext.kotlin_version = '2.0.0'
+              ext.kotlin_version = '2.2.20'
               repositories {
                   google()
                   mavenCentral()
               }
               dependencies { 
-                  classpath 'com.android.tools.build:gradle:8.6.0'
+                  classpath 'com.android.tools.build:gradle:8.11.1'
                   classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version" 
               }
           }
           rootProject.buildDir = '../build'
           subprojects {
               project.buildDir = "${rootProject.buildDir}/${project.name}"
-              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 34 } } }
+              afterEvaluate { p -> if (p.hasProperty('android')) { p.android { compileSdk 35 } } }
           }
           tasks.register("clean", Delete) { delete rootProject.layout.buildDirectory }
           EOF
           
-          # 4. App-level build.gradle variables mapping
+          # 4. App-level build.gradle variables mapping (Fixed compilerOptions syntax)
           cat << 'EOF' > android/app/build.gradle
           plugins { id "com.android.application"; id "dev.flutter.flutter-gradle-plugin" }
           def keystoreProperties = new Properties()
@@ -111,17 +111,21 @@ jobs:
           def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
           android {
               namespace "com.example.mindspark1"
-              compileSdk 34
+              compileSdk 35
               compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
-              kotlinOptions { jvmTarget = '17' }
+              
+              compilerOptions {
+                  jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+              }
+              
               signingConfigs { release { keyAlias keystoreProperties['keyAlias']; keyPassword keystoreProperties['keyPassword']; storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null; storePassword keystoreProperties['storePassword'] } }
-              defaultConfig { applicationId "com.example.mindspark1"; minSdk 24; targetSdk 34; versionCode flutterVersionCode.toInteger(); versionName flutterVersionName; multiDexEnabled true }
+              defaultConfig { applicationId "com.example.mindspark1" ; minSdk 24 ; targetSdk 35 ; versionCode flutterVersionCode.toInteger() ; versionName flutterVersionName ; multiDexEnabled true }
               buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false; shrinkResources false } }
           }
           flutter { source '../..' }
           EOF
           
-          # 5. Fixed settings: Set repositoriesMode to PREFER_PROJECT to allow custom plugin repos
+          # 5. Fixed settings: Centralize versions inside plugins array block
           cat << 'EOF' > android/settings.gradle
           pluginManagement {
               def flutterSdkPath = {
@@ -136,7 +140,7 @@ jobs:
                   gradlePluginPortal()
               }
           }
-          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.6.0" apply false; id "org.jetbrains.kotlin.android" version "2.0.0" apply false }
+          plugins { id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false; id "com.android.application" version "8.11.1" apply false; id "org.jetbrains.kotlin.android" version "2.2.20" apply false }
           dependencyResolutionManagement { 
               repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
               repositories { 
@@ -158,8 +162,8 @@ jobs:
           echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > android/key.properties
           echo -e "sdk.dir=$ANDROID_HOME\nflutter.sdk=$FLUTTER_ROOT" > android/local.properties
 
-          # Rebuilds wrapper binary executable target inside container workspace
-          cd android && gradle wrapper --gradle-version 8.14.5 && chmod +x gradlew && cd ..
+          # Rebuilds wrapper binary executable target using localized system variables
+          cd android && gradle wrapper --gradle-version 8.14.5 --distribution-type all && chmod +x gradlew && cd ..
 
       - name: Compile APK
         run: |
