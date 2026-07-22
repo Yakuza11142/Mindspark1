@@ -2,16 +2,14 @@ name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
 
-# GLOBAL IMMUNITY SWITCH: Prevents any job-level error from breaking the pipeline run status
 defaults:
   run:
     shell: bash
-    arguments: [--noprofile, --norc, -e, -o, pipefail]
 
 jobs:
   web:
     runs-on: ubuntu-latest
-    continue-on-error: true # Structural Exception Eraser
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         continue-on-error: true
@@ -45,7 +43,7 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
-    continue-on-error: true # Structural Exception Eraser
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         continue-on-error: true
