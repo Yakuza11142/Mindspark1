@@ -7,10 +7,13 @@ defaults:
     shell: bash
 
 jobs:
-  web:
+  compile-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
 
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: false}
@@ -31,39 +34,23 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
+          cp secrets.env android/local.properties || true
 
-      - name: Clean Cache and Fetch Dependencies
+      - name: Clean Cache and Fetch Workspace Dependencies
         run: |
           flutter clean || true
-          rm -rf .dart_tool build
+          rm -rf .dart_tool build android/.gradle android/app/build
           flutter pub get
 
+      # PHASE 1: Build the Web Bundle smoothly on the machine
       - name: Compile Release Web Bundle
         run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
 
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
 
-  deploy-web:
-    needs: web
-    runs-on: ubuntu-latest
-    environment: {name: github-pages, url: "${{ steps.d.outputs.page_url }}"}
-    steps: [{id: d, uses: actions/deploy-pages@v4}]
-
-  android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with: {distribution: temurin, java-version: '17'}
-
-      - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: false}
-
-      # ANDROID RUNNER SHIELD: Forces this specific virtual machine to completely 
-      # overwrite your repo's broken manifest file with a flawless layout before compiling.
-      - name: Overwrite Native Manifest with Perfect Placeholder Template
+      # PHASE 2: Overwrite the manifest on the EXACT SAME machine before compiling Android
+      - name: Overwrite Native Manifest with Perfect Template Placeholder
         run: |
           mkdir -p android/app/src/main
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
@@ -104,30 +91,7 @@ jobs:
           </manifest>
           EOF
 
-      - name: Configure Production Environment Keys
-        run: |
-          cat << 'EOF' > secrets.env
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-          cp secrets.env android/local.properties || true
-
-      - name: Clean Cache and Fetch Dependencies
-        run: |
-          flutter clean || true
-          rm -rf .dart_tool build android/.gradle android/app/build
-          flutter pub get
-
+      # PHASE 3: Compile the standalone package using the clean placeholder layout
       - name: Compile Fat Release APK Installer
         run: flutter build apk --release --dart-define-from-file=secrets.env
 
@@ -135,3 +99,9 @@ jobs:
         with:
           name: apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+  deploy-web:
+    needs: compile-and-deploy
+    runs-on: ubuntu-latest
+    environment: {name: github-pages, url: "${{ steps.d.outputs.page_url }}"}
+    steps: [{id: d, uses: actions/deploy-pages@v4}]
