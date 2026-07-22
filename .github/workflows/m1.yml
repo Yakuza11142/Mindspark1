@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: false} # Disabled caching to force a clean environment rebuild
+        with: {channel: stable, cache: false}
 
       - name: Configure Production Environment Keys
         run: |
@@ -39,7 +39,7 @@ jobs:
           flutter pub get
 
       - name: Compile Release Web Bundle
-        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env --no-tree-shake-icons --no-wasm-dry-run
+        run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env --no-tree-shake-icons --no-wasm-dry-run
 
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
@@ -59,21 +59,40 @@ jobs:
         with: {distribution: temurin, java-version: '17'}
 
       - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: false} # Forces compilation clarity on the virtual environment
+        with: {channel: stable, cache: false}
 
-      # TARGET REPAIR SHIELD: Fully case-corrected, handles multiple layouts, skips safely if clean
+      # TARGET REPAIR SHIELD: Uses Python to accurately restore the missing 'android:' prefixes regardless of spaces or quotes.
       - name: Repair Corrupted Manifest XML Properties
         run: |
-          MFILE="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MFILE" ]; then
-            sed -i 's/\<uses-permission\s\+name=/\<uses-permission android:name=/g' "$MFILE"
-            sed -i 's/\<uses-feature\s\+name=/\<uses-feature android:name=/g' "$MFILE"
-            sed -i 's/\<meta-data\s\+name=/\<meta-data android:name=/g' "$MFILE"
-            sed -i 's/\<activity\s\+name=/\<activity android:name=/g' "$MFILE"
-            sed -i 's/\<action\s\+name=/\<action android:name=/g' "$MFILE"
-            sed -i 's/\<category\s\+name=/\<category android:name=/g' "$MFILE"
-            sed -i 's/android:android:/android:/g' "$MFILE"
-          fi
+          python3 -c '
+          import os, re
+
+          mfile = "android/app/src/main/AndroidManifest.xml"
+          if os.path.exists(mfile):
+              print("Found AndroidManifest.xml. Repairing properties...")
+              with open(mfile, "r", encoding="utf-8") as f:
+                  content = f.read()
+
+              # 1. Strip out any accidental prefix doublings first
+              content = re.sub(r"android:android:", "android:", content)
+
+              # List of standard attributes that should be under the android namespace
+              attributes = ["name", "glEsVersion", "value", "resource", "hardwareAccelerated", "theme", "windowSoftInputMode", "launchMode", "configChanges", "exported"]
+
+              for attr in attributes:
+                  # This replaces things like ` name=` or `\nname=` with ` android:name=` while preserving the rest of the tag
+                  pattern = rf"(\s)({attr})(\s*=)"
+                  content = re.sub(pattern, r"\1android:\2\3", content)
+
+              # Clean up any "android:android:" generated during the previous step
+              content = re.sub(r"android:android:", "android:", content)
+
+              with open(mfile, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("AndroidManifest.xml successfully repaired.")
+          else:
+              print("Warning: AndroidManifest.xml not found!")
+          '
 
       - name: Configure Production Environment Keys
         run: |
@@ -99,7 +118,6 @@ jobs:
           rm -rf .dart_tool build android/.gradle android/app/build
           flutter pub get
 
-      # FAT APK TARGETING: Removed `--split-debug-info` and sub-architecture flags to generate one full fallback asset
       - name: Compile Fat Release APK Installer
         run: |
           flutter build apk --release \
