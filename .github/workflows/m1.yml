@@ -58,6 +58,20 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
 
+      # TARGET REPAIR SHIELD: Safely adds the android: prefix back to all your manifest fields without deleting anything
+      - name: Repair Corrupted Manifest XML Properties
+        run: |
+          MFILE="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MFILE" ]; then
+            sed -i 's/\<uses-permission\s\+name=/\<uses-permission android:name=/g' "$MFILE"
+            sed -i 's/\<uses-feature\s\+name=/\<uses-feature android:name=/g' "$MFILE"
+            sed -i 's/\<meta-data\s\+name=/\<meta-data android:name=/g' "$mFILE"
+            sed -i 's/\<activity\s\+name=/\<activity android:name=/g' "$MFILE"
+            sed -i 's/\<action\s\+name=/\<action android:name=/g' "$MFILE"
+            sed -i 's/\<category\s\+name=/\<category android:name=/g' "$MFILE"
+            sed -i 's/android:android:/android:/g' "$MFILE"
+          fi
+
       - name: Configure Production Environment Keys
         run: |
           cat << 'EOF' > secrets.env
@@ -74,12 +88,6 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-
-      # ABSOLUTE WIPE: Deletes the corrupted manifest structure completely
-      - name: Force Clean Build Scaffolding
-        run: |
-          rm -rf android pubspec.lock .dart_tool .metadata || true
-          flutter create . --platforms=android --force && sync && sleep 5 || true
 
       - name: Resolve Project Package Trees
         run: flutter pub get
