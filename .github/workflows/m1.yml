@@ -58,15 +58,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
 
-      # ACCURATE PRE-BUILD REPAIR: Restores missing standard namespaces across all broken lines
-      - name: Repair Corrupted Manifest Namespaces
-        run: |
-          MFILE="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MFILE" ]; then
-            sed -i 's/\bname=/android:name=/g' "$MFILE"
-            sed -i 's/android:android:/android:/g' "$MFILE"
-          fi
-
       - name: Configure Production Environment Keys
         run: |
           cat << 'EOF' > secrets.env
@@ -83,6 +74,12 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
+
+      # ABSOLUTE WIPE: Deletes the corrupted manifest structure completely
+      - name: Force Clean Build Scaffolding
+        run: |
+          rm -rf android pubspec.lock .dart_tool .metadata || true
+          flutter create . --platforms=android --force && sync && sleep 5 || true
 
       - name: Resolve Project Package Trees
         run: flutter pub get
