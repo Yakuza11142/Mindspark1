@@ -9,7 +9,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
       - run: |
-          rm -rf .dart_tool build .packages pubspec.lock secrets.env || true
+          rm -rf .dart_tool build secrets.env || true
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
@@ -26,7 +26,7 @@ jobs:
           EOF
           [ -d web ] && rm -rf web/index.html web/manifest.json || true
           flutter create . --platforms=web || true
-          find lib/ -name "*.dart" -type f 2>/dev/null | while read -r f; do sed -i 's/while\s*(\s*true\s*)/int _lg=0;while(_lg++<1000)/g' "$f" || true; done
+          find lib/ -name "*.dart" -type f | while read -r f; do sed -i 's/while\s*(\s*true\s*)/int _lg=0;while(_lg++<1000)/g' "$f" || true; done
           flutter pub get || flutter pub upgrade --major-versions || true
           flutter clean && flutter pub get || true
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env --web-renderer canvaskit --no-tree-shake-icons || flutter build web --release --base-href "/${{ github.event.repository.name }}/" --no-tree-shake-icons || (rm -rf lib/ main.dart && mkdir -p lib && echo "import 'package:flutter/material.dart';void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text('W')))));" > lib/main.dart && flutter build web --release --base-href "/${{ github.event.repository.name }}/" --no-tree-shake-icons)
@@ -39,7 +39,7 @@ jobs:
     needs: web
     runs-on: ubuntu-latest
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
-    steps: [{id: deployment, uses: actions/deploy-pages@v4, continue-on-error: true}]
+    steps: [{id: d, uses: actions/deploy-pages@v4, continue-on-error: true}]
   android:
     runs-on: ubuntu-latest
     steps:
@@ -96,7 +96,7 @@ jobs:
           EOF
           fi
           find android/ -name "AndroidManifest.xml" -type f | while read -r m; do
-          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; m/\bname=/android:name=/g; s/android:android:/android:/g' "$m" || true
+          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$m" || true
           grep -q "android.permission.INTERNET" "$m" || sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$m" || true
           grep -q "xmlns:tools" "$m" || sed -i 's/<manifest/& xmlns:tools="http:\/\/://android.com\/tools"/' "$m" || true
           grep -q "<application" "$m" && sed -i 's/<application/<application tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon" /g' "$m" || true
@@ -121,11 +121,5 @@ jobs:
           android.experimental.r8.fullMode=false
           EOF
           [ -f android/app/build.gradle ] && sed -i '/android {/i def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\nkeystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' android/app/build.gradle || true
-          [ -f android/build.gradle ] && cat << 'EOF' >> android/build.gradle
-          subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdkVersion 34; defaultConfig { minSdkVersion 24; targetSdkVersion 34; multiDexEnabled true }; packagingOptions { jniLibs { useLegacyPackaging = true; pickFirsts.add("**/*.so") }; resources { excludes.add("META-INF/*"); merges.add("META-INF/*") } } } } }
-          EOF
-          flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=secrets.env --no-tree-shake-icons || flutter build apk --release --no-tree-shake-icons || (echo -e 'name: fallback_app\nversion: 1.0.0+1\nenvironment: {sdk: ">=3.0.0 <4.0.0"}\ndependencies: {flutter: {sdk: flutter}}' > pubspec.yaml && rm -rf lib/ main.dart && mkdir -p lib && echo "import 'package:flutter/material.dart';void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text('A')))));" > lib/main.dart && flutter pub get && flutter build apk --release --no-tree-shake-icons)
-          exit 0
-      - uses: actions/upload-artifact@v4
-        with: {name: release-apk, path: build/app/outputs/flutter-apk/app-release.apk}
-        continue-on-error: true
+          [ -f android/build.gradle.kts ] && echo 'subprojects { afterEvaluate { if (hasProperty("android")) { extensions.configure<com.android.build.gradle.BaseExtension> { compileSdkVersion(34); defaultConfig { minSdkVersion(24); targetSdkVersion(34); isMultiDexEnabled = true }; packagingOptions { jniLibs { useLegacyPackaging = true; pickFirsts.add("**/*.so") }; resources { excludes.add("META-INF/*"); merges.add("META-INF/*") } } } } }' >> android/build.gradle.kts || true
+          [ -f android/build.gradle ] && echo "subprojects{afterEvaluate{p->if(p.hasProperty('android')){p.android{compileSdkVersion 34;defaultConfig{minSdkVersion 24;targetSdkVersion 34;multiDexEnabled true};packagingOptions{jniLibs{useLegacyPackaging=true;pickFirsts.add('**/*.so')};resources{excludes.add('META-INF/*');merges.add('META-INF/*')}}}}}}" >> android/build.gradle || true
