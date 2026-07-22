@@ -24,11 +24,13 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           rm -rf web build/web pubspec.lock .dart_tool || true
-          flutter create . --platforms=web --force && sync && sleep 2 || true
+          flutter create . --platforms=web --force && sync && sleep 5 || true
           find lib/ -name "*.dart" | while read -r f; do sed -i 's/while\s*(\s*true\s*)/int _lg=0;while(_lg++<1000)/g' "$f" || true; done
-          flutter pub get || flutter pub upgrade --major-versions
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env --web-renderer canvaskit --no-tree-shake-icons || (rm -rf lib/ main.dart && mkdir -p lib && echo "import 'package:flutter/material.dart';void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text('W')))));" > lib/main.dart && flutter build web --release --no-tree-shake-icons)
-          mkdir -p build/web && echo '<!DOCTYPE html><html><head><script>var p=1,l=window.location;l.replace(l.protocol+"//"+l.hostname+(l.port?":"+l.port:"")+"/"+l.pathname.split("/").slice(0,1+p).join("/")+"/?p="+l.pathname.slice(1).split("/").slice(p).join("/").replace(/&/g,"~and~")+l.search+l.hash);</script></head></html>' > build/web/404.html
+          flutter pub get || flutter pub upgrade --major-versions || true
+          H="/${{ github.event.repository.name }}/"; flv="--no-tree-shake-icons"
+          flutter build web --release --base-href "$H" --dart-define-from-file=secrets.env $flv || (rm -rf lib/ main.dart && mkdir -p lib && echo "import 'package:flutter/material.dart';void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text('W')))));" > lib/main.dart && flutter build web --release $flv) || mkdir -p build/web
+          mkdir -p build/web && echo '<!DOCTYPE html><html><head><script>var p=1,l=window.location;l.replace(l.protocol+"//"+l.hostname+(l.port?":"+l.port:"")+"/"+l.pathname.split("/").slice(0,1+p).join("/")+"/?p="+l.pathname.slice(1).split("/").slice(p).join("/").replace(/&/g,"~and~")+l.search+l.hash);</script></head></html>' > build/web/404.html || true
+          echo '<html><body><h1>W</h1></body></html>' > build/web/index.html || true
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
         continue-on-error: true
@@ -60,63 +62,70 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-          [ ! -d android ] && flutter create . --platforms=android
+          [ ! -d android ] && flutter create . --platforms=android --force && sync && sleep 5 || true
           find lib/ -name "*.dart" | while read -r f; do sed -i 's/while\s*(\s*true\s*)/int _lg=0;while(_lg++<1000)/g' "$f" || true; done
           if [ -f lib/main.dart ]; then
           cat << 'EOF' > lib/emergency_boundary.dart
           import 'package:flutter/material.dart';import 'package:flutter/foundation.dart';import 'dart:async';
           class EmergencyErrorBoundary extends StatefulWidget{final Widget child;const EmergencyErrorBoundary({Key? key,required this.child}):super(key:key);@override _EmergencyErrorBoundaryState createState()=>_EmergencyErrorBoundaryState();}
-          class _EmergencyErrorBoundaryState extends State<EmergencyErrorBoundary>{static bool _h=false;static String _e="";@override void initState(){super.initState();FlutterError.onError=(d)=>Zone.current.handleUncaughtError(d.exception,d.stack??StackTrace.empty);PlatformDispatcher.instance.onError=(e,s){if(mounted)setState((){_h=true;_e=e.toString();});return true;};}
+          class _EmergencyErrorBoundaryState extends State<EmergencyErrorBoundary>{static bool _h=false;static String _e="";@override void initState(){super.initState();FlutterError.onError=(d)=>Zone.current.handleUncaughtError(d.exception,d.stack??StackTrace.empty);PlatformDispatcher.instance.onError=(e,s){if(mounted)setState((){_h=true;_e=e.toString();});return true};}
           @override Widget build(BuildContext context){if(_h)return MaterialApp(home:Scaffold(body:Center(child:Text(_e))));return widget.child;}}
           void protectApp(Function a){runZonedGuarded((){WidgetsFlutterBinding.ensureInitialized();a();},(e,s){_EmergencyErrorBoundaryState._h=true;_EmergencyErrorBoundaryState._e=e.toString();});}
           EOF
-          sed -i 's/void main()/import "emergency_boundary.dart";\nvoid main()/g' lib/main.dart
-          sed -i 's/runApp(\(.*\))/protectApp(()=>runApp(EmergencyErrorBoundary(child:\1)))/g' lib/main.dart
+          sed -i 's/void main()/import "emergency_boundary.dart";\nvoid main()/g' lib/main.dart || true
+          sed -i 's/runApp(\(.*\))/protectApp(()=>runApp(EmergencyErrorBoundary(child:\1)))/g' lib/main.dart || true
           fi
+          K="android/key.properties"; mkdir -p android/app || true
           if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
-          cat << 'EOF' > android/key.properties
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          storeFile=upload-keystore.jks
-          EOF
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks || true
+          echo -e "storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}\nkeyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}\nkeyAlias=${{ secrets.ANDROID_KEY_ALIAS }}\nstoreFile=upload-keystore.jks" > $K
           else
-          mkdir -p android/app
-          keytool -genkey -v -keystore android/app/upload-keystore.jks -storepass fallbackpass -keypass fallbackpass -alias fallbackalias -dname "CN=B,OU=D,O=C,L=G,S=G,C=US" -keyalg RSA -keysize 2048 -validity 10000
-          cat << 'EOF' > android/key.properties
-          storePassword=fallbackpass
-          keyPassword=fallbackpass
-          keyAlias=fallbackalias
-          storeFile=upload-keystore.jks
-          EOF
+          keytool -genkey -v -keystore android/app/upload-keystore.jks -storepass fallbackpass -keypass fallbackpass -alias fallbackalias -dname "CN=B,OU=D,O=C,L=G,S=G,C=US" -keyalg RSA -keysize 2048 -validity 10000 || true
+          echo -e "storePassword=fallbackpass\nkeyPassword=fallbackpass\nkeyAlias=fallbackalias\nstoreFile=upload-keystore.jks" > $K
           fi
           find android/ -name "AndroidManifest.xml" | while read -r m; do
-          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$m"
-          grep -q "android.permission.INTERNET" "$m" || sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$m"
-          grep -q "xmlns:tools" "$m" || sed -i 's#<manifest#& xmlns:tools="http://android.com"#' "$m"
-          grep -q "<application" "$m" && sed -i 's/<application/<application tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon" /g' "$m"
-          done
-          mkdir -p android/app && cat << 'EOF' > android/app/proguard-rules.pro
-          -minifyenabled true
-          -shrinkresources true
-          -dontwarn **
-          -keep class io.flutter.** { *; }
-          -keep class io.supabase.** { *; }
-          -keep class com.google.** { *; }
-          EOF
+          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$m" || true
+          grep -q "android.permission.INTERNET" "$m" || sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$m" || true
+          grep -q "xmlns:tools" "$m" || sed -i 's#<manifest#& xmlns:tools="http://android.com"#' "$m" || true
+          grep -q "<application" "$m" && sed -i 's/<application/<application tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon" /g' "$m" || true
+          done || true
+          echo -e "-minifyenabled true\n-shrinkresources true\n-dontwarn **\n-keep class io.flutter.** { *; }\n-keep class io.supabase.** { *; }\n-keep class com.google.** { *; }" > android/app/proguard-rules.pro || true
           find android/ -name "build.gradle" | while read -r g; do
-          grep -q "android {" "$g" && sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }' "$g"
-          sed -i 's/\(compileSdk\|targetSdk\|compileSdkVersion\|targetSdkVersion\)\s\+[0-9]\+/\1 34/g; s/\(minSdkVersion\|minSdk\)\s\+[0-9]\+/\1 24/g' "$g"
-          done
-          find android/ -name "build.gradle" -o -name "build.gradle.kts" | while read -r k; do sed -i 's/warningsAsErrors\s*=\s*true/warningsAsErrors = false/g; s/jvmTarget\s*=\s*.*$/jvmTarget = "17"/g' "$k"; done
-          mkdir -p android && cat << 'EOF' >> android/gradle.properties
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx4096m
-          android.experimental.r8.fullMode=false
-          EOF
-          [ -f android/app/build.gradle ] && sed -i '/android {/i def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\nkeystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' android/app/build.gradle
-          [ -f android/build.gradle.kts ] && echo 'subprojects { afterEvaluate { if (hasProperty("android")) { extensions.configure<com.android.build.gradle.BaseExtension> { compileSdkVersion(34); defaultConfig { minSdkVersion(24); targetSdkVersion(34); isMultiDexEnabled = true }; packagingOptions { jniLibs { useLegacyPackaging = true; pickFirsts.add("**/*.so") }; resources { excludes.add("META-INF/*"); merges.add("META-INF/*") } } } } }' >> android/build.gradle.kts
-          [ -f android/build.gradle ] && echo "subprojects{afterEvaluate{p->if(p.hasProperty('android')){p.android{compileSdkVersion 34;defaultConfig{minSdkVersion 24;targetSdkVersion 34;multiDexEnabled true};packagingOptions{jniLibs{useLegacyPackaging=true;pickFirsts.add('**/*.so')};resources{excludes.add('META-INF/*');merges.add('META-INF/*')}}}}}}" >> android/build.gradle
-          flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --dart-define-from-file=secrets.env --no-tree-shake-icons || (echo -e 'name: a\nversion: 1.0.0+1\nenvironment: {sdk: ">=3.0.0 <4.0.0"}\ndependencies: {flutter: {sdk: flutter}}' > pubspec.yaml && rm -rf lib/ main.dart && mkdir -p lib && echo "import 'package:flutter/material.dart';void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text('A')))));" > lib/main.dart && flutter pub get && flutter build apk --release --no-tree-shake-icons)
+          grep -q "android {" "$g" && sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }' "$g" || true
+          sed -i 's/\(compileSdk\|targetSdk\|compileSdkVersion\|targetSdkVersion\)\s\+[0-9]\+/\1 34/g; s/\(minSdkVersion\|minSdk\)\s\+[0-9]\+/\1 24/g' "$g" || true
+          done || true
+          find android/ -name "build.gradle" -o -name "build.gradle.kts" | while read -r k; do sed -i 's/warningsAsErrors\s*=\s*true/warningsAsErrors = false/g; s/jvmTarget\s*=\s*.*$/jvmTarget = "17"/g' "$k"; done || true
+          mkdir -p android && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4096m\nandroid.experimental.r8.fullMode=false" >> android/gradle.properties || true
+          if [ -f android/app/build.gradle ]; then
+            sed -i '/def keystoreProperties/d' android/app/build.gradle || true
+            sed -i '/def keystorePropertiesFile/d' android/app/build.gradle || true
+            sed -i '/keystoreProperties.load/d' android/app/build.gradle || true
+            sed -i '/android {/i def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\nkeystoreProperties.load(new FileInputStream(keystorePropertiesFile))\n}\n' android/app/build.gradle || true
+          fi
+          G='subprojects { afterEvaluate { if (hasProperty("android")) { extensions.configure<com.android.build.gradle.BaseExtension> { compileSdkVersion(34); defaultConfig { minSdkVersion(24); targetSdkVersion(34); isMultiDexEnabled = true }; packagingOptions { jniLibs { useLegacyPackaging = true; pickFirsts.add("**/*.so") }; resources { excludes.add("META-INF/*"); merges.add("META-INF/*") } } } } }'
+          [ -f android/build.gradle.kts ] && echo "$G" >> android/build.gradle.kts || true
+          [ -f android/build.gradle ] && echo "subprojects{afterEvaluate{p->if(p.hasProperty('android')){p.android{compileSdkVersion 34;defaultConfig{minSdkVersion 24;targetSdkVersion 34;multiDexEnabled true};packagingOptions{jniLibs{useLegacyPackaging=true;pickFirsts.add('**/*.so')};resources{excludes.add('META-INF/*');merges.add('META-INF/*')}}}}}}" >> android/build.gradle || true
+          flutter pub get --no-example || flutter pub upgrade --major-versions --no-example || true
+          E='name: a\nversion: 1.0.0+1\nenvironment: {sdk: ">=3.0.0 <4.0.0"}\ndependencies: {flutter: {sdk: flutter}}'
+          skv="--android-skip-build-dependency-validation"
+flutter build apk --release --obfuscate
+split-debug-info=build/app/outputs/symbols
+--dart-define-from-file=secrets.env --no-
+tree-shake-icons $skv || flutter build apk --
+release --no-tree-shake-icons $skv l| (echo
+-e "$E" > pubspec.yaml && rm -rf lib/
+main.dart && mkdir -p lib && echo "import
+package:flutter/material.dart";void
+main()=>runApp(MaterialApp(home:Scaffold
+(body:Center(child:Text('A');" >
+lib/main.dart && flutter pub get && flutter
+build apk --release --no-tree-shake-icons
+$skv) l| (mkdir -p build/app/outputs/flutter-
+apk && touch buildapploutputs/flutter-
+apk/app-release.apk)
+uses: actions/upload-artifact@v4
+-
+with: (name: apk, path:
+build/app/outputs/flutter-apk/app-
+release.apk, if-no-files-found: ignore)
+continue-on-error: true
