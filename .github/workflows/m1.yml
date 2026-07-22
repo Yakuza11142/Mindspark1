@@ -24,13 +24,12 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           flutter clean && flutter pub get
-          sed -i 's|<head>|<head><base href="/|' web/index.html || true
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env
-          cp build/web/index.html build/web/404.html || true
-        continue-on-error: true
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=secrets.env --web-renderer canvaskit
+          cat << 'EOF' > build/web/404.html
+          <!DOCTYPE html><html><head><script>var p=1,l=window.location;l.replace(l.protocol+'//'+l.hostname+(l.port?':'+l.port:'')+'/'+l.pathname.split('/').slice(0,1+p).join('/')+'/?p='+l.pathname.slice(1).split('/').slice(p).join('/').replace(/&/g,'~and~')+l.search+l.hash);</script></head></html>
+          EOF
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
-        continue-on-error: true
   deploy-web:
     needs: web
     runs-on: ubuntu-latest
@@ -61,28 +60,38 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-          rm -rf ~/.gradle/caches/ && flutter pub get || true
-          flutter pub run flutter_launcher_icons || true
+          flutter pub get && flutter pub run flutter_launcher_icons || true
           if [ -f "lib/main.dart" ]; then
             cat << 'EOF' > lib/emergency_boundary.dart
-          import 'package:flutter/material.dart';
-          class EmergencyErrorBoundary extends StatefulWidget { final Widget child; const EmergencyErrorBoundary({Key? key, required this.child}) : super(key: key); @override _EmergencyErrorBoundaryState createState() => _EmergencyErrorBoundaryState(); }
-          class _EmergencyErrorBoundaryState extends State<EmergencyErrorBoundary> { static bool _hasError = false; static String _err = ""; @override void initState() { super.initState(); FlutterError.onError = (d) => setState(() { _hasError = true; _err = d.exceptionAsString(); }); }
-            @override Widget build(BuildContext context) { if (_hasError) return MaterialApp(debugShowCheckedModeBanner: false, home: Scaffold(backgroundColor: const Color(0xFF13131A), body: SafeArea(child: Padding(padding: const EdgeInsets.all(24), child: Center(child: SingleChildScrollView(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.security, color: Colors.amber, size: 64), const SizedBox(height: 16), const Text("APPLICATION RECOVERY", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)), const SizedBox(height: 12), Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(12)), child: Text(_err.isNotEmpty ? _err : "Init bypass.", style: const TextStyle(color: Colors.redAccent, fontFamily: 'monospace', fontSize: 12))), const SizedBox(height: 24), ElevatedButton(onPressed: () => setState(() { _hasError = false; }), child: const Text("Bypass & Reload UI"))]))))))); return widget.child; } }
+          import 'package:flutter/material.dart';class EmergencyErrorBoundary extends StatefulWidget{final Widget child;const EmergencyErrorBoundary({Key?key,required this.child}):super(key:key);@override _EmergencyErrorBoundaryState createState()=>_EmergencyErrorBoundaryState();}
+          class _EmergencyErrorBoundaryState extends State<EmergencyErrorBoundary>{static bool _h=false;static String _e="";@override void initState(){super.initState();FlutterError.onError=(d)=>setState((){_h=true;_e=d.exceptionAsString();});}
+          @override Widget build(BuildContext context){if(_h)return MaterialApp(debugShowCheckedModeBanner:false,home:Scaffold(backgroundColor:const Color(0xFF13131A),body:SafeArea(child:Padding(padding:const EdgeInsets.all(24),child:Center(child:SingleChildScrollView(child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[const Icon(Icons.security,color:Colors.amber,size:64),const SizedBox(height:16),const Text("APPLICATION RECOVERY",style:TextStyle(color:Colors.white,fontSize:18,fontWeight:FontWeight.bold)),const SizedBox(height:12),Container(padding:const EdgeInsets.all(16),decoration:BoxDecoration(color:Colors.black38,borderRadius:BorderRadius.circular(12)),child:Text(_e.isNotEmpty?_e:"Init bypass.",style:const TextStyle(color:Colors.redAccent,fontFamily:'monospace',fontSize:12))),const SizedBox(height:24),ElevatedButton(onPressed:()=>setState((){_h=false;}),child:const Text("Bypass & Reload UI"))])))))));return widget.child;}}
           EOF
-            sed -i 's/void main()/import "emergency_boundary.dart";\nvoid main()/g' lib/main.dart || true
-            sed -i 's/{/{ WidgetsFlutterBinding.ensureInitialized(); FlutterError.onError = (d) { }; /' lib/main.dart || true
-            sed -i 's/runApp(\(.*\))/runApp(EmergencyErrorBoundary(child: \1))/g' lib/main.dart || true
+            sed -i 's/void main()/import "emergency_boundary.dart";\nvoid main()/g; s/void main() async {/void main() async { WidgetsFlutterBinding.ensureInitialized(); FlutterError.onError = (d) { }; /g; s/void main() {/void main() { WidgetsFlutterBinding.ensureInitialized(); FlutterError.onError = (d) { }; /g; s/runApp(\(.*\))/runApp(EmergencyErrorBoundary(child: \1))/g' lib/main.dart || true
           fi
           find android/ -name "AndroidManifest.xml" -type f | while read -r manifest; do
             sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$manifest" || true
             grep -q "android.permission.INTERNET" "$manifest" || sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.CAMERA"\/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"\/>' "$manifest" || true
             grep -q "xmlns:tools" "$manifest" || sed -i 's/<manifest/& xmlns:tools="http:\/\/://android.com\/tools"/' "$manifest" || true
-            grep -q "<application" "$manifest" && sed -i 's/<application/& tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon"/' "$manifest" || true
+            grep -q "<application" "$manifest" && sed -i 's/<application/<application tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon" /g' "$manifest" || true
           done
+          mkdir -p android/app && cat << 'EOF' > android/app/proguard-rules.pro
+          -minifyenabled true
+          -shrinkresources true
+          -optimizationpasses 5
+          -allowaccessmodification
+          -keepattributes Signature,InnerClasses,EnclosingMethod,Annotation
+          -dontwarn okhttp3.**
+          -dontwarn okio.**
+          -dontwarn javax.annotation.**
+          -keep class com.google.crypto.tink.** { *; }
+          -keep class io.supabase.** { *; }
+          -keep class com.google.firebase.** { *; }
+          -keep class com.google.gson.** { *; }
+          EOF
           find android/ -name "build.gradle" -type f | while read -r gradle_file; do
-            grep -q "android {" "$gradle_file" && sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }\n    packagingOptions { jniLibs { pickFirsts.add("**/*.so") } resources { excludes.add("META-INF/*") } }' "$gradle_file" || true
-            sed -i 's/\(compileSdk\|targetSdk\|compileSdkVersion\|targetSdkVersion\)\s\+[0-9]\+/\1 35/g; s/\(minSdkVersion\|minSdk\)\s\+[0-9]\+/\1 24/g' "$gradle_file" || true
+            grep -q "android {" "$gradle_file" && sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }\n    packagingOptions { jniLibs { useLegacyPackaging = true; pickFirsts.add("**/*.so") } resources { excludes.add("META-INF/*") } }' "$gradle_file" || true
+            sed -i 's/\(compileSdk\|targetSdk\|compileSdkVersion\|targetSdkVersion\)\s\+[0-9]\+/\1 34/g; s/\(minSdkVersion\|minSdk\)\s\+[0-9]\+/\1 24/g' "$gradle_file" || true
           done
           find android/ -name "build.gradle" -type f -o -name "build.gradle.kts" -type f | while read -r kfile; do
             sed -i 's/warningsAsErrors\s*=\s*true/warningsAsErrors = false/g; s/jvmTarget\s*=\s*.*$/jvmTarget = "17"/g' "$kfile" || true
@@ -91,10 +100,10 @@ jobs:
           android.useAndroidX=true
           android.enableJetifier=true
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
-          android.experimental.r8.fullMode=false
+          android.experimental.r8.fullMode=true
           EOF
           [ -f android/build.gradle ] && cat << 'EOF' >> android/build.gradle
-          subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdkVersion 35; defaultConfig { minSdkVersion 24; targetSdkVersion 35; multiDexEnabled true } } } }; configurations.all { resolutionStrategy { force 'androidx.core:core:1.13.1'; force 'androidx.annotation:annotation:1.8.0' }; exclude group: 'com.google.guava', module: 'listenablefuture'; exclude group: 'com.google.android.gms', module: 'play-services-measurement-base' } }
+          subprojects { afterEvaluate { project -> if (project.hasProperty('android')) { project.android { compileSdkVersion 34; defaultConfig { minSdkVersion 24; targetSdkVersion 34; multiDexEnabled true; proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro' } } } }; configurations.all { resolutionStrategy { force 'androidx.core:core:1.13.1'; force 'androidx.annotation:annotation:1.8.0' }; exclude group: 'com.google.guava', module: 'listenablefuture'; exclude group: 'com.google.android.gms', module: 'play-services-measurement-base' } }
           EOF
           cat << 'EOF' > android/key.properties
           storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
@@ -103,16 +112,10 @@ jobs:
           storeFile=../upload-keystore.jks
           EOF
           if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks; else touch android/upload-keystore.jks; fi
-          mkdir -p build/app/outputs/flutter-apk/
-          flutter build apk --release --no-shrink --dart-define-from-file=secrets.env || (
-            cd .. && mkdir -p bk_build && cd bk_build && flutter create core_container --platforms=android --android-language kotlin --project-name=mindspark1
-            cd core_container && cp ../../Mindspark1/secrets.env . || true && flutter build apk --release --no-shrink --dart-define-from-file=secrets.env || true
-            if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then cp build/app/outputs/flutter-apk/app-release.apk ../../Mindspark1/build/app/outputs/flutter-apk/app-release.apk; else mkdir -p ../../Mindspark1/build/app/outputs/flutter-apk/ && touch ../../Mindspark1/build/app/outputs/flutter-apk/app-release.apk; fi
-            exit 0
-          )
-        continue-on-error: true
+          mkdir -p build/app/outputs/flutter-apk/ symbols/
+          flutter build apk --release --obfuscate --split-debug-info=symbols/ --dart-define-from-file=secrets.env
       - uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: build/app/outputs/flutter-apk/
-          if-no-files-found: warn
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
