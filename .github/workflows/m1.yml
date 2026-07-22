@@ -38,38 +38,6 @@ jobs:
           rm -rf .dart_tool build
           flutter pub get
 
-      # BOOTSTRAP SHIELD: Safely updates index.html to bind your compilation keys to the web engine lifecycle
-      - name: Patch HTML Web Initialization Engines
-        run: |
-          python3 -c '
-          import os
-          hpath = "web/index.html"
-          if os.path.exists(hpath):
-              with open(hpath, "r", encoding="utf-8") as f:
-                  content = f.read()
-
-              bootstrap_patch = """
-                <script>
-                  window.addEventListener("flutter-first-frame", function() {
-                    console.log("Mind Spark Engine successfully mounted.");
-                  });
-                  window.addEventListener("error", function(e) {
-                    if (e.message.includes("flutter") || e.message.includes("dart")) {
-                      console.error("Runtime configuration catch:", e.message);
-                    }
-                  });
-                </script>
-                <script src="flutter_bootstrap.js" async></script>
-              """
-              
-              if "<script src=\"flutter_bootstrap.js\" async></script>" in content:
-                  content = content.replace("<script src=\"flutter_bootstrap.js\" async></script>", bootstrap_patch)
-              
-              with open(hpath, "w", encoding="utf-8") as f:
-                  f.write(content)
-              print("Web initialization scripts successfully stabilized.")
-          '
-
       - name: Compile Release Web Bundle
         run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
 
@@ -93,9 +61,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: false}
 
-      # XML SHIELD: Directly overwrites your AndroidManifest.xml with structured properties.
-      # This guarantees that the virtual compiler sees perfectly formatted XML and never drops out on manifest merger exceptions.
-      - name: Inject Safe Production Android Manifest XML
+      # VIRTUAL INJECTION SHIELD: Overwrites your repo's native file on the runner workspace completely.
+      - name: Overwrite Native Manifest with Perfect Placeholder Template
         run: |
           mkdir -p android/app/src/main
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
@@ -103,9 +70,12 @@ jobs:
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
               <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
               
               <application
                   android:label="Mindspark"
+                  android:name="androidx.multidex.MultiDexApplication"
                   android:icon="@mipmap/ic_launcher"
                   android:usesCleartextTraffic="true"
                   android:hardwareAccelerated="true">
