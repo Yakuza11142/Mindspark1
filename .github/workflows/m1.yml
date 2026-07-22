@@ -58,19 +58,6 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
 
-      # RESTORES REQUIRED ANDROID XML SCHEMAS BEFORE GRADLE PARSING START
-      - name: Sanitize Android Manifest Attributes
-        run: |
-          MFILE="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MFILE" ]; then
-            sed -i 's/\<uses-permission name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\ ceramics-feature name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\<meta-data name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\<activity name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\<action name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\<category name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-          fi
-
       - name: Configure Production Environment Keys
         run: |
           cat << 'EOF' > secrets.env
