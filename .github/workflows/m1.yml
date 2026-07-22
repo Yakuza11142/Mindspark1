@@ -58,6 +58,15 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
 
+      # ACCURATE PRE-BUILD REPAIR: Restores missing standard namespaces across all broken lines
+      - name: Repair Corrupted Manifest Namespaces
+        run: |
+          MFILE="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MFILE" ]; then
+            sed -i 's/\bname=/android:name=/g' "$MFILE"
+            sed -i 's/android:android:/android:/g' "$MFILE"
+          fi
+
       - name: Configure Production Environment Keys
         run: |
           cat << 'EOF' > secrets.env
