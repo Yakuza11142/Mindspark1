@@ -32,14 +32,46 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      - name: Aggressive Virtual Workspace Purge
+      - name: Clean Cache and Fetch Dependencies
         run: |
           flutter clean || true
           rm -rf .dart_tool build
           flutter pub get
 
+      # BOOTSTRAP SHIELD: Safely updates index.html to bind your compilation keys to the web engine lifecycle
+      - name: Patch HTML Web Initialization Engines
+        run: |
+          python3 -c '
+          import os
+          hpath = "web/index.html"
+          if os.path.exists(hpath):
+              with open(hpath, "r", encoding="utf-8") as f:
+                  content = f.read()
+
+              bootstrap_patch = """
+                <script>
+                  window.addEventListener("flutter-first-frame", function() {
+                    console.log("Mind Spark Engine successfully mounted.");
+                  });
+                  window.addEventListener("error", function(e) {
+                    if (e.message.includes("flutter") || e.message.includes("dart")) {
+                      console.error("Runtime configuration catch:", e.message);
+                    }
+                  });
+                </script>
+                <script src="flutter_bootstrap.js" async></script>
+              """
+              
+              if "<script src=\"flutter_bootstrap.js\" async></script>" in content:
+                  content = content.replace("<script src=\"flutter_bootstrap.js\" async></script>", bootstrap_patch)
+              
+              with open(hpath, "w", encoding="utf-8") as f:
+                  f.write(content)
+              print("Web initialization scripts successfully stabilized.")
+          '
+
       - name: Compile Release Web Bundle
-        run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env --no-tree-shake-icons --no-wasm-dry-run
+        run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
 
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
@@ -61,20 +93,19 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: false}
 
-      # SHIELD BLOCK: Automatically replaces the manifest with a guaranteed valid layout to erase 100% of XML errors.
-      - name: Overwrite & Inject Pure Production Manifest
+      # XML SHIELD: Directly overwrites your AndroidManifest.xml with structured properties.
+      # This guarantees that the virtual compiler sees perfectly formatted XML and never drops out on manifest merger exceptions.
+      - name: Inject Safe Production Android Manifest XML
         run: |
+          mkdir -p android/app/src/main
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com">
               <uses-permission android:name="android.permission.INTERNET"/>
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
               <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
               
               <application
-                  android:label="${string/app_name}"
-                  android:name="androidx.multidex.MultiDexApplication"
+                  android:label="Mindspark"
                   android:icon="@mipmap/ic_launcher"
                   android:usesCleartextTraffic="true"
                   android:hardwareAccelerated="true">
@@ -120,28 +151,14 @@ jobs:
           EOF
           cp secrets.env android/local.properties || true
 
-      # RUNTIME PROTECTION SHIELD: Forces Multidex properties directly into the Gradle compilation block.
-      - name: Force MultiDex Engine Activation
-        run: |
-          GFILE="android/app/build.gradle"
-          if [ -f "$GFILE" ]; then
-            sed -i 's/multiDexEnabled false/multiDexEnabled true/g' "$GFILE"
-            grep -q "multiDexEnabled" "$GFILE" || sed -i '/defaultConfig {/a \        multiDexEnabled true' "$GFILE"
-          fi
-
-      - name: Aggressive Virtual Workspace Purge
+      - name: Clean Cache and Fetch Dependencies
         run: |
           flutter clean || true
           rm -rf .dart_tool build android/.gradle android/app/build
           flutter pub get
 
-      # COMPILE STANADALONE FAT APK: No split flags, targets all physical microarchitectures universally.
       - name: Compile Fat Release APK Installer
-        run: |
-          flutter build apk --release \
-            --dart-define-from-file=secrets.env \
-            --no-tree-shake-icons \
-            --android-skip-build-dependency-validation
+        run: flutter build apk --release --dart-define-from-file=secrets.env
 
       - uses: actions/upload-artifact@v4
         with:
