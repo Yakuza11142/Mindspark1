@@ -64,7 +64,7 @@ jobs:
           MFILE="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MFILE" ]; then
             sed -i 's/\<uses-permission name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
-            sed -i 's/\<uses-feature name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
+            sed -i 's/\ ceramics-feature name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
             sed -i 's/\<meta-data name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
             sed -i 's/\<activity name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
             sed -i 's/\<action name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$MFILE"
@@ -87,18 +87,6 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-
-      - name: Initialize Android Security Profiles
-        run: |
-          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
-            cat << 'EOF' > android/key.properties
-            storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-            keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-            keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-            storeFile=upload-keystore.jks
-            EOF
-          fi
 
       - name: Resolve Project Package Trees
         run: flutter pub get
