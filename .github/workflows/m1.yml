@@ -61,7 +61,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: false}
 
-      # VIRTUAL INJECTION SHIELD: Overwrites your repo's native file on the runner workspace completely.
+      # ANDROID RUNNER SHIELD: Forces this specific virtual machine to completely 
+      # overwrite your repo's broken manifest file with a flawless layout before compiling.
       - name: Overwrite Native Manifest with Perfect Placeholder Template
         run: |
           mkdir -p android/app/src/main
