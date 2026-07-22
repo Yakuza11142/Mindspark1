@@ -96,7 +96,7 @@ jobs:
           EOF
           fi
           find android/ -name "AndroidManifest.xml" -type f | while read -r m; do
-          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; s/\bname=/android:name=/g; s/android:android:/android:/g' "$m" || true
+          sed -i 's/\(<uses-permission\|<uses-feature\|<meta-data\|<activity\|<action\|<category\|<service\|<receiver\|<provider\)\s\+name=/&"android:name"=/g; s/"android:name"=/"/g; m/\bname=/android:name=/g; s/android:android:/android:/g' "$m" || true
           grep -q "android.permission.INTERNET" "$m" || sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>' "$m" || true
           grep -q "xmlns:tools" "$m" || sed -i 's/<manifest/& xmlns:tools="http:\/\/://android.com\/tools"/' "$m" || true
           grep -q "<application" "$m" && sed -i 's/<application/<application tools:replace="android:label,android:icon,android:name" tools:ignore="MissingApplicationIcon" /g' "$m" || true
