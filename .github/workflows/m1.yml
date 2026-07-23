@@ -1,78 +1,52 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: false
-
-      - name: Environment Setup
-        run: |
-          cat << 'EOF' > env_raw.txt
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-          
-          python3 -c '
-import json, os
-s = {}
-if os.path.exists("env_raw.txt"):
-    with open("env_raw.txt", "r", encoding="utf-8") as f:
-        for line in f:
-            if "=" in line:
-                k, v = line.split("=", 1)
-                s[k.strip()] = v.strip()
-with open("secrets.json", "w", encoding="utf-8") as f:
-    json.dump(s, f)
-          '
-          mkdir -p android && echo "storePassword=\nkeyPassword=\nkeyAlias=\nstoreFile=" > android/local.properties
-
-      - name: Core Project Prep
-        run: |
-          sudo chmod -R 777 . || true
-          find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-          flutter clean || true
-          flutter pub get
-
-      - name: Flutter Web Compilation
-        run: |
-          flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-
-      - name: Flutter Android Compilation
-        run: |
-          flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
+      with: {distribution: temurin, java-version: "17"}
+    - uses: subosito/flutter-action@v2
+      with: {channel: stable, cache: false}
+    - name: Config
+      run: |
+        cat << 'EOF' > secrets.json
+        {
+          "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+          "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+          "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
+          "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
+          "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+          "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
+          "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
+          "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
+          "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
+          "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
+          "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
+          "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
+        }
+        EOF
+        mkdir -p android && echo "storePassword=\nkeyPassword=\nkeyAlias=\nstoreFile=" > android/local.properties
+    - name: Setup
+      run: |
+        sudo chmod -R 777 . || true
+        find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+        flutter clean || true
+        flutter pub get
+    - name: Web
+      run: |
+        flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
+    - uses: actions/upload-pages-artifact@v3
+      with: {path: build/web}
+    - name: Android
+      run: |
+        flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
+    - uses: actions/upload-artifact@v4
+      with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/deploy-pages@v4
+    - uses: actions/deploy-pages@v4
