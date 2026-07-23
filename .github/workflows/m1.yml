@@ -29,22 +29,15 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      # ARCHITECTURE CAPTURE: Safely saves your 23k lines of logic into a temporary backup folder 
-      # so that the automated creation tool cannot overwrite your hard work.
       - name: Backup Custom Source Code and Purge Corrupted Structures
         run: |
-          echo "Preserving your custom 23,000 lines of code..."
           mkdir -p /tmp/user_source
           cp -r lib pubspec.yaml /tmp/user_source/
-          
-          echo "Wiping local directory structures to clear file exceptions..."
           rm -rf android web ios macos windows linux .dart_tool build || true
           find . -name "AndroidManifest.xml" -type f -delete || true
           find . -name "index.html" -type f -delete || true
 
-      # RE-SCAFFOLDING BLOCK: Generates clean platform layouts natively inside the host machine runner
-      # to prevent Docker file-permission ownership deadlocks.
-      - name: Generate Spotless Mobile and Web Scaffolding
+      - name: Setup Pristine Flutter Environment
         uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -53,12 +46,9 @@ jobs:
       - name: Rebuild Clean Platform Scaffolding Wrappers
         run: |
           flutter create . --platforms=android,web --overwrite
-          
-          echo "Restoring your custom source code and dependencies over the empty template..."
           rm -rf lib pubspec.yaml
           cp -r /tmp/user_source/lib /tmp/user_source/pubspec.yaml ./
 
-      # PERMISSION SHIELD: Explicitly updates the file paths to ensure the runner has full write permission.
       - name: Inject Validated Android Manifest XML Layout
         run: |
           rm -f android/app/src/main/AndroidManifest.xml || true
@@ -132,24 +122,44 @@ jobs:
                   f.write(content)
           '
 
-      - name: Seed System Properties Keys
+      - name: Seed System Properties Keys and Configure MultiDex
         run: |
           cp secrets.env android/local.properties || true
           GFILE="android/app/build.gradle"
-          # If the scaffolding generated a newer Kotlin build script format, find the alternative gradle file
           if [ ! -f "$GFILE" ] && [ -f "android/app/build.gradle.kts" ]; then
             GFILE="android/app/build.gradle.kts"
           fi
-          
           if [ -f "$GFILE" ]; then
             sed -i 's/multiDexEnabled false/multiDexEnabled true/g' "$GFILE"
             grep -q "multiDexEnabled" "$GFILE" || sed -i '/defaultConfig {/a \        multiDexEnabled = true' "$GFILE"
           fi
 
-      - name: Fetch Clean Dependencies
+      - name: Fetch Dependencies and Patch ArCore Gradle Typos
         run: |
           flutter clean || true
           flutter pub get
+          
+          # GRADLE FIXED INTERCEPTOR: Scans the pub-cache system registry, searches out 
+          # the broken configuration text inside arcore_flutter_plus, and bypasses it safely.
+          python3 -c '
+          import os
+          target_path = os.path.expanduser("~/.pub-cache/hosted/pub.dev/arcore_flutter_plus-1.0.2/android/build.gradle")
+          if os.path.exists(target_path):
+              print("Targeting arcore_flutter_plus build script...")
+              with open(target_path, "r", encoding="utf-8") as f:
+                  lines = f.readlines()
+              
+              fixed_lines = []
+              for line in lines:
+                  # If the line contains the illegal configurations.all call, comment it out safely
+                  if "configurations.all" in line:
+                      line = line.replace("configurations.all", "// configurations.all (Patched for Modern Gradle Stability)")
+                  fixed_lines.append(line)
+                  
+              with open(target_path, "w", encoding="utf-8") as f:
+                  f.writelines(fixed_lines)
+              print("Arcore Gradle properties successfully updated.")
+          '
 
       - name: Compile Release Web Bundle
         run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
