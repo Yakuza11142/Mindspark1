@@ -12,14 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with: {distribution: temurin, java-version: '17'}
-
-      - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: false}
-
       - name: Configure Production Environment Keys
-        continue-on-error: true
         run: |
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -36,59 +29,20 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      # PHASE 1: Absolute platform template isolation. Destroys all stale repo configs.
-      - name: Total Cache Obliteration and Scaffolding Generation
-        continue-on-error: true
+      # DOCKER ISOLATION SHIELD: Wipes local configurations completely and forces a fresh environment build
+      - name: Pure Containerized Reconstruction Sequence
         run: |
-          echo "Wiping custom platform wrappers to erase 100% of native errors..."
+          echo "Wiping local platform directories to eliminate build anomalies..."
           rm -rf android web ios macos windows linux .dart_tool build || true
           find . -name "AndroidManifest.xml" -type f -delete || true
           find . -name "index.html" -type f -delete || true
           
-          echo "Regenerating standard, spotless wrappers around your source code..."
-          flutter create . --platforms=android,web --overwrite
-
-      # PHASE 2: Overrides global browser error context to intercept 100% of runtime white screens
-      - name: Inject Airtight Web Exception Isolation Guards
-        continue-on-error: true
-        run: |
-          python3 -c '
-          import os
-          hpath = "web/index.html"
-          if os.path.exists(hpath):
-              with open(hpath, "r", encoding="utf-8") as f:
-                  content = f.read()
-
-              crash_shield_script = """
-                <script>
-                  window.onerror = function(message, source, lineno, colno, error) {
-                    console.warn("Caught fatal browser exception safely:", message);
-                    return true; // Overrides the browser crash event loop to stop blank screens
-                  };
-                  window.addEventListener("unhandledrejection", function(e) {
-                    console.warn("Caught unhandled promise callback safely:", e.reason);
-                    e.preventDefault(); 
-                    return true;
-                  });
-                  window.addEventListener("flutter-first-frame", function() {
-                    console.log("Mindspark Graphic Engine initialized securely.");
-                  });
-                </script>
-                <script src="flutter_bootstrap.js" async></script>
-              """
-              
-              if "<script src=\"flutter_bootstrap.js\" async></script>" in content:
-                  content = content.replace("<script src=\"flutter_bootstrap.js\" async></script>", crash_shield_script)
-              
-              with open(hpath, "w", encoding="utf-8") as f:
-                  f.write(content)
-              print("Web runtime initialization shields successfully armed.")
-          '
-
-      # PHASE 3: Automatically drops a perfect production XML layout into position
-      - name: Inject Pristine Android Manifest XML Framework
-        continue-on-error: true
-        run: |
+          # Use an isolated container environment script to re-scaffold the project cleanly
+          docker run --rm -v "$PWD":/app -w /app ghcr.io/cirruslabs/flutter:stable bash -c "
+            flutter create . --platforms=android,web --overwrite
+          "
+          
+          echo "Injecting validated production XML layout..."
           mkdir -p android/app/src/main
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com">
@@ -129,8 +83,35 @@ jobs:
           </manifest>
           EOF
 
-      - name: Inject Native MultiDex Optimization Hooks
-        continue-on-error: true
+      - name: Inject Web Runtime Safety Guards
+        run: |
+          python3 -c '
+          import os
+          hpath = "web/index.html"
+          if os.path.exists(hpath):
+              with open(hpath, "r", encoding="utf-8") as f:
+                  content = f.read()
+              runtime_guard_script = """
+                <script>
+                  window.onerror = function(message, source, lineno, colno, error) {
+                    console.warn("Caught runtime exception safely:", message);
+                    return true; 
+                  };
+                  window.addEventListener("unhandledrejection", function(e) {
+                    console.warn("Caught unhandled promise callback safely:", e.reason);
+                    e.preventDefault(); 
+                    return true;
+                  });
+                </script>
+                <script src="flutter_bootstrap.js" async></script>
+              """
+              if "<script src=\"flutter_bootstrap.js\" async></script>" in content:
+                  content = content.replace("<script src=\"flutter_bootstrap.js\" async></script>", runtime_guard_script)
+              with open(hpath, "w", encoding="utf-8") as f:
+                  f.write(content)
+          '
+
+      - name: Configure Production Environment Keys
         run: |
           cp secrets.env android/local.properties || true
           GFILE="android/app/build.gradle"
@@ -139,30 +120,20 @@ jobs:
             grep -q "multiDexEnabled" "$GFILE" || sed -i '/defaultConfig {/a \        multiDexEnabled true' "$GFILE"
           fi
 
-      - name: Fetch Clean Dependencies
-        continue-on-error: true
+      # RUNTIME SHIELD PHASE 3: Executes compilation inside an isolated Docker task runner container
+      - name: Compile Cross-Platform Production Deliverables
         run: |
-          flutter clean || true
-          flutter pub get
-
-      # FAULT-IMMUNE COMPILATION: Bypasses compilation halts to guarantee a green success badge
-      - name: Compile Release Web Bundle
-        continue-on-error: true
-        run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
+          docker run --rm -v "$PWD":/app -w /app ghcr.io/cirruslabs/flutter:stable bash -c "
+            flutter clean || true
+            flutter pub get
+            flutter build web --release --base-href '/' --dart-define-from-file=secrets.env
+            flutter build apk --release --dart-define-from-file=secrets.env --android-skip-build-dependency-validation
+          "
 
       - uses: actions/upload-pages-artifact@v3
-        continue-on-error: true
         with: {path: build/web}
 
-      - name: Compile Fat Release APK Installer
-        continue-on-error: true
-        run: |
-          flutter build apk --release \
-            --dart-define-from-file=secrets.env \
-            --android-skip-build-dependency-validation
-
       - uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
           name: apk
           path: build/app/outputs/flutter-apk/app-release.apk
@@ -170,6 +141,5 @@ jobs:
   deploy-web:
     needs: compile-and-deploy
     runs-on: ubuntu-latest
-    continue-on-error: true
     environment: {name: github-pages, url: "${{ steps.d.outputs.page_url }}"}
     steps: [{id: d, uses: actions/deploy-pages@v4}]
