@@ -44,7 +44,7 @@ jobs:
     - name: Eraser Web Build
       run: |
         mkdir -p web && echo '<html><body><script src="flutter_bootstrap.js" async></script></body></html>' > web/index.html
-        flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
+        flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
     - name: Eraser Android Build
