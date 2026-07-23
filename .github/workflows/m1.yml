@@ -6,14 +6,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Eraser 1
-      run: sudo chmod -R 777 . || true
+    - run: sudo chmod -R 777 . || true
     - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: "17"}
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Eraser 2
+    - name: Eraser Keys
       env:
+        KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
         SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
         GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
@@ -26,23 +26,30 @@ jobs:
         PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
         MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
         ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
-      run: python3 -c 'import json, os; keys = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "GEMINI_API_KEY", "OPENAI_KEY", "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET", "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"]; data = {k: os.environ.get(k, "").strip().replace("\r", "").replace("\n", "").replace("\"", "") for k in keys}; f = open("secrets.json", "w"); json.dump(data, f); f.close()'
-    - name: Eraser 3
-      run: mkdir -p android && echo -e "storePassword=\nkeyPassword=\nkeyAlias=\nstoreFile=" > android/local.properties || true
-    - name: Eraser 4
-      run: find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-    - name: Eraser 5
-      run: flutter clean || true
-    - name: Eraser 6
-      run: flutter pub get || true
-    - name: Eraser 7
-      run: python3 -c 'import os; p = "web/index.html"; f = open(p, "w") if not os.path.exists(p) else open(p, "r+"); t = f.read() if hasattr(f, "read") else ""; g = """<script>window.onerror=function(){return true;};window.addEventListener("unhandledrejection",function(e){e.preventDefault();});</script><script src="flutter_bootstrap.js" async></script>"""; f.write(g) if "window.onerror" not in t else None; f.close()'
-    - name: Compile Web
-      run: flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
+      run: |
+        echo "{" > secrets.json
+        first=true
+        for k in $KEYS_DATA; do
+          val=$(eval echo \$$k | tr -d '\r' | tr -d '\n' | tr -d '"')
+          if [ "$first" = true ]; then first=false; else echo "," >> secrets.json; fi
+          echo "\"$k\": \"$val\"" >> secrets.json
+        done
+        echo "}" >> secrets.json
+        mkdir -p android && echo "storePassword=" > android/local.properties
+    - name: Eraser Clean
+      run: |
+        find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+        flutter clean || true
+        flutter pub get || true
+    - name: Eraser Web Build
+      run: |
+        mkdir -p web && echo '<html><body><script src="flutter_bootstrap.js" async></script></body></html>' > web/index.html
+        flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Compile Android
-      run: flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
+    - name: Eraser Android Build
+      run: |
+        flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
     - uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
   deploy:
