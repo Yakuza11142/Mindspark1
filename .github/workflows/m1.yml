@@ -29,21 +29,42 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
 
-      # DOCKER ISOLATION SHIELD: Wipes local configurations completely and forces a fresh environment build
-      - name: Pure Containerized Reconstruction Sequence
+      # ARCHITECTURE CAPTURE: Safely saves your 23k lines of logic into a temporary backup folder 
+      # so that the automated creation tool cannot overwrite your hard work.
+      - name: Backup Custom Source Code and Purge Corrupted Structures
         run: |
-          echo "Wiping local platform directories to eliminate build anomalies..."
+          echo "Preserving your custom 23,000 lines of code..."
+          mkdir -p /tmp/user_source
+          cp -r lib pubspec.yaml /tmp/user_source/
+          
+          echo "Wiping local directory structures to clear file exceptions..."
           rm -rf android web ios macos windows linux .dart_tool build || true
           find . -name "AndroidManifest.xml" -type f -delete || true
           find . -name "index.html" -type f -delete || true
+
+      # RE-SCAFFOLDING BLOCK: Generates clean platform layouts natively inside the host machine runner
+      # to prevent Docker file-permission ownership deadlocks.
+      - name: Generate Spotless Mobile and Web Scaffolding
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: false
+
+      - name: Rebuild Clean Platform Scaffolding Wrappers
+        run: |
+          flutter create . --platforms=android,web --overwrite
           
-          # Use an isolated container environment script to re-scaffold the project cleanly
-          docker run --rm -v "$PWD":/app -w /app ghcr.io/cirruslabs/flutter:stable bash -c "
-            flutter create . --platforms=android,web --overwrite
-          "
-          
-          echo "Injecting validated production XML layout..."
+          echo "Restoring your custom source code and dependencies over the empty template..."
+          rm -rf lib pubspec.yaml
+          cp -r /tmp/user_source/lib /tmp/user_source/pubspec.yaml ./
+
+      # PERMISSION SHIELD: Explicitly updates the file paths to ensure the runner has full write permission.
+      - name: Inject Validated Android Manifest XML Layout
+        run: |
+          rm -f android/app/src/main/AndroidManifest.xml || true
           mkdir -p android/app/src/main
+          chmod -R 777 android || true
+          
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <manifest xmlns:android="http://android.com">
               <uses-permission android:name="android.permission.INTERNET"/>
@@ -111,27 +132,36 @@ jobs:
                   f.write(content)
           '
 
-      - name: Configure Production Environment Keys
+      - name: Seed System Properties Keys
         run: |
           cp secrets.env android/local.properties || true
           GFILE="android/app/build.gradle"
+          # If the scaffolding generated a newer Kotlin build script format, find the alternative gradle file
+          if [ ! -f "$GFILE" ] && [ -f "android/app/build.gradle.kts" ]; then
+            GFILE="android/app/build.gradle.kts"
+          fi
+          
           if [ -f "$GFILE" ]; then
             sed -i 's/multiDexEnabled false/multiDexEnabled true/g' "$GFILE"
-            grep -q "multiDexEnabled" "$GFILE" || sed -i '/defaultConfig {/a \        multiDexEnabled true' "$GFILE"
+            grep -q "multiDexEnabled" "$GFILE" || sed -i '/defaultConfig {/a \        multiDexEnabled = true' "$GFILE"
           fi
 
-      # RUNTIME SHIELD PHASE 3: Executes compilation inside an isolated Docker task runner container
-      - name: Compile Cross-Platform Production Deliverables
+      - name: Fetch Clean Dependencies
         run: |
-          docker run --rm -v "$PWD":/app -w /app ghcr.io/cirruslabs/flutter:stable bash -c "
-            flutter clean || true
-            flutter pub get
-            flutter build web --release --base-href '/' --dart-define-from-file=secrets.env
-            flutter build apk --release --dart-define-from-file=secrets.env --android-skip-build-dependency-validation
-          "
+          flutter clean || true
+          flutter pub get
+
+      - name: Compile Release Web Bundle
+        run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
 
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
+
+      - name: Compile Fat Release APK Installer
+        run: |
+          flutter build apk --release \
+            --dart-define-from-file=secrets.env \
+            --android-skip-build-dependency-validation
 
       - uses: actions/upload-artifact@v4
         with:
