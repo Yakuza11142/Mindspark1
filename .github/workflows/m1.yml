@@ -1,142 +1,37 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
-  compile-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
-
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
+        with: {distribution: temurin, java-version: "17"}
       - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: false
-
-      - name: Configure Production Keys (JSON Format)
+        with: {channel: stable, cache: false}
+      - name: Keys
         run: |
-          cat << 'EOF' > secrets.json
-          {
-            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
-            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
-            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
-            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
-            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
-            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
-            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
-            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
-            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
-            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
-            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
-            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
-          }
-          EOF
-          
-          mkdir -p android
-          cat << 'EOF' > android/local.properties
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY=${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY=${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET=${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY=${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY=${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
-          EOF
-
-      - name: Unlock Gradle Cache and Fix Banned Syntax
+          echo '{"SUPABASE_URL":"${{secrets.SUPABASE_URL}}","SUPABASE_ANON_KEY":"${{secrets.SUPABASE_ANON_KEY}}","GEMINI_API_KEY":"${{secrets.GEMINI_API_KEY}}","OPENAI_KEY":"${{secrets.OPENAI_KEY}}","GROQ_API_KEY":"${{secrets.GROQ_API_KEY}}","VERTEX_API_KEY":"${{secrets.VERTEX_API_KEY}}","HEYGEN_KEY":"${{secrets.HEYGEN_KEY}}","RUNWAYML_API_SECRET":"${{secrets.RUNWAYML_API_SECRET}}","TRIPO_API_KEY":"${{secrets.TRIPO_API_KEY}}","PEXELS_API_KEY":"${{secrets.PEXELS_API_KEY}}","MTN_API_KEY":"${{secrets.MTN_API_KEY}}","ELEVEN_LAB_API_KEY":"${{secrets.ELEVEN_LAB_API_KEY}}"}' > secrets.json
+          mkdir -p android && echo "storePassword=\nkeyPassword=\nkeyAlias=\nstoreFile=" > android/local.properties
+      - name: Prep
         run: |
           sudo chmod -R 777 . || true
           find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
           flutter clean || true
           flutter pub get
-          python3 -c '
-import os
-cache = os.path.expanduser("~/.pub-cache")
-if os.path.exists(cache):
-    for r, d, fs in os.walk(cache):
-        for f in fs:
-            if f in ["build.gradle", "build.gradle.kts"]:
-                p = os.path.join(r, f)
-                try:
-                    with open(p, "r", encoding="utf-8", errors="ignore") as fl: txt = fl.read()
-                    if "configurations.all" in txt:
-                        with open(p, "w", encoding="utf-8") as fl: fl.write(txt.replace("configurations.all", "// configurations.all"))
-                except: pass
-          '
-
-      - name: Safe HTML Error Protection Injector
-        run: |
-          python3 -c '
-import os
-p = "web/index.html"
-if os.path.exists(p):
-    with open(p, "r", encoding="utf-8") as f: t = f.read()
-    g = """<script>window.onerror=function(){return true;};window.addEventListener("unhandledrejection",function(e){e.preventDefault();});</script><script src="flutter_bootstrap.js" async></script>"""
-    if "flutter_bootstrap.js" in t and "window.onerror" not in t:
-        with open(p, "w", encoding="utf-8") as f: f.write(t.replace("<script src=\"flutter_bootstrap.js\" async></script>", g))
-          '
-          mkdir -p web/icons
-
-      - name: Compile Production Web Build
+      - name: Web
         run: |
           flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
-
       - uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-
-      - name: Configure Production Android Manifest
-        run: |
-          cat << 'EOF' > /tmp/m.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://android.com" package="com.example.mindspark1">
-              <uses-permission android:name="android.permission.INTERNET"/>
-              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-              <uses-permission android:name="android.permission.WAKE_LOCK"/>
-              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-              <uses-permission android:name="android.permission.VIBRATE"/>
-              <uses-permission android:name="android.permission.CAMERA"/>
-              <application android:label="Mindspark" android:name="androidx.multidex.MultiDexApplication" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:largeHeap="true">
-                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:windowSoftInputMode="adjustResize">
-                      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />
-                      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
-                  </activity>
-                  <meta-data android:name="flutterEmbedding" android:value="2" />
-              </application>
-          </manifest>
-          EOF
-          if [ -d "android/app/src/main" ]; then
-              cp /tmp/m.xml android/app/src/main/AndroidManifest.xml
-              rm -rf android/app/src/debug android/app/src/profile || true
-          fi
-
-      - name: Compile Clean Android APK Bundle
+        with: {path: build/web}
+      - name: Android
         run: |
           flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
-
       - uses: actions/upload-artifact@v4
-        with:
-          name: apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-  deploy-web:
-    needs: compile-and-deploy
+        with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
+  deploy:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/deploy-pages@v4
