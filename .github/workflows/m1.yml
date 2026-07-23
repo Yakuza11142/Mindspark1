@@ -1,19 +1,30 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
+
 defaults:
-  run: {shell: bash}
+  run:
+    shell: bash
+
 jobs:
   compile-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {token: "${{ secrets.GITHUB_TOKEN }}"}
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
       - uses: actions/setup-java@v4
-        with: {distribution: temurin, java-version: '17'}
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: false}
-      - name: Keys
+        with:
+          channel: stable
+          cache: false
+
+      - name: Configure Production Keys
         run: |
           cat << 'EOF' > secrets.env
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
@@ -30,7 +41,8 @@ jobs:
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
           cp secrets.env android/local.properties || true
-      - name: Fix Cache
+
+      - name: Unlock Gradle Cache and Fix Banned Syntax
         run: |
           sudo chmod -R 777 . || true
           find . -name "settings.gradle" -type f -exec sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' {} + || true
@@ -38,64 +50,96 @@ jobs:
           flutter pub get
           python3 -c '
           import os
-          c=os.path.expanduser("~/.pub-cache")
-          if os.path.exists(c):
-           for r,d,fs in os.walk(c):
-            for f in fs:
-             if f in ["build.gradle","build.gradle.kts"]:
-              p=os.path.join(r,f)
-              try:
-               with open(p,"r") as fl: txt=fl.read()
-               if "configurations.all" in txt:
-                with open(p,"w") as fl: fl.write(txt.replace("configurations.all","// configurations.all"))
-              except: pass
+          cache = os.path.expanduser("~/.pub-cache")
+          if os.path.exists(cache):
+              for r, d, fs in os.walk(cache):
+                  for f in fs:
+                      if f in ["build.gradle", "build.gradle.kts"]:
+                          p = os.path.join(r, f)
+                          try:
+                              with open(p, "r", encoding="utf-8", errors="ignore") as fl: txt = fl.read()
+                              if "configurations.all" in txt:
+                                  with open(p, "w", encoding="utf-8") as fl: fl.write(txt.replace("configurations.all", "// configurations.all"))
+                          except: pass
           '
-      - name: Web
+
+      - name: Infinite Web Repair and Compile Loop
         run: |
           while true; do
-          python3 -c '
-          import os
-          p="web/index.html"
-          if os.path.exists(p):
-           with open(p,"r") as f: t=f.read()
-           g="<script>window.onerror=function(){return true;};window.addEventListener(\"unhandledrejection\",function(e){e.preventDefault();});</script><script src=\"flutter_bootstrap.js\" async></script>"
-           if "flutter_bootstrap.js" in t and "window.onerror" not in t:
-            with open(p,"w") as f: f.write(t.replace("<script src=\"flutter_bootstrap.js\" async></script>",g))
-          '
-          flutter build web --release --base-href "/" --dart-define-from-file=secrets.env > /tmp/w.log 2>&1
-          if [ $? -eq 0 ]; then break; fi
-          python3 -c 'import os; os.makedirs("web/icons",exist_ok=True)'
-          sleep 1
+            python3 -c '
+            import os
+            p = "web/index.html"
+            if os.path.exists(p):
+                with open(p, "r", encoding="utf-8") as f: t = f.read()
+                g = """<script>window.onerror=function(){return true;};window.addEventListener("unhandledrejection",function(e){e.preventDefault();});</script><script src="flutter_bootstrap.js" async></script>"""
+                if "flutter_bootstrap.js" in t and "window.onerror" not in t:
+                    with open(p, "w", encoding="utf-8") as f: f.write(t.replace("<script src=\"flutter_bootstrap.js\" async></script>", g))
+            '
+            flutter build web --release --base-href "/" --dart-define-from-file=secrets.env > /tmp/w.log 2>&1
+            if [ $? -eq 0 ]; then
+                echo "Web successfully compiled!"
+                break
+            fi
+            python3 -c 'import os; os.makedirs("web/icons", exist_ok=True)'
+            sleep 1
           done
+
       - uses: actions/upload-pages-artifact@v3
-        with: {path: build/web}
-      - name: Android
+        with:
+          path: build/web
+
+      - name: Infinite Android Repair and Compile Loop
         run: |
           cat << 'EOF' > /tmp/m.xml
-          <?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://android.com" package="com.example.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.WAKE_LOCK"/><uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/><uses-permission android:name="android.permission.VIBRATE"/><application android:label="Mindspark" android:name="androidx.multidex.MultiDexApplication" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:largeHeap="true"><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" /><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2" /></application></manifest>
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com" package="com.example.mindspark1">
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              <application android:label="Mindspark" android:name="androidx.multidex.MultiDexApplication" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:largeHeap="true">
+                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:windowSoftInputMode="adjustResize">
+                      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />
+                      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+                  </activity>
+                  <meta-data android:name="flutterEmbedding" android:value="2" />
+              </application>
+          </manifest>
           EOF
+          
           while true; do
-          if [ -d "android/app/src/main" ]; then
-           cp /tmp/m.xml android/app/src/main/AndroidManifest.xml
-           rm -rf android/app/src/debug android/app/src/profile || true
-          fi
-          flutter build apk --release --dart-define-from-file=secrets.env --android-skip-build-dependency-validation > /tmp/a.log 2>&1
-          if [ $? -eq 0 ]; then break; fi
-          python3 -c '
-          import os,re
-          p,m="/tmp/a.log","android/app/src/main/AndroidManifest.xml"
-          if os.path.exists(p) and os.path.exists(m):
-           with open(m,"r") as f: c=f.read()
-           c=re.sub(r"android:android:", "android:", c)
-           for a in ["name","glEsVersion","value","resource","exported","theme","label"]:
-            c=re.compile(r"(?<!android:)\b"+a+r"\s*=\s*\"").sub("android:"+a+"=\"",c)
-           with open(m,"w") as f: f.write(re.sub(r"android:android:", "android:", c))
-          '
-          sleep 1
+            if [ -d "android/app/src/main" ]; then
+                cp /tmp/m.xml android/app/src/main/AndroidManifest.xml
+                rm -rf android/app/src/debug android/app/src/profile || true
+            fi
+            
+            flutter build apk --release --dart-define-from-file=secrets.env --android-skip-build-dependency-validation > /tmp/a.log 2>&1
+            if [ $? -eq 0 ]; then
+                echo "APK successfully compiled!"
+                break
+            fi
+            
+            python3 -c '
+            import os, re
+            p, m = "/tmp/a.log", "android/app/src/main/AndroidManifest.xml"
+            if os.path.exists(p) and os.path.exists(m):
+                with open(m, "r", encoding="utf-8") as f: c = f.read()
+                c = re.sub(r"android:android:", "android:", c)
+                for a in ["name", "glEsVersion", "value", "resource", "exported", "theme", "label"]:
+                    c = re.compile(r"(?<!android:)\b" + a + r"\s*=\s*\"").sub("android:" + a + "=\"", c)
+                with open(m, "w", encoding="utf-8") as f: f.write(re.sub(r"android:android:", "android:", c))
+            '
+            sleep 1
           done
+
       - uses: actions/upload-artifact@v4
-        with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
+        with:
+          name: apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
   deploy-web:
     needs: compile-and-deploy
     runs-on: ubuntu-latest
-    steps: [- uses: actions/deploy-pages@v4]
+    steps:
+      - uses: actions/deploy-pages@v4
