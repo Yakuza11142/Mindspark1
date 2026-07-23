@@ -24,9 +24,27 @@ jobs:
           channel: stable
           cache: false
 
-      - name: Configure Production Keys
+      - name: Configure Production Keys (JSON Format)
         run: |
-          cat << 'EOF' > secrets.env
+          cat << 'EOF' > secrets.json
+          {
+            "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
+            "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
+            "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
+            "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
+            "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
+            "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
+            "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
+            "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
+            "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
+            "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
+          }
+          EOF
+          
+          mkdir -p android
+          cat << 'EOF' > android/local.properties
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
@@ -40,7 +58,6 @@ jobs:
           MTN_API_KEY=${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY=${{ secrets.ELEVEN_LAB_API_KEY }}
           EOF
-          cp secrets.env android/local.properties || true
 
       - name: Unlock Gradle Cache and Fix Banned Syntax
         run: |
@@ -63,10 +80,9 @@ if os.path.exists(cache):
                 except: pass
           '
 
-      - name: Infinite Web Repair and Compile Loop
+      - name: Safe HTML Error Protection Injector
         run: |
-          while true; do
-            python3 -c '
+          python3 -c '
 import os
 p = "web/index.html"
 if os.path.exists(p):
@@ -74,21 +90,18 @@ if os.path.exists(p):
     g = """<script>window.onerror=function(){return true;};window.addEventListener("unhandledrejection",function(e){e.preventDefault();});</script><script src="flutter_bootstrap.js" async></script>"""
     if "flutter_bootstrap.js" in t and "window.onerror" not in t:
         with open(p, "w", encoding="utf-8") as f: f.write(t.replace("<script src=\"flutter_bootstrap.js\" async></script>", g))
-            '
-            flutter build web --release --base-href "./" --dart-define-from-file=secrets.env > /tmp/w.log 2>&1
-            if [ $? -eq 0 ]; then
-                echo "Web successfully compiled!"
-                break
-            fi
-            python3 -c 'import os; os.makedirs("web/icons", exist_ok=True)'
-            sleep 1
-          done
+          '
+          mkdir -p web/icons
+
+      - name: Compile Production Web Build
+        run: |
+          flutter build web --release --base-href "./" --dart-define-from-file=secrets.json
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
-      - name: Infinite Android Repair and Compile Loop
+      - name: Configure Production Android Manifest
         run: |
           cat << 'EOF' > /tmp/m.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -98,6 +111,7 @@ if os.path.exists(p):
               <uses-permission android:name="android.permission.WAKE_LOCK"/>
               <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
               <uses-permission android:name="android.permission.VIBRATE"/>
+              <uses-permission android:name="android.permission.CAMERA"/>
               <application android:label="Mindspark" android:name="androidx.multidex.MultiDexApplication" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:largeHeap="true">
                   <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:windowSoftInputMode="adjustResize">
                       <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />
@@ -107,31 +121,14 @@ if os.path.exists(p):
               </application>
           </manifest>
           EOF
-          
-          while true; do
-            if [ -d "android/app/src/main" ]; then
-                cp /tmp/m.xml android/app/src/main/AndroidManifest.xml
-                rm -rf android/app/src/debug android/app/src/profile || true
-            fi
-            
-            flutter build apk --release --dart-define-from-file=secrets.env --android-skip-build-dependency-validation > /tmp/a.log 2>&1
-            if [ $? -eq 0 ]; then
-                echo "APK successfully compiled!"
-                break
-            fi
-            
-            python3 -c '
-import os, re
-p, m = "/tmp/a.log", "android/app/src/main/AndroidManifest.xml"
-if os.path.exists(p) and os.path.exists(m):
-    with open(m, "r", encoding="utf-8") as f: c = f.read()
-    c = re.sub(r"android:android:", "android:", c)
-    for a in ["name", "glEsVersion", "value", "resource", "exported", "theme", "label"]:
-        c = re.compile(r"(?<!android:)\b" + a + r"\s*=\s*\"").sub("android:" + a + "=\"", c)
-    with open(m, "w", encoding="utf-8") as f: f.write(re.sub(r"android:android:", "android:", c))
-            '
-            sleep 1
-          done
+          if [ -d "android/app/src/main" ]; then
+              cp /tmp/m.xml android/app/src/main/AndroidManifest.xml
+              rm -rf android/app/src/debug android/app/src/profile || true
+          fi
+
+      - name: Compile Clean Android APK Bundle
+        run: |
+          flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
 
       - uses: actions/upload-artifact@v4
         with:
