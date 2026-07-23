@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -62,7 +62,7 @@ jobs:
       - name: Unlock Gradle Cache and Fix Banned Syntax
         run: |
           sudo chmod -R 777 . || true
-          find . -name "settings.gradle" -type f -exec sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' {} + || true
+          find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
           flutter clean || true
           flutter pub get
           python3 -c '
