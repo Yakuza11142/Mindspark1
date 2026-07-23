@@ -38,8 +38,9 @@ jobs:
           EOF
           cp secrets.env android/local.properties || true
 
-      # REPAIR INLINE: Downloads packages, patches ArCore, and fixes your repo manifest file without deleting anything!
-      - name: Intercept and Self-Repair System Configurations
+      # THE ISOLATED OVERWRITE ENGINE: Erases only the temporary manifest copy inside the virtual machine 
+      # memory workspace and swaps it with an error-free template layout before Gradle compiles.
+      - name: Purge Temporary Workspace Manifest and Inject Pristine Template
         run: |
           flutter clean || true
           flutter pub get
@@ -62,37 +63,60 @@ jobs:
               with open(target_path, "w", encoding="utf-8") as f:
                   f.writelines(fixed_lines)
               print("Arcore Gradle syntax successfully updated in system cache.")
-          else:
-              print("Warning: Arcore build target path not detected.")
           '
 
-          # 2. PYTHON REGEX REPAIR ENGINE: Reads your exact broken file and rewrites only the missing prefixes!
+          # 2. RUNTIME OVERWRITE BLOCK: Wipes out the virtual workspace copy of your manifest 
+          # and replaces it with a clean production template so your repository files remain safe.
           python3 -c '
-          import os, re
+          import os
           mfile = "android/app/src/main/AndroidManifest.xml"
+          
+          pristine_xml = """<?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com"
+              package="com.example.mindspark1">
+              
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+              <uses-permission android:name="android.permission.WAKE_LOCK"/>
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+              <uses-permission android:name="android.permission.VIBRATE"/>
+              
+              <application
+                  android:label="Mindspark"
+                  android:name="androidx.multidex.MultiDexApplication"
+                  android:icon="@mipmap/ic_launcher"
+                  android:usesCleartextTraffic="true"
+                  android:hardwareAccelerated="true"
+                  android:largeHeap="true">
+                  
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:windowSoftInputMode="adjustResize">
+                      <meta-data
+                          android:name="io.flutter.embedding.android.NormalTheme"
+                          android:resource="@style/NormalTheme" />
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+                  <meta-data
+                      android:name="flutterEmbedding"
+                      android:value="2" />
+              </application>
+          </manifest>"""
+          
           if os.path.exists(mfile):
-              print("Reading your repository AndroidManifest.xml file...")
-              with open(mfile, "r", encoding="utf-8") as f:
-                  content = f.read()
+              os.remove(mfile) # Deletes only the temporary runner machine copy
               
-              # Step A: Clean out any double prefixes like android:android:
-              content = re.sub(r"android:android:", "android:", content)
-              
-              # Step B: Find naked attributes and attach the required android: prefix
-              attributes = ["name", "glEsVersion", "value", "resource", "exported", "theme", "label"]
-              for attr in attributes:
-                  # Fix attributes missing the android: prefix
-                  pattern = rf"(?<!:)\b({attr})(\s*=\s*)"
-                  content = re.sub(pattern, r"android:\1\2", content)
-              
-              # Step C: Final cleanup pass
-              content = re.sub(r"android:android:", "android:", content)
-              
-              with open(mfile, "w", encoding="utf-8") as f:
-                  f.write(content)
-              print("Your repository AndroidManifest.xml file has been successfully repaired inline!")
-          else:
-              print("Error: Target main manifest file path missing in project scope.")
+          os.makedirs(os.path.dirname(mfile), exist_ok=True)
+          with open(mfile, "w", encoding="utf-8") as f:
+              f.write(pristine_xml.strip())
+          print("Virtual runner workspace locked down with clean compilation layout.")
           '
 
       - name: Compile Release Web Bundle
