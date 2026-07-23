@@ -42,14 +42,14 @@ jobs:
           rm -rf .dart_tool build android/.gradle android/app/build
           flutter pub get
 
-      # PHASE 1: Build the Web Bundle smoothly on the machine
+      # PHASE 1: Web compilation using the absolute root path configuration
       - name: Compile Release Web Bundle
         run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.env
 
       - uses: actions/upload-pages-artifact@v3
         with: {path: build/web}
 
-      # PHASE 2: Overwrite the manifest on the EXACT SAME machine before compiling Android
+      # PHASE 2: Overwrites the native file on the exact same runner machine workspace
       - name: Overwrite Native Manifest with Perfect Template Placeholder
         run: |
           mkdir -p android/app/src/main
@@ -91,7 +91,7 @@ jobs:
           </manifest>
           EOF
 
-      # PHASE 3: Compile the standalone package using the clean placeholder layout
+      # PHASE 3: Compile the standalone fat mobile installation bundle
       - name: Compile Fat Release APK Installer
         run: flutter build apk --release --dart-define-from-file=secrets.env
 
