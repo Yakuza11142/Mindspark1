@@ -11,7 +11,7 @@ jobs:
       with: {distribution: temurin, java-version: "17"}
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Eraser Keys Step
+    - name: Eraser Keys Data Setup
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -36,19 +36,29 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Eraser Core Clean
+    - name: Eraser Core Code Prep
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+        python3 -c '
+import os
+p = "android/app/src/main/AndroidManifest.xml"
+if os.path.exists(p):
+    with open(p, "r", encoding="utf-8") as f: c = f.read()
+    if "android.permission.INTERNET" not in c:
+        p_str = "\n    <uses-permission android:name=\"android.permission.INTERNET\"/>\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n    <uses-permission android:name=\"android.permission.CAMERA\"/>"
+        c = c.replace("<manifest", f"<manifest xmlns:tools=\"http://android.com\"")
+        c = c.replace("<application", f"{p_str}\n    <application android:usesCleartextTraffic=\"true\" tools:targetApi=\"m\" android:largeHeap=\"true\"")
+        with open(p, "w", encoding="utf-8") as f: f.write(c)
+        print("Manifest permission elements updated successfully!")
+        '
         flutter clean || true
         flutter pub get || true
-    - name: Eraser Web Fix and Build
+    - name: Eraser Web Compilation Build
       run: |
-        mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Eraser Android Build
+    - name: Eraser Android APK Compilation Build
       run: |
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
     - uses: actions/upload-artifact@v4
