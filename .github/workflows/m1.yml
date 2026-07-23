@@ -11,7 +11,7 @@ jobs:
       with: {distribution: temurin, java-version: "17"}
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Eraser Keys
+    - name: Eraser Keys Step
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -36,14 +36,15 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Eraser Clean
+    - name: Eraser Core Clean
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
         flutter clean || true
         flutter pub get || true
-    - name: Eraser Web Build
+    - name: Eraser Web Fix and Build
       run: |
-        mkdir -p web && echo '<html><body><script src="flutter_bootstrap.js" async></script></body></html>' > web/index.html
+        mkdir -p web
+        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
