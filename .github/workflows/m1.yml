@@ -11,23 +11,27 @@ jobs:
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
     - name: Config
+      env:
+        SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
+        SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+        GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+        OPENAI_KEY: "${{ secrets.OPENAI_KEY }}"
+        GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}"
+        VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}"
+        HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}"
+        RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}"
+        TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}"
+        PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
+        MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
+        ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
       run: |
-        cat << 'EOF' > secrets.json
-        {
-          "SUPABASE_URL": "${{ secrets.SUPABASE_URL }}",
-          "SUPABASE_ANON_KEY": "${{ secrets.SUPABASE_ANON_KEY }}",
-          "GEMINI_API_KEY": "${{ secrets.GEMINI_API_KEY }}",
-          "OPENAI_KEY": "${{ secrets.OPENAI_KEY }}",
-          "GROQ_API_KEY": "${{ secrets.GROQ_API_KEY }}",
-          "VERTEX_API_KEY": "${{ secrets.VERTEX_API_KEY }}",
-          "HEYGEN_KEY": "${{ secrets.HEYGEN_KEY }}",
-          "RUNWAYML_API_SECRET": "${{ secrets.RUNWAYML_API_SECRET }}",
-          "TRIPO_API_KEY": "${{ secrets.TRIPO_API_KEY }}",
-          "PEXELS_API_KEY": "${{ secrets.PEXELS_API_KEY }}",
-          "MTN_API_KEY": "${{ secrets.MTN_API_KEY }}",
-          "ELEVEN_LAB_API_KEY": "${{ secrets.ELEVEN_LAB_API_KEY }}"
-        }
-        EOF
+        python3 -c '
+import json, os
+keys = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "GEMINI_API_KEY", "OPENAI_KEY", "GROQ_API_KEY", "VERTEX_API_KEY", "HEYGEN_KEY", "RUNWAYML_API_SECRET", "TRIPO_API_KEY", "PEXELS_API_KEY", "MTN_API_KEY", "ELEVEN_LAB_API_KEY"]
+data = {k: os.environ.get(k, "").strip().replace("\r", "").replace("\n", "") for k in keys}
+with open("secrets.json", "w", encoding="utf-8") as f:
+    json.dump(data, f)
+        '
         mkdir -p android && echo "storePassword=\nkeyPassword=\nkeyAlias=\nstoreFile=" > android/local.properties
     - name: Setup
       run: |
