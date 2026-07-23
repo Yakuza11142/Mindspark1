@@ -75,7 +75,7 @@ if os.path.exists(p):
     if "flutter_bootstrap.js" in t and "window.onerror" not in t:
         with open(p, "w", encoding="utf-8") as f: f.write(t.replace("<script src=\"flutter_bootstrap.js\" async></script>", g))
             '
-            flutter build web --release --base-href "/" --dart-define-from-file=secrets.env > /tmp/w.log 2>&1
+            flutter build web --release --base-href "./" --dart-define-from-file=secrets.env > /tmp/w.log 2>&1
             if [ $? -eq 0 ]; then
                 echo "Web successfully compiled!"
                 break
