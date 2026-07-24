@@ -57,7 +57,7 @@ manifest_content = """<manifest xmlns:android="http://android.com" package="com.
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <application
-        android:label="Mindspark"
+        android:label="Mind Spark"
         android:name="androidx.multidex.MultiDexApplication"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
@@ -96,7 +96,7 @@ print("AndroidManifest.xml isolated memory factory output verified!")
     - name: Compile Flutter Web Release
       run: |
         mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body><h1 style=\"display:none;\">Mind Spark</h1></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
