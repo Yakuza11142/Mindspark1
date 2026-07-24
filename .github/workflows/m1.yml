@@ -1,27 +1,17 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Reset Workspace Permissions Layout
-      run: sudo chmod -R 777 . || true
-      
+    - run: sudo chmod -R 777 . || true
     - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
-      
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-      
-    - name: Configure Production Secrets File
+    - name: Config
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -36,66 +26,25 @@ jobs:
         PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
         MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
         ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
-      run: |
-        echo "{" > secrets.json
-        first=true
-        for k in $KEYS_DATA; do
-          val=$(eval echo \$$k | tr -d '\r' | tr -d '\n' | tr -d '"')
-          if [ "$first" = true ]; then first=false; else echo "," >> secrets.json; fi
-          echo "\"$k\": \"$val\"" >> secrets.json
-        done
-        echo "}" >> secrets.json
-        mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Error Eraser Manifest Factory Engine
-      run: |
-        find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-        mkdir -p android/app/src/main || true
-        
-        # This isolated Python command compiles your manifest securely via a raw un-strippable byte stream
-        python3 -c '
-import os
-p = "android/app/src/main/AndroidManifest.xml"
-q = chr(34)
-lines = [
-    f"<manifest xmlns:android={q}http://android.com{q} package={q}com.example.mindspark1{q}>",
-    f"    <uses-permission android:name={q}android.permission.INTERNET{q}/>",
-    f"    <uses-permission android:name={q}android.permission.ACCESS_NETWORK_STATE{q}/>",
-    f"    <uses-permission android:name={q}android.permission.WAKE_LOCK{q}/>",
-    f"    <uses-permission android:name={q}android.permission.RECEIVE_BOOT_COMPLETED{q}/>",
-    f"    <uses-permission android:name={q}android.permission.VIBRATE{q}/>",
-    f"    <uses-permission android:name={q}android.permission.CAMERA{q}/>",
-    f"    <application android:label={q}Mindspark{q} android:name={q}androidx.multidex.MultiDexApplication{q} android:icon={q}@mipmap/ic_launcher{q} android:usesCleartextTraffic={q}true{q} android:hardwareAccelerated={q}true{q} android:largeHeap={q}true{q}>",
-    f"        <activity android:name={q}.MainActivity{q} android:exported={q}true{q} android:launchMode={q}singleTop{q} android:theme={q}@style/LaunchTheme{q} android:configChanges={q}orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode{q} android:windowSoftInputMode={q}adjustResize{q}>",
-    f"            <meta-data android:name={q}io.flutter.embedding.android.NormalTheme{q} android:resource={q}@style/NormalTheme{q} />",
-    f"            <intent-filter>",
-    f"                <action android:name={q}android.intent.action.MAIN{q}/>",
-    f"                <category android:name={q}android.intent.category.LAUNCHER{q}/>",
-    f"            </intent-filter>",
-    f"        </activity>",
-    f"        <meta-data android:name={q}flutterEmbedding{q} android:value={q}2{q} />",
-    f"    </application>",
-    "</manifest>"
-]
-with open(p, "w", encoding="utf-8") as f:
-    f.write("\n".join(lines))
-print("AndroidManifest.xml generated with un-strippable byte tokens successfully!")
-        '
-        
-        flutter clean || true
-        flutter pub get || true
-    - name: Compile Production Web Platform Layout
-      run: |
-        mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
-        flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
+      run: python3 -c 'import os, json; keys = os.environ.get("KEYS_DATA","").split(); data = {k: os.environ.get(k,"").strip().replace("\r","").replace("\n","").replace("\"","") for k in keys}; open("secrets.json","w").write(json.dumps(data))'
+    - name: Props
+      run: mkdir -p android && echo "storePassword=" > android/local.properties
+    - name: Repair
+      run: find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+    - name: Manifest
+      run: python3 -c 'import os; q=chr(34); p="android/app/src/main/AndroidManifest.xml"; os.makedirs(os.path.dirname(p), exist_ok=True); lines = [f"<manifest xmlns:android={q}http://android.com{q} package={q}com.example.mindspark1{q}>", f" <uses-permission android:name={q}android.permission.INTERNET{q}/>", f" <uses-permission android:name={q}android.permission.ACCESS_NETWORK_STATE{q}/>", f" <uses-permission android:name={q}android.permission.WAKE_LOCK{q}/>", f" <uses-permission android:name={q}android.permission.RECEIVE_BOOT_COMPLETED{q}/>", f" <uses-permission android:name={q}android.permission.VIBRATE{q}/>", f" <uses-permission android:name={q}android.permission.CAMERA{q}/>", f" <application android:label={q}Mindspark{q} android:name={q}androidx.multidex.MultiDexApplication{q} android:icon={q}@mipmap/ic_launcher{q} android:usesCleartextTraffic={q}true{q} android:hardwareAccelerated={q}true{q} android:largeHeap={q}true{q}>", f" <activity android:name={q}.MainActivity{q} android:exported={q}true{q} android:launchMode={q}singleTop{q} android:theme={q}@style/LaunchTheme{q} android:configChanges={q}orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode{q} android:windowSoftInputMode={q}adjustResize{q}>", f" <meta-data android:name={q}io.flutter.embedding.android.NormalTheme{q} android:resource={q}@style/NormalTheme{q} />", " <intent-filter>", f" <action android:name={q}android.intent.action.MAIN{q}/>", f" <category android:name={q}android.intent.category.LAUNCHER{q}/>", " </intent-filter>", " </activity>", f" <meta-data android:name={qflutterEmbedding{q} android:value={q}2{q} />", " </application>", "</manifest>"]; open(p,"w").write("\n".join(lines))'
+    - name: Fetch
+      run: flutter clean || true
+    - run: flutter pub get || true
+    - name: Web
+      run: mkdir -p web && echo '<!DOCTYPE html><html><head><base href="/"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+    - run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Compile Native Mobile APK Production Package
-      run: |
-        flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
+    - name: APK
+      run: flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
     - uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
-
   deploy:
     needs: build
     runs-on: ubuntu-latest
