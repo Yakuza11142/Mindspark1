@@ -1,6 +1,11 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,10 +13,10 @@ jobs:
     - uses: actions/checkout@v4
     - run: sudo chmod -R 777 . || true
     - uses: actions/setup-java@v4
-      with: {distribution: temurin, java-version: "17"}
+      with: {distribution: temurin, java-version: 17}
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Eraser Keys Step
+    - name: Configure Production Secrets
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -36,23 +41,24 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Eraser Core Clean
+    - name: Clean Project Architecture
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
         flutter clean || true
         flutter pub get || true
-    - name: Eraser Web Fix and Build
+    - name: Compile Un-bugged Web App
       run: |
         mkdir -p web
         echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Eraser Android Build
+    - name: Compile Native Android APK
       run: |
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
     - uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
