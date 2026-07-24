@@ -12,7 +12,7 @@ jobs:
       with: {distribution: temurin, java-version: 17}
     - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Configure Production Keys
+    - name: Configure Production Secrets
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -37,9 +37,49 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Core Project Clean & Fetch
+    - name: Force Clean Manifest and Repositories Setup
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+        
+        # This forces a perfect XML file directly over any cached files on the runner instance
+        mkdir -p android/app/src/main
+        cat << 'EOF' > android/app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://android.com" package="com.example.mindspark1">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+            <uses-permission android:name="android.permission.VIBRATE"/>
+            <uses-permission android:name="android.permission.CAMERA"/>
+            <application
+                android:label="Mindspark"
+                android:name="androidx.multidex.MultiDexApplication"
+                android:icon="@mipmap/ic_launcher"
+                android:usesCleartextTraffic="true"
+                android:hardwareAccelerated="true"
+                android:largeHeap="true">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true"
+                    android:launchMode="singleTop"
+                    android:theme="@style/LaunchTheme"
+                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                    android:windowSoftInputMode="adjustResize">
+                    <meta-data
+                        android:name="io.flutter.embedding.android.NormalTheme"
+                        android:resource="@style/NormalTheme" />
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN"/>
+                        <category android:name="android.intent.category.LAUNCHER"/>
+                    </intent-filter>
+                </activity>
+                <meta-data
+                    android:name="flutterEmbedding"
+                    android:value="2" />
+            </application>
+        </manifest>
+        EOF
+        
         flutter clean || true
         flutter pub get || true
     - name: Compile Flutter Web Release
