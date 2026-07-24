@@ -41,19 +41,19 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Clean Project Architecture
+    - name: Clean Project Environment
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
         flutter clean || true
         flutter pub get || true
-    - name: Compile Un-bugged Web App
+    - name: Compile Production Web Platform
       run: |
         mkdir -p web
         echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
     - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Compile Native Android APK
+    - name: Compile Native Mobile APK
       run: |
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
     - uses: actions/upload-artifact@v4
@@ -64,3 +64,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/deploy-pages@v4
+Use code with caution.
