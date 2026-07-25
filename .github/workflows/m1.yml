@@ -49,71 +49,29 @@ jobs:
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
 
-    - name: Pure Python XML Patching Engine
+    - name: Native XML Automation Step
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-        python3 -c '
-import xml.etree.ElementTree as ET
-import os
-
-path = "android/app/src/main/AndroidManifest.xml"
-os.makedirs(os.path.dirname(path), exist_ok=True)
-
-# Build a clean, native structure with perfect spacing containing only requirements
-ns = "http://android.com"
-ET.register_namespace("android", ns)
-
-root = ET.Element("manifest", {
-    "xmlns:android": ns,
-    "package": "com.example.mindspark1"
-})
-
-permissions = [
-    "INTERNET", "ACCESS_NETWORK_STATE", "WAKE_LOCK",
-    "RECEIVE_BOOT_COMPLETED", "VIBRATE", "CAMERA"
-]
-
-for p_name in permissions:
-    ET.SubElement(root, "uses-permission", {f"{{{ns}}}name": f"android.permission.{p_name}"})
-
-app = ET.SubElement(root, "application", {
-    f"{{{ns}}}label": "Mind Spark",
-    f"{{{ns}}}name": "androidx.multidex.MultiDexApplication",
-    f"{{{ns}}}icon": "@mipmap/ic_launcher",
-    f"{{{ns}}}usesCleartextTraffic": "true",
-    f"{{{ns}}}hardwareAccelerated": "true",
-    f"{{{ns}}}largeHeap": "true"
-})
-
-act = ET.SubElement(app, "activity", {
-    f"{{{ns}}}name": ".MainActivity",
-    f"{{{ns}}}exported": "true",
-    f"{{{ns}}}launchMode": "singleTop",
-    f"{{{ns}}}theme": "@style/LaunchTheme",
-    f"{{{ns}}}configChanges": "orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode",
-    f"{{{ns}}}windowSoftInputMode": "adjustResize"
-})
-
-ET.SubElement(act, "meta-data", {
-    f"{{{ns}}}name": "io.flutter.embedding.android.NormalTheme",
-    f"{{{ns}}}resource": "@style/NormalTheme"
-})
-
-ifilter = ET.SubElement(act, "intent-filter")
-ET.SubElement(ifilter, "action", {f"{{{ns}}}name": "android.intent.action.MAIN"})
-ET.SubElement(ifilter, "category", {f"{{{ns}}}name": "android.intent.category.LAUNCHER"})
-
-ET.SubElement(app, "meta-data", {
-    f"{{{ns}}}name": "flutterEmbedding",
-    f"{{{ns}}}value": "2"
-})
-
-# Save output with pristine formatting lines
-tree = ET.ElementTree(root)
-ET.indent(tree, space="    ", level=0)
-tree.write(path, encoding="utf-8", xml_declaration=True)
-print("Pristine AndroidManifest.xml successfully built via standard XML engine!")
-        '
+        mkdir -p android/app/src/main || true
+        echo 'import xml.etree.ElementTree as ET' > manifest_maker.py
+        echo 'import os' >> manifest_maker.py
+        echo 'path = "android/app/src/main/AndroidManifest.xml"' >> manifest_maker.py
+        echo 'ns = "http://android.com"' >> manifest_maker.py
+        echo 'ET.register_namespace("android", ns)' >> manifest_maker.py
+        echo 'root = ET.Element("manifest", {"xmlns:android": ns, "package": "com.example.mindspark1"})' >> manifest_maker.py
+        echo 'for p in ["INTERNET", "ACCESS_NETWORK_STATE", "WAKE_LOCK", "RECEIVE_BOOT_COMPLETED", "VIBRATE", "CAMERA"]:' >> manifest_maker.py
+        echo '    ET.SubElement(root, "uses-permission", {f"{{{ns}}}name": f"android.permission.{p}"})' >> manifest_maker.py
+        echo 'app = ET.SubElement(root, "application", {f"{{{ns}}}label": "Mind Spark", f"{{{ns}}}name": "androidx.multidex.MultiDexApplication", f"{{{ns}}}icon": "@mipmap/ic_launcher", f"{{{ns}}}usesCleartextTraffic": "true", f"{{{ns}}}hardwareAccelerated": "true", f"{{{ns}}}largeHeap": "true"})' >> manifest_maker.py
+        echo 'act = ET.SubElement(app, "activity", {f"{{{ns}}}name": ".MainActivity", f"{{{ns}}}exported": "true", f"{{{ns}}}launchMode": "singleTop", f"{{{ns}}}theme": "@style/LaunchTheme", f"{{{ns}}}configChanges": "orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode", f"{{{ns}}}windowSoftInputMode": "adjustResize"})' >> manifest_maker.py
+        echo 'ET.SubElement(act, "meta-data", {f"{{{ns}}}name": "io.flutter.embedding.android.NormalTheme", f"{{{ns}}}resource": "@style/NormalTheme"})' >> manifest_maker.py
+        echo 'ifilter = ET.SubElement(act, "intent-filter")' >> manifest_maker.py
+        echo 'ET.SubElement(ifilter, "action", {f"{{{ns}}}name": "android.intent.action.MAIN"})' >> manifest_maker.py
+        echo 'ET.SubElement(ifilter, "category", {f"{{{ns}}}name": "android.intent.category.LAUNCHER"})' >> manifest_maker.py
+        echo 'ET.SubElement(app, "meta-data", {f"{{{ns}}}name": "flutterEmbedding", f"{{{ns}}}value": "2"})' >> manifest_maker.py
+        echo 'tree = ET.ElementTree(root)' >> manifest_maker.py
+        echo 'ET.indent(tree, space="    ", level=0)' >> manifest_maker.py
+        echo 'tree.write(path, encoding="utf-8", xml_declaration=True)' >> manifest_maker.py
+        python3 manifest_maker.py
         flutter clean || true
         flutter pub get || true
 
