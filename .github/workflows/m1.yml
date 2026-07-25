@@ -76,7 +76,7 @@ if app is not None:
     app.set(f"{{{ns}}}largeHeap", "true")
 ET.indent(tree, space="    ", level=0)
 tree.write(path, encoding="utf-8", xml_declaration=True)
-print("Prisinte system architecture verified and fully locked down!")
+print("Pristine system architecture verified and fully locked down!")
         '
         flutter clean || true
         flutter pub get || true
