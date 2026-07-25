@@ -106,7 +106,7 @@ jobs:
     - name: Compile Flutter Web Release
       run: |
         mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="/"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
 
     - name: Production - Upload Web Production Package Bundle
