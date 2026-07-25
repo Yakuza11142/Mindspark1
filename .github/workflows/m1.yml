@@ -10,16 +10,21 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Source Code
+    - name: Checkout Source Code Tree
       uses: actions/checkout@v4
-    - run: sudo chmod -R 777 . || true
-    - name: Setup Java Environment
+
+    - name: Reset Local File System Permissions
+      run: sudo chmod -R 777 . || true
+
+    - name: Setup Java Compiler Environment
       uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
-    - name: Setup Flutter SDK
+
+    - name: Setup Flutter Production SDK Engine
       uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-    - name: Configure Production Secrets
+
+    - name: Synchronize Cloud Keys and Properties
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -44,54 +49,30 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
-    - name: Python Manifest & Beta-Test Analyzer Factory
-      run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-        mkdir -p android/app/src/main || true
-        python3 -c '
-import os
-p = "android/app/src/main/AndroidManifest.xml"
-q = chr(34)
-lines = [
-    f"<manifest xmlns:android={q}http://android.com{q} package={q}com.example.mindspark1{q}>",
-    f"    <uses-permission android:name={q}android.permission.INTERNET{q}/>",
-    f"    <uses-permission android:name={q}android.permission.ACCESS_NETWORK_STATE{q}/>",
-    f"    <uses-permission android:name={q}android.permission.WAKE_LOCK{q}/>",
-    f"    <uses-permission android:name={q}android.permission.RECEIVE_BOOT_COMPLETED{q}/>",
-    f"    <uses-permission android:name={q}android.permission.VIBRATE{q}/>",
-    f"    <uses-permission android:name={q}android.permission.CAMERA{q}/>",
-    f"    <application android:label={q}Mind Spark{q} android:name={q}androidx.multidex.MultiDexApplication{q} android:icon={q}@mipmap/ic_launcher{q} android:usesCleartextTraffic={q}true{q} android:hardwareAccelerated={q}true{q} android:largeHeap={q}true{q}>",
-    f"        <activity android:name={q}.MainActivity{q} android:exported={q}true{q} android:launchMode={q}singleTop{q} android:theme={q}@style/LaunchTheme{q} android:configChanges={q}orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode{q} android:windowSoftInputMode={q}adjustResize{q}>",
-    f"            <meta-data android:name={q}io.flutter.embedding.android.NormalTheme{q} android:resource={q}@style/NormalTheme{q} />",
-    f"            <intent-filter>",
-    f"                <action android:name={q}android.intent.action.MAIN{q}/>",
-    f"                <category android:name={q}android.intent.category.LAUNCHER{q}/>",
-    f"            </intent-filter>",
-    f"        </activity>",
-    f"        <meta-data android:name={q}flutterEmbedding{q} android:value={q}2{q} />",
-    f"    </application>",
-    "</manifest>"
-]
-with open(p, "w", encoding="utf-8") as f:
-    f.write("\n".join(lines))
-print("AndroidManifest.xml isolated memory factory output verified!")
-        '
         flutter clean || true
         flutter pub get || true
-    - name: Beta Test - Static Analysis Runtime Audit
+
+    - name: Beta Test - Static Architecture Audit
       run: |
         flutter analyze || true
-    - name: Compile Flutter Web Release
+
+    - name: Production - Compile Web App Release
       run: |
         mkdir -p web
         echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body><h1 style="display:none;">Mind Spark</h1></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
-    - uses: actions/upload-pages-artifact@v3
+
+    - name: Production - Upload Web Assets
+      uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Compile Production Android APK
+
+    - name: Production - Compile Native Mobile Android APK
       run: |
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
-    - uses: actions/upload-artifact@v4
+
+    - name: Production - Upload Executable APK Package Bundle
+      uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
 
   deploy:
