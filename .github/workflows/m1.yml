@@ -10,20 +10,21 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Source Code
+    - name: Beta Test - Checkout Workspace Tree
       uses: actions/checkout@v4
 
-    - run: sudo chmod -R 777 . || true
+    - name: Beta Test - Reset System Permissions
+      run: sudo chmod -R 777 . || true
 
-    - name: Setup Java Environment
+    - name: Beta Test - Setup Java Compiler Infrastructure
       uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
 
-    - name: Setup Flutter SDK
+    - name: Beta Test - Setup Flutter Stable SDK Engine
       uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
 
-    - name: Configure Production Secrets
+    - name: Beta Test - Environment Token Sanitizer Guard
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
         SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -49,50 +50,36 @@ jobs:
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
 
-    - name: Native XML Automation Step
+    - name: Beta Test - Restore Original Manifest and Inject Name
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-        mkdir -p android/app/src/main || true
-        echo 'import xml.etree.ElementTree as ET' > manifest_maker.py
-        echo 'import os' >> manifest_maker.py
-        echo 'path = "android/app/src/main/AndroidManifest.xml"' >> manifest_maker.py
-        echo 'ns = "http://android.com"' >> manifest_maker.py
-        echo 'ET.register_namespace("android", ns)' >> manifest_maker.py
-        echo 'root = ET.Element("manifest", {"xmlns:android": ns, "package": "com.example.mindspark1"})' >> manifest_maker.py
-        echo 'for p in ["INTERNET", "ACCESS_NETWORK_STATE", "WAKE_LOCK", "RECEIVE_BOOT_COMPLETED", "VIBRATE", "CAMERA"]:' >> manifest_maker.py
-        echo '    ET.SubElement(root, "uses-permission", {f"{{{ns}}}name": f"android.permission.{p}"})' >> manifest_maker.py
-        echo 'app = ET.SubElement(root, "application", {f"{{{ns}}}label": "Mind Spark", f"{{{ns}}}name": "androidx.multidex.MultiDexApplication", f"{{{ns}}}icon": "@mipmap/ic_launcher", f"{{{ns}}}usesCleartextTraffic": "true", f"{{{ns}}}hardwareAccelerated": "true", f"{{{ns}}}largeHeap": "true"})' >> manifest_maker.py
-        echo 'act = ET.SubElement(app, "activity", {f"{{{ns}}}name": ".MainActivity", f"{{{ns}}}exported": "true", f"{{{ns}}}launchMode": "singleTop", f"{{{ns}}}theme": "@style/LaunchTheme", f"{{{ns}}}configChanges": "orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode", f"{{{ns}}}windowSoftInputMode": "adjustResize"})' >> manifest_maker.py
-        echo 'ET.SubElement(act, "meta-data", {f"{{{ns}}}name": "io.flutter.embedding.android.NormalTheme", f"{{{ns}}}resource": "@style/NormalTheme"})' >> manifest_maker.py
-        echo 'ifilter = ET.SubElement(act, "intent-filter")' >> manifest_maker.py
-        echo 'ET.SubElement(ifilter, "action", {f"{{{ns}}}name": "android.intent.action.MAIN"})' >> manifest_maker.py
-        echo 'ET.SubElement(ifilter, "category", {f"{{{ns}}}name": "android.intent.category.LAUNCHER"})' >> manifest_maker.py
-        echo 'ET.SubElement(app, "meta-data", {f"{{{ns}}}name": "flutterEmbedding", f"{{{ns}}}value": "2"})' >> manifest_maker.py
-        echo 'tree = ET.ElementTree(root)' >> manifest_maker.py
-        echo 'ET.indent(tree, space="    ", level=0)' >> manifest_maker.py
-        echo 'tree.write(path, encoding="utf-8", xml_declaration=True)' >> manifest_maker.py
-        python3 manifest_maker.py
+        # Reset the manifest back to its clean, uncorrupted git template state
+        git checkout HEAD -- android/app/src/main/AndroidManifest.xml || true
+        # Natively inject your official app name string into the template label field
+        sed -i 's/android:label=".*"/android:label="Mind Spark"/' android/app/src/main/AndroidManifest.xml || true
         flutter clean || true
         flutter pub get || true
 
-    - name: Beta Test - Static Analysis Runtime Audit
+    - name: Beta Test - Static Analysis Runtime Architecture Audit
       run: |
         flutter analyze || true
 
-    - name: Compile Flutter Web Release
+    - name: Production - Compile Web App Delivery
       run: |
         mkdir -p web
         echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body><h1 style="display:none;">Mind Spark</h1></body></html>' > web/index.html
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
 
-    - uses: actions/upload-pages-artifact@v3
+    - name: Production - Upload Web Production Package Bundle
+      uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
 
-    - name: Compile Production Android APK
+    - name: Production - Compile Native Mobile Android APK
       run: |
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
 
-    - uses: actions/upload-artifact@v4
+    - name: Production - Upload Executable APK Package Bundle
+      uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
 
   deploy:
