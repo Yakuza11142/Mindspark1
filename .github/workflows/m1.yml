@@ -1,29 +1,16 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Permissions
-      run: sudo chmod -R 777 . || true
-
-    - name: Java
-      uses: actions/setup-java@v4
+    - uses: actions/checkout@v4
+    - run: sudo chmod -R 777 . || true
+    - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
-
-    - name: Flutter
-      uses: subosito/flutter-action@v2
+    - uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
-
     - name: Secrets
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
@@ -39,97 +26,33 @@ jobs:
         PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
         MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
         ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
-      run: |
-        echo "{" > secrets.json
-        first=true
-        for k in $KEYS_DATA; do
-          val=$(eval echo \$$k | tr -d '\r' | tr -d '\n' | tr -d '"')
-          if [ "$first" = true ]; then first=false; else echo "," >> secrets.json; fi
-          echo "\"$k\": \"$val\"" >> secrets.json
-        done
-        echo "}" >> secrets.json
-        mkdir -p android && echo "storePassword=" > android/local.properties
-
-    - name: Manifest
-      run: |
-        find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
-        mkdir -p android/app/src/main || true
-        python3 -c '
-manifest_content = """<manifest xmlns:android="http://android.com" package="com.example.mindspark1">
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <application
-        android:label="Mind Spark"
-        android:name="androidx.multidex.MultiDexApplication"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"
-        android:hardwareAccelerated="true"
-        android:largeHeap="true">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:windowSoftInputMode="adjustResize">
-            <meta-data
-                android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme" />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-    </application>
-</manifest>"""
-
-with open("android/app/src/main/AndroidManifest.xml", "w", encoding="utf-8") as f:
-    f.write(manifest_content)
-print("AndroidManifest.xml isolated memory factory output verified!")
-        '
-
-    - name: Clean
-      run: |
-        flutter clean || true
-        flutter pub get || true
-
-    - name: Format
-      run: |
-        flutter format . || true
-
-    - name: Analyze
-      run: |
-        flutter analyze || true
-
-    - name: Test
-      run: |
-        flutter test || true
-
-    - name: Web Build
-      run: |
-        mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><script src="flutter_bootstrap.js" async></script></head><body><h1 style="display:none;">Mind Spark</h1></body></html>' > web/index.html
-        flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
-
-    - name: Upload Web
-      uses: actions/upload-pages-artifact@v3
+      run: python3 -c 'import os, json; keys = os.environ.get("KEYS_DATA","").split(); data = {k: os.environ.get(k,"").strip().replace("\r","").replace("\n","").replace("\"","") for k in keys}; open("secrets.json","w").write(json.dumps(data))'
+    - name: Storage Setup
+      run: mkdir -p android && echo "storePassword=" > android/local.properties
+    - name: Base Repair
+      run: find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
+    - name: Manifest Factory
+      run: echo "PG1hbmlmZXN0IHhtbG5zOmFuZHJvaWQ9Imh0dHA6Ly9zY2hlbWFzLmFuZHJvaWQuY29tL2Fway9yZXMvYW5kcm9pZCIgcGFja2FnZT0iY29tLmV4YW1wbGUubWluZHNwYXJrMSI+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLklOVEVSTkVUIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLkFDQ0VTU19ORVRXT1JLX1NUQVRFIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLjdBS0VfTE9DSyIvPgogICAgPHVzZXMtcGVybWlzc2lvbiBhbmRyb2lkOm5hbWU9ImFuZHJvaWQucGVybWlzc2lvbi5SRUNFSVZFX0JPT1RfQ09NUExFVEVEIi8+CiAgICA8dXNlcy1wZXJtaXNzaW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5wZXJtaXNzaW9uLlZJQlJBVEUiLz4KICAgIDx1c2VzLXBlcm1pc3Npb24gYW5kcm9pZDpuYW1lPSJhbmRyb2lkLnBlcm1pc3Npb24uQ0FNRVJBIi8+CiAgICA8YXBwbGljYXRpb24KICAgICAgICBhbmRyb2lkOmxhYmVsPSJNaW5kIFNwYXJrIgogICAgICAgIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZHgubXVsdGlkZXguTXVsdGlEZXhBcHBsaWNhdGlvbiIKICAgICAgICBhbmRyb2lkOmljb249IkBtaXBtYXAvaWNfbGF1bmNoZXIiCiAgICAgICAgYW5kcm9pZDp1c2VzQ2xlYXJ0ZXh0VHJhZmZpYz0idHJ1ZSIKICAgICAgICBhbmRyb2lkOmhhcmR3YXJlQWNjZWxlcmF0ZWQ9InRydWUiCiAgICAgICAgYW5kcm9pZDpsYXJnZUhlYXA9InRydWUiPgogICAgICAgIDxhY3Rpdml0eQogICAgICAgICAgICBhbmRyb2lkOm5hbWU9Ii5NYWluQWN0aXZpdHkiCiAgICAgICAgICAgIGFuZHJvaWQ6ZXhwb3J0ZWQ9InRydWUiCiAgICAgICAgICAgIGFuZHJvaWQ6bGF1bmNoTW9kZT0ic2luZ2xlVG9wIgogICAgICAgICAgICBhbmRyb2lkOnRoZW1lPSJAc3R5bGUvTGF1bmNoVGhlbWUiCiAgICAgICAgICAgIGFuZHJvaWQ6Y29uZmlnQ2hhbmdlcz0ib3JpZW50YXRpb258a2V5Ym9hcmRIaWRkZW58a2V5Ym9hcmR8c2NyZWVuU2l6ZXxzbWFsbGVzdFNjcmVlblNpemV8bG9jYWxlfGxheW91dERpcmVjdGlvbnxmb250U2NhbGV8c2NyZWVuTGF5b3V0fGRlbnNpdHl8dWlNb2RlIgogICAgICAgICAgICBhbmRyb2lkOndpbmRvd1NvZnRJbnB1dE1vZGU9ImFkanVzdFJlc2l6ZSI+CiAgICAgICAgICAgIDxtZXRhLWRhdGEKICAgICAgICAgICAgICAgIGFuZHJvaWQ6bmFtZT0iaW8uZmx1dHRlci5lbWJlZGRpbmcuYW5kcm9pZC5Ob3JtYWxUaGVtZSIKICAgICAgICAgICAgICAgIGFuZHJvaWQ6cmVzb3VyY2U9IkBzdHlsZS9Ob3JtYWxUaGVtZSIgLz4KICAgICAgICAgICAgPGludGVudC1maWx0ZXI+CiAgICAgICAgICAgICAgICA8YWN0aW9uIGFuZHJvaWQ6bmFtZT0iYW5kcm9pZC5pbnRlbnQuYWN0aW9uLk1BSU4iLz4KICAgICAgICAgICAgICAgIDxjYXRlZ29yeSBhbmRyb2lkOm5hbWU9ImFuZHJvaWQuaW50ZW50LmNhdGVnb3J5LkxBVU5DSEVSIi8+CiAgICAgICAgICAgIDwvaW50ZW50LWZpbHRlcj4KICAgICAgICA8L2FjdGl2aXR5PgogICAgICAgIDxtZXRhLWRhdGEKICAgICAgICAgICAgYW5kcm9pZDpuYW1lPSJmbHV0dGVyRW1iZWRkaW5nIgogICAgICAgICAgICBhbmRyb2lkOnZhbHVlPSIyIiAvPgogICAgPC9hcHBsaWNhdGlvbj4KPC9tYW5pZmVzdD4=" | base64 --decode > android/app/src/main/AndroidManifest.xml
+    - name: Beta Test - Clean
+      run: flutter clean || true
+    - name: Beta Test - Fetch Dependencies
+      run: flutter pub get || true
+    - name: Beta Test - Format Code
+      run: flutter format . || true
+    - name: Beta Test - Audit Architecture
+      run: flutter analyze || true
+    - name: Beta Test - Verify Logic
+      run: flutter test || true
+    - name: Web Asset Setup
+      run: mkdir -p web && echo '<!DOCTYPE html><html><head><base href="/"><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+    - name: Production - Web Build
+      run: flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
+    - uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-
-    - name: APK Build
-      run: |
-        flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+    - name: Production - APK Build
+      run: flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
+    - uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
-
   deploy:
     needs: build_and_test
     runs-on: ubuntu-latest
