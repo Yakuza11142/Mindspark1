@@ -66,8 +66,8 @@ jobs:
         echo '    dead_code: ignore' >> analysis_options.yaml
         echo '    unused_local_variable: ignore' >> analysis_options.yaml
         echo '    unused_import: ignore' >> analysis_options.yaml
-        linter:
-          rules: []
+        echo 'linter:' >> analysis_options.yaml
+        echo '  rules: []' >> analysis_options.yaml
         dart fix --apply || true
         dart format . || true
 
