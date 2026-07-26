@@ -16,13 +16,30 @@ jobs:
     - name: Global Environment Deep Cleaning Suite
       run: |
         sudo chmod -R 777 . || true
-        # Obliterate hidden workspace cache locks and local module artifacts
         sudo rm -rf /home/runner/.pub-cache /root/.pub-cache pubspec.lock .dart_tool build || true
         find . -name "pubspec.lock" -exec rm -f {} + || true
         find . -name ".dart_tool" -type d -exec rm -rf {} + || true
         
-        # Deep global string substitution to repair legacy typing mismatches across all files
+        # Deep global string substitution to repair both analytics and auth name mismatches across all repository files
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
+        find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
+
+        # Dynamic Python Package Deduplicator: Cleans up pubspec.yaml to prevent double layout mappings
+        python3 -c "
+import os
+p = 'pubspec.yaml'
+if os.path.exists(p):
+    lines = open(p, 'r', encoding='utf-8').readlines()
+    seen = set()
+    deduped = []
+    for line in lines:
+        if 'supabase_flutter' in line:
+            if 'supabase_flutter' in seen:
+                continue
+            seen.add('supabase_flutter')
+        deduped.append(line)
+    open(p, 'w', encoding='utf-8').writelines(deduped)
+        "
 
     - name: Setup Java Compiler Infrastructure
       uses: actions/setup-java@v4
