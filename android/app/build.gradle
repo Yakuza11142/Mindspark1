@@ -1,30 +1,37 @@
 plugins {
     id "com.android.application"
+    id "org.jetbrains.kotlin.android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+def localPropertiesFile = rootProject.file("local.properties")
+
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
+    localPropertiesFile.withInputStream {
+        localProperties.load(it)
     }
 }
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystorePropertiesFile.withReader('UTF-8') { reader ->
-        keystoreProperties.load(reader)
-    }
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
+def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 android {
     namespace "com.example.mindspark1"
+
     compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.mindspark1"
+
+        minSdk 24
+        targetSdk 34
+
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+
+        multiDexEnabled true
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -32,32 +39,14 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = '17'
-    }
-
-    signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
-        }
-    }
-
-    defaultConfig {
-        applicationId "com.example.mindspark1"
-        minSdk 24
-        targetSdk 34
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
-        multiDexEnabled true
+        jvmTarget = "17"
     }
 
     buildTypes {
         release {
-            // FIXED: Uses the production signing config instead of debug
-            signingConfig signingConfigs.release
-            // OPTIMIZATION: Disabled shrinking to match your specific pipeline execution flags
+            // Allows GitHub Actions to build even without a release keystore.
+            signingConfig signingConfigs.debug
+
             minifyEnabled false
             shrinkResources false
         }
@@ -65,5 +54,9 @@ android {
 }
 
 flutter {
-    source '../..'
+    source "../.."
+}
+
+dependencies {
+    implementation "androidx.multidex:multidex:2.0.1"
 }
