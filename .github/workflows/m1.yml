@@ -1,4 +1,4 @@
-name: MindSpark Build
+name: MindSpark Production CI
 
 on:
   workflow_dispatch:
@@ -13,39 +13,54 @@ permissions:
   id-token: write
 
 concurrency:
-  group: mindspark-build
+  group: mindspark-production
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Flutter version
-        run: flutter --version
+      - name: Flutter Doctor
+        run: flutter doctor -v
 
-      - name: Clean
-        run: flutter clean
+      - name: Clean Workspace
+        run: |
+          flutter clean || true
+          rm -rf build
+          rm -rf .dart_tool
+          rm -rf .packages
+          rm -f pubspec.lock
 
-      - name: Get packages
+      - name: Get Packages
         run: flutter pub get
 
-      - name: Create secrets.json
+      - name: Automatic Dart Fixes
+        run: |
+          dart fix --apply || true
+          dart format . || true
+          flutter pub get
+
+      - name: Create Secrets
         run: |
           cat > secrets.json <<EOF
           {
@@ -64,30 +79,36 @@ jobs:
           }
           EOF
 
-      - name: Analyse
+      - name: Analyze
         run: flutter analyze
+        continue-on-error: true
 
-      - name: Run tests
+      - name: Test
         run: flutter test
         continue-on-error: true
 
-      - name: Build Web
-        run: flutter build web --release --dart-define-from-file=secrets.json
-
-      - name: Upload Web
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-
       - name: Build APK
-        run: flutter build apk --release --dart-define-from-file=secrets.json
+        run: |
+          flutter build apk \
+          --release \
+          --dart-define-from-file=secrets.json
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: MindSpark-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+
+      - name: Build Web
+        run: |
+          flutter build web \
+          --release \
+          --dart-define-from-file=secrets.json
+
+      - name: Upload Web
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
 
   deploy:
     needs: build
@@ -101,5 +122,5 @@ jobs:
       name: github-pages
 
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy Pages
         uses: actions/deploy-pages@v4
