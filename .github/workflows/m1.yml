@@ -8,20 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Ultimate Automated Package Name Purifier Engine
+    - name: Complete Automated Platform Dependency Sanitizer Suite
       run: |
         sudo chmod -R 777 . || true
         sudo rm -rf /home/runner/.pub-cache /root/.pub-cache pubspec.lock .dart_tool build || true
         find . -name "pubspec.lock" -exec rm -f {} + || true
         find . -name ".dart_tool" -type d -exec rm -rf {} + || true
         
-        # Globally swap out every possible variation of non-existent packages across all project files
+        # Purge every single invalid variation of non-existent separate packages across all workspace files
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_messaging/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_remote_config/supabase_flutter/g' {} + || true
         
-        # Pure flat Linux stream filter to cleanly strip out adjacent duplicate declarations
+        # Inline injection to append the auxiliary core drivers cleanly right under the flagship module block
+        sed -i 's/supabase_flutter:.*/supabase_flutter: ^2.6.0\n  postgrest: ^0.1.0\n  gotrue: ^0.1.0/g' pubspec.yaml || true
+        
+        # Pure flat Linux stream filter to cleanly strip out adjacent duplicate package declarations
         sed -i 'N;/^\(.*\)\n\1$/!P;D' pubspec.yaml || true
     - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
