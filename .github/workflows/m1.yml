@@ -13,7 +13,12 @@ jobs:
     - name: Checkout Source Code Tree
       uses: actions/checkout@v4
 
-    - run: sudo chmod -R 777 . || true
+    - name: Cache-Busting Force Reset
+      run: |
+        # Forcefully discard any old hidden server cache snapshots and sync perfectly
+        git reset --hard HEAD || true
+        git clean -fdx || true
+        sudo chmod -R 777 . || true
 
     - name: Setup Java Compiler Infrastructure
       uses: actions/setup-java@v4
