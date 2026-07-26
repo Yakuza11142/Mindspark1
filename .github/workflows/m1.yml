@@ -17,10 +17,8 @@ jobs:
 
     - name: Brute-Force Dependency Injection Trick
       run: |
-        # This executes at point zero, completely wiping the typo before any compiler steps execute
         python3 -c "p='pubspec.yaml'; lines=[l for l in open(p,'r',encoding='utf-8').readlines() if 'supabase_analytics' not in l]; open(p,'w',encoding='utf-8').writelines(lines)"
         python3 -c "p='pubspec.yaml'; t=open(p,'r',encoding='utf-8').read(); fixed=t.replace('dependencies:', 'dependencies:\n  supabase_flutter: ^2.6.0'); open(p,'w',encoding='utf-8').write(fixed)"
-        print("Mismatched dependencies completely cleared from system architecture memory!")
 
     - name: Setup Java Compiler Infrastructure
       uses: actions/setup-java@v4
@@ -88,7 +86,7 @@ jobs:
       run: |
         flutter analyze || true
 
-    - name: Compile Flutter Web Release with Code Fixer Override
+    - name: Compile Flutter Web Release
       run: |
         mkdir -p web
         python3 -c 'import os; q=chr(34); h=chr(36); p="web/index.html"; html=[f"<!DOCTYPE html><html><head><base href={q}{h}FLUTTER_BASE_HREF{q}><meta charset={q}UTF-8{q}><title>Mind Spark</title><script src={q}flutter_bootstrap.js{q} async></script></head><body></body></html>"]; open(p, "w").write("".join(html))'
