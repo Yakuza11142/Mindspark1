@@ -8,20 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Global Environment Cleaning & Purge Suite
+    - name: Pure Global Dependency Correction Engine
       run: |
         sudo chmod -R 777 . || true
         sudo rm -rf /home/runner/.pub-cache /root/.pub-cache pubspec.lock .dart_tool build || true
         find . -name "pubspec.lock" -exec rm -f {} + || true
         find . -name ".dart_tool" -type d -exec rm -rf {} + || true
         
-        # Global text replacement string sweep to completely fix all legacy package typos across your repo files
+        # Globally swap out every instance of fictional packages across all repo source files
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_messaging/supabase_flutter/g' {} + || true
         
-        # Python deduplication module to clean up package blocks and protect indentation structures
-        python3 -c "import os; p='pubspec.yaml'\nif os.path.exists(p):\n    lines=open(p,'r',encoding='utf-8').readlines(); s=set(); d=[]\n    for l in lines:\n        if 'supabase_flutter' in l:\n            if 'supabase_flutter' in s: continue\n            s.add('supabase_flutter')\n        d.append(l)\n    open(p,'w',encoding='utf-8').writelines(d)"
+        # Pure flat stream filtering: Forcefully strip out duplicate adjacent package declarations cleanly
+        sed -i 'N;/^\(.*\)\n\1$/!P;D' pubspec.yaml || true
     - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
     - uses: subosito/flutter-action@v2
