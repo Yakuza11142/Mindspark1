@@ -1,7 +1,8 @@
 name: mindspark1
 description: "AI TUTOR & AR LAB"
+publish_to: "none"
+
 version: 1.0.0+1
-publish_to: 'none'
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -9,57 +10,82 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   cupertino_icons: ^1.0.8
+
+  # State Management
   provider: ^6.1.2
-  supabase_flutter: ^2.6.0       
+
+  # Backend
+  supabase_flutter: ^2.6.0
+
+  # Environment
   flutter_dotenv: ^6.0.1
+
+  # Networking
   dio: ^5.5.0
+
+  # Utilities
   intl: ^0.19.0
-  permission_handler: ^11.3.1
-  flutter_animate: ^4.5.0
-  vector_math: ^2.1.4
-  url_launcher: ^6.3.0            
-  shared_preferences: ^2.3.2      
-  google_generative_ai: ^0.4.2    
-  flutter_tts: ^4.2.5             
-  speech_to_text: ^7.4.0
-  path_provider: ^2.1.4
   crypto: ^3.0.5
   uuid: ^4.4.0
+  vector_math: ^2.1.4
 
-  # Real-Time Mathematical Data Pipe (Using P2P DataChannels, No Pixel Streaming)
-  flutter_webrtc: ^1.2.0
+  # Device
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.3.2
+  path_provider: ^2.1.4
+  url_launcher: ^6.3.0
 
-  # OPTIMIZED: Native frame processor to handle real-time spatial calculations efficiently
+  # AI
+  google_generative_ai: ^0.4.2
+
+  # Voice
+  flutter_tts: ^4.2.5
+  speech_to_text: ^7.4.0
+
+  # Animation
+  flutter_animate: ^4.5.0
+
+  # Camera & Vision
+  camera: ^0.11.0
   google_mlkit_face_detection: ^0.12.0
 
-  # Native Core Fallback Drivers
-  app_links: ^6.3.2                
-  arcore_flutter_plus: ^1.0.2     
-  camera: ^0.11.0                 
-  camera_android_camerax: ^0.6.30  
-  flutter_plugin_android_lifecycle: ^2.0.24 
-  webview_flutter: ^4.9.0         
-  webview_flutter_android: ^4.8.0  
-  google_mobile_ads: ^5.2.0       
+  # WebRTC
+  flutter_webrtc: ^1.2.0
+
+  # Deep Links
+  app_links: ^6.3.2
+
+  # WebView
+  webview_flutter: ^4.9.0
+
+  # Ads
+  google_mobile_ads: ^5.2.0
+
+  # AR (Android)
+  arcore_flutter_plus: ^1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^4.0.0
   build_runner: ^2.4.9
-  flutter_launcher_icons: ^0.14.2
   source_gen: ^1.5.0
+  flutter_launcher_icons: ^0.14.2
 
 flutter:
   uses-material-design: true
+
   assets:
-    - assets/                     
+    - assets/
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false                      
-  image_path: "assets/icon_launcher.png"
+  ios: false
+  image_path: assets/icon_launcher.png
+
   web:
     generate: true
-    image_path: "assets/icon_launcher.png"
+    image_path: assets/icon_launcher.png
