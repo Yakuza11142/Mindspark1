@@ -20,6 +20,7 @@ jobs:
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_messaging/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_remote_config/supabase_flutter/g' {} + || true
+        find . -type f -not -path '*/.*' -exec sed -i 's/supabase_database/supabase_flutter/g' {} + || true
         
         # Hardened Dependency Override Injection: Resolves the http package deadlock completely
         sed -i 's/supabase_flutter:.*/supabase_flutter: ^2.6.0/g' pubspec.yaml || true
