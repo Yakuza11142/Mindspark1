@@ -13,6 +13,8 @@ jobs:
     - name: Checkout Source Code Tree
       uses: actions/checkout@v4
 
+    - run: sudo chmod -R 777 . || true
+
     - name: Global Environment Deep Cleaning Suite
       run: |
         sudo chmod -R 777 . || true
@@ -120,7 +122,7 @@ if os.path.exists(p):
         dart format . || true
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifacts@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
 
   deploy:
