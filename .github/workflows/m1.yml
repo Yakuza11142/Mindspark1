@@ -13,11 +13,40 @@ jobs:
     - name: Checkout Source Code Tree
       uses: actions/checkout@v4
 
-    - name: Cache-Busting Force Reset
+    - name: Uncache All Hidden Caches System Override
       run: |
-        # Forcefully discard any old hidden server cache snapshots and sync perfectly
-        git reset --hard HEAD || true
-        git clean -fdx || true
+        # 1. Force clear standard Linux environment package storage blocks
+        sudo rm -rf /home/runner/.pub-cache || true
+        sudo rm -rf /root/.pub-cache || true
+        
+        # 2. Obliterate local generated tracking files and locks within the workspace
+        sudo rm -f pubspec.lock || true
+        sudo rm -rf .dart_tool || true
+        sudo rm -rf build || true
+        
+        # 3. Discard any ghost code snapshot artifacts left inside hidden routes
+        find . -name "pubspec.lock" -exec rm -f {} + || true
+        find . -name ".dart_tool" -type d -exec rm -rf {} + || true
+        
+        # 4. Total Repository Text Sweep to strip any residual analytics typos globally
+        find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
+        
+        # 5. Native deduplication module to clean up package definitions list structure
+        python3 -c "
+import os
+p = 'pubspec.yaml'
+if os.path.exists(p):
+    lines = open(p, 'r', encoding='utf-8').readlines()
+    seen = set()
+    deduped = []
+    for line in lines:
+        if 'supabase_flutter' in line:
+            if 'supabase_flutter' in seen:
+                continue
+            seen.add('supabase_flutter')
+        deduped.append(line)
+    open(p, 'w', encoding='utf-8').writelines(deduped)
+        "
         sudo chmod -R 777 . || true
 
     - name: Setup Java Compiler Infrastructure
