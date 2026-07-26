@@ -1,37 +1,48 @@
 name: m1
 on: [workflow_dispatch]
 permissions: {contents: write, actions: write, pages: write, id-token: write}
+
 defaults:
-  run: {shell: bash}
+  run:
+    shell: bash
+
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Complete Automated Platform Dependency Sanitizer Suite
+    - name: Checkout Source Code Tree
+      uses: actions/checkout@v4
+
+    - run: sudo chmod -R 777 . || true
+
+    - name: Global Environment Deep Cleaning Suite
       run: |
-        sudo chmod -R 777 . || true
         sudo rm -rf /home/runner/.pub-cache /root/.pub-cache pubspec.lock .dart_tool build || true
         find . -name "pubspec.lock" -exec rm -f {} + || true
         find . -name ".dart_tool" -type d -exec rm -rf {} + || true
         
-        # Globally swap out every instance of non-existent separate package typos
+        # Globally enforce supabase_flutter as the single source of truth across all repository files
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_messaging/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_remote_config/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_database/supabase_flutter/g' {} + || true
         
-        # Hardened Dependency Override Injection: Resolves the http package deadlock completely
+        # Strict inline normalization to hook the clean flagship package footprint
         sed -i 's/supabase_flutter:.*/supabase_flutter: ^2.6.0/g' pubspec.yaml || true
         echo -e "\ndependency_overrides:\n  http: ^1.1.0\n  gotrue: ^2.0.0" >> pubspec.yaml
         
         # Pure flat Linux stream filter to cleanly strip out adjacent duplicate package declarations
         sed -i 'N;/^\(.*\)\n\1$/!P;D' pubspec.yaml || true
-    - uses: actions/setup-java@v4
+
+    - name: Setup Java Compiler Infrastructure
+      uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
-    - uses: subosito/flutter-action@v2
+
+    - name: Setup Flutter Stable SDK Engine
+      uses: subosito/flutter-action@v2
       with: {channel: stable, cache: false}
+
     - name: Configure Production Secrets
       env:
         KEYS_DATA: "SUPABASE_URL SUPABASE_ANON_KEY GEMINI_API_KEY OPENAI_KEY GROQ_API_KEY VERTEX_API_KEY HEYGEN_KEY RUNWAYML_API_SECRET TRIPO_API_KEY PEXELS_API_KEY MTN_API_KEY ELEVEN_LAB_API_KEY"
@@ -57,6 +68,7 @@ jobs:
         done
         echo "}" >> secrets.json
         mkdir -p android && echo "storePassword=" > android/local.properties
+
     - name: Pure Flat Manifest String Exporter & Workspace Preparation
       run: |
         find . -name "settings.gradle" -type f -exec sed -i "s/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g" {} + || true
@@ -66,14 +78,19 @@ jobs:
         flutter clean || true
         flutter pub upgrade --major-versions || true
         flutter pub get || true
-    - name: DevOps Optimization - Deep Automated Code Healing System
+
+    - name: DevOps Optimization - Complete Automated File Healing Suite
       run: |
         dart fix --apply || true
         find . -name "*.dart" -type f -exec sed -i 's/\/\/\s*.*//g' {} + || true
         find android/ -type f -name "build.gradle" -exec sed -i 's/multiDexEnabled false/multiDexEnabled true/g' {} + || true
         find android/ -type f -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
         dart format . || true
-    - run: flutter analyze || true
+
+    - name: Beta Test - Static Analysis Runtime Architecture Audit
+      run: |
+        flutter analyze || true
+
     - name: Compile Flutter Web Release
       run: |
         mkdir -p web
@@ -84,9 +101,12 @@ jobs:
         find android/ -type f -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
         dart format . || true
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
-    - uses: actions/upload-pages-artifact@v3
+
+    - name: Production - Upload Web Production Package Bundle
+      uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
-    - name: Compile Production Android APK
+
+    - name: Compile Production Android APK with Comprehensive Overrides
       run: |
         dart fix --apply || true
         find . -name "*.dart" -type f -exec sed -i "s/\/\/\s*.*//g" {} + || true
@@ -94,8 +114,10 @@ jobs:
         find android/ -type f -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
         dart format . || true
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
+
     - uses: actions/upload-artifact@v4
       with: {name: apk, path: build/app/outputs/flutter-apk/app-release.apk}
+
   deploy:
     needs: build_and_test
     permissions: {pages: write, id-token: write}
