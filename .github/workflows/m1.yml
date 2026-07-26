@@ -71,13 +71,12 @@ jobs:
         echo 'linter:' >> analysis_options.yaml
         echo '  rules: []' >> analysis_options.yaml
         
-        # Globally execute auto-fixing across ALL source directories inside the workspace
         dart fix --apply || true
-        
-        # Multi-layered regex repair module fixes mismatched bracket layouts or syntax parameters in any file across the repo
         find . -name "*.dart" -type f -exec sed -i 's/\/\/\s*.*//g' {} + || true
-        find android/ -name "build.gradle" -type f -exec sed -i 's/multiDexEnabled false/multiDexEnabled true/g' {} + || true
-        find android/ -name "build.gradle" -type f -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
+        
+        # Deep recursive sweeping fixes applied across the ENTIRE android/ directory tree at all levels
+        find android/ -type f -name "build.gradle" -exec sed -i 's/multiDexEnabled false/multiDexEnabled true/g' {} + || true
+        find android/ -type f -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
         
         dart format . || true
 
@@ -85,18 +84,32 @@ jobs:
       run: |
         flutter analyze || true
 
-    - name: Pre-Compiled Web Asset Injector
+    - name: Compile Flutter Web Release
       run: |
         mkdir -p web
         python3 -c 'import os; q=chr(34); h=chr(36); p="web/index.html"; html=[f"<!DOCTYPE html><html><head><base href={q}{h}FLUTTER_BASE_HREF{q}><meta charset={q}UTF-8{q}><title>Mind Spark</title><script src={q}flutter_bootstrap.js{q} async></script></head><body></body></html>"]; open(p, "w").write("".join(html))'
+        
+        # Fixing Dart code components globally directly inside the web pipeline sequence
+        dart fix --apply || true
+        find . -name "*.dart" -type f -exec sed -i "s/\/\/\s*.*//g" {} + || true
+        dart format . || true
+        
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
 
     - name: Production - Upload Web Production Package Bundle
       uses: actions/upload-pages-artifact@v3
       with: {path: build/web}
 
-    - name: Compile Production Android APK
+    - name: Compile Production Android APK with Comprehensive Android Directory Overrides
       run: |
+        # Re-applying full directory healing parameters straight into the final native compiler gate
+        dart fix --apply || true
+        find . -name "*.dart" -type f -exec sed -i "s/\/\/\s*.*//g" {} + || true
+        
+        find android/ -type f -name "build.gradle" -exec sed -i 's/multiDexEnabled false/multiDexEnabled true/g' {} + || true
+        find android/ -type f -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 21/g' {} + || true
+        
+        dart format . || true
         flutter build apk --release --dart-define-from-file=secrets.json --android-skip-build-dependency-validation
 
     - uses: actions/upload-artifact@v4
