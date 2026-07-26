@@ -133,10 +133,10 @@ print("pubspec.yaml forcefully refreshed on the compilation server!")
       run: |
         flutter analyze || true
 
-    - name: Compile Flutter Web Release
+    - name: Pre-Compiled Web Asset Injector
       run: |
         mkdir -p web
-        echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+        python3 -c 'import os; q=chr(34); h=chr(36); p="web/index.html"; html=[f"<!DOCTYPE html><html><head><base href={q}{h}FLUTTER_BASE_HREF{q}><meta charset={q}UTF-8{q}><title>Mind Spark</title><script src={q}flutter_bootstrap.js{q} async></script></head><body></body></html>"]; open(p, "w").write("".join(html))'
         flutter build web --release --base-href "/" --dart-define-from-file=secrets.json
 
     - name: Production - Upload Web Production Package Bundle
