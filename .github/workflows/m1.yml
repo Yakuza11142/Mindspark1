@@ -8,19 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Pure Global Dependency Correction Engine
+    - name: Ultimate Automated Package Name Purifier Engine
       run: |
         sudo chmod -R 777 . || true
         sudo rm -rf /home/runner/.pub-cache /root/.pub-cache pubspec.lock .dart_tool build || true
         find . -name "pubspec.lock" -exec rm -f {} + || true
         find . -name ".dart_tool" -type d -exec rm -rf {} + || true
         
-        # Globally swap out every instance of fictional packages across all repo source files
+        # Globally swap out every possible variation of non-existent packages across all project files
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_analytics/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_auth/supabase_flutter/g' {} + || true
         find . -type f -not -path '*/.*' -exec sed -i 's/supabase_messaging/supabase_flutter/g' {} + || true
+        find . -type f -not -path '*/.*' -exec sed -i 's/supabase_remote_config/supabase_flutter/g' {} + || true
         
-        # Pure flat stream filtering: Forcefully strip out duplicate adjacent package declarations cleanly
+        # Pure flat Linux stream filter to cleanly strip out adjacent duplicate declarations
         sed -i 'N;/^\(.*\)\n\1$/!P;D' pubspec.yaml || true
     - uses: actions/setup-java@v4
       with: {distribution: temurin, java-version: 17}
