@@ -1,5 +1,5 @@
 buildscript {
-    // 🚀 UPGRADED: Synchronized with settings.gradle to prevent compiler collisions
+    // 🚀 Kotlin compiler set to meet modern Flutter 3.x infrastructure requirements
     ext.kotlin_version = '2.0.20'
 
     repositories {
@@ -8,6 +8,7 @@ buildscript {
     }
 
     dependencies {
+        // Safe Android Gradle Plugin for contemporary Gradle setups
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -22,11 +23,23 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
-subprojects {
+// 🚀 UNIFIED SUBPROJECTS EVALUATION GATEWAY
+subprojects { project ->
+    // 1. Setup build directories properly for all modules
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     
-    // Crucial: Tells Gradle to evaluate your app target before processing your plugins
+    // 2. Structural declaration ensuring the application wrapper processes first
     project.evaluationDependsOn(":app")
+
+    // 3. NATIVE COMPATIBILITY SECURITY ENGINE
+    // Forcefully injects namespaces into legacy hidden plugins to satisfy AGP 8.x standards
+    if (project.name == "arcore_flutter_plugin") {
+        afterEvaluate {
+            project.android {
+                namespace = "com.github.pew.arcore_flutter_plugin"
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
