@@ -1,81 +1,53 @@
-#!/usr/bin/env sh
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        def localPropertiesFile = new File(settingsDir, "local.properties")
 
-###############################################################################
-#
-#  Gradle startup script for POSIX/Unix systems
-#
-###############################################################################
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.withInputStream {
+                properties.load(it)
+            }
+        }
 
-# Attempt to set APP_HOME
-# Resolve links: $0 may be a link
-PRG="$0"
-# Need this for relative symlinks.
-while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
-        PRG="$link"
-    else
-        PRG=`dirname "$PRG"`"/$link"
-    fi
-done
+        def flutterSdk = properties.getProperty("flutter.sdk")
+        if (flutterSdk == null) {
+            flutterSdk = System.getenv("FLUTTER_ROOT")
+        }
 
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`" >/dev/null
-APP_HOME="`pwd`"
-cd "$SAVED" >/dev/null
+        if (flutterSdk == null) {
+            throw new GradleException("Flutter SDK not found. Set flutter.sdk in local.properties.")
+        }
 
-APP_BASE_NAME=`basename "$PRG"`
-APP_ARGS="$#"
+        return flutterSdk
+    }()
 
-# Collect all arguments for the java command, preserving spaces
-NUMARGS=$#
-for var in "$@"
-do
-    ARGS="$ARGS \"$var\""
-done
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
-# 🚀 FIXED: Clean single-string format scaled to support your 4GB properties configuration
-DEFAULT_JVM_OPTS="-Xmx4g -Xms512m -XX:MaxMetaspaceSize=512m"
-
-# Determine the Java command to use or fallback to paths
-if [ -n "$JAVA_HOME" ] ; then
-    if [ -x "$JAVA_HOME/jre/bin/java" ] ; then
-        JAVACMD="$JAVA_HOME/jre/bin/java"
-    elif [ -x "$JAVA_HOME/bin/java" ] ; then
-        JAVACMD="$JAVA_HOME/bin/java"
-    fi
-else
-    JAVACMD="java"
-    which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH."
-fi
-
-if [ ! -x "$JAVACMD" ] ; then
-    die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME"
-fi
-
-# Increase maximum file descriptors if permissible
-MAX_FD_LIMIT=`ulimit -H -n`
-if [ $? -eq 0 ] ; then
-    ulimit -n $MAX_FD_LIMIT
-fi
-
-# Setup the classpath to find your gradle-wrapper.jar
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-
-# Helper function to print error and exit
-die () {
-    echo
-    echo "$*"
-    echo
-    exit 1
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
 }
 
-# Execute Gradle
-exec "$JAVACMD" \
-    $DEFAULT_JVM_OPTS \
-    $GRADLE_OPTS \
-    "-Dorg.gradle.appname=$APP_BASE_NAME" \
-    -classpath "$CLASSPATH" \
-    org.gradle.wrapper.GradleWrapperMain \
-    "$@"
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    // 🚀 CRITICAL FIX: Registers the Flutter plugin tool required by your app's build.gradle
+    id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+    id "com.android.application" version "8.7.3" apply false
+    id "org.jetbrains.kotlin.android" version "1.9.24" apply false
+}
+
+dependencyResolutionManagement {
+    // Keeps project-level repos active for specialized hardware packages
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "mindspark1"
+
+include(":app")
