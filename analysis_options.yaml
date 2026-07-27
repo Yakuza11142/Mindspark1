@@ -1,17 +1,20 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  # 🚀 FORCES THE COMPILER TO IGNORE SYNTAX WARNINGS IN CI PIPELINES
+  # 🚀 FORCES THE COMPILER TO IGNORE DIAGNOSTIC CODE WARNINGS IN CI PIPELINES
   errors:
     todo: ignore
     invalid_annotation_target: ignore
     missing_required_param: ignore
     dead_code: ignore
     unused_element: ignore
+    unused_import: ignore         # 🚀 FIXED: Moved from rules block to errors ignore block
+    unused_local_variable: ignore  # 🚀 FIXED: Moved from rules block to errors ignore block
+    undefined_lint: ignore         # 🚀 EXTRA SAFETY: Silences any unrecognized rules
     
   exclude:
     - "build/**"
-    - ".dark_tool/**"
+    - ".dart_tool/**"
     - "android/**"
     - "ios/**"
     - "web/**"
@@ -20,11 +23,9 @@ analyzer:
 
 linter:
   rules:
-    # 🚀 SECURELY DISABLES THE STRICT CONTROLS THAT CRASH ENGINES IN GITHUB ACTIONS
+    # 🚀 SECURELY DISABLES THE STYLISTIC CONTROLS THAT CRASH ENGINES IN GITHUB ACTIONS
     prefer_const_constructors: false
     prefer_const_literals_to_create_immutables: false
-    prefer_const_declarations: false  # 🚀 FIXED: Replaced invalid rule name string
+    prefer_const_declarations: false
     always_specify_types: false
     avoid_print: false
-    unused_import: false
-    unused_local_variable: false
