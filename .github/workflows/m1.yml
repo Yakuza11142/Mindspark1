@@ -29,18 +29,22 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          # 🚀 CACHE DISABLED: Forces Java to perform a fresh build cycle
           cache: ""
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # 🚀 CACHE DISABLED: Forces Flutter to drop stale dependency histories
           cache: false
 
       - name: Flutter Doctor
         run: flutter doctor -v
+
+      # 🚀 THE DEFINITIVE MOBILE WORKAROUND: Forcefully purges the broken package name out of any file in the project!
+      - name: Force Purge Ghost Dependencies
+        run: |
+          find . -type f -name "pubspec.yaml" -exec sed -i '/supabase_analytics/d' {} +
+          find . -type f -name "*.dart" -exec sed -i '/supabase_analytics/d' {} +
 
       - name: Hard Clean Workspace
         run: |
@@ -89,7 +93,6 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 OBFUSCATED BUILD: Leverages your local checked-in keystore parameters automatically
       - name: Build APK
         run: |
           flutter build apk \
