@@ -76,12 +76,12 @@ jobs:
           }
           EOF
 
-      # 🚀 DECODES YOUR REPOSITORY KEYSTORE EXACTLY MATCHING YOUR SCREENSHOT
+      # 🚀 DECODES YOUR REPOSITORY KEYSTORE EXACTLY MATCHING YOUR GITHUB SECRETS SCREENSHOT
       - name: Decode Android Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
 
-      # 🚀 GENERATES KEY.PROPERTIES MATCHING YOUR SCREENSHOT SECRETS EXACTLY
+      # 🚀 GENERATES KEY.PROPERTIES TO BE READ BY YOUR APP-LEVEL BUILD.GRADLE FILE
       - name: Generate Key Properties
         run: |
           cat > android/key.properties <<EOF
