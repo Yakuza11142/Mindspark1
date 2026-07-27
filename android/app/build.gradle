@@ -1,55 +1,82 @@
-buildscript {
-    ext.kotlin_version = '2.0.20'
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+android {
+    // 🚀 FIXED: Native Development Kit explicitly locked to support your modern JNI/Speech modules
+    ndkVersion = "28.2.13676358"
 
-rootProject.buildDir = "../build"
-
-subprojects { project ->
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(":app")
-
-    // 🚀 INTERCEPTS MISSING NAMESPACES
-    project.plugins.withId('com.android.library') {
-        if (project.android.namespace == null) {
-            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-            project.android.namespace = "com.mindspark.generated.${cleanName}"
-        }
-    }
-    
-    project.plugins.withId('com.android.application') {
-        if (project.android.namespace == null) {
-            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-            project.android.namespace = "com.mindspark.generated.${cleanName}"
-        }
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withInputStream { localProperties.load(it) }
     }
 
-    // 🚀 THE KOTLIN COMPILER FORCE-ENFORCER: Resolves the arcore_flutter_plugin 1.3.50 conflict instantly
-    project.configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion '2.0.20'
+    def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+    if (flutterVersionCode == null) {
+        flutterVersionCode = '1'
+    }
+
+    def flutterVersionName = localProperties.getProperty('flutter.versionName')
+    if (flutterVersionName == null) {
+        flutterVersionName = '1.0.0'
+    }
+
+    compileSdk 36
+
+    namespace "com.mindspark.app"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    // 🚀 FIXED: Binds live workflow keystore signatures natively to your production release profile
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file('key.properties')
+            if (keystorePropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                
+                storeFile = file(keystoreProperties['storeFile'])
+                storePassword = keystoreProperties['storePassword']
+                keyAlias = keystoreProperties['keyAlias']
+                keyPassword = keystoreProperties['keyPassword']
             }
         }
     }
+
+    defaultConfig {
+        applicationId "com.mindspark.app"
+        minSdk 24
+        targetSdk 36
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        
+        // 🚀 FIXED: Handles massive 23K+ line code footprints past the 65k method cap
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            // 🚀 FIXED: Protects against Google Play Protect device launch crashes
+            signingConfig signingConfigs.release
+            
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
 }
 
-tasks.register("clean", Delete) {
-    delete rootProject.layout.buildDirectory
+dependencies {
+    // Native MultiDex engine library package
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
