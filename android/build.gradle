@@ -45,18 +45,25 @@ subprojects { project ->
             project.android.namespace = "com.mindspark.generated.${cleanName}"
         }
         
-        // 🚀 THE NATIVE MANIFEST FIX: Dynamically forces AGP to overwrite and ignore old manifest package attributes
-        project.android.defaultConfig {
-            manifestPlaceholders = [package: project.android.namespace]
-        }
-        
-        // Forcefully strips the old attribute from the manifest compiler inputs task array entirely
-        project.tasks.withType(com.android.build.gradle.tasks.ProcessLibraryManifest.class).configureEach { task ->
-            task.doFirst {
-                if (task.manifestOutputFile.get().asFile.exists()) {
-                    String content = task.manifestOutputFile.get().asFile.text
-                    task.manifestOutputFile.get().asFile.text = content.replaceAll(/package="com\.difrancescogianmarco\.arcore_flutter_plugin"/, "")
+        // 🚀 THE ULTIMATE MANIFEST ATTRIBUTE STRIPPER: Removes the forbidden package="..." string natively
+        project.android.ext.architectureFixRun = false
+        project.android.variantFilter { variant ->
+            if (!project.android.ext.architectureFixRun) {
+                try {
+                    // Locates the manifest file path directly within the plugin's source tree
+                    def manifestFile = project.file("src/main/AndroidManifest.xml")
+                    if (manifestFile.exists()) {
+                        String fileText = manifestFile.text
+                        // Removes the target package attribute while keeping the manifest tag perfectly valid
+                        if (fileText.contains('package=')) {
+                            manifestFile.text = fileText.replaceAll(/package="[^"]*"/, "")
+                            logger.quiet("🚀 Hard-purged deprecated XML package attribute natively from: [${project.name}]")
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.quiet("⚠️ Manifest patch skip for [${project.name}]: ${e.getMessage()}")
                 }
+                project.android.ext.architectureFixRun = true
             }
         }
     }
