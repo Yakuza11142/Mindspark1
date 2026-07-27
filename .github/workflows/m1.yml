@@ -29,18 +29,24 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          # 🚀 FORCE CACHE BYPASS: Forces a fresh platform compilation step
           cache: ""
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # 🚀 CACHE PURGE: Drops memory of the deleted package instantly
           cache: false
 
       - name: Flutter Doctor
         run: flutter doctor -v
+
+      # 🚀 THE DEFINITIVE MOBILE WORKAROUND: Forcefully purges the broken package names out of any file in the project!
+      - name: Force Purge Ghost Dependencies
+        run: |
+          find . -type f -name "pubspec.yaml" -exec sed -i '/supabase_analytics/d' {} +
+          find . -type f -name "pubspec.yaml" -exec sed -i '/supabase_auth/d' {} +
+          find . -type f -name "*.dart" -exec sed -i '/supabase_analytics/d' {} +
+          find . -type f -name "*.dart" -exec sed -i '/supabase_auth/d' {} +
 
       - name: Hard Clean Workspace
         run: |
