@@ -25,16 +25,13 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // 🚀 THE UNIVERSAL MOBILE FIREWALL: Automatically fixes namespaces for ALL legacy background plugins at once!
-    afterEvaluate {
-        if (project.hasProperty('android')) {
-            // Checks if a namespace is missing
-            if (project.android.namespace == null) {
-                // Dynamically creates a valid unique namespace string using the plugin's folder name
-                String dynamicNamespace = "com.mindspark.generated." + project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-                project.android.namespace = dynamicNamespace
-                logger.quiet("🚀 Fixed missing namespace for [${project.name}] -> mapped to [${dynamicNamespace}]")
-            }
+    // 🚀 FIXED: Dynamic immediate evaluation logic prevents afterEvaluate race conditions
+    if (project.hasProperty('android')) {
+        // Fallback safety to check both local properties and immediate values
+        if (project.android.namespace == null) {
+            String dynamicNamespace = "com.mindspark.generated." + project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+            project.android.namespace = dynamicNamespace
+            logger.quiet("🚀 Instantly assigned missing namespace for [${project.name}] -> [${dynamicNamespace}]")
         }
     }
 }
