@@ -1,3 +1,20 @@
+// 🚀 FIXED: Added the mandatory property-parsing blocks so Gradle can read your Flutter variables
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0.0'
+}
+
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
@@ -5,7 +22,6 @@ plugins {
 }
 
 android {
-    // 🚀 FIXED: Hardens compilation target to clear Android SDK API 36 plugin requirements
     compileSdk 36
 
     namespace "com.mindspark.app"
@@ -19,7 +35,6 @@ android {
         jvmTarget = '17'
     }
 
-    // 🚀 FIXED: Binds live workflow keystore signatures natively to your production release profile
     signingConfigs {
         release {
             def keystorePropertiesFile = rootProject.file('key.properties')
@@ -42,13 +57,12 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         
-        // 🚀 FIXED: Handles massive 23K+ line code footprints past the 65k method cap
+        // Handles your massive 23K+ line code footprint safely
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // 🚀 FIXED: Protects against Google Play Protect device launch crashes
             signingConfig signingConfigs.release
             
             minifyEnabled true
@@ -59,6 +73,5 @@ android {
 }
 
 dependencies {
-    // Native MultiDex engine package
     implementation 'androidx.multidex:multidex:2.0.1'
 }
