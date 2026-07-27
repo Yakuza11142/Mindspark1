@@ -56,13 +56,16 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
-      # 🚀 AGP 8+ COMPATIBILITY PATCH: Automatically fixes namespaces on legacy AR dependencies in the cloud cache
+      # 🚀 AGP 8+ POST-DOWNLOAD COMPATIBILITY PATCH: Patches legacy AR dependencies directly in the cloud cache once fetched
       - name: Patch Legacy AR Plugin Namespace
         run: |
-          ARCORE_BUILD_GRADLE="$PUB_CACHE/hosted/pub.dev/arcore_flutter_plugin-0.1.0/android/build.gradle"
+          ARCORE_BUILD_GRADLE="/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plugin-0.1.0/android/build.gradle"
           if [ -f "$ARCORE_BUILD_GRADLE" ]; then
             sed -i '/android {/a \    namespace "com.github.pew.arcore_flutter_plugin"' "$ARCORE_BUILD_GRADLE"
-            echo "Successfully patched legacy arcore_flutter_plugin namespace!"
+            echo "Successfully located and patched legacy arcore_flutter_plugin namespace!"
+          else
+            echo "⚠️ Warning: File not found at $ARCORE_BUILD_GRADLE. Attempting alternative lookup..."
+            find /home/runner/.pub-cache/ -name "build.gradle" -path "*/arcore_flutter_plugin*/android/*" -exec sed -i '/android {/a \    namespace "com.github.pew.arcore_flutter_plugin"' {} +
           fi
 
       - name: Automatic Dart Fixes
