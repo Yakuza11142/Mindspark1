@@ -40,7 +40,7 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 THE ULTIMATE PHONE-DEV PROTECTION: Automatically catches and wipes ALL ghost "supabase_" packages at once!
+      # 🚀 THE UNIVERSAL MOBILE CLEANER: Deletes any line containing a bad "supabase_" prefix, protecting against phone typos!
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
@@ -64,6 +64,9 @@ jobs:
 
       - name: Create Secrets
         run: |
+          # 🚀 STRIPS AWAY HIDDEN CONTROL CHARACTERS AND TRAILING NEWLINES ON THE FLY
+          MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
+          
           cat > secrets.json <<EOF
           {
             "SUPABASE_URL":"${{ secrets.SUPABASE_URL }}",
@@ -76,7 +79,7 @@ jobs:
             "RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}",
             "TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}",
             "PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}",
-            "MTN_API_KEY":"${{ secrets.MTN_API_KEY }}",
+            "MTN_API_KEY":"$MTN_CLEAN",
             "ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"
           }
           EOF
@@ -92,7 +95,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 ZERO-KEYSTORE RELEASE CONFIG: Respects and uses your checked-in repository credentials natively [1]
+      # 🚀 ZERO-KEYSTORE RELEASE CONFIG: Respects and uses your checked-in repository credentials natively
       - name: Build APK
         run: |
           flutter build apk \
