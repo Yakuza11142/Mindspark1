@@ -1,5 +1,4 @@
 buildscript {
-    // 🚀 Kotlin compiler set to meet modern Flutter 3.x infrastructure requirements
     ext.kotlin_version = '2.0.20'
 
     repositories {
@@ -8,7 +7,6 @@ buildscript {
     }
 
     dependencies {
-        // Safe Android Gradle Plugin for contemporary Gradle setups
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -23,20 +21,19 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
-// 🚀 UNIFIED SUBPROJECTS EVALUATION GATEWAY
 subprojects { project ->
-    // 1. Setup build directories properly for all modules
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    
-    // 2. Structural declaration ensuring the application wrapper processes first
     project.evaluationDependsOn(":app")
 
-    // 3. NATIVE COMPATIBILITY SECURITY ENGINE
-    // Forcefully injects namespaces into legacy hidden plugins to satisfy AGP 8.x standards
-    if (project.name == "arcore_flutter_plugin") {
-        afterEvaluate {
-            project.android {
-                namespace = "com.github.pew.arcore_flutter_plugin"
+    // 🚀 THE UNIVERSAL MOBILE FIREWALL: Automatically fixes namespaces for ALL legacy background plugins at once!
+    afterEvaluate {
+        if (project.hasProperty('android')) {
+            // Checks if a namespace is missing
+            if (project.android.namespace == null) {
+                // Dynamically creates a valid unique namespace string using the plugin's folder name
+                String dynamicNamespace = "com.mindspark.generated." + project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+                project.android.namespace = dynamicNamespace
+                logger.quiet("🚀 Fixed missing namespace for [${project.name}] -> mapped to [${dynamicNamespace}]")
             }
         }
     }
