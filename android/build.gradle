@@ -21,7 +21,7 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
-// 🚀 FIXED: Dynamic classpath interception overrides the 1.3.50 plugin crash before evaluation
+// 🚀 FIXED: Upgraded classpath interception to force internal sub-buildscripts to compile with Kotlin 2.0.20
 gradle.beforeProject { project ->
     if (project.name == "arcore_flutter_plugin") {
         project.buildscript.configurations.all {
@@ -43,7 +43,21 @@ subprojects { project ->
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
-            logger.quiet("🚀 Assigned missing namespace for Library [${project.name}] -> [${project.android.namespace}]")
+        }
+        
+        // 🚀 THE NATIVE MANIFEST FIX: Dynamically forces AGP to overwrite and ignore old manifest package attributes
+        project.android.defaultConfig {
+            manifestPlaceholders = [package: project.android.namespace]
+        }
+        
+        // Forcefully strips the old attribute from the manifest compiler inputs task array entirely
+        project.tasks.withType(com.android.build.gradle.tasks.ProcessLibraryManifest.class).configureEach { task ->
+            task.doFirst {
+                if (task.manifestOutputFile.get().asFile.exists()) {
+                    String content = task.manifestOutputFile.get().asFile.text
+                    task.manifestOutputFile.get().asFile.text = content.replaceAll(/package="com\.difrancescogianmarco\.arcore_flutter_plugin"/, "")
+                }
+            }
         }
     }
     
@@ -51,7 +65,6 @@ subprojects { project ->
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
-            logger.quiet("🚀 Assigned missing namespace for App [${project.name}] -> [${project.android.namespace}]")
         }
     }
 }
