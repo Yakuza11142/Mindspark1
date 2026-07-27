@@ -1,4 +1,5 @@
 buildscript {
+    // Highly stable, fast-compiling Kotlin plugin match
     ext.kotlin_version = '1.9.24'
 
     repositories {
@@ -7,6 +8,7 @@ buildscript {
     }
 
     dependencies {
+        // Safe Android Gradle Plugin for contemporary Gradle setups
         classpath 'com.android.tools.build:gradle:8.7.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -23,6 +25,9 @@ rootProject.buildDir = "../build"
 
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+    
+    // CRITICAL: Tells Gradle to evaluate your app target before processing your custom AI/AR plugins
+    project.evaluationDependsOn(":app")
 }
 
 tasks.register("clean", Delete) {
