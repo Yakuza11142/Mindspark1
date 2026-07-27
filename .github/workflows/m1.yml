@@ -76,6 +76,21 @@ jobs:
           }
           EOF
 
+      # 🚀 DECODES YOUR REPOSITORY KEYSTORE EXACTLY MATCHING YOUR SCREENSHOT
+      - name: Decode Android Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+
+      # 🚀 GENERATES KEY.PROPERTIES MATCHING YOUR SCREENSHOT SECRETS EXACTLY
+      - name: Generate Key Properties
+        run: |
+          cat > android/key.properties <<EOF
+          storeFile=release-keystore.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
       - name: Analyze
         run: flutter analyze
         continue-on-error: true
@@ -84,14 +99,16 @@ jobs:
         run: flutter test
         continue-on-error: true
 
-      # 🚀 CRITICAL FIX: Grants execution access to the wrapper before calling the Android build engine
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
+      # 🚀 OBFUSCATED RELEASE BUILD WITH SEPARATE ENGINE SYMBOLS ARCHIVE
       - name: Build APK
         run: |
           flutter build apk \
           --release \
+          --obfuscate \
+          --split-debug-info=build/app/outputs/symbols \
           --dart-define-from-file=secrets.json
 
       - name: Upload APK
@@ -99,6 +116,13 @@ jobs:
         with:
           name: MindSpark-APK
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      # 🚀 UPLOADS SYMBOLS (Crucial for reading stack traces from obfuscated apps)
+      - name: Upload Debug Symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: MindSpark-Debug-Symbols
+          path: build/app/outputs/symbols
 
       - name: Build Web
         run: |
