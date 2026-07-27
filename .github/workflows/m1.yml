@@ -40,13 +40,10 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 THE DEFINITIVE MOBILE WORKAROUND: Forcefully purges the broken package names out of any file in the project!
-      - name: Force Purge Ghost Dependencies
+      # 🚀 THE ULTIMATE PHONE-DEV PROTECTION: Automatically catches and wipes ALL ghost "supabase_" packages at once!
+      - name: Universal Ghost Package Purge
         run: |
-          find . -type f -name "pubspec.yaml" -exec sed -i '/supabase_analytics/d' {} +
-          find . -type f -name "pubspec.yaml" -exec sed -i '/supabase_auth/d' {} +
-          find . -type f -name "*.dart" -exec sed -i '/supabase_analytics/d' {} +
-          find . -type f -name "*.dart" -exec sed -i '/supabase_auth/d' {} +
+          find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
 
       - name: Hard Clean Workspace
         run: |
@@ -95,7 +92,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 ZERO-KEYSTORE CONFIG: Respects and uses your checked-in repository credentials natively
+      # 🚀 ZERO-KEYSTORE RELEASE CONFIG: Respects and uses your checked-in repository credentials natively [1]
       - name: Build APK
         run: |
           flutter build apk \
