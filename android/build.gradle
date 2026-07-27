@@ -25,13 +25,20 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // 🚀 FIXED: Dynamic immediate evaluation logic prevents afterEvaluate race conditions
-    if (project.hasProperty('android')) {
-        // Fallback safety to check both local properties and immediate values
+    // 🚀 FIXED: Listens for exact plugin IDs to avoid PropertyNotFound runtime crashes
+    project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
-            String dynamicNamespace = "com.mindspark.generated." + project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-            project.android.namespace = dynamicNamespace
-            logger.quiet("🚀 Instantly assigned missing namespace for [${project.name}] -> [${dynamicNamespace}]")
+            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+            project.android.namespace = "com.mindspark.generated.${cleanName}"
+            logger.quiet("🚀 Instantly assigned missing namespace for Library [${project.name}] -> [${project.android.namespace}]")
+        }
+    }
+    
+    project.plugins.withId('com.android.application') {
+        if (project.android.namespace == null) {
+            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+            project.android.namespace = "com.mindspark.generated.${cleanName}"
+            logger.quiet("🚀 Instantly assigned missing namespace for App [${project.name}] -> [${project.android.namespace}]")
         }
     }
 }
