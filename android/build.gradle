@@ -21,15 +21,29 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
+// 🚀 FIXED: Dynamic classpath interception overrides the 1.3.50 plugin crash before evaluation
+gradle.beforeProject { project ->
+    if (project.name == "arcore_flutter_plugin") {
+        project.buildscript.configurations.all {
+            resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'org.jetbrains.kotlin') {
+                    details.useVersion '2.0.20'
+                }
+            }
+        }
+    }
+}
+
 subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // 🚀 INTERCEPTS MISSING NAMESPACES
+    // INTERCEPTS MISSING NAMESPACES SYNCHRONOUSLY
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
+            logger.quiet("🚀 Assigned missing namespace for Library [${project.name}] -> [${project.android.namespace}]")
         }
     }
     
@@ -37,15 +51,7 @@ subprojects { project ->
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
-        }
-    }
-
-    // 🚀 THE KOTLIN COMPILER FORCE-ENFORCER: Resolves the arcore_flutter_plugin 1.3.50 conflict instantly
-    project.configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion '2.0.20'
-            }
+            logger.quiet("🚀 Assigned missing namespace for App [${project.name}] -> [${project.android.namespace}]")
         }
     }
 }
