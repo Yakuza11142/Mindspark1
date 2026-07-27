@@ -28,17 +28,20 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.example.mindspark1"
 
+    // Required minimum for Supabase 2.x and Google ML Kit
     compileSdk 34
 
     defaultConfig {
         applicationId "com.example.mindspark1"
 
+        // Required minimum for ARCore and WebRTC
         minSdk 24
         targetSdk 34
 
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
+        // Required due to the high method count of AR, AI, and Ads SDKs
         multiDexEnabled true
     }
 
@@ -61,8 +64,10 @@ android {
                 signingConfig signingConfigs.debug
             }
 
-            minifyEnabled false
-            shrinkResources false
+            // Safely code-shrink and optimize your final production APK size
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
         debug {
