@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    // 🚀 FIXED: Fully satisfies the compile headers expected by your modern plugins
+    // 🚀 FIXED: Hardens compilation target to clear Android SDK API 36 plugin requirements
     compileSdk 36
 
     namespace "com.mindspark.app"
@@ -19,7 +19,7 @@ android {
         jvmTarget = '17'
     }
 
-    // 🚀 FIXED: Automatically binds your live workflow keystore signatures to your production builds
+    // 🚀 FIXED: Binds live workflow keystore signatures natively to your production release profile
     signingConfigs {
         release {
             def keystorePropertiesFile = rootProject.file('key.properties')
@@ -38,21 +38,19 @@ android {
     defaultConfig {
         applicationId "com.mindspark.app"
         minSdk 24
-        // 🚀 FIXED: Pairs perfectly with your compileSdk to legalize hardware intent pipelines
         targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         
-        // 🚀 FIXED: Breaks past the 65k method cap so your 1,276 file project can build safely
+        // 🚀 FIXED: Handles massive 23K+ line code footprints past the 65k method cap
         multiDexEnabled true
     }
 
     buildTypes {
         release {
-            // 🚀 FIXED: Ensures Google Play Protect accepts your app instead of forcing a runtime crash
+            // 🚀 FIXED: Protects against Google Play Protect device launch crashes
             signingConfig signingConfigs.release
             
-            // Handles aggressive code-stripping optimizations for production
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -61,6 +59,6 @@ android {
 }
 
 dependencies {
-    // Native MultiDex engine library
+    // Native MultiDex engine package
     implementation 'androidx.multidex:multidex:2.0.1'
 }
