@@ -13,6 +13,7 @@ import 'spatial_stub.dart'
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Async initialization handling for mobile ads wrapper
   final initAdmob = MobileAds.instance.initialize();
 
   String supabaseUrl = '';
@@ -33,21 +34,27 @@ void main() async {
     }
   }
 
-  // 3. Third Priority: Explicit project fallback string checks
-  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
-    supabaseUrl = "https://supabase.co"; 
-    supabaseKey = "your-anon-key-here";
+  // 3. Third Priority: Explicit project fallback string check validations
+  if (supabaseUrl.isEmpty || supabaseKey.isEmpty || supabaseUrl == "https://supabase.co") {
+    // 💡 Mobile devs tip: Put your emergency debug testing credentials right here if needed
+    supabaseUrl = ""; 
+    supabaseKey = "";
   }
 
   try {
-    if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty && !supabaseUrl.contains("your-supabase-project")) {
+    // 🚀 FIXED: Hardened URL validation check logic strings
+    if (supabaseUrl.isNotEmpty && 
+        supabaseKey.isNotEmpty && 
+        !supabaseUrl.contains("your-supabase-project") && 
+        Uri.tryParse(supabaseUrl)?.hasAbsolutePath == true) {
+      
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
       );
       debugPrint("☁️ Supabase production engine initialized successfully.");
     } else {
-      debugPrint("⚠️ Supabase compilation setup skipped: Set matching production keys.");
+      debugPrint("⚠️ Supabase initialization skipped: Valid production keys were not found.");
     }
   } catch (e) {
     debugPrint("❌ Supabase critical initialization failure: $e");
@@ -133,6 +140,9 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Convenient alias for Supabase operations inside your state views
+    final supabaseClient = Supabase.instance.client;
+
     return Scaffold(
       appBar: AppBar(title: const Text('MindSpark Workspace')),
       body: Padding(
