@@ -40,7 +40,7 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 THE UNIVERSAL MOBILE CLEANER: Removes ghost packages and enforces strict namespace constraints
+      # 🚀 THE UNIVERSAL MOBILE CLEANER: Removes ghost prefixes and protects against phone typos!
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
@@ -55,21 +55,6 @@ jobs:
 
       - name: Get Packages
         run: flutter pub get
-
-      # 🚀 DEEP-SWEEP COMPATIBILITY PATCH: Locates the plugin anywhere inside the modern hashed pub-cache and patches it
-      - name: Patch Legacy AR Plugin Namespace
-        run: |
-          echo "Initiating global deep-sweep for arcore_flutter_plugin target build files..."
-          find /home/runner/.pub-cache/ -type f -name "build.gradle" | grep "arcore_flutter_plugin" | while read -r file; do
-            if [ -f "$file" ]; then
-              echo "Found match: $file"
-              # Checks if namespace already exists to avoid duplicate insertions
-              if ! grep -q "namespace " "$file"; then
-                sed -i '/android {/a \    namespace "com.github.pew.arcore_flutter_plugin"' "$file"
-                echo "Successfully injected namespace into: $file"
-              fi
-            fi
-          done
 
       - name: Automatic Dart Fixes
         run: |
