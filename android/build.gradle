@@ -25,12 +25,11 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // 🚀 FIXED: Listens for exact plugin IDs to avoid PropertyNotFound runtime crashes
+    // 🚀 INTERCEPTS MISSING NAMESPACES
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
-            logger.quiet("🚀 Instantly assigned missing namespace for Library [${project.name}] -> [${project.android.namespace}]")
         }
     }
     
@@ -38,7 +37,15 @@ subprojects { project ->
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
-            logger.quiet("🚀 Instantly assigned missing namespace for App [${project.name}] -> [${project.android.namespace}]")
+        }
+    }
+
+    // 🚀 THE KOTLIN COMPILER FORCE-ENFORCER: Resolves the arcore_flutter_plugin 1.3.50 conflict instantly
+    project.configurations.all {
+        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+            if (details.requested.group == 'org.jetbrains.kotlin') {
+                details.useVersion '2.0.20'
+            }
         }
     }
 }
