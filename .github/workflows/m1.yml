@@ -56,6 +56,18 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
+      # 🚀 AGP 8+ MANIFEST COMPATIBILITY ENFORCER: Synchronously removes legacy manifest attributes across the whole pub-cache!
+      - name: Patch Legacy Plugin Manifest Files
+        run: |
+          echo "Initiating global manifest strip for legacy cache modules..."
+          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" | while read -r manifest; do
+            if [ -f "$manifest" ]; then
+              # Dynamic regex that completely strips out the forbidden package="..." attribute from the xml tag
+              sed -i 's/package="[^"]*"//g' "$manifest"
+            fi
+          done
+          echo "Successfully sanitized all external library manifest schemas!"
+
       - name: Automatic Dart Fixes
         run: |
           dart fix --apply || true
@@ -94,7 +106,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 ZERO-KEYSTORE RELEASE CONFIG: Automatically leverages the key.properties parameters built natively
+      # 🚀 ZERO-KEYSTORE RELEASE BUILD
       - name: Build APK
         run: |
           flutter build apk \
