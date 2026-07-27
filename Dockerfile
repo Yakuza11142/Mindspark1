@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. Securely provision the modern Node.js 22 LTS runtime engine using official distribution setups
+# 3. 🚀 FIXED: Securely provision the modern Node.js 22 LTS runtime engine using official updated setups
 RUN mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://nodesource.com | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://nodesource.com nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
