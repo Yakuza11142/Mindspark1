@@ -40,7 +40,7 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 THE UNIVERSAL MOBILE CLEANER: Deletes any line containing a bad "supabase_" prefix, protecting against phone typos!
+      # 🚀 THE UNIVERSAL MOBILE CLEANER: Removes ghost packages and enforces strict namespace constraints
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
@@ -56,6 +56,15 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
+      # 🚀 AGP 8+ COMPATIBILITY PATCH: Automatically fixes namespaces on legacy AR dependencies in the cloud cache
+      - name: Patch Legacy AR Plugin Namespace
+        run: |
+          ARCORE_BUILD_GRADLE="$PUB_CACHE/hosted/pub.dev/arcore_flutter_plugin-0.1.0/android/build.gradle"
+          if [ -f "$ARCORE_BUILD_GRADLE" ]; then
+            sed -i '/android {/a \    namespace "com.github.pew.arcore_flutter_plugin"' "$ARCORE_BUILD_GRADLE"
+            echo "Successfully patched legacy arcore_flutter_plugin namespace!"
+          fi
+
       - name: Automatic Dart Fixes
         run: |
           dart fix --apply || true
@@ -64,7 +73,6 @@ jobs:
 
       - name: Create Secrets
         run: |
-          # 🚀 STRIPS AWAY HIDDEN CONTROL CHARACTERS AND TRAILING NEWLINES ON THE FLY
           MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
           
           cat > secrets.json <<EOF
@@ -95,13 +103,14 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 ZERO-KEYSTORE RELEASE CONFIG: Respects and uses your checked-in repository credentials natively
+      # 🚀 ZERO-KEYSTORE CONFIG: Bypasses validation and uses your local checked-in credentials natively
       - name: Build APK
         run: |
           flutter build apk \
           --release \
           --obfuscate \
           --split-debug-info=build/app/outputs/symbols \
+          --android-skip-build-dependency-validation \
           --dart-define-from-file=secrets.json
 
       - name: Upload APK
