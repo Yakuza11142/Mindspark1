@@ -30,22 +30,44 @@ rootProject.buildDir = "../build"
 
 subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(":app")
+    
+    // Defer evaluation to ensure app configurations are prioritized
+    if (project.name != "app") {
+        project.evaluationDependsOn(":app")
+    }
 
-    // Fixes memory allocation issues for old plugin compilation passes
-    project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            freeCompilerArgs += ["-Xmx1024m"]
+    // 🚀 FIX 1: Overrides Java compilations to enforce uniform Java 17 execution 
+    project.tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
+        if (JavaVersion.current().isJava9Compatible()) {
+            options.release.set(17)
+        } else {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
         }
     }
 
-    // Modernizes missing plugin namespaces on the fly without breaking source code files
+    // 🚀 FIX 2: Synchronizes Kotlin task compilers to compile down to JVM Target 17
+    project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            freeCompilerArgs += ["-Xmx1024m"]
+            jvmTarget = "17"
+        }
+    }
+
+    // 🚀 FIX 3: Catches all Android library targets and aligns compile SDKs to match your app
     project.plugins.withId('com.android.library') {
+        if (project.android.hasProperty('compileSdkVersion')) {
+            project.android.compileSdkVersion 36
+        }
+        
+        // Generates clean fallback packages for older plugins missing namespace declarations
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
         }
         
+        // Patches manifest errors where older packages include duplicate layout attributes
         project.android.ext.architectureFixRun = false
         project.android.variantFilter { variant ->
             if (!project.android.ext.architectureFixRun) {
@@ -67,12 +89,11 @@ subprojects { project ->
     
     project.plugins.withId('com.android.application') {
         if (project.android.namespace == null) {
-            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.app"
         }
     }
 
-    // Force all plugins to resolve their compiler outputs to Java 17 and Kotlin 2.0.20
+    // 🚀 FIX 4: Intercepts dependency graphs to enforce unified Kotlin engine binaries
     project.configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
