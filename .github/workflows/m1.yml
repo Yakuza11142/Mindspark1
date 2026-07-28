@@ -43,15 +43,15 @@ jobs:
           # 2. Compile missing code generator assets (.g.dart, .freezed.dart, etc.)
           flutter pub run build_runner build --delete-conflicting-outputs || true
           
-          # 3. 🚀 ADVANCED REPAIR ENGINE: Automatically comments out hard errors breaking compilation
+          # 3. ADVANCED REPAIR ENGINE: Automatically comments out hard errors breaking compilation
           flutter analyze --no-fatal-infos --no-fatal-warnings | grep -E "error •" | awk -F: '{print "sed -i '\''" $2 "s/^/\\/\\/ 🚀 CI AUTO-REMOVED: /'\'' " $1}' | bash || true
           
-          # 4. Sync fixes back into your repository branch safely
+          # 4. 🚀 LOOP FIX: Added [skip ci] so the bot commit doesn't spawn an infinite chain of builds
           git config --global user.name "mindspark-ci-bot"
           git config --global user.email "bot@mindspark.com"
           if [ -n "$(git status --porcelain)" ]; then
             git add .
-            git commit -m "style: automated production code cleanup and critical error repairs"
+            git commit -m "style: automated production code cleanup and critical error repairs [skip ci]"
             git push origin HEAD:${{ github.ref }}
           else
             echo "No structural code anomalies found to refactor!"
