@@ -18,11 +18,20 @@ allprojects {
         mavenCentral()
     }
 
-    // 🚀 CRITICAL INJECTION: Forces all hidden/detached classpath dependencies down to 2.0.20!
+    // 🚀 FIXED: Aggressively ensures mavenCentral is injected into background sub-buildscripts
+    buildscript {
+        repositories {
+            google()
+            mavenCentral()
+        }
+    }
+
+    // 🚀 FIXED: Added precise strict filtering so it ONLY targets the compiler, not coroutine extensions
     configurations.all { configuration ->
         if (configuration.name.contains("detachedConfiguration") || configuration.name.contains("classpath")) {
             resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                if (details.requested.group == 'org.jetbrains.kotlin') {
+                // ONLY override if the group matches the core compiler engine exactly
+                if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
                     details.useVersion '2.0.20'
                 }
             }
@@ -32,11 +41,17 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
+// 🚀 FIXED: Patches the internal buildscript layer of arcore with safe repository gates before evaluation
 gradle.beforeProject { project ->
+    project.buildscript.repositories {
+        google()
+        mavenCentral()
+    }
+    
     if (project.name == "arcore_flutter_plugin") {
         project.buildscript.configurations.all {
             resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                if (details.requested.group.startsWith('org.jetbrains.kotlin')) {
+                if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
                     details.useVersion '2.0.20'
                 }
             }
@@ -48,6 +63,7 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
+    // INTERCEPTS ALL LIBRARY MODULES SYNCHRONOUSLY
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
@@ -80,14 +96,16 @@ subprojects { project ->
         }
     }
 
+    // Hard-locks every standard library dependency configuration across the application layer to 2.0.20
     project.configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-            if (details.requested.group.startsWith('org.jetbrains.kotlin')) {
+            if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
                 details.useVersion '2.0.20'
             }
         }
     }
 
+    // SELF-HEALING GHOST PLUGIN HANDLER: Cleans out deprecated v1 embedding definitions on the fly
     if (project.name == "cached_video_player") {
         tasks.withType(JavaCompile).configureEach { task ->
             task.options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
