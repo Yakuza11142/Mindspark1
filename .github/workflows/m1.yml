@@ -36,8 +36,9 @@ jobs:
 
       - name: Automatic Dart Fixes & Auto-Commit
         run: |
+          # 🚀 AGGRESSIVE FIX: Forced pass to repair style rules and deprecations
           dart fix --apply || true
-          dart format . || true
+          dart format --fix . || true
           
           git config --global user.name "mindspark-ci-bot"
           git config --global user.email "bot@mindspark.com"
@@ -103,6 +104,10 @@ jobs:
           }
           EOF
 
+      # 🚀 AUTO-GEN FIX: Compiles missing .g.dart/.freezed.dart generated code files
+      - name: Run Build Runner
+        run: flutter pub run build_runner build --delete-conflicting-outputs || true
+
       - name: Analyze
         run: flutter analyze
         continue-on-error: true
@@ -111,7 +116,6 @@ jobs:
         run: flutter test
         continue-on-error: true
 
-      # 🚀 SPEED FIX: Pre-downloads the 4 heavy legacy SDK dependencies simultaneously
       - name: Pre-Install Required Android SDKs
         run: |
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-28" "platforms;android-29" "platforms;android-30" "platforms;android-33"
