@@ -7,7 +7,6 @@ buildscript {
     }
 
     dependencies {
-        // 🚀 UPGRADED: Completely satisfies the 6 AndroidX AGP plugin check validation errors!
         classpath 'com.android.tools.build:gradle:8.9.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -113,9 +112,12 @@ subprojects { project ->
                 def brokenJavaFile = project.file("src/main/java/com/lazyarts/vikram/cached_video_player/CachedVideoPlayerPlugin.java")
                 if (brokenJavaFile.exists()) {
                     String codeText = brokenJavaFile.text
-                    if (codeText.contains("PluginRegistry.Registrar")) {
-                        codeText = codeText.replaceAll(/public static void registerWith\([^}]*\s*\n*\s*\}/, "public static void registerWith(Object r) {}")
-                        codeText = codeText.replaceAll(/private CachedVideoPlayerPlugin\([^}]*\s*\n*\s*\}/, "private CachedVideoPlayerPlugin(Object r) {}")
+                    // 🚀 FIXED: Cleans up the target method bodies safely without breaking file syntax rules
+                    if (codeText.contains("public static void registerWith(PluginRegistry.Registrar registrar)")) {
+                        codeText = codeText.replace(
+                            "public static void registerWith(PluginRegistry.Registrar registrar) {\n    final io.flutter.plugin.common.MethodChannel channel = new io.flutter.plugin.common.MethodChannel(registrar.messenger(), \"flutter.io/videoPlayer\");\n    registrar.addViewDestroyListener(new PluginRegistry.ViewDestroyListener() {\n      @Override\n      public boolean onViewDestroy(Intent intent) {\n        return false;\n      }\n    });\n  }",
+                            "public static void registerWith(Object registrar) {}"
+                        )
                         brokenJavaFile.text = codeText
                     }
                 }
