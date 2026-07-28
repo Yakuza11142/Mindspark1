@@ -17,9 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 🚀 NEW JOB: Handles cleanup and formatting first so it never corrupts the build state
   lint-and-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,11 +30,6 @@ jobs:
         with:
           channel: stable
           cache: false
-
-      - name: Hard Clean Workspace
-        run: |
-          flutter clean || true
-          rm -rf build .dart_tool .packages pubspec.lock
 
       - name: Get Packages
         run: flutter pub get
@@ -56,8 +50,8 @@ jobs:
           fi
 
   build:
-    needs: lint-and-format # 🚀 CRITICAL: Waits until formatting finishes and pushes changes
-    runs-on: ubuntu-latest
+    needs: lint-and-format
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Repository
@@ -70,6 +64,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: ""
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -83,11 +78,6 @@ jobs:
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
-
-      - name: Hard Clean Workspace
-        run: |
-          flutter clean || true
-          rm -rf build .dart_tool .packages pubspec.lock
 
       - name: Get Packages
         run: flutter pub get
@@ -120,6 +110,11 @@ jobs:
       - name: Test
         run: flutter test
         continue-on-error: true
+
+      # 🚀 SPEED FIX: Pre-downloads the 4 heavy legacy SDK dependencies simultaneously
+      - name: Pre-Install Required Android SDKs
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-28" "platforms;android-29" "platforms;android-30" "platforms;android-33"
 
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
@@ -158,7 +153,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write
