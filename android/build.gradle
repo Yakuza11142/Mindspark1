@@ -24,47 +24,22 @@ allprojects {
             mavenCentral()
         }
     }
-
-    configurations.all { configuration ->
-        if (configuration.name.contains("detachedConfiguration") || configuration.name.contains("classpath")) {
-            resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
-                    details.useVersion '2.0.20'
-                }
-            }
-        }
-    }
 }
 
 rootProject.buildDir = "../build"
-
-gradle.beforeProject { project ->
-    project.buildscript.repositories {
-        google()
-        mavenCentral()
-    }
-    
-    if (project.name == "arcore_flutter_plugin") {
-        project.buildscript.configurations.all {
-            resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
-                    details.useVersion '2.0.20'
-                }
-            }
-        }
-    }
-}
 
 subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
+    // Fixes memory allocation issues for old plugin compilation passes
     project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             freeCompilerArgs += ["-Xmx1024m"]
         }
     }
 
+    // Modernizes missing plugin namespaces on the fly without breaking source code files
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
@@ -97,30 +72,11 @@ subprojects { project ->
         }
     }
 
+    // Force all plugins to resolve their compiler outputs to Java 17 and Kotlin 2.0.20
     project.configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
                 details.useVersion '2.0.20'
-            }
-        }
-    }
-
-    if (project.name == "cached_video_player") {
-        tasks.withType(JavaCompile).configureEach { task ->
-            task.options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
-            task.doFirst {
-                def brokenJavaFile = project.file("src/main/java/com/lazyarts/vikram/cached_video_player/CachedVideoPlayerPlugin.java")
-                if (brokenJavaFile.exists()) {
-                    String codeText = brokenJavaFile.text
-                    // 🚀 FIXED: Cleans up the target method bodies safely without breaking file syntax rules
-                    if (codeText.contains("public static void registerWith(PluginRegistry.Registrar registrar)")) {
-                        codeText = codeText.replace(
-                            "public static void registerWith(PluginRegistry.Registrar registrar) {\n    final io.flutter.plugin.common.MethodChannel channel = new io.flutter.plugin.common.MethodChannel(registrar.messenger(), \"flutter.io/videoPlayer\");\n    registrar.addViewDestroyListener(new PluginRegistry.ViewDestroyListener() {\n      @Override\n      public boolean onViewDestroy(Intent intent) {\n        return false;\n      }\n    });\n  }",
-                            "public static void registerWith(Object registrar) {}"
-                        )
-                        brokenJavaFile.text = codeText
-                    }
-                }
             }
         }
     }
