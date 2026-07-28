@@ -126,9 +126,6 @@ dependencies:
   cached_network_image: any
   confetti: any
 
-  # 🚀 FIXED: Modern engine drop-in replacement that eliminates compilation failure errors
-  cached_video_player_plus: ^3.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
