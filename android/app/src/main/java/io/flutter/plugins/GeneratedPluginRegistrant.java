@@ -26,11 +26,6 @@ public final class GeneratedPluginRegistrant {
       Log.e(TAG, "Error registering plugin app_links, com.llfbandit.app_links.AppLinksPlugin", e);
     }
     try {
-      flutterEngine.getPlugins().add(new com.difrancescogianmarco.arcore_flutter_plugin.ArcoreFlutterPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin arcore_flutter_plugin, com.difrancescogianmarco.arcore_flutter_plugin.ArcoreFlutterPlugin", e);
-    }
-    try {
       flutterEngine.getPlugins().add(new com.muzammil.arcore.flutter.plus.ArcoreFlutterPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin arcore_flutter_plus, com.muzammil.arcore.flutter.plus.ArcoreFlutterPlugin", e);
@@ -49,11 +44,6 @@ public final class GeneratedPluginRegistrant {
       flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.battery.BatteryPlusPlugin());
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin battery_plus, dev.fluttercommunity.plus.battery.BatteryPlusPlugin", e);
-    }
-    try {
-      flutterEngine.getPlugins().add(new com.lazyarts.vikram.cached_video_player.CachedVideoPlayerPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin cached_video_player, com.lazyarts.vikram.cached_video_player.CachedVideoPlayerPlugin", e);
     }
     try {
       flutterEngine.getPlugins().add(new io.flutter.plugins.camerax.CameraAndroidCameraxPlugin());
