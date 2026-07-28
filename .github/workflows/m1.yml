@@ -8,7 +8,7 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write  # 🚀 CRITICAL: Grants permission to write automatic code fixes back to your repo
   pages: write
   id-token: write
 
@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to pull complete branch data loops cleanly
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -40,7 +42,7 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 THE UNIVERSAL MOBILE CLEANER: Removes ghost prefixes and protects against phone typos!
+      # 🚀 UNIVERSAL DEV PROTECTION: Prevents typos from breaking your build pipeline
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
@@ -56,23 +58,23 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
-      # 🚀 AGP 8+ MANIFEST COMPATIBILITY ENFORCER: Synchronously removes legacy manifest attributes across the whole pub-cache!
-      - name: Patch Legacy Plugin Manifest Files
+      # 🚀 AUTO-CODE CLEANUP AND RE-WRITE PUSH LOOP
+      - name: Automatic Dart Fixes & Auto-Commit
         run: |
-          echo "Initiating global manifest strip for legacy cache modules..."
-          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" | while read -r manifest; do
-            if [ -f "$manifest" ]; then
-              # Dynamic regex that completely strips out the forbidden package="..." attribute from the xml tag
-              sed -i 's/package="[^"]*"//g' "$manifest"
-            fi
-          done
-          echo "Successfully sanitized all external library manifest schemas!"
-
-      - name: Automatic Dart Fixes
-        run: |
+          # 1. Execute automatic re-writer utilities
           dart fix --apply || true
           dart format . || true
-          flutter pub get
+          
+          # 2. Check for modifications and force synchronization directly back into your repo branch
+          git config --global user.name "mindspark-ci-bot"
+          git config --global user.email "bot@mindspark.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "style: automated production code cleanup via dart fix"
+            git push origin HEAD:${{ github.ref }}
+          else
+            echo "No structural code anomalies found to refactor!"
+          fi
 
       - name: Create Secrets
         run: |
@@ -106,7 +108,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 ZERO-KEYSTORE RELEASE BUILD
+      # 🚀 NATIVE COMPILER ASSEMBLY LINE
       - name: Build APK
         run: |
           flutter build apk \
