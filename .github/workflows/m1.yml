@@ -36,6 +36,7 @@ jobs:
 
       - name: Automatic Dart Fixes & Auto-Commit
         run: |
+          # 🚀 AUTO-FIX: Automatically repairs deprecated methods and layout formatting issues
           dart fix --apply || true
           dart format --fix . || true
           
@@ -121,12 +122,11 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 FAT APK FIX: Combined with --no-split-per-abi to make one universal file for all phones
+      # 🚀 APK ASSEMBLY LINE: Outputs a single fat APK containing all target architectures
       - name: Build APK
         run: |
           flutter build apk \
           --release \
-          --no-split-per-abi \
           --obfuscate \
           --split-debug-info=build/app/outputs/symbols \
           --android-skip-build-dependency-validation \
