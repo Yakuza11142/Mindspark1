@@ -1,5 +1,5 @@
 buildscript {
-    // 🚀 UPGRADED: Synchronized with the runner's modern Kotlin 2.2.0 metadata environment
+    // 🚀 Upgraded: Synchronized with the runner's modern Kotlin 2.2.0 metadata environment
     ext.kotlin_version = '2.2.0'
 
     repositories {
@@ -22,6 +22,7 @@ allprojects {
 
 rootProject.buildDir = "../build"
 
+// Classpath interception overrides legacy Kotlin version dependencies before evaluation
 gradle.beforeProject { project ->
     if (project.name == "arcore_flutter_plugin") {
         project.buildscript.configurations.all {
@@ -38,6 +39,7 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
+    // INTERCEPTS ALL LIBRARY MODULES SYNCHRONOUSLY
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
@@ -70,11 +72,32 @@ subprojects { project ->
         }
     }
 
-    // 🚀 FIXED: Dynamic compiler enforcer forces ALL modules to align perfectly with Kotlin 2.2.0
+    // 🚀 THE TRANSITIVE TRANSFORMATION ENGINE: Dynamic compiler patch forces modules to compile cleanly
     project.configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.jetbrains.kotlin') {
                 details.useVersion '2.2.0'
+            }
+        }
+    }
+
+    // 🚀 THE GHOST DEFENDER PROTOCOL: Disables the broken v1 methods inside cached_video_player dynamically 
+    if (project.name == "cached_video_player") {
+        tasks.withType(JavaCompile).configureEach { task ->
+            task.options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
+            task.doFirst {
+                // Pinpoints the specific legacy Java file causing the compilation breakdown in the background cache
+                def brokenJavaFile = project.file("src/main/java/com/lazyarts/vikram/cached_video_player/CachedVideoPlayerPlugin.java")
+                if (brokenJavaFile.exists()) {
+                    String codeText = brokenJavaFile.text
+                    // Dynamically strips out the obsolete v1 Registrar methods that cause the compilation crash
+                    if (codeText.contains("PluginRegistry.Registrar")) {
+                        codeText = codeText.replaceAll(/public static void registerWith\([^}]*\s*\n*\s*\}/, "public static void registerWith(Object r) {}")
+                        codeText = codeText.replaceAll(/private CachedVideoPlayerPlugin\([^}]*\s*\n*\s*\}/, "private CachedVideoPlayerPlugin(Object r) {}")
+                        brokenJavaFile.text = codeText
+                        logger.quiet("🚀 Successfully neutralized legacy v1 references inside ghost cached_video_player dependency!")
+                    }
+                }
             }
         }
     }
