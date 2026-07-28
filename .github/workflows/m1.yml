@@ -36,7 +36,6 @@ jobs:
 
       - name: Automatic Dart Fixes & Auto-Commit
         run: |
-          # 🚀 AGGRESSIVE FIX: Forced pass to repair style rules and deprecations
           dart fix --apply || true
           dart format --fix . || true
           
@@ -104,7 +103,6 @@ jobs:
           }
           EOF
 
-      # 🚀 AUTO-GEN FIX: Compiles missing .g.dart/.freezed.dart generated code files
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs || true
 
@@ -123,10 +121,12 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
+      # 🚀 FAT APK FIX: Combined with --no-split-per-abi to make one universal file for all phones
       - name: Build APK
         run: |
           flutter build apk \
           --release \
+          --no-split-per-abi \
           --obfuscate \
           --split-debug-info=build/app/outputs/symbols \
           --android-skip-build-dependency-validation \
