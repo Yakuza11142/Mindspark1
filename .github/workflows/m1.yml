@@ -49,16 +49,12 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
-      # 🚀 LOOP REMOVAL FIX: Repairs the codebase inside the runner's workspace memory on-the-fly. 
-      # No 'git commit' or 'git push' commands are used, completely eliminating hanging pipelines.
+      # 🚀 FIXED: Removed the broken awk/sed loop to prevent the pipeline from hanging
       - name: Automatic Workspace Repair
         run: |
           dart fix --apply || true
           dart format . || true
           flutter pub run build_runner build --delete-conflicting-outputs || true
-          
-          # Fixes syntax compilation breakers (like the WebRTC receiver setParameters issue) instantly
-          flutter analyze --no-fatal-infos --no-fatal-warnings | grep -E "error •" | awk -F: '{print "sed -i '\''" $2 "s/^/\\/\\/ 🚀 CI AUTO-REMOVED: /'\'' " $1}' | bash || true
 
       - name: Create Secrets
         run: |
