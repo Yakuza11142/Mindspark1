@@ -49,11 +49,11 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
-      # 🚀 FIXED: Removed the broken awk/sed loop to prevent the pipeline from hanging
+      # 🚀 FIXED: Isolated format scanning to lib/ so it never hangs on large build caches
       - name: Automatic Workspace Repair
         run: |
           dart fix --apply || true
-          dart format . || true
+          dart format lib/ || true
           flutter pub run build_runner build --delete-conflicting-outputs || true
 
       - name: Create Secrets
