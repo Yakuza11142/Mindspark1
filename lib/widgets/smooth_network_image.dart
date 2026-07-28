@@ -11,9 +11,11 @@ class SmoothNetworkImage extends StatelessWidget {
       fit: BoxFit.cover,
       loadingBuilder: (ctx, child, progress) {
         if (progress == null) return child;
-        return const Center(child: CircularProgressIndicator(color: Colors.cyanAccent));
+        return const Center(
+            child: CircularProgressIndicator(color: Colors.cyanAccent));
       },
-      errorBuilder: (ctx, err, stack) => Container(color: Colors.grey[900], child: const Icon(Icons.broken_image)),
+      errorBuilder: (ctx, err, stack) => Container(
+          color: Colors.grey[900], child: const Icon(Icons.broken_image)),
     );
   }
 }

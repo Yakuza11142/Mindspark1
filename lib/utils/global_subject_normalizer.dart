@@ -1,9 +1,24 @@
 class GlobalSubjectNormalizer {
   // Add as many keywords as you want here
   static const Map<String, List<String>> _rules = {
-    "English Language": ["use of english", "language arts", "literacy", "grammar"],
-    "Advanced Mathematics": ["further math", "calculus", "pure math", "additional math"],
-    "Political Science": ["civic", "government", "social studies", "citizenship"],
+    "English Language": [
+      "use of english",
+      "language arts",
+      "literacy",
+      "grammar"
+    ],
+    "Advanced Mathematics": [
+      "further math",
+      "calculus",
+      "pure math",
+      "additional math"
+    ],
+    "Political Science": [
+      "civic",
+      "government",
+      "social studies",
+      "citizenship"
+    ],
     "Biological Sciences": ["biology", "botany", "zoology", "anatomy"],
     "Physics": ["applied physics", "mechanics", "thermodynamics"],
   };
@@ -25,7 +40,8 @@ class GlobalSubjectNormalizer {
     return localSubjectName[0].toUpperCase() + localSubjectName.substring(1);
   }
 }
-static Future<String> normalizeFromCloud(String localName) async {
+
+Future<String> normalizeFromCloud(String localName) async {
   final response = await supabase
       .from('subject_normalization')
       .select('official_name')

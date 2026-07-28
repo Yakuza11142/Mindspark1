@@ -9,7 +9,8 @@ class CellularDataOptimizer {
 
   static Future<void> pauseHeavyTasks() async {
     if (await isOnMobileData()) {
-      print("📶 Mobile Data Detected. Pausing 3D Model pre-fetching and 4K Videos.");
+      print(
+          "📶 Mobile Data Detected. Pausing 3D Model pre-fetching and 4K Videos.");
     }
   }
 }

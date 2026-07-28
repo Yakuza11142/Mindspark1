@@ -10,7 +10,7 @@ class QrEngine {
       size: 100.0,
     );
   }
-  
+
   static String generateVerificationLink(String studentName, String course) {
     // In a real app, this links to your website.
     // For MVP, it links to a validation string.

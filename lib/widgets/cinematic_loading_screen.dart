@@ -6,7 +6,9 @@ class CinematicLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Colors.black,
-      body: Center(child: Text("Fusing Runway AI & HeyGen...", style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2))),
+      body: Center(
+          child: Text("Fusing Runway AI & HeyGen...",
+              style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2))),
     );
   }
 }

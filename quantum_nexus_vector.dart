@@ -17,15 +17,16 @@ class QuantumNexusVector extends StatefulWidget {
   State<QuantumNexusVector> createState() => _QuantumNexusVectorState();
 }
 
-class _QuantumNexusVectorState extends State<QuantumNexusVector> with SingleTickerProviderStateMixin {
+class _QuantumNexusVectorState extends State<QuantumNexusVector>
+    with SingleTickerProviderStateMixin {
   late v64.Matrix4 _projectionModelMatrix;
   Timer? _matrixProcessingLoop;
   double _frequencyTimer = 0.0;
-  
+
   // Enforce base anatomical proportions natively
   static const double _baseHologramHeightFeet = 6.0;
   static const double _minLimitFeet = 0.125; // 1.5 inches
-  static const double _maxLimitFeet = 10.0;  // 10 feet
+  static const double _maxLimitFeet = 10.0; // 10 feet
 
   double _currentScaleFactor = 1.0;
   double _verticalAnchorShift = 0.0;
@@ -41,7 +42,8 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector> with SingleTick
     _calculateProportionalScaling();
 
     // 120Hz computational projection matrix update loop
-    _matrixProcessingLoop = Timer.periodic(const Duration(microseconds: 8333), (timer) {
+    _matrixProcessingLoop =
+        Timer.periodic(const Duration(microseconds: 8333), (timer) {
       if (!mounted) return;
       _computeMatrixTransformations();
     });
@@ -56,11 +58,12 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector> with SingleTick
   }
 
   void _calculateProportionalScaling() {
-    final double clampedInput = widget.requestedHeightFeet.clamp(_minLimitFeet, _maxLimitFeet);
-    
+    final double clampedInput =
+        widget.requestedHeightFeet.clamp(_minLimitFeet, _maxLimitFeet);
+
     // Calculate local space scale factor relative to the 6ft base blueprint
     final double targetScaleFactor = _baseHologramHeightFeet / clampedInput;
-    
+
     // Calculate vertical alignment shift to keep his feet locked to the floor
     final double targetVerticalShift = 0.5 * (1.0 - (1.0 / targetScaleFactor));
 
@@ -94,7 +97,8 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector> with SingleTick
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final Size sceneViewportSize = Size(constraints.maxWidth, constraints.maxHeight);
+        final Size sceneViewportSize =
+            Size(constraints.maxWidth, constraints.maxHeight);
 
         return InheritedSparkScale(
           scaleFactor: _currentScaleFactor,
@@ -133,8 +137,8 @@ class InheritedSparkScale extends InheritedWidget {
 
   @override
   bool updateShouldNotify(InheritedSparkScale oldWidget) {
-    return oldWidget.scaleFactor != scaleFactor || 
-           oldWidget.verticalShift != verticalShift ||
-           oldWidget.timelineDelta != timelineDelta;
+    return oldWidget.scaleFactor != scaleFactor ||
+        oldWidget.verticalShift != verticalShift ||
+        oldWidget.timelineDelta != timelineDelta;
   }
 }

@@ -11,7 +11,7 @@ class ProLockOverlay extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
         child: Container(
-          color: Colors.black.withOpacity(0.6),
+          color: Colors.black.withValues(alpha: 0.6),
           child: Center(
             child: ElevatedButton.icon(
               onPressed: onUnlock,

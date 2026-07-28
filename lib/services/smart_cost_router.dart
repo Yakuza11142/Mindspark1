@@ -8,12 +8,12 @@ class SmartCostRouter {
       String? localAnswer = await LocalLlmEngine.generate(query);
       if (localAnswer != null) return localAnswer;
     }
-    
+
     // 2. If Pro, give them the expensive OpenAI GPT-5.5
     if (isPro) {
       return await BrainService().generateLesson(query, true, false);
     }
-    
+
     // 3. Default to Gemini (Free API Tier)
     return await BrainService().generateLesson(query, false, false);
   }

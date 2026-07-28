@@ -7,7 +7,9 @@ class BreathingGlowEffect extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return child.animate(onPlay: (c) => c.repeat(reverse: true))
-        .boxShadow(begin: const BoxShadow(color: Colors.transparent), end: BoxShadow(color: Colors.cyanAccent.withOpacity(0.5), blurRadius: 20));
+    return child.animate(onPlay: (c) => c.repeat(reverse: true)).boxShadow(
+        begin: const BoxShadow(color: Colors.transparent),
+        end: BoxShadow(
+            color: Colors.cyanAccent.withValues(alpha: 0.5), blurRadius: 20));
   }
 }

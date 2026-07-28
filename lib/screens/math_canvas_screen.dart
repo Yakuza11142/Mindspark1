@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 // Add painter package or use CustomPaint logic
 class MathCanvasScreen extends StatefulWidget {
   const MathCanvasScreen({super.key});
@@ -13,9 +14,11 @@ class _MathCanvasScreenState extends State<MathCanvasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Draw Equation"), actions: [
-        IconButton(icon: const Icon(Icons.check), onPressed: () {
-          // Send drawing to Gemini Vision API
-        })
+        IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              // Send drawing to Gemini Vision API
+            })
       ]),
       body: GestureDetector(
         onPanUpdate: (details) {
@@ -44,13 +47,17 @@ class _SketchPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()..color = Colors.white..strokeCap = StrokeCap.round..strokeWidth = 5.0;
+    Paint paint = Paint()
+      ..color = Colors.white
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 5.0;
     for (int i = 0; i < points.length - 1; i++) {
       if (points[i] != null && points[i + 1] != null) {
         canvas.drawLine(points[i]!, points[i + 1]!, paint);
       }
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

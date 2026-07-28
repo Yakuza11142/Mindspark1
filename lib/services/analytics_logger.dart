@@ -26,7 +26,7 @@ class AnalyticsLogger {
 AnalyticsLogger.logEvent("certificate_downloaded");
 
 // Detailed log (non-hardcoded)
-AnalyticsLogger.logEvent("screen_view", metadata: {
+AnalyticsLogger.logEvent("screen_view", metadata = {
   "screen": "CertificateScreen",
   "user_tier": "premium"
 });

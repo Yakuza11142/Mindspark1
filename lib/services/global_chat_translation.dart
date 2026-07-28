@@ -3,8 +3,10 @@ import '../config/secrets.dart';
 
 class GlobalChatTranslation {
   static Future<String> autoTranslate(String message, String targetLang) async {
-    final model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
-    final res = await model.generateContent([Content.text("Translate exactly to $targetLang: '$message'")]);
+    final model =
+        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+    final res = await model.generateContent(
+        [Content.text("Translate exactly to $targetLang: '$message'")]);
     return res.text ?? message;
   }
 }

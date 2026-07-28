@@ -17,5 +17,6 @@ class SparkTransaction {
   });
 
   // Formats date safely without hardcoding strings
-  String get formattedDate => DateFormat('dd MMM yyyy, hh:mm a').format(timestamp);
+  String get formattedDate =>
+      DateFormat('dd MMM yyyy, hh:mm a').format(timestamp);
 }

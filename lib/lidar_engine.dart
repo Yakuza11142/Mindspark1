@@ -21,16 +21,13 @@ class _LidarMimicEngineState extends State<LidarMimicEngine> {
           // 1. FIXED: The tap recognizer is attached directly to ArCoreView
           ArCoreView(
             onArCoreViewCreated: _onArCoreViewCreated,
-            enableTapRecognizer: true, 
+            enableTapRecognizer: true,
           ),
-          
+
           // 2. The LiDAR Reticle UI Crosshair
           const Center(
-            child: Icon(
-              Icons.center_focus_strong, 
-              color: Colors.cyanAccent, 
-              size: 40
-            ),
+            child: Icon(Icons.center_focus_strong,
+                color: Colors.cyanAccent, size: 40),
           ),
 
           // 3. Real-Time Depth Data Feedback Overlay
@@ -41,18 +38,17 @@ class _LidarMimicEngineState extends State<LidarMimicEngine> {
             child: Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
+                color: Colors.black.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: Colors.cyanAccent, width: 1.5),
               ),
               child: Text(
                 "MIND_SPARK LiDAR DATA:\n$realTimeDistance",
                 style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontFamily: 'monospace',
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold
-                ),
+                    color: Colors.greenAccent,
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -64,7 +60,7 @@ class _LidarMimicEngineState extends State<LidarMimicEngine> {
   // 4. FIXED: The controller configures features, but hits are caught separately
   void _onArCoreViewCreated(ArCoreController controller) {
     arCoreController = controller;
-    
+
     // This tells the engine to start looking for horizontal planes
     arCoreController?.onTrackingImage = (arCoreImage) {
       // Optional: Handles image anchors if needed
@@ -86,8 +82,7 @@ class _LidarMimicEngineState extends State<LidarMimicEngine> {
     final double depthCalculated = position.length;
 
     setState(() {
-      realTimeDistance = 
-          "X: ${position.x.toStringAsFixed(2)}m | "
+      realTimeDistance = "X: ${position.x.toStringAsFixed(2)}m | "
           "Y: ${position.y.toStringAsFixed(2)}m | "
           "Z: ${position.z.toStringAsFixed(2)}m\n"
           "SURFACE DISTANCE: ${depthCalculated.toStringAsFixed(2)} meters";

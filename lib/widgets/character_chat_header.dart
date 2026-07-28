@@ -9,16 +9,25 @@ class CharacterChatHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: persona.themeColor.withOpacity(0.1), border: Border(bottom: BorderSide(color: persona.themeColor))),
+      decoration: BoxDecoration(
+          color: persona.themeColor.withValues(alpha: 0.1),
+          border: Border(bottom: BorderSide(color: persona.themeColor))),
       child: Row(
-        children:[
-          CircleAvatar(backgroundColor: persona.themeColor, child: Icon(persona.avatarIcon, color: Colors.black)),
+        children: [
+          CircleAvatar(
+              backgroundColor: persona.themeColor,
+              child: Icon(persona.avatarIcon, color: Colors.black)),
           const SizedBox(width: 15),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children:[
-              Text(persona.name, style: TextStyle(color: persona.themeColor, fontSize: 20, fontWeight: FontWeight.bold)),
-              Text(persona.title, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            children: [
+              Text(persona.name,
+                  style: TextStyle(
+                      color: persona.themeColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
+              Text(persona.title,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           const Spacer(),

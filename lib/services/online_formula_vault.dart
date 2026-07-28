@@ -31,8 +31,8 @@ class Formula {
   }
 }
 FutureBuilder<List<Formula>>(
-  future: FormulaVault.fetchCategory('physics'),
-  builder: (context, snapshot) {
+  future = FormulaVault.fetchCategory('physics'),
+  builder = (context, snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const LinearProgressIndicator(); // Minimalist loading
     }

@@ -10,7 +10,9 @@ class SslPinningService {
       // In prod, you add your server's exact SSL certificate byte data here
       // context.setTrustedCertificatesBytes(certificateBytes);
       HttpClient client = HttpClient(context: context);
-      client.badCertificateCallback = (X509Certificate cert, String host, int port) => false; // REJECT ALL FAKES
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) =>
+              false; // REJECT ALL FAKES
       return client;
     };
     return dio;

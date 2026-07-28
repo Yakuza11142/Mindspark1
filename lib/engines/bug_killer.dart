@@ -10,7 +10,7 @@ class InfiniteBugKiller {
       dev.log("🛡️ BugKiller: Shield Active. Scanning for code health...");
     }
 
-    // 2. Kill the app if someone tries to run it with 'null' data 
+    // 2. Kill the app if someone tries to run it with 'null' data
     // where strict types are required (The "Null-Safe executioner")
     FlutterError.onError = (details) {
       _reportAndKill(details.exceptionAsString());
@@ -34,6 +34,7 @@ class InfiniteBugKiller {
     return value;
   }
 }
+
 void main() {
   // Start the Bug Killer before the UI even loads
   InfiniteBugKiller.initializeGuard();

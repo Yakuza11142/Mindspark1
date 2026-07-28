@@ -15,7 +15,10 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
   void _hatch() async {
     setState(() => isHatching = true);
     String? url = await InfinitePetGenerator.hatchEgg(_ctrl.text);
-    setState(() { petImageUrl = url; isHatching = false; });
+    setState(() {
+      petImageUrl = url;
+      isHatching = false;
+    });
   }
 
   @override
@@ -27,21 +30,24 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children:[
-              if (petImageUrl != null) 
+            children: [
+              if (petImageUrl != null)
                 Image.network(petImageUrl!, height: 300)
               else if (isHatching)
                 const CircularProgressIndicator(color: Colors.amber)
               else
                 const Icon(Icons.egg, size: 100, color: Colors.white54),
-              
               const SizedBox(height: 30),
               TextField(
                 controller: _ctrl,
-                decoration: const InputDecoration(hintText: "Describe your dream study pet... (e.g. Robot Tiger)"),
+                decoration: const InputDecoration(
+                    hintText:
+                        "Describe your dream study pet... (e.g. Robot Tiger)"),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: _hatch, child: const Text("HATCH PET (Costs 1000 ⚡)"))
+              ElevatedButton(
+                  onPressed: _hatch,
+                  child: const Text("HATCH PET (Costs 1000 ⚡)"))
             ],
           ),
         ),

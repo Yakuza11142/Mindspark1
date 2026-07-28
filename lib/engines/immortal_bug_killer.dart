@@ -12,10 +12,14 @@ class ImmortalBugKiller extends StatelessWidget {
         alignment: Alignment.center,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const[
+          children: const [
             Icon(Icons.auto_awesome, color: Colors.cyanAccent, size: 50),
             SizedBox(height: 10),
-            Text("Auto-Healing Matrix...", style: TextStyle(color: Colors.cyanAccent, fontSize: 12, decoration: TextDecoration.none)),
+            Text("Auto-Healing Matrix...",
+                style: TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 12,
+                    decoration: TextDecoration.none)),
           ],
         ),
       );

@@ -6,6 +6,6 @@ class SmartNotification {
     int hour = DateTime.now().hour;
     await prefs.setInt('preferred_study_hour', hour);
   }
-  
+
   // Logic to schedule notification at 'preferred_study_hour'
 }

@@ -9,7 +9,7 @@ class LeaderboardRepository {
         .select('name, total_xp, is_pro')
         .order('total_xp', ascending: false)
         .limit(1000);
-        
+
     return List<Map<String, dynamic>>.from(response);
   }
 }

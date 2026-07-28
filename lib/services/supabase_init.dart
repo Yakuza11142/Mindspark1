@@ -6,7 +6,7 @@ class SupabaseInit {
       url: 'https://supabase.co', // The 'Cable' to your cloud
       anonKey: 'your-anon-public-key', // The 'Privilege Key' for access
     );
-    
+
     print("⚡ Mind Spark Foundation Connected to Supabase");
   }
 }

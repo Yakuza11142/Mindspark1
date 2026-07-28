@@ -5,6 +5,8 @@ class AppStoreScreenshotMock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Renders the app with fake "perfect" data for marketing screenshots
-    return const Scaffold(backgroundColor: Colors.black, body: Center(child: Text("MARKETING UI RENDERED")));
+    return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text("MARKETING UI RENDERED")));
   }
 }

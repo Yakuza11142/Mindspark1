@@ -10,18 +10,31 @@ class MasteryDashboard extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             const Icon(Icons.psychology, size: 100, color: Colors.cyanAccent),
             const SizedBox(height: 20),
-            const Text("ENTER THE FLOW STATE", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 3)),
+            const Text("ENTER THE FLOW STATE",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 3)),
             const Padding(
               padding: EdgeInsets.all(30),
-              child: Text("Distractions are muted. Background noise is blocked. Focus entirely on the concept in front of you. You are ready to master this.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 16)),
+              child: Text(
+                  "Distractions are muted. Background noise is blocked. Focus entirely on the concept in front of you. You are ready to master this.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 16)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.cyanAccent,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20)),
               onPressed: () {}, // Begin lesson
-              child: const Text("BEGIN DEEP WORK", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text("BEGIN DEEP WORK",
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold)),
             )
           ],
         ),

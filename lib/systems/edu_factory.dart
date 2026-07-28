@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 class EduFactory {
   // Instantly projects a data-orb near the AH hologram
-  static void spawnLessonOrb(ArCoreController controller, v.Vector3 position, String lessonId) {
+  static void spawnLessonOrb(
+      ArCoreController controller, v.Vector3 position, String lessonId) {
     final orbMaterial = ArCoreMaterial(
-      color: Colors.blueAccent.withOpacity(0.7),
+      color: Colors.blueAccent.withValues(alpha: 0.7),
       metallic: 1.0,
     );
 

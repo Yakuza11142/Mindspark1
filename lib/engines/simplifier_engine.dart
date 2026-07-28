@@ -3,8 +3,10 @@ import '../config/secrets.dart';
 
 class SimplifierEngine {
   static Future<String> simplify(String text) async {
-    final model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
-    final res = await model.generateContent([Content.text("Rewrite this so its simpler to understands: $text")]);
+    final model =
+        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+    final res = await model.generateContent(
+        [Content.text("Rewrite this so its simpler to understands: $text")]);
     return res.text ?? text;
   }
 }

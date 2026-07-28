@@ -30,14 +30,18 @@ class _MainNavigationState extends State<MainNavigation> {
       body: IndexedStack(index: _idx, children: _tabs),
       bottomNavigationBar: NavigationBar(
         backgroundColor: Colors.black,
-        indicatorColor: Colors.cyanAccent.withOpacity(0.2),
+        indicatorColor: Colors.cyanAccent.withValues(alpha: 0.2),
         selectedIndex: _idx,
         onDestinationSelected: (i) => setState(() => _idx = i),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.grid_view), label: 'Explore'),
-          NavigationDestination(icon: Icon(Icons.bookmark_outline), label: 'Library'),
-          NavigationDestination(icon: Icon(Icons.play_circle_outline), label: 'Cinema'), // Cinema Icon
-          NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'Spark AI'),
+          NavigationDestination(
+              icon: Icon(Icons.bookmark_outline), label: 'Library'),
+          NavigationDestination(
+              icon: Icon(Icons.play_circle_outline),
+              label: 'Cinema'), // Cinema Icon
+          NavigationDestination(
+              icon: Icon(Icons.auto_awesome), label: 'Spark AI'),
           NavigationDestination(icon: Icon(Icons.emoji_events), label: 'Rank'),
           NavigationDestination(icon: Icon(Icons.person_outline), label: 'Me'),
         ],

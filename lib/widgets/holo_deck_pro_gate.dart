@@ -10,14 +10,18 @@ class HoloDeckProGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(backgroundColor: isPro ? Colors.purpleAccent : Colors.grey[800]),
+      style: ElevatedButton.styleFrom(
+          backgroundColor: isPro ? Colors.purpleAccent : Colors.grey[800]),
       icon: Icon(isPro ? Icons.view_in_ar : Icons.lock, color: Colors.white),
-      label: const Text("🔮 PRO HOLOGRAM", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      label: const Text("🔮 PRO HOLOGRAM",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       onPressed: () {
         if (isPro) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => HoloDeckScreen(topic: topic)));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => HoloDeckScreen(topic: topic)));
         } else {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const PaywallScreen()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const PaywallScreen()));
         }
       },
     );

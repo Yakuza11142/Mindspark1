@@ -9,7 +9,8 @@ class DynamicAvatarByAge extends StatelessWidget {
     IconData icon = Icons.person;
     if (lifeStage == "JUNIOR") icon = Icons.face; // Cute face
     if (lifeStage == "ADULT") icon = Icons.business_center; // Professional
-    
-    return CircleAvatar(backgroundColor: Colors.white10, child: Icon(icon, color: Colors.cyan));
+
+    return CircleAvatar(
+        backgroundColor: Colors.white10, child: Icon(icon, color: Colors.cyan));
   }
 }

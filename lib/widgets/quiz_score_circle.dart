@@ -11,10 +11,17 @@ class QuizScoreCircle extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         SizedBox(
-          height: 100, width: 100,
-          child: CircularProgressIndicator(value: score / 10, strokeWidth: 10, color: color, backgroundColor: Colors.white10),
+          height: 100,
+          width: 100,
+          child: CircularProgressIndicator(
+              value: score / 10,
+              strokeWidth: 10,
+              color: color,
+              backgroundColor: Colors.white10),
         ),
-        Text("$score/10", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color))
+        Text("$score/10",
+            style: TextStyle(
+                fontSize: 24, fontWeight: FontWeight.bold, color: color))
       ],
     );
   }

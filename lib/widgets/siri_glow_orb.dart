@@ -14,4 +14,4 @@ class SiriGlowOrb extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.black,
-        boxShadow: isListening ?[BoxShadow(color: color.withOpacity(0.6), blurRadius: 40, spreadRadius: 10)] :
+        boxShadow: isListening [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 40, spreadRadius: 10)] :

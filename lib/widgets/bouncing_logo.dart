@@ -6,6 +6,7 @@ class BouncingLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Icon(Icons.bolt, size: 100, color: Colors.cyanAccent)
-        .animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(end: 1.1, duration: 1.seconds);
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .scaleXY(end: 1.1, duration: 1.seconds);
   }
 }

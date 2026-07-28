@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/supabase_core_config.dart';
 
 class OfflineExamManager {
   OfflineExamManager._internal();
@@ -9,7 +8,7 @@ class OfflineExamManager {
   /// Fetches 5 Mock Exams and stores them locally as an encoded JSON string
   Future<void> cacheForSurvival() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     try {
       // 1. Fetch from Supabase (Cloud)
       final List<dynamic> exams = await SupabaseCoreConfig.client
@@ -20,7 +19,7 @@ class OfflineExamManager {
       // 2. Serialize to JSON and save locally
       await prefs.setString('offline_exams_blob', jsonEncode(exams));
       await prefs.setBool('is_offline_ready', true);
-      
+
       print("📦 Survival Cache Locked: 5 Exams stored locally.");
     } catch (e) {
       print("❌ Cache Failed: Check internet connection.");
@@ -34,6 +33,7 @@ class OfflineExamManager {
     return encodedData != null ? jsonDecode(encodedData) : [];
   }
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseCoreConfig.initialize();

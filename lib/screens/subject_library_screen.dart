@@ -12,7 +12,7 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = "";
 
-  final List<Map<String, dynamic>> allSubjects =[
+  final List<Map<String, dynamic>> allSubjects = [
     {"title": "Physics", "icon": Icons.rocket_launch, "color": Colors.purple},
     {"title": "Mathematics", "icon": Icons.calculate, "color": Colors.blue},
     {"title": "Biology", "icon": Icons.biotech, "color": Colors.green},
@@ -26,13 +26,19 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     // Filter logic for the search bar
-    var filteredSubjects = allSubjects.where((s) => s['title'].toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    var filteredSubjects = allSubjects
+        .where((s) =>
+            s['title'].toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(title: const Text("Subject Library"), backgroundColor: Colors.transparent, elevation: 0),
+      appBar: AppBar(
+          title: const Text("Subject Library"),
+          backgroundColor: Colors.transparent,
+          elevation: 0),
       body: Column(
-        children:[
+        children: [
           // THE LIBRARY SEARCH BAR
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -46,10 +52,16 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
                   hintText: "Search for a subject...",
                   hintStyle: const TextStyle(color: Colors.white38),
                   border: InputBorder.none,
-                  prefixIcon: const Icon(Icons.search, color: Colors.cyanAccent),
-                  suffixIcon: _searchQuery.isNotEmpty 
-                    ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() { _searchCtrl.clear(); _searchQuery = ""; }))
-                    : null,
+                  prefixIcon:
+                      const Icon(Icons.search, color: Colors.cyanAccent),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() {
+                                _searchCtrl.clear();
+                                _searchQuery = "";
+                              }))
+                      : null,
                 ),
               ),
             ),
@@ -59,24 +71,39 @@ class _SubjectLibraryScreenState extends State<SubjectLibraryScreen> {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, crossAxisSpacing: 15, mainAxisSpacing: 15),
               itemCount: filteredSubjects.length,
               itemBuilder: (ctx, i) {
                 var sub = filteredSubjects[i];
                 return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SubjectDetailScreen(subjectName: sub['title'], color: sub['color']))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => SubjectDetailScreen(
+                              subjectName: sub['title'], color: sub['color']))),
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [sub['color'].withOpacity(0.6), sub['color'].withOpacity(0.2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: sub['color'].withOpacity(0.5))
-                    ),
+                        gradient: LinearGradient(
+                            colors: [
+                              sub['color'].withOpacity(0.6),
+                              sub['color'].withOpacity(0.2)
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: sub['color'].withOpacity(0.5))),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(sub['icon'], size: 50, color: Colors.white),
                         const SizedBox(height: 10),
-                        Text(sub['title'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text(sub['title'],
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ],
                     ),
                   ),

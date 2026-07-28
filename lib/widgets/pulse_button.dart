@@ -6,7 +6,11 @@ class PulseButton extends StatelessWidget {
   final String text;
   final Color color;
 
-  const PulseButton({super.key, required this.onTap, required this.text, required this.color});
+  const PulseButton(
+      {super.key,
+      required this.onTap,
+      required this.text,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -15,12 +19,17 @@ class PulseButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.6), blurRadius: 15)]
-        ),
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-      ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
+            color: color,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 15)
+            ]),
+        child: Text(text,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.black)),
+      )
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
     );
   }
 }

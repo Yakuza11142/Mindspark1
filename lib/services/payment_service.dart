@@ -9,7 +9,8 @@ class PaymentService {
   void init() {
     _iap.purchaseStream.listen((list) {
       for (var p in list) {
-        if (p.status == PurchaseStatus.purchased || p.status == PurchaseStatus.restored) {
+        if (p.status == PurchaseStatus.purchased ||
+            p.status == PurchaseStatus.restored) {
           if (onProStatusChanged != null) onProStatusChanged!(true);
         }
       }
@@ -20,7 +21,9 @@ class PaymentService {
     if (!(await _iap.isAvailable())) return;
     final res = await _iap.queryProductDetails({Secrets.productId});
     if (res.productDetails.isNotEmpty) {
-      _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: res.productDetails.first));
+      _iap.buyNonConsumable(
+          purchaseParam:
+              PurchaseParam(productDetails: res.productDetails.first));
     }
   }
 }

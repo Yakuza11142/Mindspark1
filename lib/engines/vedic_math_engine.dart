@@ -3,7 +3,8 @@ import '../config/secrets.dart';
 
 class VedicMathEngine {
   static Future<String> generateTrick(String topic) async {
-    final model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+    final model =
+        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final prompt = """
     Teach a specific Vedic Math speed trick for: $topic. 
     Explain the 'Sutra' (rule), give a step-by-step example, and provide 1 practice question. 

@@ -4,5 +4,6 @@ class VolumetricAvatar {
   final String idleAnimation; // e.g., 'Breathing'
   final String talkingAnimation; // e.g., 'Explaining'
 
-  VolumetricAvatar(this.name, this.glbUrl, this.idleAnimation, this.talkingAnimation);
+  VolumetricAvatar(
+      this.name, this.glbUrl, this.idleAnimation, this.talkingAnimation);
 }

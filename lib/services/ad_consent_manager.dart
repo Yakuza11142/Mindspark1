@@ -5,7 +5,8 @@ class AdConsentManager {
     ConsentDebugSettings debugSettings = ConsentDebugSettings(
       debugGeography: DebugGeography.debugGeographyDisabled,
     );
-    ConsentRequestParameters params = ConsentRequestParameters(consentDebugSettings: debugSettings);
+    ConsentRequestParameters params =
+        ConsentRequestParameters(consentDebugSettings: debugSettings);
 
     ConsentInformation.instance.requestConsentInfoUpdate(params, () async {
       if (await ConsentInformation.instance.isConsentFormAvailable()) {

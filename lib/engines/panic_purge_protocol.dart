@@ -2,7 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PanicPurgeProtocol {
   // THE KILL SWITCH
-  static const bool isPanicModeDead = true; 
+  static const bool isPanicModeDead = true;
 
   static Future<void> eradicatePanicMode() async {
     final prefs = await SharedPreferences.getInstance();
@@ -14,5 +14,5 @@ class PanicPurgeProtocol {
   }
 
   // Always returns false to any old widget asking for panic status
-  static bool checkUrgency() => false; 
+  static bool checkUrgency() => false;
 }

@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 class ExponentialBackoff {
-  static Future<T> execute<T>(Future<T> Function() task, {int maxAttempts = 5}) async {
+  static Future<T> execute<T>(Future<T> Function() task,
+      {int maxAttempts = 5}) async {
     int attempt = 0;
     while (attempt < maxAttempts) {
       try {

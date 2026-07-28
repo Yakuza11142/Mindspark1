@@ -6,13 +6,14 @@ class EssayGrader {
     final finalMaxScore = maxScore.clamp(1, 100);
 
     final model = GenerativeModel(
-      // Using 'gemini-pro-latest' instead of 'gemini-3.1-pro-latest' 
+      // Using 'gemini-pro-latest' instead of 'gemini-3.1-pro-latest'
       // ensures it rolls over to 3.2, 3.3, etc., automatically.
-      model: 'gemini-pro-latest', 
+      model: 'gemini-pro-latest',
       apiKey: Secrets.geminiKey,
     );
 
-    final prompt = "Grade this essay out of $finalMaxScore and give feedback: $essay";
+    final prompt =
+        "Grade this essay out of $finalMaxScore and give feedback: $essay";
 
     try {
       final res = await model.generateContent([Content.text(prompt)]);

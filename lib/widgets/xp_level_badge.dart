@@ -7,7 +7,9 @@ class XpLevelBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       backgroundColor: Colors.amber,
-      child: Text("$level", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+      child: Text("$level",
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: Colors.black)),
     );
   }
 }

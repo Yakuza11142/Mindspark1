@@ -11,10 +11,12 @@ class AvatarFrame extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.amber, width: 3),
-        boxShadow: [BoxShadow(color: Colors.amber.withOpacity(0.5), blurRadius: 10)]
-      ),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.amber, width: 3),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.amber.withValues(alpha: 0.5), blurRadius: 10)
+          ]),
       child: child,
     );
   }

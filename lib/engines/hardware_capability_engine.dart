@@ -10,7 +10,7 @@ class HardwareCapabilityEngine {
       // We read total memory. (Approximated logic for Dart).
       // If it's a low-end phone, we force 2D mode to save the user from a crash.
       int ram = info.systemFeatures.length; // Proxy check
-      if (ram < 50) return false; 
+      if (ram < 50) return false;
       return true; // Samsung A71 will return true.
     }
     return true; // iPhones generally support it.

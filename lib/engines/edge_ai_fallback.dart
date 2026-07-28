@@ -2,7 +2,7 @@
 
 String getUniversalOfflineResponse(String query) {
   final String q = query.toLowerCase().trim();
-  
+
   if (q.isEmpty) return "No query provided.";
 
   return "Cloud connection unavailable. Reconnect to restore full intelligence.";
@@ -11,6 +11,6 @@ String getUniversalOfflineResponse(String query) {
 bool hasOfflineCapability(String query) {
   final String q = query.toLowerCase().trim();
   if (q.isEmpty) return false;
-  
-  return false; 
+
+  return false;
 }

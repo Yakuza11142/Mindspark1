@@ -5,10 +5,10 @@ class CloudSyncManager {
   static Future<void> sync(CurrencyManager localCurrency) async {
     // 1. Get Cloud Data
     var cloudData = await FirestoreService().getUserData();
-    
+
     if (cloudData != null) {
       int cloudSparks = cloudData['sparks'] ?? 0;
-      
+
       // 2. Logic: Keep the higher number (simple conflict resolution)
       if (cloudSparks > localCurrency.sparks) {
         // Cloud has more, update local

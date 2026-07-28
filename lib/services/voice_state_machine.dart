@@ -6,6 +6,7 @@ class VoiceStateMachine {
     currentState = state;
     print("🎙️ Voice State Changed: $currentState");
   }
-  
-  static bool canListen() => currentState == "IDLE" || currentState == "SPEAKING_FINISHED";
+
+  static bool canListen() =>
+      currentState == "IDLE" || currentState == "SPEAKING_FINISHED";
 }

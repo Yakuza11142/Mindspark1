@@ -56,7 +56,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifications = true;
   bool _haptics = true;
-  bool _sound = true;
+  final bool _sound = true;
 
   @override
   Widget build(BuildContext context) {
@@ -74,8 +74,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _notifications,
             onChanged: (val) {
               setState(() => _notifications = val);
-              if (val) NotificationService().scheduleDailyReminder();
-              else NotificationService().cancelAll();
+              if (val) {
+                NotificationService().scheduleDailyReminder();
+              } else {
+                NotificationService().cancelAll();
+              }
             },
           ),
           SwitchListTile(

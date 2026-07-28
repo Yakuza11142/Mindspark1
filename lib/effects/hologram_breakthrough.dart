@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 class HologramBreakthrough extends StatefulWidget {
+  const HologramBreakthrough({super.key});
+
   @override
   _HologramBreakthroughState createState() => _HologramBreakthroughState();
 }
@@ -32,9 +34,12 @@ class _HologramBreakthroughState extends State<HologramBreakthrough> {
               height: 200.0,
               width: 200.0,
               decoration: BoxDecoration(
-                color: Colors.cyanAccent.withOpacity(0.5),
+                color: Colors.cyanAccent.withValues(alpha: 0.5),
                 boxShadow: [
-                  BoxShadow(color: Colors.cyanAccent, blurRadius: 40, spreadRadius: 10)
+                  BoxShadow(
+                      color: Colors.cyanAccent,
+                      blurRadius: 40,
+                      spreadRadius: 10)
                 ],
               ),
               child: const Icon(Icons.favorite, color: Colors.white, size: 100),

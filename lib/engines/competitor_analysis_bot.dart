@@ -12,7 +12,7 @@ class CompetitorAnalysisBot {
         return entry.value;
       }
     }
-    
+
     return null;
   }
 

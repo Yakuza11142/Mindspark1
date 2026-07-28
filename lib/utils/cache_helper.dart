@@ -5,7 +5,7 @@ class CacheHelper {
     final prefs = await SharedPreferences.getInstance();
     int? timestamp = prefs.getInt('${key}_time');
     if (timestamp == null) return true;
-    
+
     int now = DateTime.now().millisecondsSinceEpoch;
     return (now - timestamp) > 604800000; // 7 Days
   }

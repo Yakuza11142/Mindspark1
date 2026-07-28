@@ -16,12 +16,15 @@ class _AvatarCreationScreenState extends State<AvatarCreationScreen> {
   void _generate() async {
     setState(() => isGenerating = true);
     String? url = await AvatarGeneratorEngine.generateAvatar(_ctrl.text);
-    
+
     if (url != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_avatar_url', url); // Save to phone
     }
-    setState(() { avatarUrl = url; isGenerating = false; });
+    setState(() {
+      avatarUrl = url;
+      isGenerating = false;
+    });
   }
 
   @override
@@ -33,17 +36,27 @@ class _AvatarCreationScreenState extends State<AvatarCreationScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             CircleAvatar(
               radius: 80,
               backgroundColor: Colors.white10,
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-              child: isGenerating ? const CircularProgressIndicator(color: Colors.amber) : (avatarUrl == null ? const Icon(Icons.person, size: 80) : null),
+              backgroundImage:
+                  avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+              child: isGenerating
+                  ? const CircularProgressIndicator(color: Colors.amber)
+                  : (avatarUrl == null
+                      ? const Icon(Icons.person, size: 80)
+                      : null),
             ),
             const SizedBox(height: 40),
-            TextField(controller: _ctrl, decoration: const InputDecoration(hintText: "e.g., A smart Nigerian boy with neon glasses", filled: true)),
+            TextField(
+                controller: _ctrl,
+                decoration: const InputDecoration(
+                    hintText: "e.g., A smart Nigerian boy with neon glasses",
+                    filled: true)),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: _generate, child: const Text("Generate Profile Pic"))
+            ElevatedButton(
+                onPressed: _generate, child: const Text("Generate Profile Pic"))
           ],
         ),
       ),

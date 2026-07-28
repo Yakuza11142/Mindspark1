@@ -1,5 +1,3 @@
-import '../config/supabase_core_config.dart';
-
 class SupabaseUserDeletion {
   static Future<void> deleteMyAccount() async {
     // Edge function must be used to bypass RLS and delete Auth user securely

@@ -4,7 +4,8 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 class HoloFallbackViewer extends StatelessWidget {
   final String modelUrl;
   final bool arSupported;
-  const HoloFallbackViewer({super.key, required this.modelUrl, required this.arSupported});
+  const HoloFallbackViewer(
+      {super.key, required this.modelUrl, required this.arSupported});
 
   @override
   Widget build(BuildContext context) {

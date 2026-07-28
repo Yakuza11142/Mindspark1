@@ -19,20 +19,24 @@ class _ArTutorSummonScreenState extends State<ArTutorSummonScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        children:[
+        children: [
           ArCharacterRenderer(
-            glbUrl: avatar.glbUrl, 
-            isSpeaking: isSpeaking, 
-            idleAnim: avatar.idleAnimation, 
-            talkAnim: avatar.talkingAnimation
-          ),
-          const Positioned(top: 50, left: 20, child: BackButton(color: Colors.white)),
+              glbUrl: avatar.glbUrl,
+              isSpeaking: isSpeaking,
+              idleAnim: avatar.idleAnimation,
+              talkAnim: avatar.talkingAnimation),
+          const Positioned(
+              top: 50, left: 20, child: BackButton(color: Colors.white)),
           Positioned(
-            bottom: 40, left: 20, right: 20,
+            bottom: 40,
+            left: 20,
+            right: 20,
             child: Container(
               padding: const EdgeInsets.all(15),
               color: Colors.black87,
-              child: Text("${avatar.name}: 'Let us begin today's class.'", style: const TextStyle(color: Colors.cyanAccent, fontSize: 18)),
+              child: Text("${avatar.name}: 'Let us begin today's class.'",
+                  style:
+                      const TextStyle(color: Colors.cyanAccent, fontSize: 18)),
             ),
           )
         ],

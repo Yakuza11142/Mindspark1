@@ -15,6 +15,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     super.initState();
     _ctrl = WebViewController()..loadRequest(Uri.parse(widget.url));
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

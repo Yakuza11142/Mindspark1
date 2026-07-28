@@ -22,22 +22,18 @@ class NovelSummaryScreen extends StatelessWidget {
         itemBuilder: (ctx, i) {
           String chapterKey = chapters.keys.elementAt(i);
           String summaryValue = chapters.values.elementAt(i);
-          
+
           return ExpansionTile(
             iconColor: Colors.cyan,
             collapsedIconColor: Colors.cyan,
-            title: Text(
-              chapterKey, 
-              style: const TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold)
-            ),
+            title: Text(chapterKey,
+                style: const TextStyle(
+                    color: Colors.cyan, fontWeight: FontWeight.bold)),
             children: [
               Padding(
-                padding: const EdgeInsets.all(15.0), 
-                child: Text(
-                  summaryValue, 
-                  style: const TextStyle(color: Colors.white, height: 1.5)
-                )
-              )
+                  padding: const EdgeInsets.all(15.0),
+                  child: Text(summaryValue,
+                      style: const TextStyle(color: Colors.white, height: 1.5)))
             ],
           );
         },

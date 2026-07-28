@@ -7,8 +7,11 @@ class HologramVfxOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity, height: 5,
-      color: Colors.cyanAccent.withOpacity(0.5),
-    ).animate(onPlay: (c) => c.repeat(reverse: true)).moveY(begin: 0, end: 800, duration: 2.seconds);
+      width: double.infinity,
+      height: 5,
+      color: Colors.cyanAccent.withValues(alpha: 0.5),
+    )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .moveY(begin: 0, end: 800, duration: 2.seconds);
   }
 }

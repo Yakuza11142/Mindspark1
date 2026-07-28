@@ -18,10 +18,12 @@ class ScoreTargetMotivator extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           color: Colors.white10,
           child: Row(
-            children:[
+            children: [
               const Icon(Icons.flag, color: Colors.amber),
               const SizedBox(width: 10),
-              Text("Target: ${snap.data} (Aim for 280+)", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text("Target: ${snap.data} (Aim for 280+)",
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             ],
           ),
         );

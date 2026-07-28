@@ -12,7 +12,9 @@ class ActivePersonaManager extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     String? savedId = prefs.getString('selected_persona_id');
     if (savedId != null) {
-      _currentPersona = PersonaDatabase.characters.firstWhere((p) => p.id == savedId, orElse: () => PersonaDatabase.characters[0]);
+      _currentPersona = PersonaDatabase.characters.firstWhere(
+          (p) => p.id == savedId,
+          orElse: () => PersonaDatabase.characters[0]);
       notifyListeners();
     }
   }

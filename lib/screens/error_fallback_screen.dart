@@ -7,7 +7,9 @@ class ErrorFallbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Colors.black,
-      body: Center(child: Text("System recalibrating...", style: TextStyle(color: Colors.cyanAccent))),
+      body: Center(
+          child: Text("System recalibrating...",
+              style: TextStyle(color: Colors.cyanAccent))),
     );
   }
 }

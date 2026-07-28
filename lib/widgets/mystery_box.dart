@@ -24,11 +24,14 @@ class _MysteryBoxState extends State<MysteryBox> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _open,
-      child: opened 
-      ? Column(children: [const Icon(Icons.star, color: Colors.amber, size: 60), const Text("Claimed!")])
-      : const Icon(Icons.inventory_2, color: Colors.purple, size: 60)
-          .animate(onPlay: (c) => c.repeat())
-          .shake(duration: 1000.ms),
+      child: opened
+          ? Column(children: [
+              const Icon(Icons.star, color: Colors.amber, size: 60),
+              const Text("Claimed!")
+            ])
+          : const Icon(Icons.inventory_2, color: Colors.purple, size: 60)
+              .animate(onPlay: (c) => c.repeat())
+              .shake(duration: 1000.ms),
     );
   }
 }

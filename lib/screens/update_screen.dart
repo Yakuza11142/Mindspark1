@@ -12,7 +12,10 @@ class UpdateScreen extends StatelessWidget {
           children: [
             const Icon(Icons.system_update, size: 80, color: Colors.amber),
             const Text("Update Required"),
-            ElevatedButton(onPressed: () => launchUrl(Uri.parse("https://play.google.com")), child: const Text("Update"))
+            ElevatedButton(
+                onPressed: () =>
+                    launchUrl(Uri.parse("https://play.google.com")),
+                child: const Text("Update"))
           ],
         ),
       ),

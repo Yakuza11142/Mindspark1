@@ -33,7 +33,8 @@ class FeynmanEngine {
       Tone: Institutional, precise, and constructive.
     """;
 
-    final responseStream = _model!.generateContentStream([Content.text(prompt)]);
+    final responseStream =
+        _model!.generateContentStream([Content.text(prompt)]);
 
     await for (final chunk in responseStream) {
       if (chunk.text != null) yield chunk.text!;

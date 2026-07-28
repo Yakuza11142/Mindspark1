@@ -15,7 +15,8 @@ class _MagneticButtonState extends State<MagneticButton> {
     return MouseRegion(
       onEnter: (_) {},
       onExit: (_) => setState(() => _offset = Offset.zero),
-      onHover: (e) => setState(() => _offset = (e.localPosition - const Offset(50, 20)) / 5),
+      onHover: (e) => setState(
+          () => _offset = (e.localPosition - const Offset(50, 20)) / 5),
       child: Transform.translate(offset: _offset, child: widget.child),
     );
   }

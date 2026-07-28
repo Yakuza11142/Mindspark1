@@ -10,7 +10,7 @@ class SupabaseLeaderboardApi {
           .limit(1000);
       return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      return[]; // Fallback to local simulated leaderboard if offline
+      return []; // Fallback to local simulated leaderboard if offline
     }
   }
 }

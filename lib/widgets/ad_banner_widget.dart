@@ -15,9 +15,13 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     super.initState();
     _ad = AdManager().createBanner()..load();
   }
+
   @override
   Widget build(BuildContext context) {
     if (_ad == null) return const SizedBox.shrink();
-    return SizedBox(width: _ad!.size.width.toDouble(), height: _ad!.size.height.toDouble(), child: AdWidget(ad: _ad!));
+    return SizedBox(
+        width: _ad!.size.width.toDouble(),
+        height: _ad!.size.height.toDouble(),
+        child: AdWidget(ad: _ad!));
   }
 }

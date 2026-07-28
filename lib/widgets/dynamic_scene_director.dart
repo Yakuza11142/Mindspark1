@@ -8,8 +8,8 @@ class DynamicSceneDirector extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedCrossFade(
       duration: const Duration(seconds: 1),
-      child: showAvatar 
-          ? const Text("HeyGen Avatar Player") 
+      child: showAvatar
+          ? const Text("HeyGen Avatar Player")
           : const Text("Runway B-Roll Player"),
     );
   }

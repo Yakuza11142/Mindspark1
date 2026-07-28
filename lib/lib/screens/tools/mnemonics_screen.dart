@@ -31,7 +31,9 @@ class _MnemonicsScreenState extends State<MnemonicsScreen> {
           padding: const EdgeInsets.all(20),
           child: _trick == null
               ? const CircularProgressIndicator(color: Colors.cyan)
-              : Text(_trick!, style: const TextStyle(fontSize: 24, color: Colors.amber, height: 1.5)),
+              : Text(_trick!,
+                  style: const TextStyle(
+                      fontSize: 24, color: Colors.amber, height: 1.5)),
         ),
       ),
     );

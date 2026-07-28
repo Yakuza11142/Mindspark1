@@ -9,11 +9,13 @@ class LoadingShimmerPro extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: Colors.grey[900]!,
       highlightColor: Colors.grey[800]!,
-      period: const Duration(milliseconds: 1500), // Slower shimmer saves CPU cycles
+      period:
+          const Duration(milliseconds: 1500), // Slower shimmer saves CPU cycles
       child: Container(
         height: 100,
         width: double.infinity,
-        decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(15)),
+        decoration: BoxDecoration(
+            color: Colors.black, borderRadius: BorderRadius.circular(15)),
       ),
     );
   }

@@ -42,15 +42,16 @@ class InfallibleVocalTrainer extends StatefulWidget {
 }
 
 class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
-  final TextEditingController _searchController = TextEditingController(text: 'English');
-  
-  double _sparkValue = 100.0; 
+  final TextEditingController _searchController =
+      TextEditingController(text: 'English');
+
+  double _sparkValue = 100.0;
   List<String> _dailyWords = [];
   bool _isLoading = false;
   bool _isProcessingAudio = false;
   String _hardwareIsolationLog = '';
 
-  final String _apiKey = "YOUR_API_KEY_HERE"; 
+  final String _apiKey = "YOUR_API_KEY_HERE";
 
   @override
   void initState() {
@@ -61,7 +62,7 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
   Future<void> _syncDailyUserManifest() async {
     final prefs = await SharedPreferences.getInstance();
     final calendarKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    
+
     String? cachedDate = prefs.getString('user_sync_date');
     String? cachedPayload = prefs.getString('user_cached_words');
 
@@ -73,9 +74,12 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
       _generateInfallibleWords();
     }
   }
+
   Future<void> _generateInfallibleWords() async {
     setState(() => _isLoading = true);
-    final targetLanguage = _searchController.text.trim().isEmpty ? 'Global' : _searchController.text.trim();
+    final targetLanguage = _searchController.text.trim().isEmpty
+        ? 'Global'
+        : _searchController.text.trim();
     final targetSpark = _sparkValue.round();
 
     if (_apiKey == "YOUR_API_KEY_HERE") {
@@ -105,11 +109,13 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
           "messages": [
             {
               "role": "system",
-              "content": "Output exactly 5 vocabulary words corresponding to the target language and numeric difficulty spark. Separate items with a single comma. Output zero markdown formatting, bullet points, translations, or numbering arrays."
+              "content":
+                  "Output exactly 5 vocabulary words corresponding to the target language and numeric difficulty spark. Separate items with a single comma. Output zero markdown formatting, bullet points, translations, or numbering arrays."
             },
             {
               "role": "user",
-              "content": "Language: $targetLanguage. Spark Rank: $targetSpark/200."
+              "content":
+                  "Language: $targetLanguage. Spark Rank: $targetSpark/200."
             }
           ],
           "temperature": 0.2
@@ -119,7 +125,8 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
       if (response.statusCode == 200) {
         final content = jsonDecode(response.body);
         final String cleanRaw = content['choices']['message']['content'];
-        List<String> dynamicTokens = cleanRaw.split(',').map((w) => w.trim()).toList();
+        List<String> dynamicTokens =
+            cleanRaw.split(',').map((w) => w.trim()).toList();
 
         final prefs = await SharedPreferences.getInstance();
         final calendarKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -147,10 +154,12 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
     });
 
     await Future.delayed(const Duration(milliseconds: 500));
-    setState(() => _hardwareIsolationLog = "Stripping all background decibels and ambient noises...");
+    setState(() => _hardwareIsolationLog =
+        "Stripping all background decibels and ambient noises...");
 
     await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _hardwareIsolationLog = "Neutralizing speech slips, stutters, and user verbal errors...");
+    setState(() => _hardwareIsolationLog =
+        "Neutralizing speech slips, stutters, and user verbal errors...");
 
     await Future.delayed(const Duration(milliseconds: 400));
     setState(() => _isProcessingAudio = false);
@@ -169,25 +178,36 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
           children: [
             Icon(Icons.verified_user_rounded, color: Colors.tealAccent),
             SizedBox(width: 10),
-            Text('Audio Perfectly Cleaned', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Audio Perfectly Cleaned',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('• Ambient Noises Suppressed: 100%', style: TextStyle(color: Colors.greenAccent, fontSize: 13, height: 1.6)),
-            const Text('• Spoken Mistakes Removed: 100%', style: TextStyle(color: Colors.greenAccent, fontSize: 13, height: 1.6)),
+            const Text('• Ambient Noises Suppressed: 100%',
+                style: TextStyle(
+                    color: Colors.greenAccent, fontSize: 13, height: 1.6)),
+            const Text('• Spoken Mistakes Removed: 100%',
+                style: TextStyle(
+                    color: Colors.greenAccent, fontSize: 13, height: 1.6)),
             const Divider(height: 24, color: Colors.white24),
-            const Text('Isolated Clean Vocal Output:', style: TextStyle(color: Colors.white64, fontSize: 11)),
+            const Text('Isolated Clean Vocal Output:',
+                style: TextStyle(color: Colors.white64, fontSize: 11)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               width: double.maxFinite,
-              decoration: BoxDecoration(color: const Color(0xFF1A1A3A), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A3A),
+                  borderRadius: BorderRadius.circular(12)),
               child: Text(
                 _dailyWords.join('  •  '),
-                style: const TextStyle(color: Colors.cyanAccent, fontSize: 15, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -195,7 +215,10 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Next Lesson', style: TextStyle(color: Colors.deepPurpleAccent, fontWeight: FontWeight.bold)),
+            child: const Text('Next Lesson',
+                style: TextStyle(
+                    color: Colors.deepPurpleAccent,
+                    fontWeight: FontWeight.bold)),
           )
         ],
       ),
@@ -216,27 +239,36 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
               labelStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: const Color(0xFF161630),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.deepPurpleAccent)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.deepPurpleAccent)),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.search_rounded, color: Colors.cyanAccent),
+                icon:
+                    const Icon(Icons.search_rounded, color: Colors.cyanAccent),
                 onPressed: _generateInfallibleWords,
               ),
             ),
             onSubmitted: (_) => _generateInfallibleWords(),
           ),
           const SizedBox(height: 20),
-
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFF161630), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(
+                color: const Color(0xFF161630),
+                borderRadius: BorderRadius.circular(16)),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('⚡ Complexity Index:', style: TextStyle(fontSize: 14, color: Colors.white70)),
-                    Text('${_sparkValue.round()} / 200 Sparks', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                    const Text('⚡ Complexity Index:',
+                        style: TextStyle(fontSize: 14, color: Colors.white70)),
+                    Text('${_sparkValue.round()} / 200 Sparks',
+                        style: const TextStyle(
+                            color: Colors.amber, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 Slider(
@@ -253,46 +285,71 @@ class _InfallibleVocalTrainerState extends State<InfallibleVocalTrainer> {
             ),
           ),
           const SizedBox(height: 24),
-
-          const Text('Your Daily 5 Dynamic Training Target:', style: TextStyle(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.bold)),
+          const Text('Your Daily 5 Dynamic Training Target:',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white38,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           _isLoading
-              ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: Colors.cyanAccent)))
+              ? const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child:
+                          CircularProgressIndicator(color: Colors.cyanAccent)))
               : Column(
                   children: _dailyWords.map((word) {
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 5),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF1A1A3A), Color(0xFF22224A)]),
+                        gradient: const LinearGradient(
+                            colors: [Color(0xFF1A1A3A), Color(0xFF22224A)]),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: ListTile(
-                        leading: const Icon(Icons.waves_rounded, color: Colors.cyanAccent, size: 20),
-                        title: Text(word, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        leading: const Icon(Icons.waves_rounded,
+                            color: Colors.cyanAccent, size: 20),
+                        title: Text(word,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ),
                     );
                   }).toList(),
                 ),
           const SizedBox(height: 30),
-
           if (_isProcessingAudio) ...[
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: const Color(0xFF0C2014), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.greenAccent.withOpacity(0.2))),
-              child: Text(_hardwareIsolationLog, textAlign: Center, style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontStyle: FontStyle.italic)),
+              decoration: BoxDecoration(
+                  color: const Color(0xFF0C2014),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: Colors.greenAccent.withValues(alpha: 0.2))),
+              child: Text(_hardwareIsolationLog,
+                  textAlign: Center,
+                  style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic)),
             ),
             const SizedBox(height: 20),
           ],
-
           ElevatedButton.icon(
-            onPressed: (_isLoading || _isProcessingAudio) ? null : _executeInfallibleAudioPass,
+            onPressed: (_isLoading || _isProcessingAudio)
+                ? null
+                : _executeInfallibleAudioPass,
             icon: const Icon(Icons.shield_rounded, size: 20),
-            label: const Text('EXECUTE INFALLIBLE RECORDING PASS', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            label: const Text('EXECUTE INFALLIBLE RECORDING PASS',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurpleAccent,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],

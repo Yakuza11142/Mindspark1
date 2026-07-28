@@ -6,10 +6,15 @@ class ContentMaturityFilter {
     return "$prompt. Hyper-realistic, scientific, highly detailed.";
   }
 }
+
 class ReportToneEngine {
   static String getWhatsAppMessage(String name, int score, String stage) {
     // 1. Determine Performance Category
-    String status = score >= 80 ? "EXCELLENT" : score >= 50 ? "STEADY" : "NEEDS_HELP";
+    String status = score >= 80
+        ? "EXCELLENT"
+        : score >= 50
+            ? "STEADY"
+            : "NEEDS_HELP";
 
     // 2. Junior Tone (Encouragement & Bonding)
     if (stage == "JUNIOR") {
@@ -25,7 +30,7 @@ class ReportToneEngine {
     } else if (status == "NEEDS_HELP") {
       return "⚠️ *MindSpark Alert:* \n\n$name scored $score% in their latest session. To stay on track for University admission, they need to review *Physics & Math* tonight. Check the app for weak points.";
     }
-    
+
     return "📈 *Progress Report:* \n\n$name is consistent! Score: $score%. They are on the right path to their target exam. Encourage them to hit 80% tomorrow!";
   }
 }

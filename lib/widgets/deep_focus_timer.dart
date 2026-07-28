@@ -14,19 +14,25 @@ class _DeepFocusTimerState extends State<DeepFocusTimer> {
   @override
   void initState() {
     super.initState();
-    t = Timer.periodic(const Duration(seconds: 1), (_) => setState(() => secondsFocused++));
+    t = Timer.periodic(
+        const Duration(seconds: 1), (_) => setState(() => secondsFocused++));
   }
 
   @override
-  void dispose() { t.cancel(); super.dispose(); }
+  void dispose() {
+    t.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     int m = secondsFocused ~/ 60;
     int s = secondsFocused % 60;
     return Text(
-      "Deep Focus: ${m.toString().padLeft(2,'0')}:${s.toString().padLeft(2,'0')}", 
-      style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontFamily: 'monospace')
-    );
+        "Deep Focus: ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}",
+        style: const TextStyle(
+            color: Colors.cyanAccent,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace'));
   }
 }

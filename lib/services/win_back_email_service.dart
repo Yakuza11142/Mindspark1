@@ -4,10 +4,12 @@ class WinBackEmailService {
     print("Scheduled 'We Miss You' 50% discount email for 14 days from now.");
   }
 }
+
 class WinBackService {
   static String getWinBackLink(String name, String discountCode) {
-    final message = "🚀 *We Miss You, $name!* \n\nMindspark Elite isn't the same without you. We've added a special *50% OFF* credit to your account. \n\nClaim it here: https://mindspark.app";
-    
+    final message =
+        "🚀 *We Miss You, $name!* \n\nMindspark Elite isn't the same without you. We've added a special *50% OFF* credit to your account. \n\nClaim it here: https://mindspark.app";
+
     // This creates the link you send via WhatsApp
     return "https://wa.me{Uri.encodeComponent(message)}";
   }

@@ -13,7 +13,7 @@ void initState() {
 
 // REPLACEMENT SEARCH BAR
 GlassContainer(
-  child: TextField(
+  child = TextField(
     controller: _searchCtrl,
     style: const TextStyle(color: Colors.white),
     decoration: InputDecoration(

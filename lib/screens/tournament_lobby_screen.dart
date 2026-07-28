@@ -12,15 +12,26 @@ class TournamentLobbyScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
-            Icon(Icons.emoji_events, size: 100, color: active ? Colors.amber : Colors.grey),
+          children: [
+            Icon(Icons.emoji_events,
+                size: 100, color: active ? Colors.amber : Colors.grey),
             const SizedBox(height: 20),
-            Text(active ? TournamentEngine.getTournamentTheme() : "Next Tournament: Saturday", style: const TextStyle(fontSize: 24)),
+            Text(
+                active
+                    ? TournamentEngine.getTournamentTheme()
+                    : "Next Tournament: Saturday",
+                style: const TextStyle(fontSize: 24)),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: active ? () {} : null,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 20)),
-              child: Text(active ? "ENTER ARENA (Entry: 100 ⚡)" : "ARENA CLOSED", style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 50, vertical: 20)),
+              child: Text(
+                  active ? "ENTER ARENA (Entry: 100 ⚡)" : "ARENA CLOSED",
+                  style: const TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold)),
             )
           ],
         ),

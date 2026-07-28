@@ -5,9 +5,10 @@ class SupabaseRealtimePresence {
     final channel = Supabase.instance.client.channel('online-users');
     channel.onPresenceSync((payload) {
       print('Synced presence state: $payload');
-    }).subscribe((status,[error]) async {
+    }).subscribe((status, [error]) async {
       if (status == RealtimeSubscribeStatus.subscribed) {
-        await channel.track({'user_id': userId, 'online_at': DateTime.now().toIso8601String()});
+        await channel.track(
+            {'user_id': userId, 'online_at': DateTime.now().toIso8601String()});
       }
     });
   }

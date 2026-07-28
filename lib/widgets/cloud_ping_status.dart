@@ -9,10 +9,11 @@ class CloudPingStatus extends StatelessWidget {
       padding: EdgeInsets.all(8.0),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children:[
+        children: [
           Icon(Icons.dns, size: 12, color: Colors.greenAccent),
           SizedBox(width: 4),
-          Text("Supabase DB Active", style: TextStyle(color: Colors.grey, fontSize: 10)),
+          Text("Supabase DB Active",
+              style: TextStyle(color: Colors.grey, fontSize: 10)),
         ],
       ),
     );

@@ -29,39 +29,55 @@ class _HandsFreeAhScreenState extends State<HandsFreeAhScreen> {
     bool hasMic = await MicPermissionGate.ensureMicAccess();
     if (!hasMic) return;
 
-    setState(() { isListening = true; userText = "Listening..."; aiText = ""; });
+    setState(() {
+      isListening = true;
+      userText = "Listening...";
+      aiText = "";
+    });
 
     AhVoiceLinkEngine.startListening(
-      (heard) => setState(() { userText = heard; isListening = false; isThinking = true; }),
-      (reply) => setState(() { aiText = reply; isThinking = false; }),
-      widget.persona
-    );
+        (heard) => setState(() {
+              userText = heard;
+              isListening = false;
+              isThinking = true;
+            }),
+        (reply) => setState(() {
+              aiText = reply;
+              isThinking = false;
+            }),
+        widget.persona);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(title: Text("Call with ${widget.persona.name}"), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+          title: Text("Call with ${widget.persona.name}"),
+          backgroundColor: Colors.transparent),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children:[
+        children: [
           // 1. THE AI RESPONSE
           Padding(
             padding: const EdgeInsets.all(30),
             child: Text(
               isThinking ? "Processing..." : aiText,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 24, color: widget.persona.themeColor, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 24,
+                  color: widget.persona.themeColor,
+                  fontWeight: FontWeight.bold),
             ).animate(target: isThinking ? 1 : 0).fade(duration: 400.ms),
           ),
-          
+
           const Spacer(),
 
           // 2. THE GLOWING MICROPHONE ORB
           GestureDetector(
             onTap: _toggleVoice,
-            child: SiriGlowOrb(isListening: isListening, color: widget.persona.themeColor),
+            child: SiriGlowOrb(
+                isListening: isListening, color: widget.persona.themeColor),
           ),
 
           const Spacer(),
@@ -70,8 +86,13 @@ class _HandsFreeAhScreenState extends State<HandsFreeAhScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(30),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
-            child: Text(userText, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 18)),
+            decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(30))),
+            child: Text(userText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 18)),
           )
         ],
       ),

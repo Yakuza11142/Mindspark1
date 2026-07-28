@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/supabase_core_config.dart';
 
 class SupabaseLeaderboardStream {
   static Stream<List<Map<String, dynamic>>> getLiveTop50() {

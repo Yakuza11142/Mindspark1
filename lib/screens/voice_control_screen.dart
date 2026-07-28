@@ -18,10 +18,11 @@ class _VoiceControlScreenState extends State<VoiceControlScreen> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             const Icon(Icons.mic, size: 80, color: Colors.cyanAccent),
             const SizedBox(height: 20),
-            Text(status, style: const TextStyle(fontSize: 20, color: Colors.white)),
+            Text(status,
+                style: const TextStyle(fontSize: 20, color: Colors.white)),
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {

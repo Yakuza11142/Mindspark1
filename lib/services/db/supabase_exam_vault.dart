@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../config/supabase_tables.dart';
 
 class SupabaseExamVault {
   static Future<void> uploadScore(String examName, int score) async {

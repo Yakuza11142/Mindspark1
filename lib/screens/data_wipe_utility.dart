@@ -12,7 +12,8 @@ class DataWipeUtility extends StatelessWidget {
       subtitle: const Text("Frees up phone storage"),
       onTap: () async {
         await UserStorageLimiter.enforce100MbLimit();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cache Cleared. Space Restored.")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Cache Cleared. Space Restored.")));
       },
     );
   }

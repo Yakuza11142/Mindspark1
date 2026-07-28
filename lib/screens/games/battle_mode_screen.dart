@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BattleGame {
   final _supabase = Supabase.instance.client;
   late RealtimeChannel _channel;
-  
+
   // Game State
   int myScore = 0;
   int opponentScore = 0;
@@ -13,23 +13,26 @@ class BattleGame {
     _channel = _supabase.channel('room:$roomId');
 
     // 1. Sync scores via Broadcast (Low Latency)
-    _channel.onBroadcast(
-      event: 'score_update',
-      callback: (payload) {
-        if (payload['user'] != myName) {
-          opponentScore = payload['score'];
-          opponentName = payload['user'];
-          onUpdate(); // Trigger UI Refresh
-        }
-      },
-    ).subscribe();
+    _channel
+        .onBroadcast(
+          event: 'score_update',
+          callback: (payload) {
+            if (payload['user'] != myName) {
+              opponentScore = payload['score'];
+              opponentName = payload['user'];
+              onUpdate(); // Trigger UI Refresh
+            }
+          },
+        )
+        .subscribe();
 
     // 2. Track who is online via Presence
     _channel.onPresenceSync((payload) {
       print('Players in room: ${_channel.presenceState()}');
     }).subscribe((status, [error]) async {
       if (status == RealtimeSubscribeStatus.subscribed) {
-        await _channel.track({'user': myName, 'online_at': DateTime.now().toIso8601String()});
+        await _channel.track(
+            {'user': myName, 'online_at': DateTime.now().toIso8601String()});
       }
     });
   }
@@ -45,12 +48,17 @@ class BattleGame {
 
   void leave() => _supabase.removeChannel(_channel);
 }
+
 class SupabaseBattleScreen extends StatefulWidget {
   final String roomId;
   final String userName;
   final List<QuizQuestion> questions;
 
-  const SupabaseBattleScreen({super.key, required this.roomId, required this.userName, required this.questions});
+  const SupabaseBattleScreen(
+      {super.key,
+      required this.roomId,
+      required this.userName,
+      required this.questions});
 
   @override
   State<SupabaseBattleScreen> createState() => _SupabaseBattleScreenState();
@@ -90,14 +98,17 @@ class _SupabaseBattleScreenState extends State<SupabaseBattleScreen> {
         children: [
           _buildScoreBoard(),
           const Spacer(),
-          Text(q.question, style: const TextStyle(fontSize: 22), textAlign: TextAlign.center),
+          Text(q.question,
+              style: const TextStyle(fontSize: 22),
+              textAlign: TextAlign.center),
           const SizedBox(height: 20),
-          ...List.generate(q.options.length, (i) => 
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(onPressed: () => _answer(i), child: Text(q.options[i])),
-            )
-          ),
+          ...List.generate(
+              q.options.length,
+              (i) => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ElevatedButton(
+                        onPressed: () => _answer(i), child: Text(q.options[i])),
+                  )),
           const Spacer(),
         ],
       ),
@@ -111,9 +122,13 @@ class _SupabaseBattleScreenState extends State<SupabaseBattleScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text("${widget.userName}: ${_game.myScore}", style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+          Text("${widget.userName}: ${_game.myScore}",
+              style: const TextStyle(
+                  color: Colors.blue, fontWeight: FontWeight.bold)),
           const Text("VS", style: TextStyle(fontSize: 18)),
-          Text("${_game.opponentName ?? 'Waiting...'}: ${_game.opponentScore}", style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          Text("${_game.opponentName ?? 'Waiting...'}: ${_game.opponentScore}",
+              style: const TextStyle(
+                  color: Colors.red, fontWeight: FontWeight.bold)),
         ],
       ),
     );

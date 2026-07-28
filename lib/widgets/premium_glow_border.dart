@@ -7,7 +7,10 @@ class PremiumGlowBorder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        boxShadow:[BoxShadow(color: Colors.cyanAccent.withOpacity(0.3), blurRadius: 15)],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 15)
+        ],
         border: Border.all(color: Colors.cyanAccent),
         borderRadius: BorderRadius.circular(10),
       ),

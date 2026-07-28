@@ -8,7 +8,7 @@ class BurnoutShieldV2 {
   static Future<bool> shouldLockDevice() async {
     final prefs = await SharedPreferences.getInstance();
     int now = DateTime.now().millisecondsSinceEpoch;
-    
+
     // 1. Get or set the initial start time
     int startTime = prefs.getInt('session_start_ms') ?? now;
     if (prefs.getInt('session_start_ms') == null) {
@@ -25,7 +25,8 @@ class BurnoutShieldV2 {
 
     // 3. Check if we are currently in the 3-hour lockout window
     if (durationMinutes >= maxWorkMinutes) {
-      print("🛑 BURNOUT SHIELD ACTIVE: Force rest for ${maxWorkMinutes + restMinutes - durationMinutes} more minutes.");
+      print(
+          "🛑 BURNOUT SHIELD ACTIVE: Force rest for ${maxWorkMinutes + restMinutes - durationMinutes} more minutes.");
       return true;
     }
 
@@ -34,7 +35,8 @@ class BurnoutShieldV2 {
 
   static Future<void> resetSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('session_start_ms', DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+        'session_start_ms', DateTime.now().millisecondsSinceEpoch);
     print("♻️ SESSION RESET: New cycle started.");
   }
 }

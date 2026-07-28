@@ -25,7 +25,9 @@ class _NotesScreenState extends State<NotesScreen> {
   void _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('note_${widget.topic}', _ctrl.text);
-    if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Note Saved")));
+    if (mounted)
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Note Saved")));
   }
 
   @override
@@ -42,9 +44,8 @@ class _NotesScreenState extends State<NotesScreen> {
           expands: true,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            hintText: "Jot down key points here...",
-            border: InputBorder.none
-          ),
+              hintText: "Jot down key points here...",
+              border: InputBorder.none),
         ),
       ),
     );

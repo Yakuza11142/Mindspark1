@@ -9,7 +9,11 @@ class CeoWatermark extends StatelessWidget {
       padding: EdgeInsets.all(8.0),
       child: Text(
         "MIND SPARK v1.0",
-        style: TextStyle(color: Colors.white24, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold),
+        style: TextStyle(
+            color: Colors.white24,
+            fontSize: 10,
+            letterSpacing: 2,
+            fontWeight: FontWeight.bold),
       ),
     );
   }

@@ -16,7 +16,8 @@ class _VoiceNotesScreenState extends State<VoiceNotesScreen> {
         child: GestureDetector(
           onLongPress: _rec.start,
           onLongPressUp: _rec.stop,
-          child: const CircleAvatar(radius: 50, child: Icon(Icons.mic, size: 40)),
+          child:
+              const CircleAvatar(radius: 50, child: Icon(Icons.mic, size: 40)),
         ),
       ),
     );

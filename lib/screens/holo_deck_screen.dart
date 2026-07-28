@@ -21,11 +21,15 @@ class _HoloDeckScreenState extends State<HoloDeckScreen> {
         title: const Text("Holo-Deck"),
         actions: [
           Row(
-            children:[
-              const Text("STADIUM MODE", style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+            children: [
+              const Text("STADIUM MODE",
+                  style: TextStyle(
+                      color: Colors.amber,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
               Switch(
                 value: isStadiumMode,
-                activeColor: Colors.amber,
+                activeThumbColor: Colors.amber,
                 onChanged: (v) => setState(() => isStadiumMode = v),
               ),
             ],
@@ -33,19 +37,26 @@ class _HoloDeckScreenState extends State<HoloDeckScreen> {
         ],
       ),
       body: Stack(
-        children:[
+        children: [
           ModelViewer(
             src: "https://models.tripo.ai/dynamic_model.glb", // Tripo AI URL
             ar: true,
             arPlacement: ArPlacement.floor,
-            arScale: isStadiumMode ? ArScale.fixed : ArScale.auto, // THE MAGIC TOGGLE
+            arScale: isStadiumMode
+                ? ArScale.fixed
+                : ArScale.auto, // THE MAGIC TOGGLE
             autoRotate: true,
             cameraControls: true,
             backgroundColor: Colors.transparent,
           ),
           const Positioned(
-            bottom: 40, left: 0, right: 0,
-            child: Text("Point camera at the floor. Tap screen to place hologram.", textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Text(
+                "Point camera at the floor. Tap screen to place hologram.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54)),
           )
         ],
       ),

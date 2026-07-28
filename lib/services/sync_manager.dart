@@ -8,7 +8,7 @@ class SyncManager {
 
     final prefs = await SharedPreferences.getInstance();
     List<String>? unsynced = prefs.getStringList('unsynced_data');
-    
+
     if (unsynced != null && unsynced.isNotEmpty) {
       // Loop through and upload to Firebase (Placeholder)
       print("Syncing ${unsynced.length} items to cloud...");

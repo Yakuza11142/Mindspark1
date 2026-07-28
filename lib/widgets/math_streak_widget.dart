@@ -8,9 +8,14 @@ class MathStreakWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (streakCount < 3) return const SizedBox.shrink();
-    return Text(
-      "${streakCount}x COMBO! 🔥", 
-      style: const TextStyle(fontSize: 24, color: Colors.orange, fontWeight: FontWeight.bold)
-    ).animate().scale(duration: 200.ms).then().shake();
+    return Text("${streakCount}x COMBO! 🔥",
+            style: const TextStyle(
+                fontSize: 24,
+                color: Colors.orange,
+                fontWeight: FontWeight.bold))
+        .animate()
+        .scale(duration: 200.ms)
+        .then()
+        .shake();
   }
 }

@@ -12,13 +12,16 @@ class AchievementToast extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.only(top: 20),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-          decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(30)),
+          decoration: BoxDecoration(
+              color: Colors.amber, borderRadius: BorderRadius.circular(30)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children:[
+            children: [
               const Icon(Icons.military_tech, color: Colors.black),
               const SizedBox(width: 10),
-              Text(title, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold)),
             ],
           ),
         ),

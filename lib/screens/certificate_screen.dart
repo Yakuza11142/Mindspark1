@@ -14,7 +14,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
   Future<List<String>> _getCertificates() async {
     final prefs = await SharedPreferences.getInstance();
     // returns the list or an empty list if none exist
-    return prefs.getStringList('my_certificates') ?? []; 
+    return prefs.getStringList('my_certificates') ?? [];
   }
 
   @override
@@ -28,7 +28,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           // 2. Handle Errors
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
@@ -45,12 +45,14 @@ class _CertificateScreenState extends State<CertificateScreen> {
           return ListView.builder(
             itemCount: myCerts.length,
             itemBuilder: (ctx, i) => ListTile(
-              leading: const Icon(Icons.workspace_premium, color: Colors.amber, size: 40),
+              leading: const Icon(Icons.workspace_premium,
+                  color: Colors.amber, size: 40),
               title: Text(myCerts[i]),
               subtitle: const Text("Verified by MindSpark"),
               trailing: IconButton(
                 icon: const Icon(Icons.download),
-                onPressed: () => CertificateGenerator.generate("Student Name", myCerts[i]),
+                onPressed: () =>
+                    CertificateGenerator.generate("Student Name", myCerts[i]),
               ),
             ),
           );

@@ -4,14 +4,13 @@ class CloudUser {
   final int sparks;
   final bool isPro;
 
-  CloudUser({required this.id, required this.email, required this.sparks, required this.isPro});
+  CloudUser(
+      {required this.id,
+      required this.email,
+      required this.sparks,
+      required this.isPro});
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'email': email,
-      'sparks': sparks,
-      'isPro': isPro
-    };
+    return {'id': id, 'email': email, 'sparks': sparks, 'isPro': isPro};
   }
 }

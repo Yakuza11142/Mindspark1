@@ -20,7 +20,11 @@ class KidSafeProfileWrapper extends StatelessWidget {
           // Kid Mode: Hide social sharing and email updates
           return const Card(
             color: Colors.blueGrey,
-            child: Padding(padding: EdgeInsets.all(10), child: Text("Junior Account: Social Features Disabled for Privacy 🛡️", style: TextStyle(color: Colors.white, fontSize: 12))),
+            child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Text(
+                    "Junior Account: Social Features Disabled for Privacy 🛡️",
+                    style: TextStyle(color: Colors.white, fontSize: 12))),
           );
         }
         return adultFeatures; // Show normally to 13+

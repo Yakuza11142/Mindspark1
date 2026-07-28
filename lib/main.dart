@@ -21,40 +21,45 @@ void main() async {
 
   // 1. First Priority: Try loading from dart-define-from-file maps (CI/CD Pipeline)
   supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  supabaseKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+  supabaseKey =
+      const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
 
   // 2. Second Priority: Fall back to local .env file parsing (Local development)
   if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
     try {
       await dotenv.load(fileName: ".env");
       supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-      supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? dotenv.env['SUPABASE_KEY'] ?? ''; 
+      supabaseKey =
+          dotenv.env['SUPABASE_ANON_KEY'] ?? dotenv.env['SUPABASE_KEY'] ?? '';
     } catch (e) {
-      debugPrint("⚠️ .env asset file unreadable. Checking hardcoded config fallbacks.");
+      debugPrint(
+          "⚠️ .env asset file unreadable. Checking hardcoded config fallbacks.");
     }
   }
 
   // 3. Third Priority: Explicit project fallback string check validations
-  if (supabaseUrl.isEmpty || supabaseKey.isEmpty || supabaseUrl == "https://supabase.co") {
+  if (supabaseUrl.isEmpty ||
+      supabaseKey.isEmpty ||
+      supabaseUrl == "https://supabase.co") {
     // 💡 Mobile devs tip: Put your emergency debug testing credentials right here if needed
-    supabaseUrl = ""; 
+    supabaseUrl = "";
     supabaseKey = "";
   }
 
   try {
     // 🚀 FIXED: Hardened URL validation check logic strings
-    if (supabaseUrl.isNotEmpty && 
-        supabaseKey.isNotEmpty && 
-        !supabaseUrl.contains("your-supabase-project") && 
+    if (supabaseUrl.isNotEmpty &&
+        supabaseKey.isNotEmpty &&
+        !supabaseUrl.contains("your-supabase-project") &&
         Uri.tryParse(supabaseUrl)?.hasAbsolutePath == true) {
-      
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
       );
       debugPrint("☁️ Supabase production engine initialized successfully.");
     } else {
-      debugPrint("⚠️ Supabase initialization skipped: Valid production keys were not found.");
+      debugPrint(
+          "⚠️ Supabase initialization skipped: Valid production keys were not found.");
     }
   } catch (e) {
     debugPrint("❌ Supabase critical initialization failure: $e");
@@ -90,7 +95,7 @@ class MindSparkApp extends StatelessWidget {
     return MaterialApp(
       title: 'Mind Spark',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), 
+      theme: ThemeData.dark(),
       home: const MainDevelopmentPage(),
     );
   }
@@ -98,7 +103,9 @@ class MindSparkApp extends StatelessWidget {
 
 // EMBEDDED PROVIDERS (Temporary placeholders so the app builds without missing state files)
 class AppAuthProvider extends ChangeNotifier {}
+
 class AITutorProvider extends ChangeNotifier {}
+
 class ArLabProvider extends ChangeNotifier {}
 
 class MainDevelopmentPage extends StatefulWidget {
@@ -150,7 +157,8 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Status: $statusMessage', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('Status: $statusMessage',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Text('ISO Timestamp: $formattedTime'),
             const SizedBox(height: 10),

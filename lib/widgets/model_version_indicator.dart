@@ -7,13 +7,15 @@ class ModelVersionIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String modelText = isPro 
-      ? "🧠 FUSION: ${MillisecondUpdater.groqModel} + ${MillisecondUpdater.openAiModel}" 
-      : "🧠 LITE: ${MillisecondUpdater.geminiModel}";
+    String modelText = isPro
+        ? "🧠 FUSION: ${MillisecondUpdater.groqModel} + ${MillisecondUpdater.openAiModel}"
+        : "🧠 LITE: ${MillisecondUpdater.geminiModel}";
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Text(modelText, style: TextStyle(color: isPro ? Colors.purpleAccent : Colors.grey, fontSize: 10)),
+      child: Text(modelText,
+          style: TextStyle(
+              color: isPro ? Colors.purpleAccent : Colors.grey, fontSize: 10)),
     );
   }
 }

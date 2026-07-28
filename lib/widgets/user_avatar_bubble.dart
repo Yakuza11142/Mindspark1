@@ -8,7 +8,8 @@ class UserAvatarBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       backgroundColor: isUser ? Colors.cyan : Colors.purple,
-      child: Icon(isUser ? Icons.person : Icons.auto_awesome, color: Colors.black, size: 16),
+      child: Icon(isUser ? Icons.person : Icons.auto_awesome,
+          color: Colors.black, size: 16),
     );
   }
 }

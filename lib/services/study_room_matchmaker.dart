@@ -12,6 +12,6 @@ class StudyRoomMatchmaker {
     final String currentDay = DateFormat('EEEE').format(DateTime.now());
 
     return "Matched with $activeCount others studying $subject this $currentDay. "
-           "Session Status: $activeCount/$maxCapacity. Connecting...";
+        "Session Status: $activeCount/$maxCapacity. Connecting...";
   }
 }

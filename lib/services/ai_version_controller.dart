@@ -1,5 +1,3 @@
-import 'package:supabase_remote_config/supabase_remote_config.dart';
-
 class AiVersionController {
   static final FirebaseRemoteConfig _rc = FirebaseRemoteConfig.instance;
 

@@ -7,6 +7,7 @@ class StudyFlowStateDetector {
     } else {
       _consecutiveCorrectFastAnswers = 0;
     }
-    return _consecutiveCorrectFastAnswers >= 5; // Flow state achieved after 5 fast correct answers
+    return _consecutiveCorrectFastAnswers >=
+        5; // Flow state achieved after 5 fast correct answers
   }
 }

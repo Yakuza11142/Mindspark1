@@ -15,7 +15,7 @@ class SocraticEngine {
     Instead, ask a guiding question that helps them figure it out themselves.
     Be encouraging.
     """;
-    
+
     try {
       final res = await _model.generateContent([Content.text(prompt)]);
       return res.text ?? "Let's think about this together.";

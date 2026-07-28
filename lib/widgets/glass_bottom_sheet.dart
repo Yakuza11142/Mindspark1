@@ -13,7 +13,9 @@ class GlassBottomSheet extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), border: const Border(top: BorderSide(color: Colors.white24))),
+          decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.5),
+              border: const Border(top: BorderSide(color: Colors.white24))),
           child: child,
         ),
       ),

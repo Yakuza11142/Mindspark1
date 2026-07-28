@@ -31,7 +31,8 @@ class _SpeechToTextInputState extends State<SpeechToTextInput> {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(_isListening ? Icons.mic : Icons.mic_none, color: _isListening ? Colors.red : Colors.cyan),
+      icon: Icon(_isListening ? Icons.mic : Icons.mic_none,
+          color: _isListening ? Colors.red : Colors.cyan),
       onPressed: _listen,
     );
   }

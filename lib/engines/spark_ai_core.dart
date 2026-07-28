@@ -5,7 +5,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/ai_version_controller.dart';
 
 class SparkAiCore {
-  static Future<String> generateResponse(String userPrompt, bool isPaidUser) async {
+  static Future<String> generateResponse(
+      String userPrompt, bool isPaidUser) async {
     String systemInstruction = "You are Spark AI, a global educational genius. "
         "Detect the user's language and respond perfectly in that language. "
         "No examples, just direct expertise.";
@@ -19,7 +20,8 @@ class SparkAiCore {
     return results[1] as String; // Return the AI response result
   }
 
-  static Future<String> _processAiRequest(String prompt, String persona, bool isPaid) async {
+  static Future<String> _processAiRequest(
+      String prompt, String persona, bool isPaid) async {
     if (isPaid) {
       return await _useProBrain(prompt, persona);
     } else {
@@ -42,8 +44,10 @@ class SparkAiCore {
         final chat = await OpenAI.instance.chat.create(
           model: AiVersionController.openAiModel,
           messages: [
-            OpenAIChatCompletionChoiceMessageModel(role: OpenAIChatMessageRole.system, content: persona),
-            OpenAIChatCompletionChoiceMessageModel(role: OpenAIChatMessageRole.user, content: prompt),
+            OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.system, content: persona),
+            OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.user, content: prompt),
           ],
         );
         return chat.choices.first.message.content!.map((e) => e.text).join();
@@ -61,13 +65,15 @@ class SparkAiCore {
         model: AiVersionController.geminiModel,
         apiKey: dotenv.get('GEMINI_API_KEY'),
       );
-      final response = await model.generateContent([Content.text("$persona\n\n$prompt")]);
+      final response =
+          await model.generateContent([Content.text("$persona\n\n$prompt")]);
       return response.text ?? "Brain recalibrating...";
     } catch (e) {
       return "Network error.";
     }
   }
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env"); // Load the keys

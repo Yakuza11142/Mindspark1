@@ -6,7 +6,13 @@ class UserProfileModel {
   final int totalXp;
   final bool isPro;
 
-  UserProfileModel({required this.id, required this.email, required this.name, required this.sparks, required this.totalXp, required this.isPro});
+  UserProfileModel(
+      {required this.id,
+      required this.email,
+      required this.name,
+      required this.sparks,
+      required this.totalXp,
+      required this.isPro});
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     return UserProfileModel(
@@ -20,11 +26,11 @@ class UserProfileModel {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'name': name,
-    'sparks': sparks,
-    'total_xp': totalXp,
-    'is_pro': isPro,
-  };
+        'id': id,
+        'email': email,
+        'name': name,
+        'sparks': sparks,
+        'total_xp': totalXp,
+        'is_pro': isPro,
+      };
 }

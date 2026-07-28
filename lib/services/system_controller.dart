@@ -26,7 +26,9 @@ class SystemController {
       },
       body: jsonEncode({
         "model": "llama3-70b-8192",
-        "messages": [{"role": "user", "content": prompt}]
+        "messages": [
+          {"role": "user", "content": prompt}
+        ]
       }),
     );
     return jsonDecode(res.body)['choices']['message']['content'];

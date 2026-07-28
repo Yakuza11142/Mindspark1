@@ -19,7 +19,7 @@ class VoiceIntentParser {
         }
       }
     }
-    
+
     return defaultIntent;
   }
 

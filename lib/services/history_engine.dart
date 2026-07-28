@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 class HistoryEngine {
   static const String KEY = "exam_history";
 
-  static Future<void> saveResult({required String examType, required int score}) async {
+  static Future<void> saveResult(
+      {required String examType, required int score}) async {
     final prefs = await SharedPreferences.getInstance();
     List<String> history = prefs.getStringList(KEY) ?? [];
     Map<String, dynamic> entry = {

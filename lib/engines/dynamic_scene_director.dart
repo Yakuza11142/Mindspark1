@@ -9,7 +9,7 @@ void main() {
   while (true) {
     print("Ask a question:");
     String? input = stdin.readLineSync();
-    
+
     if (input != null) {
       DynamicSceneDirector.cutToBRoll();
       DynamicSceneDirector.cutToAvatar();

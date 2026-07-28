@@ -10,16 +10,21 @@ class CbtCalculatorScientific extends StatelessWidget {
       color: Colors.black87,
       child: Column(
         children: [
-          const Text("SCIENTIFIC ENGINE [ACTIVE]", style: TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold)),
+          const Text("SCIENTIFIC ENGINE [ACTIVE]",
+              style:
+                  TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold)),
           const Divider(color: Colors.cyan),
           // Infinite Calculation History
           Expanded(
             child: ListView.builder(
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text("Calculation #$index", style: const TextStyle(color: Colors.white70)),
-                  subtitle: const Text("f(x) = sin(θ) + log(n)", style: TextStyle(color: Colors.cyanAccent)),
-                  trailing: const Icon(Icons.history, color: Colors.cyan, size: 14),
+                  title: Text("Calculation #$index",
+                      style: const TextStyle(color: Colors.white70)),
+                  subtitle: const Text("f(x) = sin(θ) + log(n)",
+                      style: TextStyle(color: Colors.cyanAccent)),
+                  trailing:
+                      const Icon(Icons.history, color: Colors.cyan, size: 14),
                 );
               },
             ),

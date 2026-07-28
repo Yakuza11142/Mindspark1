@@ -13,13 +13,16 @@ class _ReviewStarsState extends State<ReviewStars> {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) => IconButton(
-        icon: Icon(i < rating ? Icons.star : Icons.star_border, color: Colors.amber),
-        onPressed: () {
-          setState(() => rating = i + 1);
-          widget.onRate(rating);
-        },
-      )),
+      children: List.generate(
+          5,
+          (i) => IconButton(
+                icon: Icon(i < rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber),
+                onPressed: () {
+                  setState(() => rating = i + 1);
+                  widget.onRate(rating);
+                },
+              )),
     );
   }
 }

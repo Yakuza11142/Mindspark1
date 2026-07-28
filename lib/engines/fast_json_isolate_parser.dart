@@ -7,6 +7,7 @@ class FastJsonIsolateParser {
     await Isolate.spawn(_decode, [port.sendPort, jsonString]);
     return await port.first;
   }
+
   static void _decode(List<dynamic> args) {
     SendPort port = args[0];
     port.send(jsonDecode(args[1]));

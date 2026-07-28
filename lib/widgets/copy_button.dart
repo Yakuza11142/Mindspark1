@@ -10,7 +10,8 @@ class CopyButton extends StatelessWidget {
       icon: const Icon(Icons.copy),
       onPressed: () {
         ClipboardService.copy(text);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Copied!")));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Copied!")));
       },
     );
   }

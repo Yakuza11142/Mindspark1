@@ -9,17 +9,21 @@ bool isGoldTier(int activityCount, {int threshold = 3}) {
 
 /// Global utility to get tier label
 String getTierLabel(int activityCount, {int threshold = 3}) {
-  return isGoldTier(activityCount, threshold: threshold) ? "GOLD TIER VETERAN" : "ROOKIE";
+  return isGoldTier(activityCount, threshold: threshold)
+      ? "GOLD TIER VETERAN"
+      : "ROOKIE";
 }
 
 /// Global utility to get tier color
 Color getTierColor(int activityCount, {int threshold = 3}) {
-  return isGoldTier(activityCount, threshold: threshold) ? Colors.amber : Colors.grey;
+  return isGoldTier(activityCount, threshold: threshold)
+      ? Colors.amber
+      : Colors.grey;
 }
 
 /// Global utility to get tier description
 String getTierDescription(int activityCount, {int threshold = 3}) {
-  return isGoldTier(activityCount, threshold: threshold) 
-      ? "You have unlocked the Black & Gold UI Theme." 
+  return isGoldTier(activityCount, threshold: threshold)
+      ? "You have unlocked the Black & Gold UI Theme."
       : "Stay active for $threshold months to unlock exclusive themes.";
 }

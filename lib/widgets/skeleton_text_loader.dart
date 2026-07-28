@@ -11,11 +11,16 @@ class SkeletonTextLoader extends StatelessWidget {
       highlightColor: Colors.white24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(5, (i) => Container(
-          height: 15, width: i % 2 == 0 ? double.infinity : 200,
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(5)),
-        )),
+        children: List.generate(
+            5,
+            (i) => Container(
+                  height: 15,
+                  width: i % 2 == 0 ? double.infinity : 200,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(5)),
+                )),
       ),
     );
   }

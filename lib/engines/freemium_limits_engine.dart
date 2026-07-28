@@ -21,7 +21,7 @@ class FreemiumLimitsEngine {
       await prefs.setInt('free_question_count', count + 1);
       return true;
     }
-    
+
     return false; // Limit Reached
   }
 }

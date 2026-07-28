@@ -29,7 +29,7 @@ class SupabaseService {
         .select()
         .eq('id', uid!)
         .maybeSingle(); // Returns null if not found instead of crashing
-        
+
     return data;
   }
 }

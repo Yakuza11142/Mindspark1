@@ -25,10 +25,9 @@ class SeamlessFusionRouter {
       try {
         // We don't block the UI; we yield a placeholder then the final expansion
         yield "$groqResponse\n\n[Fusing with GPT-4 for depth...]";
-        
+
         String gptExpansion = await OpenAiTextService.ask(
-          "Expand on this concept deeply: $groqResponse"
-        );
+            "Expand on this concept deeply: $groqResponse");
 
         // Final Yield: The complete infinite-depth response
         yield "⚡ **Quick Answer:**\n$groqResponse\n\n🧠 **Deep Dive:**\n$gptExpansion";

@@ -10,13 +10,19 @@ class MediaEngine {
   Future<Map<String, dynamic>> fetchVisuals(String topic, bool isPro) async {
     // 1. PEXELS
     try {
-      final res = await _dio.get(
-        "https://api.pexels.com/videos/search",
-        queryParameters: {'query': topic, 'per_page': 1, 'orientation': 'landscape', 'size': 'medium'},
-        options: Options(headers: {"Authorization": Secrets.pexelsKey})
-      );
+      final res = await _dio.get("https://api.pexels.com/videos/search",
+          queryParameters: {
+            'query': topic,
+            'per_page': 1,
+            'orientation': 'landscape',
+            'size': 'medium'
+          },
+          options: Options(headers: {"Authorization": Secrets.pexelsKey}));
       if (res.data['videos'].isNotEmpty) {
-        return {'type': 'VIDEO', 'url': res.data['videos'][0]['video_files'][0]['link']};
+        return {
+          'type': 'VIDEO',
+          'url': res.data['videos'][0]['video_files'][0]['link']
+        };
       }
     } catch (e) {}
 
@@ -28,9 +34,12 @@ class MediaEngine {
     // 3. DALL-E
     try {
       final img = await OpenAI.instance.image.create(
-        prompt: "Educational diagram of $topic", model: "dall-e-3", size: OpenAIImageSize.size1024
-      );
+          prompt: "Educational diagram of $topic",
+          model: "dall-e-3",
+          size: OpenAIImageSize.size1024);
       return {'type': 'IMAGE', 'url': img.data.first.url};
-    } catch (e) { return {'type': 'IMAGE', 'url': "https://via.placeholder.com/1080"}; }
+    } catch (e) {
+      return {'type': 'IMAGE', 'url': "https://via.placeholder.com/1080"};
+    }
   }
 }

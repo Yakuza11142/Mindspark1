@@ -18,7 +18,6 @@ class PetController extends ChangeNotifier {
     notifyListeners(); // Updates all UI globally
   }
 }
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class StudyPetScreen extends StatelessWidget {

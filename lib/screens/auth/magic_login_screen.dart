@@ -30,33 +30,48 @@ class _MagicLoginScreenState extends State<MagicLoginScreen> {
         padding: const EdgeInsets.all(30),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             const Icon(Icons.bolt, size: 80, color: Colors.cyanAccent),
             const SizedBox(height: 20),
-            const Text("Enter MindSpark", style: TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text("Enter MindSpark",
+                style: TextStyle(
+                    fontSize: 28,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 40),
-            
             if (_linkSent)
-              const Text("Check your email! Click the magic link to enter.", style: TextStyle(color: Colors.greenAccent, fontSize: 18), textAlign: TextAlign.center)
+              const Text("Check your email! Click the magic link to enter.",
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 18),
+                  textAlign: TextAlign.center)
             else ...[
               TextField(
-                controller: _emailCtrl, 
+                controller: _emailCtrl,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(hintText: "Enter your email", filled: true, fillColor: Colors.white10, border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    hintText: "Enter your email",
+                    filled: true,
+                    fillColor: Colors.white10,
+                    border: OutlineInputBorder()),
               ),
               const SizedBox(height: 20),
-              _loading 
-                ? const CircularProgressIndicator(color: Colors.cyanAccent) 
-                : ElevatedButton(onPressed: _sendLink, style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)), child: const Text("SEND MAGIC LINK")),
-              
+              _loading
+                  ? const CircularProgressIndicator(color: Colors.cyanAccent)
+                  : ElevatedButton(
+                      onPressed: _sendLink,
+                      style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50)),
+                      child: const Text("SEND MAGIC LINK")),
               const SizedBox(height: 30),
               const Text("OR", style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 30),
-              
               ElevatedButton.icon(
-                icon: const Icon(Icons.g_mobiledata, color: Colors.black, size: 30),
-                label: const Text("Continue with Google", style: TextStyle(color: Colors.black)),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)),
+                icon: const Icon(Icons.g_mobiledata,
+                    color: Colors.black, size: 30),
+                label: const Text("Continue with Google",
+                    style: TextStyle(color: Colors.black)),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50)),
                 onPressed: GoogleOneTap.signIn,
               )
             ]

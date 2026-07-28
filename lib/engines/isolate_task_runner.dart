@@ -6,6 +6,7 @@ class IsolateTaskRunner {
     await Isolate.spawn(_heavyTask, [port.sendPort, data]);
     return await port.first;
   }
+
   static void _heavyTask(List<dynamic> args) {
     SendPort port = args[0];
     // Heavy calculation

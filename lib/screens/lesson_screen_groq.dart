@@ -20,10 +20,12 @@ class _LessonScreenGroqState extends State<LessonScreenGroq> {
   void initState() {
     super.initState();
     MindsparkCore.generateLesson(widget.topic, widget.isPro, false).then((res) {
-      if (mounted) setState(() {
-        lessonText = res['text'];
-        generationTime = res['time_ms'];
-      });
+      if (mounted) {
+        setState(() {
+          lessonText = res['text'];
+          generationTime = res['time_ms'];
+        });
+      }
     });
   }
 
@@ -33,18 +35,25 @@ class _LessonScreenGroqState extends State<LessonScreenGroq> {
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(title: Text(widget.topic), backgroundColor: Colors.black),
       body: Column(
-        children:[
+        children: [
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
-              child: lessonText == null 
-                  ? const Center(child: CircularProgressIndicator(color: Colors.cyanAccent))
+              child: lessonText == null
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator(color: Colors.cyanAccent))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children:[
-                        GroqSpeedMetric(timeMs: generationTime, isPro: widget.isPro),
+                      children: [
+                        GroqSpeedMetric(
+                            timeMs: generationTime, isPro: widget.isPro),
                         const SizedBox(height: 20),
-                        Text(lessonText!, style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.6)),
+                        Text(lessonText!,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                height: 1.6)),
                       ],
                     ),
             ),
@@ -55,8 +64,10 @@ class _LessonScreenGroqState extends State<LessonScreenGroq> {
             color: Colors.black54,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children:[
-                IconButton(icon: const Icon(Icons.volume_up, color: Colors.cyanAccent), onPressed: () {}),
+              children: [
+                IconButton(
+                    icon: const Icon(Icons.volume_up, color: Colors.cyanAccent),
+                    onPressed: () {}),
                 HoloDeckTriggerButton(isPro: widget.isPro, onTrigger: () {}),
               ],
             ),

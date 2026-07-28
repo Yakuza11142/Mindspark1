@@ -10,7 +10,7 @@ class RegionSelectorDropdown extends StatelessWidget {
       dropdownColor: Colors.black,
       style: const TextStyle(color: Colors.white),
       value: "NG", // Default
-      items: const[
+      items: const [
         DropdownMenuItem(value: "NG", child: Text("Nigeria (JAMB/WAEC)")),
         DropdownMenuItem(value: "US", child: Text("United States (SAT)")),
         DropdownMenuItem(value: "IN", child: Text("India (JEE/NEET)")),

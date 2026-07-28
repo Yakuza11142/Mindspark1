@@ -8,9 +8,11 @@ class NotificationPermissionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text("Stay Smart 🧠"),
-      content: const Text("Allow notifications to get daily 3D facts and exam tips."),
+      content: const Text(
+          "Allow notifications to get daily 3D facts and exam tips."),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("No")),
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: const Text("No")),
         ElevatedButton(
           onPressed: () {
             FcmService.init();
@@ -21,8 +23,7 @@ class NotificationPermissionDialog extends StatelessWidget {
       ],
     );
   }
-}import 'package:flutter/material.dart';
-import '../services/fcm_service.dart';
+}
 
 class NotificationPermissionDialog extends StatelessWidget {
   const NotificationPermissionDialog({super.key});
@@ -31,9 +32,11 @@ class NotificationPermissionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text("Stay Smart 🧠"),
-      content: const Text("Allow notifications to get daily 3D facts and exam tips."),
+      content: const Text(
+          "Allow notifications to get daily 3D facts and exam tips."),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("No")),
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: const Text("No")),
         ElevatedButton(
           onPressed: () {
             FcmService.init();

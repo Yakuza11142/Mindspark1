@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/supabase_core_config.dart';
 
 class SupabaseAuthManager {
   static final _db = SupabaseCoreConfig.client;
@@ -31,6 +30,6 @@ class SupabaseAuthManager {
   static Future<void> logout() async {
     await _db.auth.signOut();
   }
-  
+
   static User? get currentUser => _db.auth.currentUser;
 }

@@ -11,8 +11,12 @@ class AudioService {
   Future<void> speak(String text) async {
     try {
       final res = await http.post(
-        Uri.parse("https://api.elevenlabs.io/v1/text-to-speech/${Secrets.voiceId}"),
-        headers: {"xi-api-key": Secrets.elevenLabsKey, "Content-Type": "application/json"},
+        Uri.parse(
+            "https://api.elevenlabs.io/v1/text-to-speech/${Secrets.voiceId}"),
+        headers: {
+          "xi-api-key": Secrets.elevenLabsKey,
+          "Content-Type": "application/json"
+        },
         body: jsonEncode({"text": text, "model_id": "eleven_monolingual_v1"}),
       );
       if (res.statusCode == 200) {
@@ -23,5 +27,6 @@ class AudioService {
       }
     } catch (e) {}
   }
+
   void stop() => _audioPlayer.stop();
 }

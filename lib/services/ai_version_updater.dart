@@ -8,13 +8,17 @@ class AiVersionUpdater {
   static Future<void> fetchLatestModels() async {
     try {
       // Connect to Supabase to see what you, the CEO, set as the newest model today
-      final data = await Supabase.instance.client.from('system_config').select().single();
-      
+      final data = await Supabase.instance.client
+          .from('system_config')
+          .select()
+          .single();
+
       activeOpenAiModel = data['openai_model'] ?? activeOpenAiModel;
       activeGeminiModel = data['gemini_model'] ?? activeGeminiModel;
       activeGroqModel = data['groq_model'] ?? activeGroqModel;
-      
-      print("🚀 AI Brains Synced: Using $activeOpenAiModel & $activeGeminiModel");
+
+      print(
+          "🚀 AI Brains Synced: Using $activeOpenAiModel & $activeGeminiModel");
     } catch (e) {
       print("Offline: Falling back to default cached AI models.");
     }

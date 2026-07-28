@@ -12,12 +12,17 @@ class TelcoPartnershipScreen extends StatelessWidget {
         padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children:[
-            Text("MINDSPARK x MTN DATA USAGE", style: TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
+          children: [
+            Text("MINDSPARK x MTN DATA USAGE",
+                style: TextStyle(
+                    color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
             SizedBox(height: 20),
-            Text("Total Users on Network: 450,210", style: TextStyle(color: Colors.white, fontSize: 18)),
-            Text("Average Data per Lesson: 12KB (Ultra-Compressed)", style: TextStyle(color: Colors.cyan)),
-            Text("Total Monthly Bandwidth: 1.2TB", style: TextStyle(color: Colors.amber)),
+            Text("Total Users on Network: 450,210",
+                style: TextStyle(color: Colors.white, fontSize: 18)),
+            Text("Average Data per Lesson: 12KB (Ultra-Compressed)",
+                style: TextStyle(color: Colors.cyan)),
+            Text("Total Monthly Bandwidth: 1.2TB",
+                style: TextStyle(color: Colors.amber)),
           ],
         ),
       ),

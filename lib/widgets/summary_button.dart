@@ -11,7 +11,9 @@ class SummaryButton extends StatelessWidget {
       icon: const Icon(Icons.short_text),
       onPressed: () async {
         String summary = await SummarizerEngine.summarize(text);
-        showDialog(context: context, builder: (_) => AlertDialog(content: Text(summary)));
+        showDialog(
+            context: context,
+            builder: (_) => AlertDialog(content: Text(summary)));
       },
     );
   }

@@ -12,7 +12,8 @@ class ReviewPrompt extends StatelessWidget {
           const Text("Enjoying MindSpark?"),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (i) => const Icon(Icons.star, color: Colors.amber)),
+            children: List.generate(
+                5, (i) => const Icon(Icons.star, color: Colors.amber)),
           )
         ],
       ),

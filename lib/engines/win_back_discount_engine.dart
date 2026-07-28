@@ -10,7 +10,8 @@ class WinBackDiscountEngine {
     int daysAway = DateTime.now().difference(lastLogin).inDays;
 
     if (daysAway >= 14) {
-      print("🚨 User was gone for 14+ days. Triggering 50% Welcome Back Discount.");
+      print(
+          "🚨 User was gone for 14+ days. Triggering 50% Welcome Back Discount.");
       return true;
     }
     return false;

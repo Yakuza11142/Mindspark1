@@ -1,9 +1,10 @@
 import 'dart:io';
 
 class DigitalCertificateBot {
-  static Future<void> issueCertificate(String studentName, String subject, int score) async {
+  static Future<void> issueCertificate(
+      String studentName, String subject, int score) async {
     String date = DateTime.now().toString().split(' ')[0];
-    
+
     String certificate = """
     📜 DIGITAL CERTIFICATE OF ACHIEVEMENT 📜
     ---------------------------------------
@@ -20,7 +21,7 @@ class DigitalCertificateBot {
     Verified by: MindSpark Elite ⚡
     ---------------------------------------
     """;
-    
+
     print(certificate);
     print("📤 Certificate generated and sent to student record.");
   }
@@ -29,13 +30,13 @@ class DigitalCertificateBot {
 void main() async {
   while (true) {
     print("\n--- Generate Digital Certificate ---");
-    
+
     stdout.write("Student Name: ");
     String? name = stdin.readLineSync();
 
     stdout.write("Subject: ");
     String? subject = stdin.readLineSync();
-    
+
     stdout.write("Score: ");
     String? scoreInput = stdin.readLineSync();
     int score = int.tryParse(scoreInput ?? '0') ?? 0;

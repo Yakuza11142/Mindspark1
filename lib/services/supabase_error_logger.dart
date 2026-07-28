@@ -1,5 +1,3 @@
-import '../config/supabase_core_config.dart';
-
 class SupabaseErrorLogger {
   static Future<void> logCrash(String error, String stackTrace) async {
     try {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class DynamicExamSlipGenerator extends StatelessWidget {
   final String examName;
   final String studentName;
-  
+
   // Global mapping of Official Titles
   static const Map<String, String> examTitles = {
     "SAT": "COLLEGE BOARD ADMISSION TICKET",
@@ -13,15 +13,16 @@ class DynamicExamSlipGenerator extends StatelessWidget {
   };
 
   const DynamicExamSlipGenerator({
-    super.key, 
-    required this.examName, 
+    super.key,
+    required this.examName,
     this.studentName = "CANDIDATE",
   });
 
   @override
   Widget build(BuildContext context) {
     // Falls back to a generic title if the exam isn't in the global map
-    final String header = examTitles[examName] ?? "${examName.toUpperCase()} EXAMINATION SLIP";
+    final String header =
+        examTitles[examName] ?? "${examName.toUpperCase()} EXAMINATION SLIP";
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -34,11 +35,11 @@ class DynamicExamSlipGenerator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            header, 
+            header,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.black, 
-              fontWeight: FontWeight.bold, 
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
               fontSize: 16,
               letterSpacing: 1.1,
             ),
@@ -56,11 +57,13 @@ class DynamicExamSlipGenerator extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
         Text(
-          value, 
+          value,
           style: TextStyle(
-            color: isStatus ? Colors.blue.shade900 : Colors.black, 
+            color: isStatus ? Colors.blue.shade900 : Colors.black,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),

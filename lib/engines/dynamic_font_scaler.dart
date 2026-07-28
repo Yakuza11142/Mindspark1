@@ -2,17 +2,18 @@ import 'package:flutter/widgets.dart';
 
 class LayoutSettings {
   // The screen width your design was originally based on (standard mobile)
-  static double designWidth = 375.0; 
-  
+  static double designWidth = 375.0;
+
   // Optional: Global multiplier to allow users to increase text size manually
-  static double userScaleFactor = 1.0; 
+  static double userScaleFactor = 1.0;
 }
 
 class DynamicFontScaler {
   static double scale(BuildContext context, double baseSize) {
     // 1. Get the physical screen dimensions
     final Size size = MediaQuery.of(context).size;
-    final double shortSide = size.width < size.height ? size.width : size.height;
+    final double shortSide =
+        size.width < size.height ? size.width : size.height;
 
     // 2. Calculate the ratio between current device and design standard
     double scaleFactor = shortSide / LayoutSettings.designWidth;

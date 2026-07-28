@@ -32,7 +32,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   _pickImage() async {
-    final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final XFile? image =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_avatar', image.path);
@@ -48,12 +49,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text("Change Name"),
         content: TextField(controller: ctrl),
         actions: [
-          TextButton(onPressed: () async {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('user_name', ctrl.text);
-            setState(() => name = ctrl.text);
-            Navigator.pop(ctx);
-          }, child: const Text("Save"))
+          TextButton(
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('user_name', ctrl.text);
+                setState(() => name = ctrl.text);
+                Navigator.pop(ctx);
+              },
+              child: const Text("Save"))
         ],
       ),
     );
@@ -67,9 +70,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings), 
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))
-          )
+              icon: const Icon(Icons.settings),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen())))
         ],
       ),
       body: Center(
@@ -82,8 +85,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.white10,
-                backgroundImage: imagePath != null ? FileImage(File(imagePath!)) : null,
-                child: imagePath == null ? const Icon(Icons.camera_alt, size: 40) : null,
+                backgroundImage:
+                    imagePath != null ? FileImage(File(imagePath!)) : null,
+                child: imagePath == null
+                    ? const Icon(Icons.camera_alt, size: 40)
+                    : null,
               ),
             ),
             const SizedBox(height: 20),
@@ -93,7 +99,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(name, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                  Text(name,
+                      style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white)),
                   const SizedBox(width: 10),
                   const Icon(Icons.edit, color: Colors.grey, size: 20)
                 ],
@@ -119,15 +129,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: color.withOpacity(0.5))
-      ),
+          color: Colors.white10,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withValues(alpha: 0.5))),
       child: Column(
         children: [
           Text(label, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 5),
-          Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 22, fontWeight: FontWeight.bold)),
         ],
       ),
     );

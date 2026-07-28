@@ -13,15 +13,15 @@ class DebateArenaScreen extends StatefulWidget {
 class _DebateArenaScreenState extends State<DebateArenaScreen> {
   final ChatUser _user = ChatUser(id: '1');
   final ChatUser _ai = ChatUser(id: '2', firstName: 'Devil\'s Advocate');
-  List<ChatMessage> _msgs = [];
+  final List<ChatMessage> _msgs = [];
 
   @override
   void initState() {
     super.initState();
     _msgs.add(ChatMessage(
-      text: "I disagree with the premise of ${widget.topic}. Prove me wrong.",
-      user: _ai, createdAt: DateTime.now()
-    ));
+        text: "I disagree with the premise of ${widget.topic}. Prove me wrong.",
+        user: _ai,
+        createdAt: DateTime.now()));
   }
 
   void _handleSend(ChatMessage m) async {

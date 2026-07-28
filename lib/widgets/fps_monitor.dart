@@ -25,7 +25,11 @@ class _FpsMonitorState extends State<FpsMonitor> {
   void _startTimer() async {
     while (mounted && !EnvConfig.isProduction) {
       await Future.delayed(const Duration(seconds: 1));
-      if (mounted) setState(() { _fps = _frames.toString(); _frames = 0; });
+      if (mounted)
+        setState(() {
+          _fps = _frames.toString();
+          _frames = 0;
+        });
     }
   }
 
@@ -33,9 +37,17 @@ class _FpsMonitorState extends State<FpsMonitor> {
   Widget build(BuildContext context) {
     if (EnvConfig.isProduction) return widget.child;
     return Stack(
-      children:[
+      children: [
         widget.child,
-        Positioned(top: 40, right: 10, child: IgnorePointer(child: Text("FPS: $_fps", style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold))))
+        Positioned(
+            top: 40,
+            right: 10,
+            child: IgnorePointer(
+                child: Text("FPS: $_fps",
+                    style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold))))
       ],
     );
   }

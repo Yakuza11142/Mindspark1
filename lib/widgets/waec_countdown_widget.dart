@@ -1,4 +1,3 @@
-import '../config/supabase_core_config.dart';
 
 class ExamService {
   ExamService._internal();

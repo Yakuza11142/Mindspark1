@@ -25,7 +25,9 @@ class _AutoDarkModeWrapperState extends State<AutoDarkModeWrapper> {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: _isVeryDark ? 0.7 : 1.0, // Dims the entire screen slightly in pitch black rooms
+      opacity: _isVeryDark
+          ? 0.7
+          : 1.0, // Dims the entire screen slightly in pitch black rooms
       child: widget.child,
     );
   }

@@ -8,7 +8,12 @@ class ArCharacterRenderer extends StatelessWidget {
   final String idleAnim;
   final String talkAnim;
 
-  const ArCharacterRenderer({super.key, required this.glbUrl, required this.isSpeaking, required this.idleAnim, required this.talkAnim});
+  const ArCharacterRenderer(
+      {super.key,
+      required this.glbUrl,
+      required this.isSpeaking,
+      required this.idleAnim,
+      required this.talkAnim});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +23,8 @@ class ArCharacterRenderer extends StatelessWidget {
       arPlacement: ArPlacement.floor,
       arScale: ArScale.fixed, // FORCES LIFE-SIZE (2.0 meters tall)
       autoAnimate: true,
-      animationName: AvatarAnimationSync.syncWithAudio(isSpeaking, idleAnim, talkAnim),
+      animationName:
+          AvatarAnimationSync.syncWithAudio(isSpeaking, idleAnim, talkAnim),
       cameraControls: true,
       backgroundColor: Colors.transparent,
     );

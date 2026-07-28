@@ -12,9 +12,11 @@ class ContextResetButton extends StatelessWidget {
       tooltip: "Clear AI Memory",
       onPressed: () async {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('spark_chat_history'); // Clears the short-term memory
+        await prefs
+            .remove('spark_chat_history'); // Clears the short-term memory
         onReset();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("AI Memory Wiped. Fresh Start.")));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("AI Memory Wiped. Fresh Start.")));
       },
     );
   }

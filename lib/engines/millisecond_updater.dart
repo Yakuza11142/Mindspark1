@@ -1,5 +1,3 @@
-import 'package:supabase_database/supabase_database.dart';
-
 class MillisecondUpdater {
   static String openAiModel = "gpt-5.5";
   static String groqModel = "llama3-70b-8192";

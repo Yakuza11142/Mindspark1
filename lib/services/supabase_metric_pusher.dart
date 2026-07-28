@@ -1,7 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseMetricPusher {
-  static Future<void> pushHabitData(String habitProfile, double avgRetention) async {
+  static Future<void> pushHabitData(
+      String habitProfile, double avgRetention) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 

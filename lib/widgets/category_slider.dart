@@ -16,17 +16,28 @@ class CategorySlider extends StatelessWidget {
         itemBuilder: (ctx, i) {
           final cat = categories[i];
           return GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SubjectExplorerScreen(category: cat))),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => SubjectExplorerScreen(category: cat))),
             child: Container(
               width: 100,
               margin: const EdgeInsets.only(right: 15),
-              decoration: BoxDecoration(color: cat.color.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: cat.color.withOpacity(0.5))),
+              decoration: BoxDecoration(
+                  color: cat.color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: cat.color.withValues(alpha: 0.5))),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children:[
+                children: [
                   Icon(cat.icon, color: cat.color, size: 40),
                   const SizedBox(height: 10),
-                  Text(cat.name, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text(cat.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

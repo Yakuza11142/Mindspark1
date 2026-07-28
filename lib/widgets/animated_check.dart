@@ -6,6 +6,7 @@ class AnimatedCheck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Icon(Icons.check_circle, color: Colors.green, size: 80)
-        .animate().scale(duration: 400.ms, curve: Curves.elasticOut);
+        .animate()
+        .scale(duration: 400.ms, curve: Curves.elasticOut);
   }
 }

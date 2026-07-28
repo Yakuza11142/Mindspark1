@@ -4,6 +4,7 @@ class OfflineStudentRecord {
   final String weakTopic;
 
   OfflineStudentRecord(this.studentId, this.latestScore, this.weakTopic);
-  
-  Map<String, dynamic> toMap() => {'id': studentId, 'score': latestScore, 'weakness': weakTopic};
+
+  Map<String, dynamic> toMap() =>
+      {'id': studentId, 'score': latestScore, 'weakness': weakTopic};
 }

@@ -3,7 +3,12 @@ import 'dart:async';
 
 class SpontaneousActionGenerator {
   static String getRandomIdleAnimation() {
-    List<String> humanIdles =["ask students questionson what they learnt", "Adjust_Glasses", "Look_Around", "Deep_Breath"];
+    List<String> humanIdles = [
+      "ask students questionson what they learnt",
+      "Adjust_Glasses",
+      "Look_Around",
+      "Deep_Breath"
+    ];
     return humanIdles[Random().nextInt(humanIdles.length)];
   }
 

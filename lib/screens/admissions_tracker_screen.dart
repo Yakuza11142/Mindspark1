@@ -36,11 +36,15 @@ class GlobalAdmissionsHub extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 child: Text(
                   region.toUpperCase(),
-                  style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                  style: const TextStyle(
+                      color: Colors.cyanAccent,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5),
                 ),
               ),
               // Generate tiles for every portal in this region
-              ...portals.entries.map((e) => _buildPortalTile(context, e.key, e.value)),
+              ...portals.entries
+                  .map((e) => _buildPortalTile(context, e.key, e.value)),
             ],
           );
         },
@@ -50,14 +54,18 @@ class GlobalAdmissionsHub extends StatelessWidget {
 
   Widget _buildPortalTile(BuildContext context, String name, String url) {
     return Card(
-      color: Colors.white.withOpacity(0.05),
+      color: Colors.white.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: const Icon(Icons.language, color: Colors.amber),
         title: Text(name, style: const TextStyle(color: Colors.white)),
-        subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white24),
+        subtitle: Text(url,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.grey, fontSize: 11)),
+        trailing: const Icon(Icons.arrow_forward_ios,
+            size: 14, color: Colors.white24),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(

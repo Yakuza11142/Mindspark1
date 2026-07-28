@@ -5,7 +5,8 @@ class AhChatBackground extends StatelessWidget {
   final String ahName;
   final Widget child;
 
-  const AhChatBackground({super.key, required this.ahName, required this.child});
+  const AhChatBackground(
+      {super.key, required this.ahName, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -13,15 +14,15 @@ class AhChatBackground extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: Alignment.topRight,
-          radius: 1.5,
-          colors:[
-            glowColor.withOpacity(0.15), // Soft glow of the character's color
-            const Color(0xFF050505), // Pitch black
-          ],
-        )
-      ),
+          gradient: RadialGradient(
+        center: Alignment.topRight,
+        radius: 1.5,
+        colors: [
+          glowColor.withValues(
+              alpha: 0.15), // Soft glow of the character's color
+          const Color(0xFF050505), // Pitch black
+        ],
+      )),
       child: child,
     );
   }

@@ -5,7 +5,8 @@ class BatteryZeroSaver {
     Battery().onBatteryStateChanged.listen((BatteryState state) async {
       int level = await Battery().batteryLevel;
       if (level <= 2) {
-        print("🚨 CRITICAL BATTERY: Force-saving all states to disk. Executing Emergency Shutdown Protocols.");
+        print(
+            "🚨 CRITICAL BATTERY: Force-saving all states to disk. Executing Emergency Shutdown Protocols.");
         // Call Hive/SharedPrefs save functions
       }
     });

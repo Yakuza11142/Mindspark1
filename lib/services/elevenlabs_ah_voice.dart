@@ -9,11 +9,17 @@ class ElevenLabsAhVoice {
     try {
       final res = await http.post(
         Uri.parse("https://api.elevenlabs.io/v1/text-to-speech/$voiceId"),
-        headers: {"xi-api-key": SecretsFusion.elevenLabsKey, "Content-Type": "application/json"},
+        headers: {
+          "xi-api-key": SecretsFusion.elevenLabsKey,
+          "Content-Type": "application/json"
+        },
         body: jsonEncode({
           "text": ssmlText,
           "model_id": "eleven_monolingual_v1",
-          "voice_settings": {"stability": 0.4, "similarity_boost": 0.85} // Lower stability = more human emotion
+          "voice_settings": {
+            "stability": 0.4,
+            "similarity_boost": 0.85
+          } // Lower stability = more human emotion
         }),
       );
 
@@ -22,7 +28,9 @@ class ElevenLabsAhVoice {
         final file = File('${dir.path}/ah_voice_response.mp3');
         return await file.writeAsBytes(res.bodyBytes);
       }
-    } catch (e) { print("Audio Error."); }
+    } catch (e) {
+      print("Audio Error.");
+    }
     return null;
   }
 }

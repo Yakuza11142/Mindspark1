@@ -13,8 +13,8 @@ class GlobalLeaderboardService {
   }
 }
 StreamBuilder<List<Map<String, dynamic>>>(
-  stream: GlobalLeaderboardService.getTopUsers(),
-  builder: (context, snapshot) {
+  stream = GlobalLeaderboardService.getTopUsers(),
+  builder = (context, snapshot) {
     if (!snapshot.hasData) return CircularProgressIndicator();
     
     final topUsers = snapshot.data!;

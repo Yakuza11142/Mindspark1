@@ -8,10 +8,19 @@ class ConfidenceSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children:[
-        TextButton(onPressed: () => onSelect("Guessed"), child: const Text("I Guessed 🎲", style: TextStyle(color: Colors.orange))),
-        TextButton(onPressed: () => onSelect("Not Sure"), child: const Text("Not Sure 🤔", style: TextStyle(color: Colors.yellow))),
-        TextButton(onPressed: () => onSelect("100% Sure"), child: const Text("100% Sure 🔥", style: TextStyle(color: Colors.greenAccent))),
+      children: [
+        TextButton(
+            onPressed: () => onSelect("Guessed"),
+            child: const Text("I Guessed 🎲",
+                style: TextStyle(color: Colors.orange))),
+        TextButton(
+            onPressed: () => onSelect("Not Sure"),
+            child: const Text("Not Sure 🤔",
+                style: TextStyle(color: Colors.yellow))),
+        TextButton(
+            onPressed: () => onSelect("100% Sure"),
+            child: const Text("100% Sure 🔥",
+                style: TextStyle(color: Colors.greenAccent))),
       ],
     );
   }

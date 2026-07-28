@@ -12,7 +12,8 @@ class DownloadsScreen extends StatelessWidget {
         itemCount: box.length,
         itemBuilder: (ctx, i) {
           String key = box.keyAt(i);
-          return ListTile(title: Text(key), trailing: const Icon(Icons.offline_pin));
+          return ListTile(
+              title: Text(key), trailing: const Icon(Icons.offline_pin));
         },
       ),
     );

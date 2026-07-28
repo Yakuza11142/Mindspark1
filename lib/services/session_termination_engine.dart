@@ -1,4 +1,7 @@
 import 'dart:io';
+
 class SessionTerminationEngine {
-  static void kill() { exit(0); }
+  static void kill() {
+    exit(0);
+  }
 }

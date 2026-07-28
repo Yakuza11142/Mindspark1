@@ -18,8 +18,9 @@ class HapticEngineReal {
     if (!HapticSettings.isEnabled) return;
 
     final pattern = HapticSettings.patterns[effectName];
-    
-    if (pattern != null && (await Vibration.hasCustomVibrationsSupport() ?? false)) {
+
+    if (pattern != null &&
+        (await Vibration.hasCustomVibrationsSupport() ?? false)) {
       Vibration.vibrate(pattern: pattern);
     }
   }

@@ -25,7 +25,9 @@ class _AccessibilitySettingsState extends State<AccessibilitySettings> {
           ListTile(
             title: const Text("Font Scaling"),
             subtitle: Slider(
-              value: fontSize, min: 0.8, max: 1.5,
+              value: fontSize,
+              min: 0.8,
+              max: 1.5,
               onChanged: (v) => setState(() => fontSize = v),
             ),
           )

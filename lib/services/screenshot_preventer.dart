@@ -5,7 +5,8 @@ import 'package:ios_insecure_screen_detector/ios_insecure_screen_detector.dart';
 
 class GlobalSecurityService extends WidgetsBindingObserver {
   // Singleton Pattern
-  static final GlobalSecurityService _instance = GlobalSecurityService._internal();
+  static final GlobalSecurityService _instance =
+      GlobalSecurityService._internal();
   factory GlobalSecurityService() => _instance;
   GlobalSecurityService._internal();
 
@@ -15,13 +16,13 @@ class GlobalSecurityService extends WidgetsBindingObserver {
   /// Initialize global listeners
   void initialize() {
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Listen specifically for iOS Screen Recording/Mirroring
     _iosDetector.addListener(() {
       _isScreenRecording = _iosDetector.isCaptured;
       // You can trigger a global 'Security Alert' here if recording is detected
     });
-    
+
     secureApp();
   }
 
@@ -29,7 +30,7 @@ class GlobalSecurityService extends WidgetsBindingObserver {
   Future<void> secureApp() async {
     // Android: Blocks screenshots, screen recordings, and recent app previews
     await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-    
+
     // iOS: Starts the detection service
     _iosDetector.initialize();
   }
@@ -52,7 +53,8 @@ class GlobalSecurityService extends WidgetsBindingObserver {
               child: Text(
                 "SECURITY PROTOCOL ACTIVE\nScreen recording is strictly prohibited.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
           );

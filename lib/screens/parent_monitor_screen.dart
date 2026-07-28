@@ -7,12 +7,18 @@ class ParentMonitorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Parent Dashboard"), backgroundColor: Colors.indigo),
+      appBar: AppBar(
+          title: const Text("Parent Dashboard"),
+          backgroundColor: Colors.indigo),
       body: FutureBuilder(
-        future: Supabase.instance.client.from('parent_monitoring_dashboard').select(),
+        future: Supabase.instance.client
+            .from('parent_monitoring_dashboard')
+            .select(),
         builder: (ctx, AsyncSnapshot<List<dynamic>> snap) {
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-          if (snap.data!.isEmpty) return const Center(child: Text("No children linked yet."));
+          if (!snap.hasData)
+            return const Center(child: CircularProgressIndicator());
+          if (snap.data!.isEmpty)
+            return const Center(child: Text("No children linked yet."));
 
           return ListView.builder(
             itemCount: snap.data!.length,
@@ -23,8 +29,12 @@ class ParentMonitorScreen extends StatelessWidget {
                 margin: const EdgeInsets.all(10),
                 child: ListTile(
                   leading: const Icon(Icons.face, color: Colors.cyanAccent),
-                  title: Text(child['child_name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                  subtitle: Text("XP: ${child['total_xp']} | Sparks: ${child['sparks']} \nExams Taken: ${child['total_exams_taken']}", style: const TextStyle(color: Colors.white70)),
+                  title: Text(child['child_name'],
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.white)),
+                  subtitle: Text(
+                      "XP: ${child['total_xp']} | Sparks: ${child['sparks']} \nExams Taken: ${child['total_exams_taken']}",
+                      style: const TextStyle(color: Colors.white70)),
                 ),
               );
             },

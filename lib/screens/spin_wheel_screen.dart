@@ -26,10 +26,13 @@ class _SpinWheelScreenState extends State<SpinWheelScreen> {
               height: 300,
               child: FortuneWheel(
                 selected: _ctrl.stream,
-                items: rewards.map((e) => FortuneItem(child: Text("$e ⚡"))).toList(),
+                items: rewards
+                    .map((e) => FortuneItem(child: Text("$e ⚡")))
+                    .toList(),
                 onAnimationEnd: () {
                   // Grant Reward Logic
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Reward Claimed!")));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Reward Claimed!")));
                 },
               ),
             ),

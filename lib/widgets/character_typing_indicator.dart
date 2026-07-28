@@ -8,7 +8,9 @@ class CharacterTypingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(10),
-      child: Text("Processing matrix...", style: TextStyle(color: themeColor, fontStyle: FontStyle.italic, fontSize: 12)),
+      child: Text("Processing matrix...",
+          style: TextStyle(
+              color: themeColor, fontStyle: FontStyle.italic, fontSize: 12)),
     );
   }
 }

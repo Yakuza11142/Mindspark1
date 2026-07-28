@@ -12,7 +12,7 @@ class ShortsFeedScreen extends StatelessWidget {
         scrollDirection: Axis.vertical, // Vertical scrolling like TikTok
         itemCount: 10,
         itemBuilder: (ctx, i) {
-          return ShortVideoCard(topic: "Science Fact #${i+1}");
+          return ShortVideoCard(topic: "Science Fact #${i + 1}");
         },
       ),
     );

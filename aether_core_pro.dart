@@ -11,7 +11,8 @@ class HologramStreamWidget extends StatefulWidget {
   State<HologramStreamWidget> createState() => _HologramStreamWidgetState();
 }
 
-class _HologramStreamWidgetState extends State<HologramStreamWidget> with SingleTickerProviderStateMixin {
+class _HologramStreamWidgetState extends State<HologramStreamWidget>
+    with SingleTickerProviderStateMixin {
   ui.FragmentProgram? _program;
   Ticker? _syncTicker;
   double _elapsedTime = 0.0;
@@ -25,19 +26,22 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget> with Single
 
   Future<void> _initAetherCorePipeline() async {
     try {
-      final program = await ui.FragmentProgram.fromAsset('shaders/hologram_glow.frag');
+      final program =
+          await ui.FragmentProgram.fromAsset('shaders/hologram_glow.frag');
       if (_isDisposed) return;
-      
+
       _program = program;
-      
+
       // Ignite ultra-low-latency 120Hz frame-synchronized hardware ticker
       _syncTicker = createTicker((Duration elapsed) {
         if (mounted) {
           setState(() {
-            _elapsedTime = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+            _elapsedTime =
+                elapsed.inMicroseconds / Duration.microsecondsPerSecond;
           });
         }
-      })..start();
+      })
+        ..start();
     } catch (e) {
       debugPrint('❌ [AetherCore Pro] Initialization Failure: $e');
     }
@@ -67,9 +71,11 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget> with Single
       color: Colors.black,
       child: Center(
         child: AspectRatio(
-          aspectRatio: videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16,
+          aspectRatio:
+              videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16,
           child: CustomPaint(
-            key: ValueKey('aether_core_${widget.renderer.textureId}_$_elapsedTime'),
+            key: ValueKey(
+                'aether_core_${widget.renderer.textureId}_$_elapsedTime'),
             painter: AetherCorePainter(
               program: _program!,
               renderer: widget.renderer,
@@ -100,7 +106,7 @@ class AetherCorePainter extends CustomPainter {
     // 1. Pass dimensional scaling constants to secure crisp 6ft projection edges
     shader.setFloat(0, size.width);
     shader.setFloat(1, size.height);
-    
+
     // 2. Pass the high-frequency clock signal for fluid glitch effects
     shader.setFloat(2, time);
 
@@ -113,6 +119,7 @@ class AetherCorePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant AetherCorePainter oldDelegate) {
-    return oldDelegate.time != time || oldDelegate.renderer.textureId != renderer.textureId;
+    return oldDelegate.time != time ||
+        oldDelegate.renderer.textureId != renderer.textureId;
   }
 }

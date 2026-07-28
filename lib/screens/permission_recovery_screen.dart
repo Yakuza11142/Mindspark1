@@ -10,7 +10,7 @@ class PermissionRecoveryScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             const Icon(Icons.camera_alt_outlined, size: 80, color: Colors.red),
             const Text("Camera Access Needed for AR"),
             ElevatedButton(

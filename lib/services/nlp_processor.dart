@@ -14,7 +14,7 @@ class _HologramScreenState extends State<HologramScreen> {
           },
           decoration: const InputDecoration(labelText: "Ask for a hologram..."),
         ),
-        
+
         // The Hologram that reacts to the input
         Expanded(
           child: AdaptiveHologram(userQuery: currentInput),

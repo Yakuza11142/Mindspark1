@@ -4,5 +4,6 @@ class StudyAnalytics {
   final int correctAnswers;
   final String weakestSubject;
 
-  StudyAnalytics(this.totalMinutes, this.questionsAnswered, this.correctAnswers, this.weakestSubject);
+  StudyAnalytics(this.totalMinutes, this.questionsAnswered, this.correctAnswers,
+      this.weakestSubject);
 }

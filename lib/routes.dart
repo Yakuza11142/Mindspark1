@@ -13,7 +13,8 @@ class AppRoutes {
         // Anti-Crash Fallback Route
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
-            body: Center(child: Text("Route Not Found. Re-routing to safety...")),
+            body:
+                Center(child: Text("Route Not Found. Re-routing to safety...")),
           ),
         );
     }

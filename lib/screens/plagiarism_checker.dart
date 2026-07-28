@@ -13,9 +13,11 @@ class _PlagiarismCheckerState extends State<PlagiarismChecker> {
   String result = "";
 
   void _check() async {
-    final model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+    final model =
+        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final res = await model.generateContent([
-      Content.text("Analyze this text for AI generation or plagiarism probability: '${_ctrl.text}'. Keep it short.")
+      Content.text(
+          "Analyze this text for AI generation or plagiarism probability: '${_ctrl.text}'. Keep it short.")
     ]);
     setState(() => result = res.text ?? "Analysis failed.");
   }
@@ -28,7 +30,11 @@ class _PlagiarismCheckerState extends State<PlagiarismChecker> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(controller: _ctrl, maxLines: 5, decoration: const InputDecoration(hintText: "Paste essay here...")),
+            TextField(
+                controller: _ctrl,
+                maxLines: 5,
+                decoration:
+                    const InputDecoration(hintText: "Paste essay here...")),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: _check, child: const Text("Analyze")),
             const SizedBox(height: 20),

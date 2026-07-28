@@ -11,7 +11,6 @@ class OmniSenseCinemaV2 extends StatefulWidget {
 }
 
 class _OmniSenseCinemaV2State extends State<OmniSenseCinemaV2> {
-  
   @override
   void initState() {
     super.initState();
@@ -31,11 +30,13 @@ class _OmniSenseCinemaV2State extends State<OmniSenseCinemaV2> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        children:[
+        children: [
           // 1. Runway 4K Video Background
           // 2. Tripo ARCore Hologram
           // 3. HeyGen Teacher
-          const Center(child: Text("Holo-Deck Active", style: TextStyle(color: Colors.cyanAccent))),
+          const Center(
+              child: Text("Holo-Deck Active",
+                  style: TextStyle(color: Colors.cyanAccent))),
         ],
       ),
     );

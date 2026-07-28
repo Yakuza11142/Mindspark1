@@ -1,5 +1,3 @@
-import '../config/supabase_core_config.dart';
-import 'supabase_offline_mutations.dart';
 
 class SupabaseExamLedger {
   SupabaseExamLedger._internal();

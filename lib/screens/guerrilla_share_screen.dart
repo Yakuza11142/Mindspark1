@@ -12,16 +12,22 @@ class GuerrillaShareScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
-            const Text("SHARE OFFLINE", style: TextStyle(color: Colors.cyanAccent, fontSize: 30, fontWeight: FontWeight.bold)),
+          children: [
+            const Text("SHARE OFFLINE",
+                style: TextStyle(
+                    color: Colors.cyanAccent,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(10),
               color: Colors.white,
-              child: QrImageView(data: "mindspark://offline-apk-transfer", size: 250),
+              child: QrImageView(
+                  data: "mindspark://offline-apk-transfer", size: 250),
             ),
             const SizedBox(height: 20),
-            const Text("Tell your friend to scan this .", style: TextStyle(color: Colors.white70)),
+            const Text("Tell your friend to scan this .",
+                style: TextStyle(color: Colors.white70)),
           ],
         ),
       ),

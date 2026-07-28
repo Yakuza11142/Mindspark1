@@ -7,14 +7,17 @@ class ParticleBackground extends StatefulWidget {
   State<ParticleBackground> createState() => _ParticleBackgroundState();
 }
 
-class _ParticleBackgroundState extends State<ParticleBackground> with SingleTickerProviderStateMixin {
+class _ParticleBackgroundState extends State<ParticleBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   final List<_Particle> _particles = List.generate(20, (_) => _Particle());
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
+    _ctrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat();
   }
 
   @override
@@ -42,12 +45,13 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.1);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.1);
     for (var p in particles) {
       double dy = (p.y + anim * p.speed) % 1.0;
       canvas.drawCircle(Offset(p.x * size.width, dy * size.height), 2, paint);
     }
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

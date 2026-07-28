@@ -6,7 +6,8 @@ class InteractiveCinemaScreen extends StatefulWidget {
   const InteractiveCinemaScreen({super.key, required this.characterName});
 
   @override
-  State<InteractiveCinemaScreen> createState() => _InteractiveCinemaScreenState();
+  State<InteractiveCinemaScreen> createState() =>
+      _InteractiveCinemaScreenState();
 }
 
 class _InteractiveCinemaScreenState extends State<InteractiveCinemaScreen> {
@@ -29,10 +30,12 @@ class _InteractiveCinemaScreenState extends State<InteractiveCinemaScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        children:[
+        children: [
           // 1. The WebRTC Video Player showing the Avatar goes here
-          const Center(child: Text("🎥 HeyGen Live Stream Active", style: TextStyle(color: Colors.cyan))),
-          
+          const Center(
+              child: Text("🎥 HeyGen Live Stream Active",
+                  style: TextStyle(color: Colors.cyan))),
+
           // 2. The Microphone Button
           Align(
             alignment: Alignment.bottomCenter,

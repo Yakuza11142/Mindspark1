@@ -4,7 +4,7 @@ class GlobalLanguageModel {
   static String injectLanguage(String basePrompt, String targetLanguage) {
     // Standardizing check: If target is the default/base, return prompt as is.
     if (targetLanguage.toLowerCase() == "english") return basePrompt;
-    
+
     return """
 $basePrompt
 

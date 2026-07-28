@@ -10,9 +10,10 @@ class SolarSystemRoomMode extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        children:[
+        children: [
           ModelViewer(
-            src: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb', // Your dynamic Tripo URL here
+            src:
+                'https://modelviewer.dev/shared-assets/models/Astronaut.glb', // Your dynamic Tripo URL here
             ar: true,
             arPlacement: ArPlacement.floor,
             autoRotate: true,
@@ -21,8 +22,13 @@ class SolarSystemRoomMode extends StatelessWidget {
             relatedCss: RoomScaleArMapper.configureRoomScale(),
           ),
           const Positioned(
-            top: 50, left: 20,
-            child: Text("ROOM-SCALE AR ACTIVE", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, letterSpacing: 2)),
+            top: 50,
+            left: 20,
+            child: Text("ROOM-SCALE AR ACTIVE",
+                style: TextStyle(
+                    color: Colors.cyanAccent,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2)),
           )
         ],
       ),

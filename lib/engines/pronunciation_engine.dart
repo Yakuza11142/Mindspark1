@@ -9,7 +9,7 @@ class PronunciationEngine {
     if (!available) return 0;
 
     final completer = Completer<int>();
-    
+
     _speech.listen(
       listenFor: const Duration(seconds: 10), // Safety timeout
       onResult: (result) {
@@ -19,7 +19,7 @@ class PronunciationEngine {
 
           // Calculate a real percentage based on string similarity
           int score = _calculateSimilarity(target, spoken);
-          
+
           if (!completer.isCompleted) completer.complete(score);
           _speech.stop();
         }
@@ -28,7 +28,7 @@ class PronunciationEngine {
 
     // Ensure it returns a 0 if the user doesn't speak at all
     return completer.future.timeout(
-      const Duration(seconds: 11), 
+      const Duration(seconds: 11),
       onTimeout: () => 0,
     );
   }
@@ -40,7 +40,7 @@ class PronunciationEngine {
 
     final distance = _getLevenshteinDistance(s1, s2);
     final maxLen = s1.length > s2.length ? s1.length : s2.length;
-    
+
     // Convert distance into a percentage (0-100)
     return (((maxLen - distance) / maxLen) * 100).toInt().clamp(0, 100);
   }

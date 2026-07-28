@@ -32,16 +32,25 @@ class _MentalSwipeGameState extends State<MentalSwipeGame> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
-            const Text("Is this True or False?", style: TextStyle(color: Colors.grey)),
+          children: [
+            const Text("Is this True or False?",
+                style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 20),
-            Text(equation, style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold)),
+            Text(equation,
+                style:
+                    const TextStyle(fontSize: 60, fontWeight: FontWeight.bold)),
             const SizedBox(height: 50),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children:[
-                FloatingActionButton(backgroundColor: Colors.red, onPressed: () => _swipe(false), child: const Icon(Icons.close)),
-                FloatingActionButton(backgroundColor: Colors.green, onPressed: () => _swipe(true), child: const Icon(Icons.check)),
+              children: [
+                FloatingActionButton(
+                    backgroundColor: Colors.red,
+                    onPressed: () => _swipe(false),
+                    child: const Icon(Icons.close)),
+                FloatingActionButton(
+                    backgroundColor: Colors.green,
+                    onPressed: () => _swipe(true),
+                    child: const Icon(Icons.check)),
               ],
             )
           ],

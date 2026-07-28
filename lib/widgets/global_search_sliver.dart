@@ -11,7 +11,8 @@ class GlobalSearchSliver extends StatelessWidget {
       flexibleSpace: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Container(
-          decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(30)),
+          decoration: BoxDecoration(
+              color: Colors.white10, borderRadius: BorderRadius.circular(30)),
           child: const TextField(
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(

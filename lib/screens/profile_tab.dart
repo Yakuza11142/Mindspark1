@@ -15,19 +15,16 @@ class _ProfileTabState extends State<ProfileTab> {
     _secretTapCount++;
     if (_secretTapCount >= 5) {
       _secretTapCount = 0; // Reset
-      
+
       bool isMyPhone = await CeoHardwareLock.verifyCeoDevice();
       if (isMyPhone) {
         // CEO RECOGNIZED. ENTER THE VAULT.
         // Navigator.push(context, MaterialPageRoute(builder: (_) => const CeoDashboard()));
       } else {
         // HACKER/STUDENT RECOGNIZED. SHOW DECOY.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("🎉 You found a secret Easter Egg! Keep studying!"), 
-            backgroundColor: Colors.purple
-          )
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("🎉 You found a secret Easter Egg! Keep studying!"),
+            backgroundColor: Colors.purple));
       }
     }
   }
@@ -39,7 +36,10 @@ class _ProfileTabState extends State<ProfileTab> {
       body: Center(
         child: GestureDetector(
           onTap: () => _triggerVaultOrDecoy(context),
-          child: const CircleAvatar(radius: 60, backgroundColor: Colors.cyanAccent, child: Icon(Icons.person, size: 60, color: Colors.black)),
+          child: const CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.cyanAccent,
+              child: Icon(Icons.person, size: 60, color: Colors.black)),
         ),
       ),
     );

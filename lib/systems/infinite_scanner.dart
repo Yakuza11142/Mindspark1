@@ -2,10 +2,10 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class InfiniteScanner {
   bool _isProcessing = false;
-  final FaceDetector _detector = FaceDetector(options: FaceDetectorOptions(
-    enableTracking: true, // Crucial for "Infinite" persistence
-    performanceMode: FaceDetectorMode.fast 
-  ));
+  final FaceDetector _detector = FaceDetector(
+      options: FaceDetectorOptions(
+          enableTracking: true, // Crucial for "Infinite" persistence
+          performanceMode: FaceDetectorMode.fast));
 
   // This runs infinitely until you stop it
   void startInfiniteScan(Stream<InputImage> imageStream) {
@@ -25,8 +25,8 @@ class InfiniteScanner {
   void _handleRecognition(Face face) {
     final String id = face.trackingId.toString();
     // 0-second check against Mind Spark Database
-    final profile = IdentityRegistry.getName(id); 
-    
+    final profile = IdentityRegistry.getName(id);
+
     if (profile != null) {
       print("Recognized: ${profile['name']}");
       // AH reacts here

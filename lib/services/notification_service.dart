@@ -7,7 +7,8 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
     tz.initializeTimeZones();
@@ -24,20 +25,22 @@ class NotificationService {
       _nextInstanceOfSixPM(),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'daily_channel', 
+          'daily_channel',
           'Daily Reminders',
           importance: Importance.max,
           priority: Priority.high,
         ),
       ),
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
     );
   }
 
   tz.TZDateTime _nextInstanceOfSixPM() {
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, 18); // 6 PM
+    tz.TZDateTime scheduledDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, 18); // 6 PM
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }

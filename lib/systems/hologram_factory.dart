@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 class HologramFactory {
   // Instant Spawn: 0s delay
-  static void spawnInstant(ArCoreController controller, v.Vector3 position, String id) {
+  static void spawnInstant(
+      ArCoreController controller, v.Vector3 position, String id) {
     final node = ArCoreNode(
       shape: ArCoreCube(
         materials: [ArCoreMaterial(color: Colors.cyan, metallic: 1.0)],
@@ -13,7 +14,7 @@ class HologramFactory {
       position: position,
       name: id,
     );
-    
+
     // Direct injection into the AR Scene
     controller.addArCoreNode(node);
   }

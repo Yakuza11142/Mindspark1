@@ -49,8 +49,6 @@ class UnforgeableDeviceCert {
   }
 }
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
 
 class UnforgeableDeviceCert {
   /// Calls a Supabase Edge Function to generate hashes. 

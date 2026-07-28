@@ -19,30 +19,37 @@ class _FlashcardGameState extends State<FlashcardGame> {
   void initState() {
     super.initState();
     GameEngine().generateFlashcards(widget.topic).then((c) {
-      setState(() { cards = c; loading = false; });
+      setState(() {
+        cards = c;
+        loading = false;
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    
+    if (loading)
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
     return Scaffold(
       appBar: AppBar(title: Text("Flashcards: ${widget.topic}")),
       body: GestureDetector(
         onTap: () => setState(() => showBack = !showBack),
         child: Center(
           child: Container(
-            width: 300, height: 400,
+            width: 300,
+            height: 400,
             decoration: BoxDecoration(
-              color: showBack ? Colors.blueAccent : Colors.amber,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.white24, blurRadius: 20)]
-            ),
+                color: showBack ? Colors.blueAccent : Colors.amber,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.white24, blurRadius: 20)]),
             alignment: Alignment.center,
             child: Text(
               showBack ? cards[index]['back']! : cards[index]['front']!,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black),
               textAlign: TextAlign.center,
             ),
           ).animate(target: showBack ? 1 : 0).flip(duration: 500.ms),
@@ -50,8 +57,14 @@ class _FlashcardGameState extends State<FlashcardGame> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          if (index < cards.length - 1) setState(() { index++; showBack = false; });
-          else Navigator.pop(context);
+          if (index < cards.length - 1) {
+            setState(() {
+              index++;
+              showBack = false;
+            });
+          } else {
+            Navigator.pop(context);
+          }
         },
         child: const Icon(Icons.arrow_forward),
       ),

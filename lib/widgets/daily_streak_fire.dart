@@ -10,8 +10,11 @@ class DailyStreakFire extends StatelessWidget {
     return Column(
       children: [
         const Icon(Icons.local_fire_department, color: Colors.orange, size: 40)
-            .animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.2,1.2)),
-        Text("$days Days", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold))
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
+        Text("$days Days",
+            style: const TextStyle(
+                color: Colors.orange, fontWeight: FontWeight.bold))
       ],
     );
   }

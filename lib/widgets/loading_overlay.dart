@@ -10,7 +10,8 @@ class LoadingOverlay extends StatelessWidget {
       color: Colors.black54,
       child: Center(
         child: const Icon(Icons.bolt, size: 100, color: Colors.amber)
-            .animate(onPlay: (c) => c.repeat()).shimmer(duration: 1000.ms),
+            .animate(onPlay: (c) => c.repeat())
+            .shimmer(duration: 1000.ms),
       ),
     );
   }

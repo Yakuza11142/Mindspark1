@@ -12,7 +12,7 @@ class NetworkLatencyUi extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children:[
+      children: [
         Icon(Icons.circle, color: c, size: 8),
         const SizedBox(width: 4),
         Text("${pingMs}ms", style: TextStyle(color: c, fontSize: 10)),

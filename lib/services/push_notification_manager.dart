@@ -17,7 +17,8 @@ class PushNotificationManager {
         'last_online': DateTime.now().toIso8601String(),
       }).eq('id', userId);
 
-      if (kDebugMode) print("✅ [PN Manager] Token synced to Supabase for user: $userId");
+      if (kDebugMode)
+        print("✅ [PN Manager] Token synced to Supabase for user: $userId");
     } catch (e) {
       if (kDebugMode) print("❌ [PN Manager] Debug Error: $e");
     }

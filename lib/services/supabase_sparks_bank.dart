@@ -1,5 +1,3 @@
-import '../config/supabase_core_config.dart';
-
 class SupabaseSparksBank {
   static final _db = SupabaseCoreConfig.client;
 
@@ -21,10 +19,14 @@ class SupabaseSparksBank {
 
     try {
       // 🚀 FIXED: Using maybeSingle() to handle missing or newly created onboarding records safely
-      final data = await _db.from('profiles').select('sparks').eq('id', user.id).maybeSingle();
-      
+      final data = await _db
+          .from('profiles')
+          .select('sparks')
+          .eq('id', user.id)
+          .maybeSingle();
+
       if (data == null) return 0;
-      
+
       // 🚀 FIXED: Hardened parsing prevents data type extraction mismatches on mobile runtimes
       return int.tryParse(data['sparks'].toString()) ?? 0;
     } catch (e) {

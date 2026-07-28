@@ -20,9 +20,12 @@ class MindSparkDatabase extends _$MindSparkDatabase {
   int get schemaVersion => 1;
 
   // Real SQL Queries
-  Future<int> insertLesson(OfflineLessonsCompanion lesson) => into(offlineLessons).insert(lesson);
+  Future<int> insertLesson(OfflineLessonsCompanion lesson) =>
+      into(offlineLessons).insert(lesson);
   Future<List<OfflineLesson>> getAllLessons() => select(offlineLessons).get();
-  Future<OfflineLesson> getLesson(String topic) => (select(offlineLessons)..where((tbl) => tbl.topic.equals(topic))).getSingle();
+  Future<OfflineLesson> getLesson(String topic) =>
+      (select(offlineLessons)..where((tbl) => tbl.topic.equals(topic)))
+          .getSingle();
 }
 
 LazyDatabase _openConnection() {

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../engines/stt_autocorrect_engine.dart';
 
-/// A global, infinite-use voice input widget. 
+/// A global, infinite-use voice input widget.
 /// Removed FlutLab dependencies to use standard Flutter components.
 class SmartVoiceInput extends StatefulWidget {
   final TextEditingController controller;
   final Color? accentColor;
 
   const SmartVoiceInput({
-    super.key, 
-    required this.controller, 
+    super.key,
+    required this.controller,
     this.accentColor,
   });
 
@@ -28,14 +28,15 @@ class _SmartVoiceInputState extends State<SmartVoiceInput> {
 
     try {
       // Replace this string with your actual live STT stream/package result
-      String rawAudioText = "Teache me abot fizzix"; 
+      String rawAudioText = "Teache me abot fizzix";
 
       // Process through your global engine
-      String polishedText = await SttAutocorrectEngine.cleanSpeech(rawAudioText);
+      String polishedText =
+          await SttAutocorrectEngine.cleanSpeech(rawAudioText);
 
       // Updates the controller text immediately
       widget.controller.text = polishedText;
-      
+
       // Move cursor to the end of the new text
       widget.controller.selection = TextSelection.fromPosition(
         TextPosition(offset: widget.controller.text.length),

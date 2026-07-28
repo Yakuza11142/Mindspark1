@@ -5,8 +5,10 @@ class AiFusionEngine {
   static Future<String> generateFusedLesson(String topic) async {
     // Run both APIs at the exact same time
     var results = await Future.wait([
-      GroqService.ask("Give a hyper-fast, highly structured bullet-point breakdown of $topic."),
-      OpenAiTextService.ask("Give a deep, cinematic, historical context and real-world application for $topic.")
+      GroqService.ask(
+          "Give a hyper-fast, highly structured bullet-point breakdown of $topic."),
+      OpenAiTextService.ask(
+          "Give a deep, cinematic, historical context and real-world application for $topic.")
     ]);
 
     String fastStructure = results[0];

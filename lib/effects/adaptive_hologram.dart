@@ -17,7 +17,8 @@ class _AdaptiveHologramState extends State<AdaptiveHologram> {
   @override
   Widget build(BuildContext context) {
     // Logic: If user mentions "hologram", we force specific breakthrough depth
-    double depth = widget.userQuery.toLowerCase().contains("hologram") ? 0.006 : 0.002;
+    double depth =
+        widget.userQuery.toLowerCase().contains("hologram") ? 0.006 : 0.002;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -73,10 +74,13 @@ class HeroIconWidget extends StatelessWidget {
     if (query.contains("star")) icon = Icons.star;
 
     return Container(
-      height: 250, width: 250,
+      height: 250,
+      width: 250,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.cyanAccent, blurRadius: 60, spreadRadius: 10)],
+        boxShadow: [
+          BoxShadow(color: Colors.cyanAccent, blurRadius: 60, spreadRadius: 10)
+        ],
       ),
       child: Icon(icon, color: Colors.white, size: 150),
     );

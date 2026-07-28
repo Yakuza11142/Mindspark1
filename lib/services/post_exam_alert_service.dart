@@ -3,7 +3,7 @@ class GlobalNotificationService {
   /// [category] defines the type (e.g., 'Exam', 'Scholarship', 'Admission').
   /// [targetID] defines the specific entity (e.g., 'UNILAG', 'SAT_US', 'IELTS').
   static Future<void> checkForUpdates({
-    required String category, 
+    required String category,
     required String targetID,
   }) async {
     // 1. Standardized Global Logging
@@ -24,7 +24,6 @@ class GlobalNotificationService {
       //     body: "The registration for $category is now active."
       //   );
       // }
-      
     } catch (e) {
       print("ERROR: Global Alert Service failed for $targetID: $e");
     }

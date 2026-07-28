@@ -6,14 +6,19 @@ class ProFeatureGuard extends StatelessWidget {
   final Widget child;
   final VoidCallback onUnlock;
 
-  const ProFeatureGuard({super.key, required this.isPro, required this.child, required this.onUnlock});
+  const ProFeatureGuard(
+      {super.key,
+      required this.isPro,
+      required this.child,
+      required this.onUnlock});
 
   @override
   Widget build(BuildContext context) {
     if (isPro) return child;
     return Stack(
       children: [
-        ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), child: child),
+        ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5), child: child),
         Positioned.fill(
           child: Center(
             child: ElevatedButton.icon(

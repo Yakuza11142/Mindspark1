@@ -37,10 +37,11 @@ class MindSparkEngine {
     }
   }
 }
+
 void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Start Protection and Bug Killer
     await MindSparkEngine.start();
 

@@ -11,18 +11,25 @@ class BrainEngine {
   }
 
   Future<String> generateLesson(String topic, bool isPro, bool isPidgin) async {
-    String prompt = isPidgin ? "Explain '$topic' in Nigerian Pidgin English." : "Explain '$topic'.";
+    String prompt = isPidgin
+        ? "Explain '$topic' in Nigerian Pidgin English."
+        : "Explain '$topic'.";
     if (isPro) {
       try {
         final chat = await OpenAI.instance.chat.create(
           model: "gpt-4-turbo",
           messages: [
-            OpenAIChatCompletionChoiceMessageModel(role: OpenAIChatMessageRole.system, content: "You are an expert."),
-            OpenAIChatCompletionChoiceMessageModel(role: OpenAIChatMessageRole.user, content: prompt),
+            OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.system,
+                content: "You are an expert."),
+            OpenAIChatCompletionChoiceMessageModel(
+                role: OpenAIChatMessageRole.user, content: prompt),
           ],
         );
         return chat.choices.first.message.content!.map((e) => e.text).join();
-      } catch (e) { return _useGemini(prompt); }
+      } catch (e) {
+        return _useGemini(prompt);
+      }
     } else {
       return _useGemini(prompt);
     }
@@ -32,6 +39,8 @@ class BrainEngine {
     try {
       final res = await _gemini.generateContent([Content.text(prompt)]);
       return res.text ?? "Error.";
-    } catch (e) { return "Connection Error."; }
+    } catch (e) {
+      return "Connection Error.";
+    }
   }
 }

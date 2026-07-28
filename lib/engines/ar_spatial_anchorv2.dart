@@ -18,9 +18,9 @@ class ArSpatialAnchor {
       'coords': point,
       'timestamp': DateTime.now()
     };
-    
+
     _activeAnchors.add(anchor);
-    
+
     print("\n--- 🌐 AR SPATIAL SYNC ---");
     print("STATUS: SUCCESS");
     print("ANCHOR_ID: ${anchor['id']}");
@@ -34,7 +34,7 @@ class ArSpatialAnchor {
 void main() {
   while (true) {
     print("\n[AR COORDINATE INPUT]");
-    
+
     stdout.write("Fact string: ");
     String? fact = stdin.readLineSync();
 

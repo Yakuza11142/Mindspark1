@@ -9,17 +9,27 @@ class CalmDashboardScreen extends StatelessWidget {
     return ZenModeBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text("MindSpark Elite", style: TextStyle(color: Colors.cyanAccent)), backgroundColor: Colors.transparent, elevation: 0),
+        appBar: AppBar(
+            title: const Text("MindSpark Elite",
+                style: TextStyle(color: Colors.cyanAccent)),
+            backgroundColor: Colors.transparent,
+            elevation: 0),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children:[
+            children: [
               const Icon(Icons.auto_awesome, size: 80, color: Colors.cyan),
               const SizedBox(height: 20),
-              const Text("Welcome back. Breathe.", style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold)),
-              const Text("You are ready. Learn at your own pace.", style: TextStyle(color: Colors.grey)),
+              const Text("Welcome back. Breathe.",
+                  style: TextStyle(
+                      fontSize: 24,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+              const Text("You are ready. Learn at your own pace.",
+                  style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 40),
-              ElevatedButton(onPressed: (){}, child: const Text("Continue Learning"))
+              ElevatedButton(
+                  onPressed: () {}, child: const Text("Continue Learning"))
             ],
           ),
         ),

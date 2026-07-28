@@ -4,7 +4,8 @@ import '../engines/unhackable_cert_ledger.dart';
 class SecureVerificationPortal extends StatefulWidget {
   const SecureVerificationPortal({super.key});
   @override
-  State<SecureVerificationPortal> createState() => _SecureVerificationPortalState();
+  State<SecureVerificationPortal> createState() =>
+      _SecureVerificationPortalState();
 }
 
 class _SecureVerificationPortalState extends State<SecureVerificationPortal> {
@@ -17,7 +18,9 @@ class _SecureVerificationPortalState extends State<SecureVerificationPortal> {
     var data = await UnhackableCertLedger.verify(_ctrl.text.trim());
     setState(() {
       result = data;
-      status = data != null ? "AUTHENTIC CERTIFICATE" : "FORGERY DETECTED. NO RECORD FOUND.";
+      status = data != null
+          ? "AUTHENTIC CERTIFICATE"
+          : "FORGERY DETECTED. NO RECORD FOUND.";
     });
   }
 
@@ -28,14 +31,21 @@ class _SecureVerificationPortalState extends State<SecureVerificationPortal> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          children:[
+          children: [
             const Icon(Icons.shield, size: 80, color: Colors.blueAccent),
             const SizedBox(height: 20),
-            TextField(controller: _ctrl, decoration: const InputDecoration(hintText: "Enter Certificate ID")),
+            TextField(
+                controller: _ctrl,
+                decoration:
+                    const InputDecoration(hintText: "Enter Certificate ID")),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: _check, child: const Text("VERIFY")),
             const SizedBox(height: 40),
-            Text(status, style: TextStyle(color: result != null ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 20)),
+            Text(status,
+                style: TextStyle(
+                    color: result != null ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20)),
             if (result != null) ...[
               Text("Student: ${result!['student_name']}"),
               Text("Course: ${result!['course']}"),

@@ -21,16 +21,18 @@ class InfiniteSfxEngine {
           "Content-Type": "application/json"
         },
         body: jsonEncode({
-          "text": soundDescription, // e.g., "A volcano erupting violently", "A lion roaring in the savanna"
-          "duration_seconds": 4,    // Keep it short to save API costs
-          "prompt_influence": 0.3   // How strictly it follows your text
+          "text":
+              soundDescription, // e.g., "A volcano erupting violently", "A lion roaring in the savanna"
+          "duration_seconds": 4, // Keep it short to save API costs
+          "prompt_influence": 0.3 // How strictly it follows your text
         }),
       );
 
       if (response.statusCode == 200) {
         // 2. Save the raw audio bytes to the phone's temporary RAM/Storage
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/dynamic_sfx_${DateTime.now().millisecondsSinceEpoch}.mp3');
+        final file = File(
+            '${dir.path}/dynamic_sfx_${DateTime.now().millisecondsSinceEpoch}.mp3');
         await file.writeAsBytes(response.bodyBytes);
 
         // 3. Play the generated sound instantly

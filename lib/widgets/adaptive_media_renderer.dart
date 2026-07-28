@@ -6,7 +6,8 @@ import 'dynamic_2d_fallback_renderer.dart';
 class AdaptiveMediaRenderer extends StatelessWidget {
   final String topic;
   final bool isPro;
-  const AdaptiveMediaRenderer({super.key, required this.topic, required this.isPro});
+  const AdaptiveMediaRenderer(
+      {super.key, required this.topic, required this.isPro});
 
   @override
   Widget build(BuildContext context) {

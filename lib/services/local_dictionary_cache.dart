@@ -7,6 +7,7 @@ class LocalDictionaryCache {
   };
 
   static String lookup(String word) {
-    return jambHotWords[word.toLowerCase()] ?? "Word not in offline cache. Connect to internet for full AI definition.";
+    return jambHotWords[word.toLowerCase()] ??
+        "Word not in offline cache. Connect to internet for full AI definition.";
   }
 }

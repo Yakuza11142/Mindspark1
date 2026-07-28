@@ -14,17 +14,21 @@ class TargetConfirmationScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children:[
+            children: [
               const Icon(Icons.check_circle, size: 80, color: Colors.green),
               const SizedBox(height: 20),
-              Text("Target Acquired: ${exam.name}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text("Target Acquired: ${exam.name}",
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold)),
               Text("Max Score: ${exam.maxScore}"),
               Text("Subjects: ${exam.subjects.join(', ')}"),
               const SizedBox(height: 40),
               ElevatedButton(
-                onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainLayoutScreen())),
-                child: const Text("Lock In & Start")
-              )
+                  onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const MainLayoutScreen())),
+                  child: const Text("Lock In & Start"))
             ],
           ),
         ),

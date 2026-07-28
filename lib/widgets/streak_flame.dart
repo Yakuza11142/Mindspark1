@@ -12,7 +12,9 @@ class StreakFlame extends StatelessWidget {
         const Icon(Icons.local_fire_department, color: Colors.orange)
             .animate(onPlay: (c) => c.repeat(reverse: true))
             .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
-        Text("$days", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+        Text("$days",
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.orange)),
       ],
     );
   }

@@ -17,7 +17,13 @@ class BattleMatchmaking {
   static final Random _random = Random();
 
   // Dynamic pool of data
-  static const List<String> _names = ["Shadow", "Titan", "Nova", "Dragon", "Cipher"];
+  static const List<String> _names = [
+    "Shadow",
+    "Titan",
+    "Nova",
+    "Dragon",
+    "Cipher"
+  ];
   static const List<String> _avatars = ["🛡️", "⚔️", "🔥", "🐲", "⚡"];
 
   /// Finds a random opponent within a range of the user's level.
@@ -32,7 +38,7 @@ class BattleMatchmaking {
       // logic: Randomly pick from lists and generate level +/- 3 of user
       final name = _names[_random.nextInt(_names.length)];
       final avatar = _avatars[_random.nextInt(_avatars.length)];
-      
+
       // Ensure level is never less than 1
       final level = (userLevel + _random.nextInt(7) - 3).clamp(1, 99);
 
@@ -40,7 +46,7 @@ class BattleMatchmaking {
 
       // DEBUG: Log result
       print("Matchmaking: Found $opponent");
-      
+
       return opponent;
     } catch (e) {
       // DEBUG: Catch network or logic errors

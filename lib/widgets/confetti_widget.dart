@@ -35,7 +35,12 @@ class _CelebrationWidgetState extends State<CelebrationWidget> {
           child: ConfettiWidget(
             confettiController: _ctrl,
             blastDirectionality: BlastDirectionality.explosive,
-            colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange],
+            colors: const [
+              Colors.green,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange
+            ],
           ),
         ),
       ],

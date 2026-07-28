@@ -1,5 +1,3 @@
-import 'package:supabase_database/supabase_database.dart';
-
 class LiveConfig {
   // 1. Private constructor for Singleton
   LiveConfig._internal();
@@ -12,8 +10,9 @@ class LiveConfig {
 
   /// Start this once at app launch for infinite millisecond updates
   void init() {
-    DatabaseReference ref = FirebaseDatabase.instance.ref("live_config/system_prompt");
-    
+    DatabaseReference ref =
+        FirebaseDatabase.instance.ref("live_config/system_prompt");
+
     ref.onValue.listen((DatabaseEvent event) {
       final newValue = event.snapshot.value;
       if (newValue != null) {

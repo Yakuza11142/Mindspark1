@@ -7,7 +7,8 @@ class PdfWatermarkEngine {
       angle: -0.5,
       child: pw.Opacity(
         opacity: 0.1,
-        child: pw.Text("LICENSED TO: $userId", style: pw.TextStyle(fontSize: 60, color: PdfColors.grey)),
+        child: pw.Text("LICENSED TO: $userId",
+            style: pw.TextStyle(fontSize: 60, color: PdfColors.grey)),
       ),
     );
   }

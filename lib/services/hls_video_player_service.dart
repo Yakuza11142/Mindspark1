@@ -6,7 +6,8 @@ class HlsVideoPlayerService {
     // This automatically adjusts resolution based on the user's internet speed in Nigeria.
     return VideoPlayerController.networkUrl(
       Uri.parse(videoUrl),
-      videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: false, mixWithOthers: true),
+      videoPlayerOptions: VideoPlayerOptions(
+          allowBackgroundPlayback: false, mixWithOthers: true),
     );
   }
 }

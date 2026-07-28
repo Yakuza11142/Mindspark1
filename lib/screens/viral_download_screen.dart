@@ -29,27 +29,27 @@ class ViralDownloadScreen extends StatelessWidget {
   }
 }
 // ... inside your Column children:
-const Text(
+Text(
   "DEMOCRACY DAY SPECIAL",
-  style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold),
+  style = TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold),
 ),
-const SizedBox(height: 5),
-const Text(
+SizedBox(height = 5),
+Text(
   "Use code 'MYHEROAWARD2026'",
-  style: TextStyle(color: Colors.cyanAccent, fontSize: 20, fontWeight: FontWeight.bold),
+  style = TextStyle(color: Colors.cyanAccent, fontSize: 20, fontWeight: FontWeight.bold),
 ),
-const Text(
+Text(
   "for 2000 Free Sparks!", // Increased from 1000 for the holiday
-  style: TextStyle(color: Colors.cyanAccent, fontSize: 18),
+  style = TextStyle(color: Colors.cyanAccent, fontSize: 18),
 ),
-const SizedBox(height: 20),
+SizedBox(height = 20),
 Container(
-  padding: const EdgeInsets.all(10),
-  decoration: BoxDecoration(
+  padding = const EdgeInsets.all(10),
+  decoration = BoxDecoration(
     border: Border.all(color: Colors.white24),
     borderRadius: BorderRadius.circular(10),
   ),
-  child: const Text(
+  child = const Text(
     "ENDS TONIGHT @ 11:59 PM (JUNE 12)",
     style: TextStyle(color: Colors.white, fontSize: 13, letterSpacing: 1),
   ),

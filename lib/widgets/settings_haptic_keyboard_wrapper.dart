@@ -25,17 +25,17 @@ bool _hapticEnabled = true;
 
 // In your Settings UI
 SwitchListTile(
-  title: const Text("Keyboard Haptics"),
-  value: _hapticEnabled,
-  onChanged: (bool value) {
+  title = const Text("Keyboard Haptics"),
+  value = _hapticEnabled,
+  onChanged = (bool value) {
     setState(() => _hapticEnabled = value);
   },
 ),
 
 // Wrapping your text fields
 HapticKeyboardWrapper(
-  isEnabled: _hapticEnabled,
-  child: TextField(
+  isEnabled = _hapticEnabled,
+  child = TextField(
     decoration: InputDecoration(labelText: "Type here"),
   ),
 ),

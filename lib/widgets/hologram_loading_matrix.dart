@@ -7,11 +7,14 @@ class HologramLoadingMatrix extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: const[
+      children: const [
         CircularProgressIndicator(color: Colors.purpleAccent),
         SizedBox(height: 20),
-        Text("Materializing Full-Body Avatar...", style: TextStyle(color: Colors.cyanAccent, fontFamily: 'monospace')),
-        Text("Syncing Inverse Kinematics...", style: TextStyle(color: Colors.white54, fontSize: 10)),
+        Text("Materializing Full-Body Avatar...",
+            style:
+                TextStyle(color: Colors.cyanAccent, fontFamily: 'monospace')),
+        Text("Syncing Inverse Kinematics...",
+            style: TextStyle(color: Colors.white54, fontSize: 10)),
       ],
     );
   }

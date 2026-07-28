@@ -9,10 +9,12 @@ class DailyRewardPopup extends StatelessWidget {
       title: const Text("Daily Login"),
       content: const Text("Here is 20 Sparks!"),
       actions: [
-        TextButton(onPressed: () {
-          CurrencyManager().addSparks(20);
-          Navigator.pop(context);
-        }, child: const Text("CLAIM"))
+        TextButton(
+            onPressed: () {
+              CurrencyManager().addSparks(20);
+              Navigator.pop(context);
+            },
+            child: const Text("CLAIM"))
       ],
     );
   }

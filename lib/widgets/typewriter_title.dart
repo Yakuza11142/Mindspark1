@@ -9,7 +9,8 @@ class TypewriterTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Courier'),
+      style: const TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Courier'),
     ).animate().typing(duration: 1000.ms);
   }
 }

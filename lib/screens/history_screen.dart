@@ -32,7 +32,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return ListTile(
             title: Text(h['exam']),
             subtitle: Text(h['date']),
-            trailing: Text("${h['score']}%", style: TextStyle(color: h['score'] > 50 ? Colors.green : Colors.red, fontSize: 18, fontWeight: FontWeight.bold)),
+            trailing: Text("${h['score']}%",
+                style: TextStyle(
+                    color: h['score'] > 50 ? Colors.green : Colors.red,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
           );
         },
       ),

@@ -6,7 +6,7 @@ class SecureMigrator {
   static Future<void> migrate() async {
     final prefs = await SharedPreferences.getInstance();
     final secure = const FlutterSecureStorage();
-    
+
     if (prefs.containsKey('sparks')) {
       int oldSparks = prefs.getInt('sparks') ?? 0;
       await secure.write(key: 'sec_sparks', value: oldSparks.toString());

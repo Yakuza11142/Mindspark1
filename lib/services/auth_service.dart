@@ -1,4 +1,3 @@
-import 'package:supabase_auth/supabase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
@@ -10,7 +9,8 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,

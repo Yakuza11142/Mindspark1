@@ -6,9 +6,8 @@ class SupabaseConfigHelper {
 
   // Initialize and "fetch" all keys at once
   Future<void> init() async {
-    final List<Map<String, dynamic>> data = await _client
-        .from('app_config')
-        .select('key, value');
+    final List<Map<String, dynamic>> data =
+        await _client.from('app_config').select('key, value');
 
     // Convert the table list into a searchable "Master Key" Map
     _cache = {for (var item in data) item['key']: item['value']};

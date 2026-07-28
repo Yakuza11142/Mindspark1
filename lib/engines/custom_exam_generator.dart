@@ -15,7 +15,8 @@ class CustomExamGenerator {
 
   // 3. Infinite Streaming Generation
   Stream<String> generateStream(String examName, List<String> subjects) async* {
-    if (_model == null) throw Exception("Generator not initialized with API Key");
+    if (_model == null)
+      throw Exception("Generator not initialized with API Key");
 
     // The prompt is engineered to handle "infinite" scale by requesting
     // a continuous stream of structured data.
@@ -28,7 +29,8 @@ class CustomExamGenerator {
       Requirement: Ensure depth, rigor, and academic integrity.
     """;
 
-    final responseStream = _model!.generateContentStream([Content.text(prompt)]);
+    final responseStream =
+        _model!.generateContentStream([Content.text(prompt)]);
 
     await for (final chunk in responseStream) {
       if (chunk.text != null) {

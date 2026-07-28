@@ -4,9 +4,11 @@ class OnDeviceVision {
   static Future<String> scanText(String imagePath) async {
     final inputImage = InputImage.fromFilePath(imagePath);
     final textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-    
+    final RecognizedText recognizedText =
+        await textRecognizer.processImage(inputImage);
+
     await textRecognizer.close();
-    return recognizedText.text; // Returns the math equation or text instantly, for free.
+    return recognizedText
+        .text; // Returns the math equation or text instantly, for free.
   }
 }

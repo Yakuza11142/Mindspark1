@@ -12,12 +12,16 @@ class CitationCard extends StatelessWidget {
       color: Colors.white10,
       child: Row(
         children: [
-          Expanded(child: Text(text, style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.white))),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      fontStyle: FontStyle.italic, color: Colors.white))),
           IconButton(
             icon: const Icon(Icons.copy, color: Colors.cyan),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: text));
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Copied!")));
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(const SnackBar(content: Text("Copied!")));
             },
           )
         ],

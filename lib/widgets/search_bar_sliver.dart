@@ -12,7 +12,12 @@ class SearchBarSliver extends StatelessWidget {
       elevation: 0,
       flexibleSpace: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: GlassContainer(child: const TextField(decoration: InputDecoration(hintText: "Search...", border: InputBorder.none, prefixIcon: Icon(Icons.search)))),
+        child: GlassContainer(
+            child: const TextField(
+                decoration: InputDecoration(
+                    hintText: "Search...",
+                    border: InputBorder.none,
+                    prefixIcon: Icon(Icons.search)))),
       ),
     );
   }

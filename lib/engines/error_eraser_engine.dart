@@ -10,7 +10,8 @@ class ErrorEraserEngine {
   }
 
   // INFINITE ERROR LOOP
-  Future<Map<String, dynamic>> generateRemedialQuestion(String originalQuestion, String wrongAnswer, String topic) async {
+  Future<Map<String, dynamic>> generateRemedialQuestion(
+      String originalQuestion, String wrongAnswer, String topic) async {
     final prompt = """
     The student got this wrong.
     Topic: $topic

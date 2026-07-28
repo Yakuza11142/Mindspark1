@@ -17,7 +17,8 @@ class AnalyticsDashboardScreen extends StatelessWidget {
             children: [
               Text(
                 "Segment ${index + 1}: Focus Time 12h 30m",
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               const LearningCurveChart(),

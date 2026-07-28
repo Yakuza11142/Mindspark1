@@ -12,13 +12,18 @@ class _VolumeSliderUiState extends State<VolumeSliderUi> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children:[
+      children: [
         const Icon(Icons.volume_down, color: Colors.white),
         Expanded(
           child: Slider(
-            value: vol, min: 0.0, max: 1.0, activeColor: Colors.cyanAccent,
-            onChanged: (v) { setState(() => vol = v); AudioVolumeController.setVolume(v); }
-          ),
+              value: vol,
+              min: 0.0,
+              max: 1.0,
+              activeColor: Colors.cyanAccent,
+              onChanged: (v) {
+                setState(() => vol = v);
+                AudioVolumeController.setVolume(v);
+              }),
         ),
       ],
     );

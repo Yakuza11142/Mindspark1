@@ -7,7 +7,7 @@ class DeviceSpecChecker {
       var info = await DeviceInfoPlugin().androidInfo;
       // If RAM is less than 3GB (approx), consider low end
       // Note: totalMem is in bytes. 3GB = 3 * 1024^3
-      return info.totalMemory < 3221225472; 
+      return info.totalMemory < 3221225472;
     }
     return false;
   }

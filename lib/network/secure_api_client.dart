@@ -10,18 +10,15 @@ class SecureApiClient {
       ),
     );
 
-    dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // Inject auth tokens here
-        return handler.next(options);
-      },
-      onError: (DioException e, handler) {
-        if (e.type == DioExceptionType.connectionTimeout) {
-          print("Connection Timeout. User may be on Edge/3G network.");
-        }
-        return handler.next(e);
+    dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+      // Inject auth tokens here
+      return handler.next(options);
+    }, onError: (DioException e, handler) {
+      if (e.type == DioExceptionType.connectionTimeout) {
+        print("Connection Timeout. User may be on Edge/3G network.");
       }
-    ));
+      return handler.next(e);
+    }));
     return dio;
   }
 }

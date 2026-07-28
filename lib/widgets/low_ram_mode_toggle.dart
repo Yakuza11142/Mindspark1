@@ -14,7 +14,7 @@ class _LowRamModeToggleState extends State<LowRamModeToggle> {
     return SwitchListTile(
       title: const Text("Low RAM Mode (Fast)"),
       subtitle: const Text("Turns off moving backgrounds"),
-      activeColor: Colors.amber,
+      activeThumbColor: Colors.amber,
       value: isLowRam,
       onChanged: (v) async {
         setState(() => isLowRam = v);

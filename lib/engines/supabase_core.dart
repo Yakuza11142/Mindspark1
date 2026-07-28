@@ -14,7 +14,8 @@ class SupabaseCore {
   }
 
   // Production-ready data insertion with offline fallback
-  static Future<void> securelySaveScore(String userId, int score, String exam) async {
+  static Future<void> securelySaveScore(
+      String userId, int score, String exam) async {
     final client = Supabase.instance.client;
     try {
       await client.from('exam_results').insert({
@@ -26,7 +27,7 @@ class SupabaseCore {
     } catch (e) {
       // IF NETWORK FAILS (Bank/Server down), SAVE TO DEVICE RAM/STORAGE
       final prefs = await SharedPreferences.getInstance();
-      List<String> offlineQueue = prefs.getStringList('offline_scores') ??[];
+      List<String> offlineQueue = prefs.getStringList('offline_scores') ?? [];
       offlineQueue.add('{"uid":"$userId","exam":"$exam","score":$score}');
       await prefs.setStringList('offline_scores', offlineQueue);
     }

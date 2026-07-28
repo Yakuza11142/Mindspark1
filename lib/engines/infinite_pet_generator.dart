@@ -6,7 +6,8 @@ class InfinitePetGenerator {
     try {
       OpenAI.apiKey = Secrets.openAI;
       final image = await OpenAI.instance.image.create(
-        prompt: "A cute, 3D isometric video game mascot character of $userPrompt. Clean transparent background, digital art style, glowing.",
+        prompt:
+            "A cute, 3D isometric video game mascot character of $userPrompt. Clean transparent background, digital art style, glowing.",
         model: "dall-e-3",
         size: OpenAIImageSize.size1024,
       );

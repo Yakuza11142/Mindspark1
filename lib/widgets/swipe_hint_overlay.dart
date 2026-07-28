@@ -9,10 +9,13 @@ class SwipeHintOverlay extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children:[
+        children: [
           const Icon(Icons.swipe_up, size: 80, color: Colors.white54)
-            .animate(onPlay: (c) => c.repeat()).moveY(begin: 20, end: -20, duration: 1.seconds).fadeOut(),
-          const Text("Swipe up for more", style: TextStyle(color: Colors.white54)),
+              .animate(onPlay: (c) => c.repeat())
+              .moveY(begin: 20, end: -20, duration: 1.seconds)
+              .fadeOut(),
+          const Text("Swipe up for more",
+              style: TextStyle(color: Colors.white54)),
         ],
       ),
     );

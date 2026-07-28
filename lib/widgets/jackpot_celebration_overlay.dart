@@ -7,11 +7,13 @@ class JackpotCelebrationOverlay extends StatefulWidget {
   const JackpotCelebrationOverlay({super.key, required this.sparksWon});
 
   @override
-  State<JackpotCelebrationOverlay> createState() => _JackpotCelebrationOverlayState();
+  State<JackpotCelebrationOverlay> createState() =>
+      _JackpotCelebrationOverlayState();
 }
 
 class _JackpotCelebrationOverlayState extends State<JackpotCelebrationOverlay> {
-  final ConfettiController _confetti = ConfettiController(duration: const Duration(seconds: 3));
+  final ConfettiController _confetti =
+      ConfettiController(duration: const Duration(seconds: 3));
 
   @override
   void initState() {
@@ -29,23 +31,41 @@ class _JackpotCelebrationOverlayState extends State<JackpotCelebrationOverlay> {
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.center,
-      children:[
+      children: [
         ConfettiWidget(
           confettiController: _confetti,
           blastDirectionality: BlastDirectionality.explosive,
-          colors: const[Colors.amber, Colors.orange, Colors.yellow],
+          colors: const [Colors.amber, Colors.orange, Colors.yellow],
         ),
         Container(
           padding: const EdgeInsets.all(30),
-          decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.amber, width: 4)),
+          decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.amber, width: 4)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children:[
-              const Text("MEGA JACKPOT! 🎰", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.amber, decoration: TextDecoration.none)),
+            children: [
+              const Text("MEGA JACKPOT! 🎰",
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                      decoration: TextDecoration.none)),
               const SizedBox(height: 20),
-              Text("+${widget.sparksWon} ⚡", style: const TextStyle(fontSize: 60, color: Colors.cyanAccent, fontWeight: FontWeight.w900, decoration: TextDecoration.none)),
+              Text("+${widget.sparksWon} ⚡",
+                  style: const TextStyle(
+                      fontSize: 60,
+                      color: Colors.cyanAccent,
+                      fontWeight: FontWeight.w900,
+                      decoration: TextDecoration.none)),
               const SizedBox(height: 20),
-              ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: Colors.amber), child: const Text("CLAIM", style: TextStyle(color: Colors.black)))
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+                  child: const Text("CLAIM",
+                      style: TextStyle(color: Colors.black)))
             ],
           ),
         ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),

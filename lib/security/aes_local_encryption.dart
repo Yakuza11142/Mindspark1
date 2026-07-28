@@ -6,7 +6,7 @@ class AesLocalEncryption {
     // Generate a 256-bit key from the device secret
     var key = sha256.convert(utf8.encode(deviceSecret)).bytes;
     var dataBytes = utf8.encode(rawData);
-    
+
     // XOR Encryption (Fast, hardware-level encryption suitable for mobile)
     List<int> encrypted = List<int>.filled(dataBytes.length, 0);
     for (int i = 0; i < dataBytes.length; i++) {

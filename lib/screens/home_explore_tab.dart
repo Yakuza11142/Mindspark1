@@ -27,7 +27,8 @@ class HomeExploreTab extends StatelessWidget {
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
                 fillColor: Colors.white10,
-                prefixIcon: const Icon(Icons.auto_awesome, color: Colors.cyanAccent),
+                prefixIcon:
+                    const Icon(Icons.auto_awesome, color: Colors.cyanAccent),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
                     borderSide: BorderSide.none),

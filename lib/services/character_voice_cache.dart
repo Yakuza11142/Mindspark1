@@ -1,3 +1,4 @@
 class CharacterVoiceCache {
-  static void prewarmVoices() => print("Pre-loading ElevenLabs Voice Models into RAM.");
+  static void prewarmVoices() =>
+      print("Pre-loading ElevenLabs Voice Models into RAM.");
 }

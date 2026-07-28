@@ -12,12 +12,18 @@ class SunkCostReminderCard extends StatelessWidget {
         if (!snap.hasData) return const SizedBox.shrink();
         return Container(
           padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(color: Colors.purple.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10)),
           child: Row(
-            children:[
-              const Icon(Icons.psychology, color: Colors.purpleAccent, size: 40),
+            children: [
+              const Icon(Icons.psychology,
+                  color: Colors.purpleAccent, size: 40),
               const SizedBox(width: 15),
-              Expanded(child: Text(snap.data!, style: const TextStyle(color: Colors.white70, fontSize: 14))),
+              Expanded(
+                  child: Text(snap.data!,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 14))),
             ],
           ),
         );

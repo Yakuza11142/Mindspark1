@@ -43,7 +43,8 @@ class GlobalExamHub extends StatelessWidget {
     );
   }
 
-  Widget _examCard(BuildContext ctx, String title, String subtitle, String region) {
+  Widget _examCard(
+      BuildContext ctx, String title, String subtitle, String region) {
     return GestureDetector(
       onTap: () => Navigator.push(
         ctx,
@@ -56,10 +57,11 @@ class GlobalExamHub extends StatelessWidget {
         ),
       ),
       child: Card(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.cyanAccent.withOpacity(0.3), width: 1),
+          side: BorderSide(
+              color: Colors.cyanAccent.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -69,7 +71,10 @@ class GlobalExamHub extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.cyanAccent),
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.cyanAccent),
             ),
             const SizedBox(height: 4),
             Text(
@@ -82,12 +87,15 @@ class GlobalExamHub extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.2),
+                color: Colors.amber.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
                 region.toUpperCase(),
-                style: const TextStyle(color: Colors.amber, fontSize: 8, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ],

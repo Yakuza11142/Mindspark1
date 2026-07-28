@@ -5,6 +5,7 @@ class SoundVolumeController {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('music_vol', vol);
   }
+
   static Future<double> getMusicVol() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble('music_vol') ?? 0.5;

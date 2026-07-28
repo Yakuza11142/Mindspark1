@@ -6,16 +6,18 @@ class MicGainVisualizer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double size = 50 + (audioLevel * 5); // Base size 50, expands with voice volume
+    double size =
+        50 + (audioLevel * 5); // Base size 50, expands with voice volume
     return AnimatedContainer(
       duration: const Duration(milliseconds: 100),
       width: size,
       height: size,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.cyanAccent.withOpacity(0.5),
-        boxShadow:[BoxShadow(color: Colors.cyan, blurRadius: audioLevel * 2)]
-      ),
+          shape: BoxShape.circle,
+          color: Colors.cyanAccent.withValues(alpha: 0.5),
+          boxShadow: [
+            BoxShadow(color: Colors.cyan, blurRadius: audioLevel * 2)
+          ]),
       child: const Icon(Icons.mic, color: Colors.black),
     );
   }

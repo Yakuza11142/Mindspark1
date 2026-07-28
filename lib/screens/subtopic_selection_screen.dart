@@ -18,9 +18,15 @@ class SubtopicSelectionScreen extends StatelessWidget {
         itemBuilder: (ctx, i) => Card(
           color: Colors.white10,
           child: ListTile(
-            title: Text(subtopics[i], style: const TextStyle(color: Colors.white)),
-            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.cyan, size: 16),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LessonScreen(topic: "$mainTopic: ${subtopics[i]}", isPro: false))),
+            title:
+                Text(subtopics[i], style: const TextStyle(color: Colors.white)),
+            trailing: const Icon(Icons.arrow_forward_ios,
+                color: Colors.cyan, size: 16),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => LessonScreen(
+                        topic: "$mainTopic: ${subtopics[i]}", isPro: false))),
           ),
         ),
       ),

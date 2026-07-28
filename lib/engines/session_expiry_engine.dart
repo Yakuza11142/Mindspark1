@@ -13,7 +13,7 @@ class SessionExpiryEngine {
   static Future<void> checkSession() async {
     final prefs = await SharedPreferences.getInstance();
     final String? lastLoginStr = prefs.getString(SessionSettings.sessionKey);
-    
+
     if (lastLoginStr != null) {
       final DateTime lastLogin = DateTime.parse(lastLoginStr);
       final DateTime now = DateTime.now();
@@ -27,9 +27,11 @@ class SessionExpiryEngine {
     }
 
     // Update the timestamp globally for the next check
-    await prefs.setString(SessionSettings.sessionKey, DateTime.now().toIso8601String());
+    await prefs.setString(
+        SessionSettings.sessionKey, DateTime.now().toIso8601String());
   }
 }
+
 class UserSecuritySettings {
   static const int minimumEmailAge = 13;
   static int currentUserAge = 0; // Set this during profile setup or from DB
@@ -40,10 +42,11 @@ class SessionExpiryEngine {
 
   static Future<void> checkSession() async {
     // 1. Age Gate Check
-    if (UserSecuritySettings.currentUserAge < UserSecuritySettings.minimumEmailAge) {
+    if (UserSecuritySettings.currentUserAge <
+        UserSecuritySettings.minimumEmailAge) {
       print("Access Denied: Users under 13 cannot use Email/Magic Link auth.");
       await _supabase.auth.signOut(); // Safety kill-switch
-      return; 
+      return;
     }
 
     // 2. Existing Session & Expiry Logic
@@ -51,17 +54,20 @@ class SessionExpiryEngine {
     if (session == null) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final String? lastVerifiedStr = prefs.getString(MagicLinkSettings.sessionKey);
+    final String? lastVerifiedStr =
+        prefs.getString(MagicLinkSettings.sessionKey);
 
     if (lastVerifiedStr != null) {
       final DateTime lastVerified = DateTime.parse(lastVerifiedStr);
-      
-      if (DateTime.now().difference(lastVerified) > MagicLinkSettings.forceReauthAfter) {
+
+      if (DateTime.now().difference(lastVerified) >
+          MagicLinkSettings.forceReauthAfter) {
         await _supabase.auth.signOut();
         return;
       }
     }
 
-    await prefs.setString(MagicLinkSettings.sessionKey, DateTime.now().toIso8601String());
+    await prefs.setString(
+        MagicLinkSettings.sessionKey, DateTime.now().toIso8601String());
   }
 }

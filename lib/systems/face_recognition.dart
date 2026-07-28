@@ -1,4 +1,5 @@
-void onFaceDetected(String faceId, ArCoreController controller, v.Vector3 ahPosition) {
+void onFaceDetected(
+    String faceId, ArCoreController controller, v.Vector3 ahPosition) {
   if (faceId == "CEO_MIND_SPARK_UNIQUE_ID") {
     // AH recognizes the CEO
     _triggerCEOGreeting(controller, ahPosition);

@@ -14,10 +14,9 @@ class AcademicPivotEngine {
         // This creates the infinite loop
         while (true) {
           print(
-            "The biochemical signaling pathways involved in cellular apoptosis "
-            "facilitate a programmed sequence of morphological changes, "
-            "including blebbing, cell shrinkage, and nuclear fragmentation."
-          );
+              "The biochemical signaling pathways involved in cellular apoptosis "
+              "facilitate a programmed sequence of morphological changes, "
+              "including blebbing, cell shrinkage, and nuclear fragmentation.");
         }
       }
     }

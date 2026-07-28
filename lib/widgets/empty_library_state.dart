@@ -7,11 +7,13 @@ class EmptyLibraryState extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const[
+        children: const [
           Icon(Icons.auto_stories, size: 80, color: Colors.white24),
           SizedBox(height: 20),
-          Text("Your Library is Empty", style: TextStyle(fontSize: 20, color: Colors.white54)),
-          Text("Save lessons to read them offline.", style: TextStyle(color: Colors.grey)),
+          Text("Your Library is Empty",
+              style: TextStyle(fontSize: 20, color: Colors.white54)),
+          Text("Save lessons to read them offline.",
+              style: TextStyle(color: Colors.grey)),
         ],
       ),
     );

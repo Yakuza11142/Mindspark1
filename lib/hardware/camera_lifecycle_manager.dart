@@ -12,7 +12,7 @@ class CameraLifecycleManager extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (controller == null || !controller!.value.isInitialized) return;
-    
+
     if (state == AppLifecycleState.inactive) {
       controller?.dispose(); // Kill camera immediately to save RAM
     } else if (state == AppLifecycleState.resumed) {

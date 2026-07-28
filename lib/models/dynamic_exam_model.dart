@@ -10,9 +10,7 @@ class DynamicExamModel {
 
   factory DynamicExamModel.fromJson(String jsonStr) {
     var data = jsonDecode(jsonStr);
-    return DynamicExamModel(
-      data['name'], data['maxScore'], 
-      List<String>.from(data['subjects']), data['grading_style']
-    );
+    return DynamicExamModel(data['name'], data['maxScore'],
+        List<String>.from(data['subjects']), data['grading_style']);
   }
 }

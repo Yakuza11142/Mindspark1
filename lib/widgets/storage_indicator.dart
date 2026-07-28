@@ -9,7 +9,8 @@ class StorageIndicator extends StatelessWidget {
     return Column(
       children: [
         const Text("Offline Storage", style: TextStyle(color: Colors.grey)),
-        LinearProgressIndicator(value: usedMB / 1000, color: Colors.blue), // Assuming 1GB limit
+        LinearProgressIndicator(
+            value: usedMB / 1000, color: Colors.blue), // Assuming 1GB limit
         Text("${usedMB.toStringAsFixed(1)} MB used"),
       ],
     );

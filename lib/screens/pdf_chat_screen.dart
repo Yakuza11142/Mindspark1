@@ -16,12 +16,17 @@ class _PdfChatScreenState extends State<PdfChatScreen> {
   bool isReady = false;
 
   void _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+    FilePickerResult? result = await FilePicker.platform
+        .pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
     if (result != null) {
       setState(() => status = "Analyzing Document...");
-      String text = await PdfTextExtractor.extractText(File(result.files.single.path!));
+      String text =
+          await PdfTextExtractor.extractText(File(result.files.single.path!));
       _engine.loadDocument(text);
-      setState(() { status = "Document Loaded. Ask me anything!"; isReady = true; });
+      setState(() {
+        status = "Document Loaded. Ask me anything!";
+        isReady = true;
+      });
     }
   }
 
@@ -30,16 +35,18 @@ class _PdfChatScreenState extends State<PdfChatScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text("MindSpark Doc-Chat")),
       body: Column(
-        children:[
+        children: [
           Container(
             padding: const EdgeInsets.all(20),
-            color: Colors.blueGrey.withOpacity(0.2),
+            color: Colors.blueGrey.withValues(alpha: 0.2),
             child: Row(
-              children:[
+              children: [
                 const Icon(Icons.picture_as_pdf, color: Colors.redAccent),
                 const SizedBox(width: 10),
                 Expanded(child: Text(status)),
-                if (!isReady) ElevatedButton(onPressed: _pickFile, child: const Text("Upload"))
+                if (!isReady)
+                  ElevatedButton(
+                      onPressed: _pickFile, child: const Text("Upload"))
               ],
             ),
           ),

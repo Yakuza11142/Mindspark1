@@ -15,12 +15,19 @@ class QuickLookupSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children:[
-          Text(selectedWord.toUpperCase(), style: const TextStyle(color: Colors.cyanAccent, fontSize: 24, fontWeight: FontWeight.bold)),
+        children: [
+          Text(selectedWord.toUpperCase(),
+              style: const TextStyle(
+                  color: Colors.cyanAccent,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Text(definition, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          Text(definition,
+              style: const TextStyle(color: Colors.white, fontSize: 16)),
           const SizedBox(height: 20),
-          ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("Got it"))
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Got it"))
         ],
       ),
     );

@@ -3,7 +3,7 @@ class RealCbtQuestion {
   final String text;
   final List<String> options;
   final String correctOption;
-  
+
   // The "Global" key: dynamic storage for any field (Latex, Images, Diagrams, AR, etc.)
   final Map<String, dynamic> metadata;
 

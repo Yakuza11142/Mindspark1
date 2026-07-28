@@ -19,7 +19,8 @@ class SupabasePushService {
     // 3. Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (message.notification != null) {
-        print("Supabase-triggered Notification: ${message.notification!.title}");
+        print(
+            "Supabase-triggered Notification: ${message.notification!.title}");
         // Trigger your local UI/Overlay here
       }
     });

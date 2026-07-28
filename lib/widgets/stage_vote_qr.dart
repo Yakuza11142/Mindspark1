@@ -20,11 +20,12 @@ class SettingsPage extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
           ),
           const SizedBox(height: 10),
-          
+
           // Your QR Code inside a Settings Card
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -50,7 +51,7 @@ class SettingsPage extends StatelessWidget {
 
           const SizedBox(height: 20),
           const Divider(),
-          
+
           // Other common settings options
           ListTile(
             leading: const Icon(Icons.person),

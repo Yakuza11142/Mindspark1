@@ -1,6 +1,6 @@
 class SleepHygieneEnforcer {
   static const int SLEEP_START = 23; // 11 PM
-  static const int SLEEP_END = 4;    // 4 AM
+  static const int SLEEP_END = 4; // 4 AM
 
   static bool isSleepTime() {
     int hour = DateTime.now().hour;
@@ -10,7 +10,7 @@ class SleepHygieneEnforcer {
   // Instead of a full block, we reduce learning efficiency
   static double getLearningEfficiency() {
     if (isSleepTime()) return 0.2; // Only 20% Spark rewards at night
-    return 1.0; 
+    return 1.0;
   }
 
   static String getStatusMessage() {

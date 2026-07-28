@@ -16,6 +16,7 @@ class PanAfricanSyllabusRouter {
   /// Returns the specific syllabus for ANY country code.
   /// Defaults to Cambridge IGCSE for unsupported regions.
   static String getSyllabusContext(String countryCode) {
-    return _syllabusRegistry[countryCode.toUpperCase()] ?? "Cambridge IGCSE Syllabus";
+    return _syllabusRegistry[countryCode.toUpperCase()] ??
+        "Cambridge IGCSE Syllabus";
   }
 }

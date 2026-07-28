@@ -6,7 +6,9 @@ void showError(BuildContext context, String message) {
     builder: (ctx) => AlertDialog(
       title: const Text("System Error"),
       content: Text(message),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))
+      ],
     ),
   );
 }

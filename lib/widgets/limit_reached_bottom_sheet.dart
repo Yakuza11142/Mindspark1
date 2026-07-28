@@ -9,7 +9,8 @@ class LimitReachedBottomSheet extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E293B),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => const LimitReachedBottomSheet(),
     );
   }
@@ -20,21 +21,34 @@ class LimitReachedBottomSheet extends StatelessWidget {
       padding: const EdgeInsets.all(30),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children:[
+        children: [
           const Icon(Icons.battery_alert, size: 60, color: Colors.orange),
           const SizedBox(height: 20),
-          const Text("Daily Limit Reached", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          const Text("You've used your 15 free questions for today. Upgrade to Pro or watch ads to continue learning.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+          const Text("Daily Limit Reached",
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold)),
+          const Text(
+              "You've used your 15 free questions for today. Upgrade to Pro or watch ads to continue learning.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 30),
           ElevatedButton(
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const WatchToUnlockScreen())),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[900], minimumSize: const Size(double.infinity, 50)),
-            child: const Text("WATCH 3 ADS (FREE PRO)", style: TextStyle(color: Colors.white)),
+            onPressed: () => Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const WatchToUnlockScreen())),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[900],
+                minimumSize: const Size(double.infinity, 50)),
+            child: const Text("WATCH 3 ADS (FREE PRO)",
+                style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 10),
           TextButton(
-            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PaywallScreen())),
-            child: const Text("SUBSCRIBE (₦4,500/mo)", style: TextStyle(color: Colors.cyanAccent)),
+            onPressed: () => Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const PaywallScreen())),
+            child: const Text("SUBSCRIBE (₦4,500/mo)",
+                style: TextStyle(color: Colors.cyanAccent)),
           )
         ],
       ),

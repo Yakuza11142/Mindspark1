@@ -10,8 +10,8 @@ class HologramBreakthrough extends StatefulWidget {
 }
 
 class _HologramBreakthroughState extends State<HologramBreakthrough> {
-  double x = 0; 
-  double y = 0; 
+  double x = 0;
+  double y = 0;
   StreamSubscription? _gyroSubscription;
 
   @override
@@ -20,7 +20,7 @@ class _HologramBreakthroughState extends State<HologramBreakthrough> {
     // Gyroscope makes it "float" automatically
     _gyroSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
       setState(() {
-        y += event.y * 0.02; 
+        y += event.y * 0.02;
         x += event.x * 0.02;
       });
     });
@@ -56,10 +56,10 @@ class _HologramBreakthroughState extends State<HologramBreakthrough> {
               width: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.cyanAccent.withOpacity(0.1),
+                color: Colors.cyanAccent.withValues(alpha: 0.1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.cyanAccent.withOpacity(0.6),
+                    color: Colors.cyanAccent.withValues(alpha: 0.6),
                     blurRadius: 60,
                     spreadRadius: 15,
                   ),

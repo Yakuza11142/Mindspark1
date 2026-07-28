@@ -23,6 +23,6 @@ class LruMemoryCache<K, V> {
     }
     _cache[key] = value;
   }
-  
+
   void clear() => _cache.clear();
 }

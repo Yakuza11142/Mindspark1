@@ -9,7 +9,8 @@ class TermsAcceptance extends StatefulWidget {
     super.key,
     required this.nextScreen,
     this.title = "Terms & Conditions",
-    this.termsText = "By clicking Accept, you agree to our Terms and AI Usage Policy.",
+    this.termsText =
+        "By clicking Accept, you agree to our Terms and AI Usage Policy.",
   });
 
   @override
@@ -27,11 +28,13 @@ class _TermsAcceptanceState extends State<TermsAcceptance> {
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
           child: Column(
             children: [
-              Icon(Icons.gavel_rounded, size: 60, color: Theme.of(context).primaryColor),
+              Icon(Icons.gavel_rounded,
+                  size: 60, color: Theme.of(context).primaryColor),
               const SizedBox(height: 20),
               Text(
                 widget.title,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -57,12 +60,14 @@ class _TermsAcceptanceState extends State<TermsAcceptance> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _hasAccepted
                       ? () => Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => widget.nextScreen),
+                            MaterialPageRoute(
+                                builder: (_) => widget.nextScreen),
                           )
                       : null, // Button is disabled until checkbox is ticked
                   child: const Text("CONTINUE"),

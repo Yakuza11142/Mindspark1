@@ -18,10 +18,12 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
       dropdownColor: Colors.black87,
       value: selected,
       style: const TextStyle(color: Colors.cyanAccent),
-      items: SupportedLanguages.list.map((l) => DropdownMenuItem(
-        value: l.name,
-        child: Text("${l.flag} ${l.name}"),
-      )).toList(),
+      items: SupportedLanguages.list
+          .map((l) => DropdownMenuItem(
+                value: l.name,
+                child: Text("${l.flag} ${l.name}"),
+              ))
+          .toList(),
       onChanged: (val) {
         if (val != null) {
           setState(() => selected = val);

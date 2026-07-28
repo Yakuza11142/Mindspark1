@@ -28,24 +28,36 @@ class SparkReceiptView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Icon(Icons.bolt, color: Colors.amber, size: 28),
-                  Text("MINDSPARK SECURE", style: TextStyle(letterSpacing: 2, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text("MINDSPARK SECURE",
+                      style: TextStyle(
+                          letterSpacing: 2,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
                   Icon(Icons.verified_user, color: Colors.blue, size: 20),
                 ],
               ),
               const SizedBox(height: 20),
-              
+
               // Core Transaction Info
-              Text("${transactionData['amount']} Sparks", style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900)),
-              const Text("TRANSFER VERIFIED", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
-              
+              Text("${transactionData['amount']} Sparks",
+                  style: const TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.w900)),
+              const Text("TRANSFER VERIFIED",
+                  style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold)),
+
               const SizedBox(height: 30), // Professional Divider Cut
 
               // Metadata Table
               _buildRow("Recipient ID", transactionData['receiver']),
               _buildRow("Network Node", "MS-NODE-04"),
-              _buildRow("Auth Token", "#${transactionData['id'].toString().substring(0,8).toUpperCase()}"),
-              _buildRow("Time", DateFormat('HH:mm:ss | dd MMM').format(DateTime.now())),
-              
+              _buildRow("Auth Token",
+                  "#${transactionData['id'].toString().substring(0, 8).toUpperCase()}"),
+              _buildRow("Time",
+                  DateFormat('HH:mm:ss | dd MMM').format(DateTime.now())),
+
               const SizedBox(height: 25),
 
               // The Authentication QR
@@ -59,11 +71,14 @@ class SparkReceiptView extends StatelessWidget {
                   data: "MS_AUTH:${transactionData['id']}",
                   version: QrVersions.auto,
                   size: 140,
-                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: Color(0xFF1A237E)),
+                  eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.circle, color: Color(0xFF1A237E)),
                 ),
               ),
               const SizedBox(height: 10),
-              const Text("SCAN TO VALIDATE ON ANOTHER DEVICE", style: TextStyle(fontSize: 8, color: Colors.grey, letterSpacing: 0.5)),
+              const Text("SCAN TO VALIDATE ON ANOTHER DEVICE",
+                  style: TextStyle(
+                      fontSize: 8, color: Colors.grey, letterSpacing: 0.5)),
             ],
           ),
         ),
@@ -77,8 +92,11 @@ class SparkReceiptView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+          Text(label,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+          Text(value,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
         ],
       ),
     );

@@ -28,21 +28,35 @@ class _LessonScreenState extends State<LessonScreen> {
   }
 
   void _load() async {
-    String txt = await context.read<BrainService>().generateLesson(widget.topic, widget.isPro, false);
-    var vis = await context.read<MediaEngine>().fetchVisuals(widget.topic, widget.isPro);
-    
+    String txt = await context
+        .read<BrainService>()
+        .generateLesson(widget.topic, widget.isPro, false);
+    var vis = await context
+        .read<MediaEngine>()
+        .fetchVisuals(widget.topic, widget.isPro);
+
     if (vis['type'] == 'VIDEO') {
-      _vidCtrl = CachedVideoPlayerController.network(vis['url'])..initialize().then((_) { _vidCtrl!.play(); setState((){}); });
-    }
-    
-    context.read<AudioService>().speak(txt);
-    
-    // Generate 3D in background
-    if (widget.isPro) {
-      TripoEngine().generate3D(widget.topic).then((url) => setState(() => tripoModel = url));
+      _vidCtrl = CachedVideoPlayerController.network(vis['url'])
+        ..initialize().then((_) {
+          _vidCtrl!.play();
+          setState(() {});
+        });
     }
 
-    if(mounted) setState(() { text = txt; media = vis; });
+    context.read<AudioService>().speak(txt);
+
+    // Generate 3D in background
+    if (widget.isPro) {
+      TripoEngine()
+          .generate3D(widget.topic)
+          .then((url) => setState(() => tripoModel = url));
+    }
+
+    if (mounted)
+      setState(() {
+        text = txt;
+        media = vis;
+      });
   }
 
   @override
@@ -58,15 +72,21 @@ class _LessonScreenState extends State<LessonScreen> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: tripoModel != null 
-              ? ModelViewer(src: tripoModel!, ar: true, autoRotate: true)
-              : (_vidCtrl != null && _vidCtrl!.value.isInitialized ? CachedVideoPlayer(_vidCtrl!) : Container(color: Colors.black)),
+            child: tripoModel != null
+                ? ModelViewer(src: tripoModel!, ar: true, autoRotate: true)
+                : (_vidCtrl != null && _vidCtrl!.value.isInitialized
+                    ? CachedVideoPlayer(_vidCtrl!)
+                    : Container(color: Colors.black)),
           ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              height: 300, color: Colors.black54, padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(child: Text(text ?? "Loading...", style: const TextStyle(fontSize: 18))),
+              height: 300,
+              color: Colors.black54,
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                  child: Text(text ?? "Loading...",
+                      style: const TextStyle(fontSize: 18))),
             ),
           ),
           Positioned(top: 40, left: 10, child: const BackButton()),

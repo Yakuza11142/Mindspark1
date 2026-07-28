@@ -9,7 +9,6 @@ class MicPermissionGate {
     return status.isGranted;
   }
 }
-import 'package:permission_handler/permission_handler.dart';
 
 class MicPermissionGate {
   static Future<bool> ensureMicAccess() async {

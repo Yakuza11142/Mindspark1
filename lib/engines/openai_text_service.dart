@@ -7,9 +7,14 @@ class OpenAiTextService {
     try {
       final chat = await OpenAI.instance.chat.create(
         model: "gpt-4-turbo",
-        messages:[OpenAIChatCompletionChoiceMessageModel(role: OpenAIChatMessageRole.user, content: prompt)],
+        messages: [
+          OpenAIChatCompletionChoiceMessageModel(
+              role: OpenAIChatMessageRole.user, content: prompt)
+        ],
       );
       return chat.choices.first.message.content!.map((e) => e.text).join();
-    } catch (e) { return "OpenAI timeout."; }
+    } catch (e) {
+      return "OpenAI timeout.";
+    }
   }
 }

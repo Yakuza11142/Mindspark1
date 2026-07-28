@@ -13,7 +13,8 @@ class _SilentModeToggleState extends State<SilentModeToggle> {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Icon(isHovered ? Icons.volume_off : Icons.volume_up, color: Colors.amber),
+      icon: Icon(isHovered ? Icons.volume_off : Icons.volume_up,
+          color: Colors.amber),
       onPressed: () {
         setState(() => isMuted = !isMuted);
         SoundManager.toggleMute();

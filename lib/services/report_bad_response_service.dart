@@ -14,7 +14,6 @@ class ReportBadResponseService {
     }
   }
 }
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReportBadResponseService {
   static Future<void> flagResponse(String question, String badAnswer) async {

@@ -5,18 +5,18 @@ import 'dart:convert';
 class SupabaseOfflineQueue {
   static Future<void> queueData(String table, Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> queue = prefs.getStringList('supa_queue') ??[];
+    List<String> queue = prefs.getStringList('supa_queue') ?? [];
     queue.add(jsonEncode({'table': table, 'data': data}));
     await prefs.setStringList('supa_queue', queue);
   }
 
   static Future<void> syncQueue() async {
     final prefs = await SharedPreferences.getInstance();
-    List<String> queue = prefs.getStringList('supa_queue') ??[];
+    List<String> queue = prefs.getStringList('supa_queue') ?? [];
     if (queue.isEmpty) return;
 
     final client = Supabase.instance.client;
-    List<String> remaining =[];
+    List<String> remaining = [];
 
     for (String item in queue) {
       var map = jsonDecode(item);

@@ -1,7 +1,7 @@
 import '../models/language_model.dart';
 
 class SupportedLanguages {
-  static final List<LanguageModel> list =[
+  static final List<LanguageModel> list = [
     LanguageModel("English", "en", "🇬🇧"),
     LanguageModel("Nigerian Pidgin", "pcm", "🇳🇬"),
     LanguageModel("Yoruba", "yo", "🇳🇬"),

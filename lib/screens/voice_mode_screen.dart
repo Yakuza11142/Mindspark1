@@ -15,9 +15,12 @@ class VoiceModeScreen extends StatelessWidget {
               radius: 80,
               backgroundColor: Colors.cyanAccent,
               child: Icon(Icons.mic, size: 50, color: Colors.black),
-            ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1,1), end: const Offset(1.2,1.2)),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2)),
             const SizedBox(height: 40),
-            const Text("Listening...", style: TextStyle(fontSize: 24, color: Colors.white)),
+            const Text("Listening...",
+                style: TextStyle(fontSize: 24, color: Colors.white)),
           ],
         ),
       ),

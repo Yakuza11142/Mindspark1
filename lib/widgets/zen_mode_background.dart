@@ -11,7 +11,7 @@ class ZenModeBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors:[Color(0xFF0F172A), Color(0xFF000000)], // Calm, dark, premium
+          colors: [Color(0xFF0F172A), Color(0xFF000000)], // Calm, dark, premium
         ),
       ),
       child: child,

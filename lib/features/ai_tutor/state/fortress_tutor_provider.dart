@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../../data/workers/isolated_proof_compiler.dart';
 
-enum CoreProcessState { uninitialized, orchestratingInference, processingIsolateChecks, certifiedSuccess }
+enum CoreProcessState {
+  uninitialized,
+  orchestratingInference,
+  processingIsolateChecks,
+  certifiedSuccess
+}
 
 class FortressTutorProvider with ChangeNotifier {
   final IsolatedProofCompiler _proofCompiler = IsolatedProofCompiler();
@@ -21,16 +26,19 @@ class FortressTutorProvider with ChangeNotifier {
   Future<void> computeGroundedAxioms({
     required String humanVoiceCommand,
     required String targetEndpointApiKey,
-    required String targetBaseUrl, // 🚀 DYNAMIC: e.g., 'https://openai.com' or 'https://groq.com'
-    required String targetModelName, // 🚀 DYNAMIC: e.g., 'gpt-4o' or 'llama-3.3-70b-versatile'
+    required String
+        targetBaseUrl, // 🚀 DYNAMIC: e.g., 'https://openai.com' or 'https://groq.com'
+    required String
+        targetModelName, // 🚀 DYNAMIC: e.g., 'gpt-4o' or 'llama-3.3-70b-versatile'
   }) async {
     _processState = CoreProcessState.orchestratingInference;
-    _diagnosticMonitorOutput = "🧠 System Core: Launching parallel multi-branch generation tracks via $targetModelName...";
+    _diagnosticMonitorOutput =
+        "🧠 System Core: Launching parallel multi-branch generation tracks via $targetModelName...";
     notifyListeners();
 
     bool absoluteTruthVerified = false;
     int systemCorrectionCycles = 0;
-    String feedbackContextBacklog = ""; 
+    String feedbackContextBacklog = "";
 
     // Rigid schema structural rules forced directly onto the model generation layer
     final Map<String, dynamic> rigidJsonSchemaContract = {
@@ -39,15 +47,24 @@ class FortressTutorProvider with ChangeNotifier {
         "input_joules": {"type": "number"},
         "output_joules": {"type": "number"},
         "temperature_kelvin": {"type": "number"},
-        "formal_proof": {"type": "string", "description": "Must initialize with the phrase 'Theorem:' and close with 'QED'. Do not include guessing tokens or filler language words."}
+        "formal_proof": {
+          "type": "string",
+          "description":
+              "Must initialize with the phrase 'Theorem:' and close with 'QED'. Do not include guessing tokens or filler language words."
+        }
       },
-      "required": ["input_joules", "output_joules", "temperature_kelvin", "formal_proof"],
+      "required": [
+        "input_joules",
+        "output_joules",
+        "temperature_kelvin",
+        "formal_proof"
+      ],
       "additionalProperties": false
     };
 
     while (!absoluteTruthVerified) {
       systemCorrectionCycles++;
-      
+
       try {
         final apiResponse = await _networkClient.post(
           '$targetBaseUrl/chat/completions', // 🚀 Dynamic API Destination Routing
@@ -64,18 +81,21 @@ class FortressTutorProvider with ChangeNotifier {
             'messages': [
               {
                 'role': 'system',
-                'content': '''You are a sterile scientific computing interface. You output structured data metrics matching the required schema exactly. 
+                'content':
+                    '''You are a sterile scientific computing interface. You output structured data metrics matching the required schema exactly. 
                   Do not output human conversational introductory words or conversational transitions.
                   $feedbackContextBacklog'''
               },
               {'role': 'user', 'content': humanVoiceCommand}
             ],
-            'n': 3 // Spawns 3 alternative thought paths concurrently for multi-branch tree pruning
+            'n':
+                3 // Spawns 3 alternative thought paths concurrently for multi-branch tree pruning
           },
         );
 
         if (apiResponse.statusCode != 200) {
-          _diagnosticMonitorOutput = "🚨 Gateway Timeout: $targetModelName node connection dropped. Retrying track...";
+          _diagnosticMonitorOutput =
+              "🚨 Gateway Timeout: $targetModelName node connection dropped. Retrying track...";
           notifyListeners();
           await Future.delayed(const Duration(seconds: 1));
           continue;
@@ -92,11 +112,13 @@ class FortressTutorProvider with ChangeNotifier {
 
         // Shift processing strings entirely out of the UI layer to run raw validation matrices
         _processState = CoreProcessState.processingIsolateChecks;
-        _diagnosticMonitorOutput = "⚙️ Verification Kernel: Running background isolate calculations... (Cycle Count: #$systemCorrectionCycles)";
+        _diagnosticMonitorOutput =
+            "⚙️ Verification Kernel: Running background isolate calculations... (Cycle Count: #$systemCorrectionCycles)";
         notifyListeners();
 
         final compilationResult = await _proofCompiler.filterAndVerifyBranches(
-          IsolateCompilationPayload(rawInferenceCandidates: collectedJsonPayloads),
+          IsolateCompilationPayload(
+              rawInferenceCandidates: collectedJsonPayloads),
         );
 
         _diagnosticMonitorOutput = compilationResult['logMessage'].toString();
@@ -104,21 +126,24 @@ class FortressTutorProvider with ChangeNotifier {
         await Future.delayed(const Duration(milliseconds: 600));
 
         if (compilationResult['success'] == true) {
-          _certifiedHologramOutput = compilationResult['extractedProof'].toString();
+          _certifiedHologramOutput =
+              compilationResult['extractedProof'].toString();
           absoluteTruthVerified = true;
         } else {
-          feedbackContextBacklog = "🚨 PREVIOUS ATTEMPT REJECTED BY SYSTEM LAWS: ${compilationResult['logMessage']}. Re-calculate your data parameters and fix structural syntax bugs.";
+          feedbackContextBacklog =
+              "🚨 PREVIOUS ATTEMPT REJECTED BY SYSTEM LAWS: ${compilationResult['logMessage']}. Re-calculate your data parameters and fix structural syntax bugs.";
         }
-
       } catch (pipelineException) {
-        _diagnosticMonitorOutput = "⚠️ Execution Exception Caught: $pipelineException. Re-aligning thread data paths...";
+        _diagnosticMonitorOutput =
+            "⚠️ Execution Exception Caught: $pipelineException. Re-aligning thread data paths...";
         notifyListeners();
         await Future.delayed(const Duration(seconds: 1));
       }
     }
 
     _processState = CoreProcessState.certifiedSuccess;
-    _diagnosticMonitorOutput = "🔒 AXIOM VERIFIED WITH 100% MATHEMATICAL PRECISION:\n$_certifiedHologramOutput";
+    _diagnosticMonitorOutput =
+        "🔒 AXIOM VERIFIED WITH 100% MATHEMATICAL PRECISION:\n$_certifiedHologramOutput";
     notifyListeners();
   }
 }

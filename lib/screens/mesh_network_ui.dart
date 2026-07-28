@@ -11,12 +11,18 @@ class MeshNetworkUi extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             const Icon(Icons.radar, size: 100, color: Colors.cyanAccent),
             const SizedBox(height: 20),
-            const Text("Scanning for nearby students...", style: TextStyle(color: Colors.white, fontSize: 18)),
+            const Text("Scanning for nearby students...",
+                style: TextStyle(color: Colors.white, fontSize: 18)),
             const SizedBox(height: 40),
-            ListTile(leading: const CircleAvatar(backgroundColor: Colors.green), title: const Text("Node: Ahmed's Device"), subtitle: const Text("Signal: Strong"), trailing: ElevatedButton(onPressed: (){}, child: const Text("Connect"))),
+            ListTile(
+                leading: const CircleAvatar(backgroundColor: Colors.green),
+                title: const Text("Node: Ahmed's Device"),
+                subtitle: const Text("Signal: Strong"),
+                trailing: ElevatedButton(
+                    onPressed: () {}, child: const Text("Connect"))),
           ],
         ),
       ),

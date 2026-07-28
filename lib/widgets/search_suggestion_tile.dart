@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 class SearchSuggestionTile extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
-  const SearchSuggestionTile({super.key, required this.title, required this.onTap});
+  const SearchSuggestionTile(
+      {super.key, required this.title, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

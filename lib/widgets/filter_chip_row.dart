@@ -6,7 +6,7 @@ class FilterChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> filters =["All", "Science", "Arts", "Commercial", "Tech"];
+    List<String> filters = ["All", "Science", "Arts", "Commercial", "Tech"];
     return SizedBox(
       height: 50,
       child: ListView.builder(
@@ -18,7 +18,7 @@ class FilterChipRow extends StatelessWidget {
             label: Text(filters[i]),
             selected: i == 0,
             onSelected: (val) => onFilterSelect(filters[i]),
-            selectedColor: Colors.cyanAccent.withOpacity(0.3),
+            selectedColor: Colors.cyanAccent.withValues(alpha: 0.3),
             backgroundColor: Colors.white10,
           ),
         ),

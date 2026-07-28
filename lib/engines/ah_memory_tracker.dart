@@ -17,7 +17,6 @@ class AhMemoryTracker {
     return "Welcome back. Let's achieve greatness today.";
   }
 }
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AhMemoryTracker {
   static Future<void> logVulgarityStrike() async {

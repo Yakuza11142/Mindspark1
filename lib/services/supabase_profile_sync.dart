@@ -1,4 +1,3 @@
-import '../config/supabase_core_config.dart';
 
 class SupabaseProfileSync {
   /// Calls the Edge Function to sync profile data in the cloud

@@ -18,7 +18,10 @@ class GameHubScreen extends StatelessWidget {
             ElevatedButton.icon(
               icon: const Icon(Icons.flip),
               label: const Text("Flashcards"),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FlashcardGame(topic: topic))),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => FlashcardGame(topic: topic))),
             ),
             // Add more games here
           ],

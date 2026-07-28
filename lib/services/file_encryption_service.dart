@@ -7,7 +7,7 @@ class FileEncryptionService {
     List<int> bytes = await file.readAsBytes();
     // In production, use AES-256 here with a key from SecureStorage
     // For now, we simulate a simple reversal to "lock" it
-    List<int> encrypted = bytes.reversed.toList(); 
+    List<int> encrypted = bytes.reversed.toList();
     await file.writeAsBytes(encrypted);
   }
 

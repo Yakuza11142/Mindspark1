@@ -25,7 +25,8 @@ class _FontSizeSliderState extends State<FontSizeSlider> {
           onChanged: (val) {
             setState(() => _size = val);
             widget.onChanged(val);
-            SharedPreferences.getInstance().then((p) => p.setDouble('font_size', val));
+            SharedPreferences.getInstance()
+                .then((p) => p.setDouble('font_size', val));
           },
         ),
       ],

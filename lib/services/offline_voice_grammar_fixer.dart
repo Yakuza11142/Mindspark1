@@ -4,7 +4,7 @@ class OfflineVoiceGrammarFixer {
 
   static String fix(String rawText) {
     if (rawText.isEmpty) return rawText;
-    
+
     String text = rawText.toLowerCase();
 
     // Apply all registered global corrections

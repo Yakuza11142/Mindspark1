@@ -5,8 +5,9 @@ class ProprietaryFileFormat {
   static Future<void> encodeAndSave(String jsonContent, String filePath) async {
     // Shifts the bytes to make it unreadable by standard text editors
     List<int> bytes = utf8.encode(jsonContent);
-    List<int> proprietaryBytes = bytes.map((b) => b ^ 0x42).toList(); // XOR encryption
-    
+    List<int> proprietaryBytes =
+        bytes.map((b) => b ^ 0x42).toList(); // XOR encryption
+
     File file = File('$filePath.spark');
     await file.writeAsBytes(proprietaryBytes);
   }

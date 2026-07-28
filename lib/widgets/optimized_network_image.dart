@@ -11,10 +11,12 @@ class OptimizedNetworkImage extends StatelessWidget {
       imageUrl: url,
       fit: BoxFit.cover,
       memCacheWidth: 800, // Saves RAM by not loading full 4K into memory
-      placeholder: (context, url) => const Center(child: CircularProgressIndicator(color: Colors.cyan)),
+      placeholder: (context, url) =>
+          const Center(child: CircularProgressIndicator(color: Colors.cyan)),
       errorWidget: (context, url, error) => Container(
         color: Colors.grey[900],
-        child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+        child:
+            const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
       ),
     );
   }

@@ -10,7 +10,8 @@ class WhatsappStatusExporter extends StatelessWidget {
     return IconButton(
       icon: const Icon(Icons.camera_alt, color: Colors.green),
       onPressed: () {
-        Share.share("I just scored $score% on the MindSpark AI Simulator! 🧠🚀 Can you beat me? mindspark.app");
+        Share.share(
+            "I just scored $score% on the MindSpark AI Simulator! 🧠🚀 Can you beat me? mindspark.app");
       },
     );
   }

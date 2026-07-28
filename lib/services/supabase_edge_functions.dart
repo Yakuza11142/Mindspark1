@@ -1,5 +1,3 @@
-import '../config/supabase_core_config.dart';
-
 class SupabaseEdgeFunctions {
   static Future<bool> verifyGoogleReceipt(String receiptToken) async {
     try {

@@ -12,7 +12,9 @@ class GlobalErrorHandler {
   static Widget fallbackWidget() {
     return const Scaffold(
       backgroundColor: Colors.black,
-      body: Center(child: Text("Rebooting MindSpark Interface...", style: TextStyle(color: Colors.amber))),
+      body: Center(
+          child: Text("Rebooting MindSpark Interface...",
+              style: TextStyle(color: Colors.amber))),
     );
   }
 }

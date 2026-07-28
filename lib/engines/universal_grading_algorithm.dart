@@ -15,7 +15,7 @@ class UniversalGradingAlgorithm {
 
   static String calculateScore(double percentage, String examCode) {
     double p = percentage.clamp(0.0, 100.0);
-    
+
     // Look up the exam in the registry
     final rule = _registry[examCode.toUpperCase()];
 

@@ -1,7 +1,7 @@
 class ExamScoringSystem {
   // Configurable weights for specific subjects
   static Map<String, double> subjectWeights = {
-    'DEFAULT': 1.0, 
+    'DEFAULT': 1.0,
   };
 
   // Get weight for a specific subject or return default

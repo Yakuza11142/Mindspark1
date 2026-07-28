@@ -7,7 +7,8 @@ class StreakCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(15)),
+      decoration: BoxDecoration(
+          color: Colors.white10, borderRadius: BorderRadius.circular(15)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: ["M", "T", "W", "T", "F", "S", "S"].map((day) {
@@ -16,7 +17,8 @@ class StreakCalendar extends StatelessWidget {
             children: [
               Text(day, style: const TextStyle(color: Colors.white54)),
               const SizedBox(height: 5),
-              Icon(Icons.check_circle, color: active ? Colors.orange : Colors.grey, size: 20)
+              Icon(Icons.check_circle,
+                  color: active ? Colors.orange : Colors.grey, size: 20)
             ],
           );
         }).toList(),

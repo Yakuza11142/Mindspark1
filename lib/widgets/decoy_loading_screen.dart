@@ -10,10 +10,11 @@ class DecoyLoadingScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children:[
+          children: [
             CircularProgressIndicator(color: Colors.grey),
             SizedBox(height: 20),
-            Text("Synchronizing Neural Weights...", style: TextStyle(color: Colors.grey)),
+            Text("Synchronizing Neural Weights...",
+                style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),

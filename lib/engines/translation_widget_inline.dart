@@ -8,7 +8,8 @@ class TranslationPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: TranslationEngine.translate(word, "French"), // Default to French for now
+      future: TranslationEngine.translate(
+          word, "French"), // Default to French for now
       builder: (ctx, snap) => AlertDialog(
         title: Text("Translate: $word"),
         content: Text(snap.data ?? "Loading..."),

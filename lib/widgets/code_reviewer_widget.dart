@@ -19,9 +19,13 @@ class _CodeReviewerWidgetState extends State<CodeReviewerWidget> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TextField(controller: _codeCtrl, maxLines: 5, decoration: const InputDecoration(hintText: "Paste code here")),
+        TextField(
+            controller: _codeCtrl,
+            maxLines: 5,
+            decoration: const InputDecoration(hintText: "Paste code here")),
         ElevatedButton(onPressed: _analyze, child: const Text("Debug with AI")),
-        if (feedback.isNotEmpty) Text(feedback, style: const TextStyle(color: Colors.greenAccent)),
+        if (feedback.isNotEmpty)
+          Text(feedback, style: const TextStyle(color: Colors.greenAccent)),
       ],
     );
   }

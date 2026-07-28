@@ -7,7 +7,8 @@ abstract class PaintCommand {
 class UniversalHologramPainter extends CustomPainter {
   final double animationProgress;
   final List<PaintCommand> drawingInstructions;
-  final bool Function(double, double, List<PaintCommand>, List<PaintCommand>) repaintEvaluation;
+  final bool Function(double, double, List<PaintCommand>, List<PaintCommand>)
+      repaintEvaluation;
 
   UniversalHologramPainter({
     required this.animationProgress,

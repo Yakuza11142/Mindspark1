@@ -6,7 +6,8 @@ class DocumentChatEngine {
   String documentContext = "";
 
   DocumentChatEngine() {
-    _model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: Secrets.geminiKey);
+    _model =
+        GenerativeModel(model: 'gemini-1.5-flash', apiKey: Secrets.geminiKey);
   }
 
   void loadDocument(String extractedText) {
@@ -16,8 +17,9 @@ class DocumentChatEngine {
 
   Future<String> askDocument(String question) async {
     if (documentContext.isEmpty) return "Please upload a document first.";
-    
-    final prompt = "$documentContext Answer the following question based ONLY on the document above: '$question'";
+
+    final prompt =
+        "$documentContext Answer the following question based ONLY on the document above: '$question'";
     try {
       final res = await _model.generateContent([Content.text(prompt)]);
       return res.text ?? "I could not find the answer in the document.";

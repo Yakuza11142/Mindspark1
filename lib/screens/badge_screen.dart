@@ -18,12 +18,14 @@ class BadgeScreen extends StatelessWidget {
         builder: (ctx, snapshot) {
           if (!snapshot.hasData) return const CircularProgressIndicator();
           return GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3),
             itemCount: snapshot.data!.length,
             itemBuilder: (ctx, i) => Column(
               children: [
                 const Icon(Icons.emoji_events, size: 50, color: Colors.amber),
-                Text(snapshot.data![i], style: const TextStyle(color: Colors.white))
+                Text(snapshot.data![i],
+                    style: const TextStyle(color: Colors.white))
               ],
             ),
           );

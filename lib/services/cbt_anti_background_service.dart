@@ -16,7 +16,8 @@ class CbtGlobalMonitor extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Detects when they leave for Games, Calls, or Browsers
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _penalty += 60; // Deduct 1 minute infinitely for ANY exit
       _penaltyStream.add(_penalty);
       debugPrint("🚨 Global Exit Detected: -1 Min Penalty Applied.");

@@ -7,6 +7,7 @@ class MegalithRamManager {
     await port.first;
     print("🧠 Omni-Data Megalith fully loaded into RAM.");
   }
+
   static void _warmup(SendPort port) {
     // Accessing the class forces Dart to compile it into memory
     String test = "Warmup";

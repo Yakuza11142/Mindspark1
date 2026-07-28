@@ -66,6 +66,67 @@ dependencies:
   # AR (Android)
   arcore_flutter_plus: ^1.0.2
 
+  arcore_flutter_plugin: any
+  device_info_plus: any
+  google_mlkit_language_id: any
+  google_translate_api: any
+  in_app_review: any
+  flutter_tex: any
+  http: any
+  hive_flutter: any
+  flutter_secure_storage: any
+  freerasp: any
+  pdf: any
+  ntp: any
+  audioplayers: any
+  dart_openai: any
+  cloud_firestore: any
+  flutter_math_fork: any
+  google_mlkit_text_recognition: any
+  groq_sdk: any
+  firebase_auth: any
+  qr_flutter: any
+  share_plus: any
+  connectivity_plus: any
+  sks_ticket_view: any
+  vibration: any
+  audio_session: any
+  environment_sensors: any
+  pqcrypto: any
+  thirds: any
+  safe_device: any
+  flutter_jailbreak_detection: any
+  firebase_analytics: any
+  in_app_purchase: any
+  flutter_cache_manager: any
+  battery_plus: any
+  image_picker: any
+  package_info_plus: any
+  carrier_info: any
+  video_player: any
+  sqflite: any
+  path: any
+  google_sign_in: any
+  flutter_image_compress: any
+  flutter_windowmanager: any
+  ios_insecure_screen_detector: any
+  firebase_messaging: any
+  flutter_local_notifications: any
+  timezone: any
+  sensors_plus: any
+  drift: any
+  cached_video_player: any
+  model_viewer_plus: any
+  file_picker: any
+  flutter_fortune_wheel: any
+  screen_brightness: any
+  dash_chat_2: any
+  pointycastle: any
+  flutter_highlight: any
+  shimmer: any
+  local_auth: any
+  cached_network_image: any
+  confetti: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

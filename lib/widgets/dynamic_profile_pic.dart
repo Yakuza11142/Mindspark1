@@ -16,9 +16,13 @@ class DynamicProfilePic extends StatelessWidget {
       future: _getUrl(),
       builder: (ctx, snap) {
         if (snap.hasData && snap.data != null) {
-          return CircleAvatar(radius: radius, backgroundImage: NetworkImage(snap.data!));
+          return CircleAvatar(
+              radius: radius, backgroundImage: NetworkImage(snap.data!));
         }
-        return CircleAvatar(radius: radius, backgroundColor: Colors.cyan, child: const Icon(Icons.person, color: Colors.black));
+        return CircleAvatar(
+            radius: radius,
+            backgroundColor: Colors.cyan,
+            child: const Icon(Icons.person, color: Colors.black));
       },
     );
   }

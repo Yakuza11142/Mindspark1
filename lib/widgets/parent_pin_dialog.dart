@@ -32,20 +32,24 @@ class _MindSparkSettingsState extends State<MindSparkSettings> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F172A),
-        title: const Text("Parental Authorization", style: TextStyle(color: Colors.white)),
+        title: const Text("Parental Authorization",
+            style: TextStyle(color: Colors.white)),
         content: TextField(
           autofocus: true,
           obscureText: true,
           keyboardType: TextInputType.number,
           maxLength: 4,
           style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(hintText: "Enter 4-digit PIN", hintStyle: TextStyle(color: Colors.white54)),
+          decoration: const InputDecoration(
+              hintText: "Enter 4-digit PIN",
+              hintStyle: TextStyle(color: Colors.white54)),
           onChanged: (v) => input = v,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, input == _currentPin),
-            child: const Text("Verify", style: TextStyle(color: Colors.cyanAccent)),
+            child: const Text("Verify",
+                style: TextStyle(color: Colors.cyanAccent)),
           )
         ],
       ),
@@ -71,12 +75,15 @@ class _MindSparkSettingsState extends State<MindSparkSettings> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(title: const Text("Elite Settings"), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+          title: const Text("Elite Settings"),
+          backgroundColor: Colors.transparent),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.lock, color: Colors.cyanAccent),
-            title: const Text("Change Parent PIN", style: TextStyle(color: Colors.white)),
+            title: const Text("Change Parent PIN",
+                style: TextStyle(color: Colors.white)),
             onTap: () => _protectedAction(() {
               // Show dialog to set NEW pin
               _showNewPinDialog();
@@ -84,7 +91,8 @@ class _MindSparkSettingsState extends State<MindSparkSettings> {
           ),
           ListTile(
             leading: const Icon(Icons.child_care, color: Colors.cyanAccent),
-            title: const Text("Edit Student Age", style: TextStyle(color: Colors.white)),
+            title: const Text("Edit Student Age",
+                style: TextStyle(color: Colors.white)),
             onTap: () => _protectedAction(() {
               print("Age editing unlocked!"); // Add your age picker here
             }),
@@ -99,8 +107,18 @@ class _MindSparkSettingsState extends State<MindSparkSettings> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Set New PIN"),
-        content: TextField(controller: _pinController, keyboardType: TextInputType.number, maxLength: 4),
-        actions: [TextButton(onPressed: () { _changePin(); Navigator.pop(ctx); }, child: const Text("Save"))],
+        content: TextField(
+            controller: _pinController,
+            keyboardType: TextInputType.number,
+            maxLength: 4),
+        actions: [
+          TextButton(
+              onPressed: () {
+                _changePin();
+                Navigator.pop(ctx);
+              },
+              child: const Text("Save"))
+        ],
       ),
     );
   }

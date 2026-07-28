@@ -9,7 +9,7 @@ class ConnectionQualityService {
       return false;
     }
   }
-  
+
   static Future<int> getLatency() async {
     final stopwatch = Stopwatch()..start();
     try {

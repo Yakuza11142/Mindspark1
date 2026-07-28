@@ -54,7 +54,6 @@ class GlobalAuth {
     await _supabase.auth.admin.deleteUser(_supabase.auth.currentUser!.id); 
   }
 }
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final _supabase = Supabase.instance.client;
 

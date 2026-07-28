@@ -3,6 +3,8 @@ import 'package:arcore_flutter_plugin/arcore_flutter_plugin.dart';
 import 'package:vector_math/vector_math_64.dart' as vector;
 
 class ARHologramScreen extends StatefulWidget {
+  const ARHologramScreen({super.key});
+
   @override
   _ARHologramScreenState createState() => _ARHologramScreenState();
 }
@@ -18,7 +20,7 @@ class _ARHologramScreenState extends State<ARHologramScreen> {
 
   void _addHologram(ArCoreController controller) {
     final material = ArCoreMaterial(
-      color: Colors.greenAccent.withOpacity(0.6),
+      color: Colors.greenAccent.withValues(alpha: 0.6),
       metallic: 1.0,
     );
 
@@ -31,14 +33,15 @@ class _ARHologramScreenState extends State<ARHologramScreen> {
 
     final node = ArCoreNode(
       shape: cylinder,
-      position: vector.Vector3(0, 0, -1.5), // Projects 1.5 meters in front of you
-      rotation: vector.Vector4(1, 0, 0, 1), 
+      position:
+          vector.Vector3(0, 0, -1.5), // Projects 1.5 meters in front of you
+      rotation: vector.Vector4(1, 0, 0, 1),
       // This is where the interaction happens
-      name: "Hologram_Shield", 
+      name: "Hologram_Shield",
     );
 
     controller.addArCoreNode(node);
-    
+
     // Listen for taps on the hologram
     controller.onNodeTap = (name) {
       if (name == "Hologram_Shield") {
@@ -52,7 +55,8 @@ class _ARHologramScreenState extends State<ARHologramScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.black,
-        title: Text("SYSTEM ACCESS", style: TextStyle(color: Colors.greenAccent)),
+        title:
+            Text("SYSTEM ACCESS", style: TextStyle(color: Colors.greenAccent)),
         content: Text("Hologram interaction detected. Subject: PHYSICS."),
       ),
     );

@@ -17,7 +17,6 @@ class MagicLinkAuth {
     }
   }
 }
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MagicLinkAuth {
   static final _supabase = Supabase.instance.client;

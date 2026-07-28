@@ -7,7 +7,7 @@ import 'services/network_retry_interceptor.dart'; // Handles dropped connections
 
 class GlobalProviders {
   static List<SingleChildWidget> build() {
-    return[
+    return [
       ChangeNotifierProvider(create: (_) => CurrencyManager()),
       Provider(create: (_) => AdManager()..init()),
       Provider(create: (_) => BrainService()),

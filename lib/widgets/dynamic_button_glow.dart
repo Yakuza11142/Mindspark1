@@ -8,14 +8,20 @@ class DynamicButtonGlow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        boxShadow:[BoxShadow(color: Colors.cyanAccent.withOpacity(0.5), blurRadius: 20, spreadRadius: 5)],
-        borderRadius: BorderRadius.circular(30)
-      ),
+      decoration: BoxDecoration(boxShadow: [
+        BoxShadow(
+            color: Colors.cyanAccent.withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 5)
+      ], borderRadius: BorderRadius.circular(30)),
       child: ElevatedButton(
         onPressed: onTap,
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.black, side: const BorderSide(color: Colors.cyanAccent)),
-        child: const Text("START JAMB MOCK", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            side: const BorderSide(color: Colors.cyanAccent)),
+        child: const Text("START JAMB MOCK",
+            style: TextStyle(
+                color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
       ),
     ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(end: 1.05);
   }

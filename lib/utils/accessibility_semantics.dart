@@ -5,7 +5,11 @@ class AccessibilitySemantics extends StatelessWidget {
   final String label;
   final String hint;
 
-  const AccessibilitySemantics({super.key, required this.child, required this.label, required this.hint});
+  const AccessibilitySemantics(
+      {super.key,
+      required this.child,
+      required this.label,
+      required this.hint});
 
   @override
   Widget build(BuildContext context) {

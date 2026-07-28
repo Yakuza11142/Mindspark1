@@ -8,7 +8,8 @@ class UserRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
-    final data = await _supabase.from('profiles').select().eq('id', user.id).single();
+    final data =
+        await _supabase.from('profiles').select().eq('id', user.id).single();
     return UserProfileModel.fromJson(data);
   }
 
@@ -16,6 +17,8 @@ class UserRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    await _supabase.from('profiles').update({'sparks': newAmount}).eq('id', user.id);
+    await _supabase
+        .from('profiles')
+        .update({'sparks': newAmount}).eq('id', user.id);
   }
 }

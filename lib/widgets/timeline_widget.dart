@@ -5,7 +5,11 @@ class TimelineItem extends StatelessWidget {
   final String event;
   final bool isLast;
 
-  const TimelineItem({super.key, required this.year, required this.event, this.isLast = false});
+  const TimelineItem(
+      {super.key,
+      required this.year,
+      required this.event,
+      this.isLast = false});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +27,9 @@ class TimelineItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(year, style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
+              Text(year,
+                  style: const TextStyle(
+                      color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
               Text(event, style: const TextStyle(color: Colors.white70)),
               const SizedBox(height: 20),
             ],

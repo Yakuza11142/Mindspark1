@@ -9,8 +9,9 @@ class InfiniteHomeworkEngine {
   }
 
   Future<String> generateAssignment(String topic, int gradeLevel) async {
-    final prompt = "Create a unique homework assignment for Grade $gradeLevel on '$topic'. Include 3 critical thinking questions and 1 creative task. Do not include answers.";
-    
+    final prompt =
+        "Create a unique homework assignment for Grade $gradeLevel on '$topic'. Include 3 critical thinking questions and 1 creative task. Do not include answers.";
+
     try {
       final res = await _model.generateContent([Content.text(prompt)]);
       return res.text ?? "Error generating homework.";

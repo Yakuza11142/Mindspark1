@@ -13,15 +13,17 @@ class _ModeToggleSwitchState extends State<ModeToggleSwitch> {
   @override
   void initState() {
     super.initState();
-    SystemModeController.getMode().then((m) => setState(() => isExamMode = m == "EXAM"));
+    SystemModeController.getMode()
+        .then((m) => setState(() => isExamMode = m == "EXAM"));
   }
 
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
       title: const Text("Exam Focus Mode"),
-      subtitle: const Text("Turns off general browsing and focuses on syllabus."),
-      activeColor: Colors.redAccent,
+      subtitle:
+          const Text("Turns off general browsing and focuses on syllabus."),
+      activeThumbColor: Colors.redAccent,
       value: isExamMode,
       onChanged: (v) {
         setState(() => isExamMode = v);

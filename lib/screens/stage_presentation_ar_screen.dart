@@ -14,7 +14,7 @@ class StagePresentationArScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        children:[
+        children: [
           // THE HOLO-DECK
           const HoloDeckViewer(
             modelUrl: demoModelUrl,
@@ -23,20 +23,30 @@ class StagePresentationArScreen extends StatelessWidget {
 
           // THE STAGE BRANDING (Visible on the projector)
           Positioned(
-            top: 50, 
+            top: 50,
             left: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const[
-                Text("MINDSPARK ELITE", style: TextStyle(color: Colors.amber, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 3)),
-                Text("LIVE DEMONSTRATION", style: TextStyle(color: Colors.redAccent, fontSize: 14, letterSpacing: 5)),
+              children: const [
+                Text("MINDSPARK ELITE",
+                    style: TextStyle(
+                        color: Colors.amber,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 3)),
+                Text("LIVE DEMONSTRATION",
+                    style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 14,
+                        letterSpacing: 5)),
               ],
             ),
           ),
-          
+
           // EXIT BUTTON
           Positioned(
-            top: 50, right: 20,
+            top: 50,
+            right: 20,
             child: IconButton(
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
               onPressed: () => Navigator.pop(context),

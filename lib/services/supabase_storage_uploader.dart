@@ -1,6 +1,6 @@
 // supabase/functions/upload-avatar/index.ts
 import { serve } from "https://deno.land"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+{ createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 serve(async (req) => {
   try {

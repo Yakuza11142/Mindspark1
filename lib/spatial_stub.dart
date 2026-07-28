@@ -3,4 +3,5 @@ abstract class SpatialEngine {
   void initializeTutor();
 }
 
-SpatialEngine getSpatialEngine() => throw UnsupportedError('Cannot create engine');
+SpatialEngine getSpatialEngine() =>
+    throw UnsupportedError('Cannot create engine');
