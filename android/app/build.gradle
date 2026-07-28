@@ -28,7 +28,6 @@ android {
     namespace "com.mindspark.app"
 
     compileOptions {
-        // 🚀 UPGRADED: Fixes the flutter_local_notifications metadata requirement natively!
         coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -44,7 +43,7 @@ android {
             if (keystorePropertiesFile.exists()) {
                 def keystoreProperties = new Properties()
                 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-                
+
                 storeFile = file(keystoreProperties['storeFile'])
                 storePassword = keystoreProperties['storePassword']
                 keyAlias = keystoreProperties['keyAlias']
@@ -74,6 +73,5 @@ android {
 
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
-    // 🚀 FIXED: Native desugaring backport engine for backward-compatible dates and notifications
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.2'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }
