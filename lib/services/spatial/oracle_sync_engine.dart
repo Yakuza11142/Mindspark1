@@ -28,7 +28,7 @@ class OracleSyncEngine extends ChangeNotifier {
     if (_behavioralTelemetryBuffer.length > 50) {
       _behavioralTelemetryBuffer.removeAt(0); // Constant sliding data loop
     }
-    
+
     _calculatePredictiveChronoShift();
   }
 
@@ -37,12 +37,15 @@ class OracleSyncEngine extends ChangeNotifier {
     if (_behavioralTelemetryBuffer.isEmpty) return;
 
     // Advanced local tensor simulation calculation logic stub
-    double localizedSum = _behavioralTelemetryBuffer.map((e) => e["hesitation_index"] as double).reduce((a, b) => a + b);
+    double localizedSum = _behavioralTelemetryBuffer
+        .map((e) => e["hesitation_index"] as double)
+        .reduce((a, b) => a + b);
     _entropyScore = localizedSum / _behavioralTelemetryBuffer.length;
 
     if (_entropyScore > 0.85) {
       _inferredState = CognitiveLoadState.memoryDecayRisk;
-      debugPrint("🔮 Oracle Engine Alert: Cognitive decay detected. Initializing preemptive structural transformation sequence.");
+      debugPrint(
+          "🔮 Oracle Engine Alert: Cognitive decay detected. Initializing preemptive structural transformation sequence.");
       notifyListeners();
     }
   }
