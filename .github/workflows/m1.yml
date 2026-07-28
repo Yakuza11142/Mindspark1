@@ -8,7 +8,7 @@ on:
       - master
 
 permissions:
-  contents: write  # 🚀 CRITICAL: Grants permission to write automatic code fixes back to your repo
+  contents: write
   pages: write
   id-token: write
 
@@ -17,21 +17,59 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 🚀 NEW JOB: Handles cleanup and formatting first so it never corrupts the build state
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: false
+
+      - name: Hard Clean Workspace
+        run: |
+          flutter clean || true
+          rm -rf build .dart_tool .packages pubspec.lock
+
+      - name: Get Packages
+        run: flutter pub get
+
+      - name: Automatic Dart Fixes & Auto-Commit
+        run: |
+          dart fix --apply || true
+          dart format . || true
+          
+          git config --global user.name "mindspark-ci-bot"
+          git config --global user.email "bot@mindspark.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "style: automated production code cleanup via dart fix"
+            git push origin HEAD:${{ github.ref }}
+          else
+            echo "No structural code anomalies found to refactor!"
+          fi
+
   build:
+    needs: lint-and-format # 🚀 CRITICAL: Waits until formatting finishes and pushes changes
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required to pull complete branch data loops cleanly
+          fetch-depth: 0 
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-          cache: ""
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -42,7 +80,6 @@ jobs:
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # 🚀 UNIVERSAL DEV PROTECTION: Prevents typos from breaking your build pipeline
       - name: Universal Ghost Package Purge
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
@@ -50,31 +87,10 @@ jobs:
       - name: Hard Clean Workspace
         run: |
           flutter clean || true
-          rm -rf build
-          rm -rf .dart_tool
-          rm -rf .packages
-          rm -f pubspec.lock
+          rm -rf build .dart_tool .packages pubspec.lock
 
       - name: Get Packages
         run: flutter pub get
-
-      # 🚀 AUTO-CODE CLEANUP AND RE-WRITE PUSH LOOP
-      - name: Automatic Dart Fixes & Auto-Commit
-        run: |
-          # 1. Execute automatic re-writer utilities
-          dart fix --apply || true
-          dart format . || true
-          
-          # 2. Check for modifications and force synchronization directly back into your repo branch
-          git config --global user.name "mindspark-ci-bot"
-          git config --global user.email "bot@mindspark.com"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
-            git commit -m "style: automated production code cleanup via dart fix"
-            git push origin HEAD:${{ github.ref }}
-          else
-            echo "No structural code anomalies found to refactor!"
-          fi
 
       - name: Create Secrets
         run: |
@@ -108,7 +124,6 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 NATIVE COMPILER ASSEMBLY LINE
       - name: Build APK
         run: |
           flutter build apk \
@@ -144,15 +159,12 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     permissions:
       pages: write
       id-token: write
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy Pages
         id: deployment
