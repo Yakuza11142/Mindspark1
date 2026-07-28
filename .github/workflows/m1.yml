@@ -33,6 +33,10 @@ jobs:
           java-version: "17"
           cache: ""
 
+      # 🚀 FIXED: Automatically drops a fresh gradle-wrapper.jar binary file into the folder on-the-fly
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -89,7 +93,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 TARGET SCANNER: Forces Gradle to expose ALL hidden package version bugs in one master log pass
+      # 🚀 TARGET SCANNER: Bootstraps safely now that the Gradle binary is fixed
       - name: Scan All Hidden Native Errors
         run: |
           cd android
