@@ -7,7 +7,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        // 🚀 UPGRADED: Completely satisfies the 6 AndroidX AGP plugin check validation errors!
+        classpath 'com.android.tools.build:gradle:8.9.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -25,7 +26,6 @@ allprojects {
         }
     }
 
-    // 🚀 FIXED: Prevents transitive dependency version collisions during Build Tools transforms
     configurations.all { configuration ->
         if (configuration.name.contains("detachedConfiguration") || configuration.name.contains("classpath")) {
             resolutionStrategy.eachDependency { DependencyResolveDetails details ->
@@ -60,14 +60,12 @@ subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(":app")
 
-    // 🚀 MEMORY PROTECTION GATEWAY: Restricts memory allocations per background module compile task
     project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             freeCompilerArgs += ["-Xmx1024m"]
         }
     }
 
-    // SYNCHRONOUS NAMESPACE & MANIFEST PURGE HOOK
     project.plugins.withId('com.android.library') {
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
@@ -108,7 +106,6 @@ subprojects { project ->
         }
     }
 
-    // SELF-HEALING GHOST PLUGIN HANDLER: Erases legacy v1 references on the fly
     if (project.name == "cached_video_player") {
         tasks.withType(JavaCompile).configureEach { task ->
             task.options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
