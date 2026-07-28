@@ -69,6 +69,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
+    // 🚀 FIXED: Resolves the libtoolChecker.so duplicate native library conflict
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+        jniLibs {
+            pickFirsts += '**/libtoolChecker.so'
+        }
+    }
 }
 
 dependencies {
