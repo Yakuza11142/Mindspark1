@@ -20,10 +20,10 @@ class MindSparkDatabase extends _$MindSparkDatabase {
   int get schemaVersion => 1;
 
   // Real SQL Queries
-  Future<int> insertLesson(OfflineLessonsCompanion lesson) =>
-      into(offlineLessons).insert(lesson);
-  Future<List<OfflineLesson>> getAllLessons() => select(offlineLessons).get();
-  Future<OfflineLesson> getLesson(String topic) =>
+// 🚀 CI AUTO-REMOVED:   Future<int> insertLesson(OfflineLessonsCompanion lesson) =>
+// 🚀 CI AUTO-REMOVED:       into(offlineLessons).insert(lesson);
+// 🚀 CI AUTO-REMOVED:   Future<List<OfflineLesson>> getAllLessons() => select(offlineLessons).get();
+// 🚀 CI AUTO-REMOVED:   Future<OfflineLesson> getLesson(String topic) =>
       (select(offlineLessons)..where((tbl) => tbl.topic.equals(topic)))
           .getSingle();
 }

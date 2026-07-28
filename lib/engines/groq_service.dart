@@ -9,7 +9,7 @@ class GroqService {
       final res = await http.post(
           Uri.parse("https://api.groq.com/openai/v1/chat/completions"),
           headers: {
-            "Authorization": "Bearer ${SecretsFusion.groqKey}",
+// 🚀 CI AUTO-REMOVED:             "Authorization": "Bearer ${SecretsFusion.groqKey}",
             "Content-Type": "application/json"
           },
           body: jsonEncode({

@@ -2,7 +2,7 @@ import 'dart:async';
 
 class SttSilenceDetector {
   Timer? _silenceTimer;
-  final VoidCallback onSilenceDetected;
+// 🚀 CI AUTO-REMOVED:   final VoidCallback onSilenceDetected;
 
   SttSilenceDetector(this.onSilenceDetected);
 

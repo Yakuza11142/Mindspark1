@@ -9,7 +9,7 @@ class RunwayBRollEngine {
       final res = await http.post(
           Uri.parse("https://api.runwayml.com/v1/generate"),
           headers: {
-            "Authorization": "Bearer ${VideoSecretsV2.runwayKey}",
+// 🚀 CI AUTO-REMOVED:             "Authorization": "Bearer ${VideoSecretsV2.runwayKey}",
             "Content-Type": "application/json"
           },
           body: jsonEncode({

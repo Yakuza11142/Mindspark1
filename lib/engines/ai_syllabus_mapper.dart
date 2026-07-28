@@ -6,7 +6,7 @@ import '../config/secrets.dart';
 class AiSyllabusMapper {
   static Future<bool> mapExam(String examName) async {
     final model =
-        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:         GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final prompt = """
     The user is preparing for the '$examName' exam.
     Analyze this exam and return a STRICT JSON object containing:

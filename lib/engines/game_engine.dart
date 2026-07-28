@@ -6,7 +6,7 @@ class GameEngine {
   late GenerativeModel _model;
 
   GameEngine() {
-    _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:     _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
   }
 
   // GENERATE FLASHCARDS

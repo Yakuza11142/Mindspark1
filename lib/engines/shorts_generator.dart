@@ -4,7 +4,7 @@ import '../config/secrets.dart';
 class ShortsGenerator {
   static Future<String> getQuickFact(String category) async {
     final model =
-        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:         GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final res = await model.generateContent([
       Content.text("Give me one mind-blowing, 2-sentence fact about $category.")
     ]);

@@ -4,8 +4,8 @@ class MillisecondUpdater {
   static String geminiModel = "gemini-3.1-pro";
 
   static void startListening() {
-    DatabaseReference ref = FirebaseDatabase.instance.ref("ai_models");
-    ref.onValue.listen((DatabaseEvent event) {
+// 🚀 CI AUTO-REMOVED: // 🚀 CI AUTO-REMOVED:     DatabaseReference ref = FirebaseDatabase.instance.ref("ai_models");
+// 🚀 CI AUTO-REMOVED:     ref.onValue.listen((DatabaseEvent event) {
       if (event.snapshot.value != null) {
         var data = event.snapshot.value as Map<dynamic, dynamic>;
         openAiModel = data['openai'] ?? openAiModel;

@@ -17,7 +17,7 @@ class DynamicTranslations {
     // Call API if not cached
     try {
       final model =
-          GenerativeModel(model: 'gemini-1.5-flash', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:           GenerativeModel(model: 'gemini-1.5-flash', apiKey: Secrets.geminiKey);
       final res = await model.generateContent(
           [Content.text("Translate to $targetLang concisely: '$englishText'")]);
       String translated = res.text ?? englishText;

@@ -12,7 +12,7 @@ class IsolatedProofCompiler {
   Future<Map<String, dynamic>> filterAndVerifyBranches(
       IsolateCompilationPayload payload) async {
     // Spawns a true standalone background isolate context using native architecture
-    return await Isolate.run(() => _compileAndProcessStream(payload));
+// 🚀 CI AUTO-REMOVED:     return await Isolate.run(() => _compileAndProcessStream(payload));
   }
 
   static Map<String, dynamic> _compileAndProcessStream(

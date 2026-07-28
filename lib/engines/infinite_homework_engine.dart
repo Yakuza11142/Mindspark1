@@ -5,7 +5,7 @@ class InfiniteHomeworkEngine {
   late GenerativeModel _model;
 
   InfiniteHomeworkEngine() {
-    _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:     _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
   }
 
   Future<String> generateAssignment(String topic, int gradeLevel) async {

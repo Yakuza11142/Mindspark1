@@ -10,16 +10,16 @@ class ARHologramScreen extends StatefulWidget {
 }
 
 class _ARHologramScreenState extends State<ARHologramScreen> {
-  ArCoreController? arCoreController;
+// 🚀 CI AUTO-REMOVED:   ArCoreController? arCoreController;
 
-  void _onArCoreViewCreated(ArCoreController controller) {
+// 🚀 CI AUTO-REMOVED:   void _onArCoreViewCreated(ArCoreController controller) {
     arCoreController = controller;
     // Add the "Hologram" automatically in front of the user
     _addHologram(arCoreController!);
   }
 
-  void _addHologram(ArCoreController controller) {
-    final material = ArCoreMaterial(
+// 🚀 CI AUTO-REMOVED:   void _addHologram(ArCoreController controller) {
+// 🚀 CI AUTO-REMOVED:     final material = ArCoreMaterial(
       color: Colors.greenAccent.withValues(alpha: 0.6),
       metallic: 1.0,
     );
@@ -31,7 +31,7 @@ class _ARHologramScreenState extends State<ARHologramScreen> {
       height: 0.05,
     );
 
-    final node = ArCoreNode(
+// 🚀 CI AUTO-REMOVED:     final node = ArCoreNode(
       shape: cylinder,
       position:
           vector.Vector3(0, 0, -1.5), // Projects 1.5 meters in front of you

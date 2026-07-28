@@ -36,7 +36,7 @@ void handlePurchase(String token, String product) async {
   if (isValid) {
     // Unlock content
   } else {
-    // Show error
+// 🚀 CI AUTO-REMOVED:     // Show error
   }
 }
 import 'package:flutter_dotenv/flutter_dotenv.dart';

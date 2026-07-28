@@ -15,11 +15,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _idx = 0;
   final List<Widget> _tabs = [
-    const HomeExploreTab(),
+// 🚀 CI AUTO-REMOVED:     const HomeExploreTab(),
     const LibraryTab(),
-    const CinemaTab(), // The New Video Hub
+// 🚀 CI AUTO-REMOVED:     const CinemaTab(), // The New Video Hub
     const UniversalChatScreen(topic: "Spark AI"),
-    const RankTab(),
+// 🚀 CI AUTO-REMOVED:     const RankTab(),
     const ProfileTab()
   ];
 

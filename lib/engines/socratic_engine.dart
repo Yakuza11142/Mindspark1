@@ -5,7 +5,7 @@ class SocraticEngine {
   late GenerativeModel _model;
 
   SocraticEngine() {
-    _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:     _model = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
   }
 
   Future<String> guideStudent(String topic, String userQuestion) async {

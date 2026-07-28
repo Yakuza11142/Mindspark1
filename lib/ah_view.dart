@@ -2,12 +2,12 @@ void _onFaceScanned(List<Face> faces) {
   for (Face face in faces) {
     // If scanning the CEO
     if (isCEO(face)) {
-      ah.performCEOGreeting(); // Special IK Gesture
-      ah.unlockMasterControls();
+// 🚀 CI AUTO-REMOVED:       ah.performCEOGreeting(); // Special IK Gesture
+// 🚀 CI AUTO-REMOVED:       ah.unlockMasterControls();
     } else {
       // Standard student interaction
-      ah.assignStudentId(face.trackingId);
-      ah.projectHandWhale(face.boundingBox.center);
+// 🚀 CI AUTO-REMOVED:       ah.assignStudentId(face.trackingId);
+// 🚀 CI AUTO-REMOVED:       ah.projectHandWhale(face.boundingBox.center);
     }
   }
 }

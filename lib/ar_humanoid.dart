@@ -3,8 +3,8 @@ import 'package:vector_math/vector_math_64.dart' as v;
 import 'package:flutter/material.dart';
 
 class ARHumanoid {
-  final ArCoreController controller;
-  final ArCoreMaterial glow = ArCoreMaterial(
+// 🚀 CI AUTO-REMOVED:   final ArCoreController controller;
+// 🚀 CI AUTO-REMOVED: // 🚀 CI AUTO-REMOVED:   final ArCoreMaterial glow = ArCoreMaterial(
       color: Colors.cyanAccent.withValues(alpha: 0.4), metallic: 1);
 
   ARHumanoid(this.controller);
@@ -18,11 +18,11 @@ class ARHumanoid {
 
     // --- FACE & HEAD ---
     _addNode(v.Vector3(0, 0.75, 0) + origin,
-        ArCoreSphere(materials: [glow], radius: 0.12), "head");
+// 🚀 CI AUTO-REMOVED:         ArCoreSphere(materials: [glow], radius: 0.12), "head");
     _addNode(v.Vector3(0.05, 0.78, 0.1) + origin,
         ArCoreSphere(materials: [glow], radius: 0.02), "eye_right");
     _addNode(v.Vector3(-0.05, 0.78, 0.1) + origin,
-        ArCoreSphere(materials: [glow], radius: 0.02), "eye_left");
+// 🚀 CI AUTO-REMOVED:         ArCoreSphere(materials: [glow], radius: 0.02), "eye_left");
 
     // --- ARMS (IK Rigged) ---
     _buildLimb(origin, isLeg: false, isLeft: true);
@@ -45,7 +45,7 @@ class ARHumanoid {
     // Bone 1: Upper Arm/Thigh
     _addNode(
         v.Vector3(side * 0.2, yPos - 0.2, 0) + origin,
-        ArCoreCylinder(materials: [glow], radius: 0.04, height: 0.3),
+// 🚀 CI AUTO-REMOVED:         ArCoreCylinder(materials: [glow], radius: 0.04, height: 0.3),
         "bone_upper");
 
     // Joint 2: Elbow/Knee
@@ -55,7 +55,7 @@ class ARHumanoid {
     // Bone 2: Forearm/Shin
     _addNode(
         v.Vector3(side * 0.2, yPos - 0.6, 0) + origin,
-        ArCoreCylinder(materials: [glow], radius: 0.03, height: 0.3),
+// 🚀 CI AUTO-REMOVED:         ArCoreCylinder(materials: [glow], radius: 0.03, height: 0.3),
         "bone_lower");
 
     // Joint 3: Hand/Foot
@@ -63,7 +63,7 @@ class ARHumanoid {
         ArCoreSphere(materials: [glow], radius: 0.05), "effector");
   }
 
-  void _addNode(v.Vector3 pos, ArCoreShape shape, String name) {
+// 🚀 CI AUTO-REMOVED:   void _addNode(v.Vector3 pos, ArCoreShape shape, String name) {
     final node = ArCoreNode(shape: shape, position: pos, name: name);
     controller.addArCoreNode(node);
   }

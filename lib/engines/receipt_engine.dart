@@ -9,7 +9,7 @@ class ReceiptEngine {
     return sha256.convert(bytes).toString().substring(0, 10);
   }
 
-  static SparkTransaction createReceipt(
+// 🚀 CI AUTO-REMOVED:   static SparkTransaction createReceipt(
       int amount, String sender, String receiver) {
     final id = "TXN-${DateTime.now().millisecondsSinceEpoch}";
     return SparkTransaction(

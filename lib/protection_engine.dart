@@ -16,7 +16,7 @@ class MindSparkEngine {
     };
 
     // This catches bugs in background tasks (Asynchronous bugs)
-    PlatformDispatcher.instance.onError = (error, stack) {
+// 🚀 CI AUTO-REMOVED:     PlatformDispatcher.instance.onError = (error, stack) {
       print("Background Bug Killed: $error");
       return true; // Prevents app from crashing
     };

@@ -104,7 +104,7 @@ class EliteCertificateService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      _signatureBlock("THE FOUNDER"),
+// 🚀 CI AUTO-REMOVED:                       _signatureBlock("THE FOUNDER"),
                       _goldEmbossedSeal(),
                       _qrPlaceholder(),
                     ],

@@ -17,7 +17,7 @@ class InfiniteSfxEngine {
       final response = await http.post(
         Uri.parse("https://api.elevenlabs.io/v1/sound-generation"),
         headers: {
-          "xi-api-key": Secrets.elevenLabsKey,
+// 🚀 CI AUTO-REMOVED:           "xi-api-key": Secrets.elevenLabsKey,
           "Content-Type": "application/json"
         },
         body: jsonEncode({

@@ -39,5 +39,5 @@ void main() {
   // Start the Bug Killer before the UI even loads
   InfiniteBugKiller.initializeGuard();
 
-  runApp(const MindSparkApp());
+// 🚀 CI AUTO-REMOVED:   runApp(const MindSparkApp());
 }

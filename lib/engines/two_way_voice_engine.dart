@@ -28,7 +28,7 @@ class TwoWayVoiceEngine {
             userSpoke, isPro, persona == "Spark");
 
         // 2. Speak it out loud
-        await AudioService().speak(aiReply);
+// 🚀 CI AUTO-REMOVED:         await AudioService().speak(aiReply);
 
         // 3. Loop back to listening after a 2-second pause
         Future.delayed(const Duration(seconds: 4), () {

@@ -24,7 +24,7 @@ class AhVoiceLinkEngine {
               String prompt = "${persona.systemPrompt}\nUser says: $userSaid";
               String aiAnswer =
                   await GroqApiService.askGroq(prompt, "llama3-8b-8192");
-
+// 🚀 CI AUTO-REMOVED: 
               // 3. Make ElevenLabs speak the answer
               ElevenLabsAhVoice.speakLikeHuman(
                   aiAnswer, persona.voiceId); // Voice ID added to Persona Model
@@ -39,7 +39,7 @@ class AhVoiceLinkEngine {
   }
 }
 
-class AhVoiceLinkEngine {
+// 🚀 CI AUTO-REMOVED: class AhVoiceLinkEngine {
   static final SpeechToText _speech = SpeechToText();
 
   static Future<void> startListening(Function(String) onTextHeard,

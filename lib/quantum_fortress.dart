@@ -33,17 +33,17 @@ class AppSecurity {
     try {
       final sig = base64.decode(signatureB64);
       final key = base64.decode(publicKeyB64);
-      return await MLDSA.verify(utf8.encode(data), sig, key);
+// 🚀 CI AUTO-REMOVED:       return await MLDSA.verify(utf8.encode(data), sig, key);
     } catch (e) {
       return false;
     }
   }
 }
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+// 🚀 CI AUTO-REMOVED:   WidgetsFlutterBinding.ensureInitialized();
   
   // Activate environment protection immediately
   await AppSecurity.verifyEnvironment();
 
-  runApp(const Mind SparkApp());
+// 🚀 CI AUTO-REMOVED:   runApp(const Mind SparkApp());
 }

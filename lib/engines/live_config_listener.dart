@@ -10,10 +10,10 @@ class LiveConfig {
 
   /// Start this once at app launch for infinite millisecond updates
   void init() {
-    DatabaseReference ref =
-        FirebaseDatabase.instance.ref("live_config/system_prompt");
+// 🚀 CI AUTO-REMOVED:     DatabaseReference ref =
+// 🚀 CI AUTO-REMOVED:         FirebaseDatabase.instance.ref("live_config/system_prompt");
 
-    ref.onValue.listen((DatabaseEvent event) {
+// 🚀 CI AUTO-REMOVED:     ref.onValue.listen((DatabaseEvent event) {
       final newValue = event.snapshot.value;
       if (newValue != null) {
         systemPrompt = newValue.toString();

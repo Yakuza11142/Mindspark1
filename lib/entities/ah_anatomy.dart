@@ -8,7 +8,7 @@ class AHAnatomy {
   AHAnatomy(this.controller);
 
   void buildCompleteHumanoid(v.Vector3 origin) {
-    // 1. EXTERNAL SHELL (Transparent Skin)
+// 🚀 CI AUTO-REMOVED:     // 1. EXTERNAL SHELL (Transparent Skin)
     _addOrgan(
         origin + v.Vector3(0, 0.4, 0),
         ArCoreCylinder(materials: [_skinMat()], radius: 0.2, height: 0.6),
@@ -16,7 +16,7 @@ class AHAnatomy {
 
     // 2. THE BRAIN (Inside the Head)
     _addOrgan(origin + v.Vector3(0, 0.75, 0),
-        ArCoreSphere(materials: [_brainMat()], radius: 0.08), "internal_brain");
+// 🚀 CI AUTO-REMOVED:         ArCoreSphere(materials: [_brainMat()], radius: 0.08), "internal_brain");
 
     // 3. THE VEIN SYSTEM (Red/Blue Lines)
     _buildVeinNetwork(origin);
@@ -25,8 +25,8 @@ class AHAnatomy {
   // Materials
   ArCoreMaterial _skinMat() =>
       ArCoreMaterial(color: Colors.blue.withValues(alpha: 0.2), metallic: 0.1);
-  ArCoreMaterial _brainMat() =>
-      ArCoreMaterial(color: Colors.pinkAccent, metallic: 0.5);
+// 🚀 CI AUTO-REMOVED:   ArCoreMaterial _brainMat() =>
+// 🚀 CI AUTO-REMOVED:       ArCoreMaterial(color: Colors.pinkAccent, metallic: 0.5);
   ArCoreMaterial _veinMat(bool isArtery) =>
       ArCoreMaterial(color: isArtery ? Colors.red : Colors.blue);
 
@@ -35,7 +35,7 @@ class AHAnatomy {
     for (int i = 0; i < 3; i++) {
       _addOrgan(
           origin + v.Vector3(0.05 * i, 0.4, 0.02),
-          ArCoreCylinder(
+// 🚀 CI AUTO-REMOVED:           ArCoreCylinder(
               materials: [_veinMat(i % 2 == 0)], radius: 0.01, height: 0.5),
           "vein_$i");
     }

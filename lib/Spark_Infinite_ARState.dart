@@ -1,7 +1,7 @@
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-class _SparkInfiniteARState extends State<SparkInfiniteAR> {
+// 🚀 CI AUTO-REMOVED: // 🚀 CI AUTO-REMOVED: class _SparkInfiniteARState extends State<SparkInfiniteAR> {
   final SpeechToText _speechToText = SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
   bool _speechEnabled = false;

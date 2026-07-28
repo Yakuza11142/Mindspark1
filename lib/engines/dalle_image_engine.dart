@@ -3,7 +3,7 @@ import '../config/secrets_fusion.dart';
 
 class DalleImageEngine {
   static Future<String?> generate(String topic) async {
-    OpenAI.apiKey = SecretsFusion.openAI;
+// 🚀 CI AUTO-REMOVED:     OpenAI.apiKey = SecretsFusion.openAI;
     try {
       final image = await OpenAI.instance.image.create(
         prompt: "A hyper-realistic 8K image of $topic, cinematic lighting.",

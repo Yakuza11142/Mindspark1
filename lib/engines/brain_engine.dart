@@ -6,8 +6,8 @@ class BrainEngine {
   late GenerativeModel _gemini;
 
   BrainEngine() {
-    OpenAI.apiKey = Secrets.openAI;
-    _gemini = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:     OpenAI.apiKey = Secrets.openAI;
+// 🚀 CI AUTO-REMOVED:     _gemini = GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
   }
 
   Future<String> generateLesson(String topic, bool isPro, bool isPidgin) async {

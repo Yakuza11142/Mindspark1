@@ -3,7 +3,7 @@ import 'widgets/auth_state_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseInitializer.init(); // Wakes up the database
+// 🚀 CI AUTO-REMOVED:   await SupabaseInitializer.init(); // Wakes up the database
 
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,

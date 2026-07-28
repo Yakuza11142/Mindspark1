@@ -34,7 +34,7 @@ class SparkAiCore {
     try {
       // Draw Groq key from .env
       final groq = Groq(dotenv.get('GROQ_API_KEY'));
-      final chat = await groq.startChat(model: AiVersionController.groqModel);
+// 🚀 CI AUTO-REMOVED:       final chat = await groq.startChat(model: AiVersionController.groqModel);
       final response = await chat.sendMessage("$persona\n\n$prompt");
       return response.choices.first.message.content;
     } catch (e) {

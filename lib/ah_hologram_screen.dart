@@ -8,7 +8,7 @@ class ARHologramScreen extends StatefulWidget {
   @override
   _ARHologramScreenState createState() => _ARHologramScreenState();
 }
-
+// 🚀 CI AUTO-REMOVED: 
 class _ARHologramScreenState extends State<ARHologramScreen> {
   ArCoreController? arCoreController;
 
@@ -25,7 +25,7 @@ class _ARHologramScreenState extends State<ARHologramScreen> {
     );
 
     // Create a 3D Shape (The Hologram Core)
-    final cylinder = ArCoreCylinder(
+// 🚀 CI AUTO-REMOVED:     final cylinder = ArCoreCylinder(
       materials: [material],
       radius: 0.1,
       height: 0.05,

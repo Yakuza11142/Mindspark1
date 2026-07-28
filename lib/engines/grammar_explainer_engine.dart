@@ -4,7 +4,7 @@ import '../config/secrets.dart';
 class GrammarExplainerEngine {
   static Future<String> explainRule(String sentence, String mistake) async {
     final model =
-        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:         GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final prompt =
         "Explain the grammar rule for why '$mistake' is wrong in the sentence: '$sentence'. Keep it short and simple.";
 

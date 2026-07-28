@@ -64,7 +64,7 @@ class OmniDataMegalith {
     // Check Chemistry
     for (var key in periodicTable.keys) {
       if (key.toLowerCase() == q ||
-          periodicTable[key]!['name'].toString().toLowerCase() == q) {
+// 🚀 CI AUTO-REMOVED:           periodicTable[key]!['name'].toString().toLowerCase() == q) {
         var data = periodicTable[key]!;
         return "${data['name']} ($key): Atomic No. ${data['number']}, Mass: ${data['mass']}, Group: ${data['group']}";
       }

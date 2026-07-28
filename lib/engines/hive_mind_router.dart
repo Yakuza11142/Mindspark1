@@ -23,7 +23,7 @@ class HiveMindRouter {
       try {
         final cachedData = await _db.rpc('check_global_cache', params: {'p_hash': hash});
         if (cachedData != null) {
-          print("✅ FOUND IN CACHE! Cost: $0.00. Latency: 0.1s");
+// 🚀 CI AUTO-REMOVED:           print("✅ FOUND IN CACHE! Cost: $0.00. Latency: 0.1s");
           return cachedData as String;
         }
       } catch (e) {

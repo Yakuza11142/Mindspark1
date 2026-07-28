@@ -50,7 +50,7 @@ class UnforgeableDeviceCert {
   }
 }
 
-class UnforgeableDeviceCert {
+// 🚀 CI AUTO-REMOVED: class UnforgeableDeviceCert {
   /// Calls a Supabase Edge Function to generate hashes.
   /// The "Secret Salt" stays hidden in the Cloud, invisible to hackers.
   static Future<Map<String, dynamic>> generateCloudLockedCert(

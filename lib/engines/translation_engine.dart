@@ -5,7 +5,7 @@ class TranslationEngine {
   static Future<String> translate(String text, String targetLang) async {
     // targetLang: 'French', 'Swahili', 'Hausa', 'Yoruba'
     final model =
-        GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
+// 🚀 CI AUTO-REMOVED:         GenerativeModel(model: 'gemini-pro', apiKey: Secrets.geminiKey);
     final prompt =
         "Translate this UI text to $targetLang. Keep it short: '$text'";
 

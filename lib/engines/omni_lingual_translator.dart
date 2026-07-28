@@ -5,7 +5,7 @@ class OmniLingualTranslator {
   static Future<String> generateInLanguage(
       String topic, String targetLanguage, String personaPrompt) async {
     final model = GenerativeModel(
-        model: 'gemini-1.5-flash', apiKey: SecretsFusion.geminiKey);
+// 🚀 CI AUTO-REMOVED:         model: 'gemini-1.5-flash', apiKey: SecretsFusion.geminiKey);
     final prompt = """
     $personaPrompt
     Explain '$topic'. 

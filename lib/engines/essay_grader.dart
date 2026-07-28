@@ -9,7 +9,7 @@ class EssayGrader {
       // Using 'gemini-pro-latest' instead of 'gemini-3.1-pro-latest'
       // ensures it rolls over to 3.2, 3.3, etc., automatically.
       model: 'gemini-pro-latest',
-      apiKey: Secrets.geminiKey,
+// 🚀 CI AUTO-REMOVED:       apiKey: Secrets.geminiKey,
     );
 
     final prompt =

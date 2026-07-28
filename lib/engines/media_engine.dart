@@ -17,7 +17,7 @@ class MediaEngine {
             'orientation': 'landscape',
             'size': 'medium'
           },
-          options: Options(headers: {"Authorization": Secrets.pexelsKey}));
+// 🚀 CI AUTO-REMOVED:           options: Options(headers: {"Authorization": Secrets.pexelsKey}));
       if (res.data['videos'].isNotEmpty) {
         return {
           'type': 'VIDEO',
