@@ -28,8 +28,9 @@ class _FlashcardGameState extends State<FlashcardGame> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading)
+    if (loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text("Flashcards: ${widget.topic}")),

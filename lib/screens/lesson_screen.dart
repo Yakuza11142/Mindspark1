@@ -52,11 +52,12 @@ class _LessonScreenState extends State<LessonScreen> {
           .then((url) => setState(() => tripoModel = url));
     }
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         text = txt;
         media = vis;
       });
+    }
   }
 
   @override

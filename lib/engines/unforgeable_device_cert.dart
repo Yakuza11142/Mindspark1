@@ -11,7 +11,8 @@ class CloudCertResponse {
 }
 
 class UnforgeableDeviceCert {
-  static Future<CloudCertResponse> generateIroncladHash(String studentName, String course) async {
+  static Future<CloudCertResponse> generateIroncladHash(
+      String studentName, String course) async {
     final deviceInfo = DeviceInfoPlugin();
     String hardwareId = "UNKNOWN";
 
@@ -48,12 +49,12 @@ class UnforgeableDeviceCert {
     return CloudCertResponse(hash256, hash512);
   }
 }
-import 'package:device_info_plus/device_info_plus.dart';
 
 class UnforgeableDeviceCert {
-  /// Calls a Supabase Edge Function to generate hashes. 
+  /// Calls a Supabase Edge Function to generate hashes.
   /// The "Secret Salt" stays hidden in the Cloud, invisible to hackers.
-  static Future<Map<String, dynamic>> generateCloudLockedCert(String studentName, String course) async {
+  static Future<Map<String, dynamic>> generateCloudLockedCert(
+      String studentName, String course) async {
     final deviceInfo = DeviceInfoPlugin();
     String hardwareId = "UNKNOWN";
 
@@ -75,7 +76,7 @@ class UnforgeableDeviceCert {
       );
 
       // Returns the SHA-256 and SHA-512 generated on the server
-      return response.data; 
+      return response.data;
     } catch (e) {
       throw Exception("Security Breach or Offline: Could not verify device.");
     }

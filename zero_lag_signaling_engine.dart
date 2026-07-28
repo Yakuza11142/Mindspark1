@@ -155,8 +155,9 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
 
   @override
   void dispose() {
-    if (_currentRoomId != null)
+    if (_currentRoomId != null) {
       _supabase.channel(_currentRoomId!).unsubscribe();
+    }
     _localStream?.dispose();
     _peerConnection?.close();
     _peerConnection?.dispose();

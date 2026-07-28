@@ -5,10 +5,11 @@ class PrivacyShieldIcon extends StatelessWidget {
   const PrivacyShieldIcon({super.key, required this.isAdult});
   @override
   Widget build(BuildContext context) {
-    if (isAdult)
+    if (isAdult) {
       return const Tooltip(
           message: "18+ Privacy Active",
           child: Icon(Icons.lock_person, size: 12, color: Colors.green));
+    }
     return const SizedBox.shrink();
   }
 }

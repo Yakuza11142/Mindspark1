@@ -11,8 +11,9 @@ class LibraryScreen extends StatelessWidget {
       body: FutureBuilder(
         future: LibraryManager.getItems(),
         builder: (ctx, snap) {
-          if (!snap.hasData)
+          if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           var items = snap.data as List<Map<String, dynamic>>;
 
           if (items.isEmpty) return const Center(child: Text("Library Empty"));

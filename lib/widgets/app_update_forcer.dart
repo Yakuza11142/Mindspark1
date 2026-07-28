@@ -29,8 +29,9 @@ class AppUpdateForcer extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (await canLaunchUrl(Uri.parse(playStoreUrl)))
+                if (await canLaunchUrl(Uri.parse(playStoreUrl))) {
                   await launchUrl(Uri.parse(playStoreUrl));
+                }
               },
               style:
                   ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent),

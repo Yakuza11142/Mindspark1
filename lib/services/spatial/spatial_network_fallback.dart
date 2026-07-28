@@ -33,12 +33,14 @@ class SpatialNetworkGuard extends ChangeNotifier {
 
     if (_currentPingMs > maxAllowedLatencyMs) {
       if (_currentState != TrackingState.localFallback) {
-        debugPrint("⚠️ High Latency Detected (${_currentPingMs}ms). Diverting vector calculations to local Edge engine.");
+        debugPrint(
+            "⚠️ High Latency Detected (${_currentPingMs}ms). Diverting vector calculations to local Edge engine.");
         _updateState(TrackingState.localFallback);
       }
     } else {
       if (_currentState != TrackingState.streamingCloud) {
-        debugPrint("🚀 Connection Stable (${_currentPingMs}ms). Reconnecting to high-fidelity remote NVIDIA clusters.");
+        debugPrint(
+            "🚀 Connection Stable (${_currentPingMs}ms). Reconnecting to high-fidelity remote NVIDIA clusters.");
         _currentState = TrackingState.streamingCloud;
         notifyListeners();
       }

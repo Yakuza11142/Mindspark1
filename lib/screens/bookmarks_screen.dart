@@ -10,8 +10,9 @@ class BookmarksScreen extends StatelessWidget {
       body: FutureBuilder<List<String>>(
         future: BookmarkService.get(),
         builder: (ctx, snap) {
-          if (!snap.hasData)
+          if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           return ListView.builder(
             itemCount: snap.data!.length,
             itemBuilder: (ctx, i) => ListTile(

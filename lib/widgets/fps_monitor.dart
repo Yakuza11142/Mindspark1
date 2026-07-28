@@ -25,11 +25,12 @@ class _FpsMonitorState extends State<FpsMonitor> {
   void _startTimer() async {
     while (mounted && !EnvConfig.isProduction) {
       await Future.delayed(const Duration(seconds: 1));
-      if (mounted)
+      if (mounted) {
         setState(() {
           _fps = _frames.toString();
           _frames = 0;
         });
+      }
     }
   }
 

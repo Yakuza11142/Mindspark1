@@ -11,10 +11,12 @@ class RealLeaderboardScreen extends StatelessWidget {
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: LeaderboardRepository.getGlobalTop10(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          if (!snapshot.hasData || snapshot.data!.isEmpty)
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("No data available."));
+          }
 
           var users = snapshot.data!;
           return ListView.builder(

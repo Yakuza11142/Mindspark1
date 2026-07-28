@@ -15,11 +15,12 @@ class _GlobalSponsoredBadgeState extends State<GlobalSponsoredBadge> {
   void initState() {
     super.initState();
     GlobalTelcoZeroRating.checkIspStatus().then((data) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           isSponsored = data['isSponsored'];
           carrier = data['carrier'];
         });
+      }
     });
   }
 

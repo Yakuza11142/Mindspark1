@@ -26,10 +26,12 @@ class EnglishMegalith {
   // SECTION 2: GRAMMAR RULE CHECKER (Functions 301-600)
   // ===========================================================================
   static String checkConcord(String sentence) {
-    if (sentence.contains("everybody are"))
+    if (sentence.contains("everybody are")) {
       return "Error: 'Everybody' takes a singular verb ('is', not 'are').";
-    if (sentence.contains("one of the boy"))
+    }
+    if (sentence.contains("one of the boy")) {
       return "Error: Should be 'one of the boys' (plural noun after 'one of').";
+    }
     return "Concord appears correct.";
   }
 
@@ -46,8 +48,9 @@ class EnglishMegalith {
   static String explainIdiom(String idiom) {
     if (idiom.contains("kick the bucket")) return "To die.";
     if (idiom.contains("let the cat out")) return "To reveal a secret.";
-    if (idiom.contains("burn the midnight oil"))
+    if (idiom.contains("burn the midnight oil")) {
       return "To study or work late into the night.";
+    }
     return "Idiom meaning not available offline.";
   }
 

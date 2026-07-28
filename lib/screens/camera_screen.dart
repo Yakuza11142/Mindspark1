@@ -10,10 +10,11 @@ class CameraScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             String? res = await VisionEngine().snapAndSolve();
-            if (context.mounted)
+            if (context.mounted) {
               showDialog(
                   context: context,
                   builder: (_) => AlertDialog(content: Text(res ?? "Failed")));
+            }
           },
           child: const Text("Snap & Solve"),
         ),

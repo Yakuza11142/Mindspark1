@@ -25,9 +25,10 @@ class _NotesScreenState extends State<NotesScreen> {
   void _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('note_${widget.topic}', _ctrl.text);
-    if (mounted)
+    if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Note Saved")));
+    }
   }
 
   @override

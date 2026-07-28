@@ -43,8 +43,9 @@ class _DynamicGlobalPaywallState extends State<DynamicGlobalPaywall> {
       // Basic formatting for demo
       localPriceString =
           "$currencyCode ${finalPrice.toStringAsFixed(2)} / month";
-      if (currencyCode == 'NGN')
+      if (currencyCode == 'NGN') {
         localPriceString = "₦${finalPrice.round()} / month";
+      }
     });
   }
 

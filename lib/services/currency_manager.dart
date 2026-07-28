@@ -34,8 +34,6 @@ class CurrencyManager extends ChangeNotifier {
     return false;
   }
 }
-import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class CurrencyManager extends ChangeNotifier {
   final _storage = const FlutterSecureStorage();

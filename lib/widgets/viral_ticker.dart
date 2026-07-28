@@ -14,9 +14,10 @@ class _ViralTickerState extends State<ViralTicker> {
   void initState() {
     super.initState();
     Timer.periodic(const Duration(seconds: 8), (t) {
-      if (mounted)
+      if (mounted) {
         setState(
             () => name = ["Sarah", "Chioma", "David", "Emeka"][t.tick % 4]);
+      }
     });
   }
 

@@ -15,10 +15,12 @@ class ParentMonitorScreen extends StatelessWidget {
             .from('parent_monitoring_dashboard')
             .select(),
         builder: (ctx, AsyncSnapshot<List<dynamic>> snap) {
-          if (!snap.hasData)
+          if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
-          if (snap.data!.isEmpty)
+          }
+          if (snap.data!.isEmpty) {
             return const Center(child: Text("No children linked yet."));
+          }
 
           return ListView.builder(
             itemCount: snap.data!.length,

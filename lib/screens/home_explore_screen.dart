@@ -60,11 +60,12 @@ class HomeExploreScreen extends StatelessWidget {
                       borderSide: BorderSide.none),
                 ),
                 onSubmitted: (val) {
-                  if (val.isNotEmpty)
+                  if (val.isNotEmpty) {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => UniversalChatScreen(topic: val)));
+                  }
                 },
               ),
             ),

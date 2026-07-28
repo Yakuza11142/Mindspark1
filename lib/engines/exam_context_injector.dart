@@ -29,12 +29,15 @@ class ExamContextInjector {
 
   static String _inferContext(String code) {
     // If the code contains "US", "UK", "IN", etc.
-    if (code.contains("US"))
+    if (code.contains("US")) {
       return "Context: United States Educational Standards for $code.";
-    if (code.contains("UK"))
+    }
+    if (code.contains("UK")) {
       return "Context: United Kingdom Curriculum and British English for $code.";
-    if (code.contains("NG"))
+    }
+    if (code.contains("NG")) {
       return "Context: Nigerian National Curriculum (NERDC) for $code.";
+    }
 
     // Fallback for any unknown exam (The Global Default)
     return "Context: Standard International Academic Curriculum for $code. "

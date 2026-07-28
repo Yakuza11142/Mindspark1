@@ -15,9 +15,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('seen_onboarding', true);
-    if (mounted)
+    if (mounted) {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => const AgeGateScreen()));
+    }
   }
 
   @override
