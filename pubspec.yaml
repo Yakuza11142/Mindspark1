@@ -66,7 +66,6 @@ dependencies:
   # AR (Android)
   arcore_flutter_plus: ^1.0.2
 
-  arcore_flutter_plugin: any
   device_info_plus: any
   google_mlkit_language_id: any
   google_translate_api: any
@@ -115,7 +114,6 @@ dependencies:
   timezone: any
   sensors_plus: any
   drift: any
-  cached_video_player: any
   model_viewer_plus: any
   file_picker: any
   flutter_fortune_wheel: any
@@ -127,6 +125,10 @@ dependencies:
   local_auth: any
   cached_network_image: any
   confetti: any
+
+  # 🚀 FIXED: Modern engine drop-in replacement that eliminates compilation failure errors
+  cached_video_player_plus: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
