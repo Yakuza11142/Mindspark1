@@ -36,7 +36,7 @@ jobs:
 
       - name: Automatic Dart Fixes & Auto-Commit
         run: |
-          # 🚀 AUTO-FIX: Automatically repairs deprecated methods and layout formatting issues
+          # 🚀 AUTO-FIX: Repairs standard code layout rules, spacing, and minor deprecated syntax elements
           dart fix --apply || true
           dart format --fix . || true
           
@@ -104,6 +104,7 @@ jobs:
           }
           EOF
 
+      # 🚀 AUTO-GEN ENGINE: Resolves missing database adapters, parts, and JSON serialization components
       - name: Run Build Runner
         run: flutter pub run build_runner build --delete-conflicting-outputs || true
 
@@ -122,7 +123,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 APK ASSEMBLY LINE: Outputs a single fat APK containing all target architectures
+      # 🚀 UNIVERSAL ASSEMBLY LINE: Compiles a single fat APK containing all device CPU architecture binaries
       - name: Build APK
         run: |
           flutter build apk \
