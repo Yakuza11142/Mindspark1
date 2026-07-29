@@ -72,12 +72,9 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 DIRECT Android APK ASSEMBLY
+      # 🚀 DIRECT ANDROID APK ASSEMBLY (Using your native wrapper jar)
       - name: Build Android APK
         run: |
-          mkdir -p android/gradle/wrapper
-          curl -sL "https://githubusercontent.com" -o android/gradle/wrapper/gradle-wrapper.jar
-          
           flutter build apk \
           --release \
           --obfuscate \
