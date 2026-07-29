@@ -33,11 +33,10 @@ jobs:
           java-version: "17"
           cache: ""
 
-      # 🚀 FIXED: Turning off the strict wrapper check stops the unknown JAR validation error from crashing the run
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          wrapper-validation-enabled: false
+          wrapper-validation-enabled: true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -55,8 +54,10 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
+      # 🚀 RESTORED WITH AUTO-FIX: Automatically corrects safe deprecations and formats layout spacing
       - name: Automatic Workspace Repair
         run: |
+          dart fix --apply || true
           dart format lib/ || true
 
       - name: Create Secrets
@@ -95,7 +96,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 TARGET SCANNER: Runs successfully now that validation overrides are set
+      # 🚀 TARGET SCANNER: Runs to catch any remaining native configuration conflicts
       - name: Scan All Hidden Native Errors
         run: |
           cd android
