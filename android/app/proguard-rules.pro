@@ -32,6 +32,16 @@
 # Prevent optimization from breaking JSON parsing/reflection in Dio
 -keepattributes Signature, *Annotation*, InnerClasses, EnclosingMethod
 
+# Protects Dio network responses from breaking during JSON mapping
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Protects Dart/JSON serialization layers for Supabase and WebRTC data structures
+-keepclassmembernames class * {
+    *** b(...);
+}
+
 # ==============================================================================
 # Hardware, AR & AI Plugins (CRITICAL FOR YOUR LAB TECH STACK)
 # ==============================================================================
@@ -50,3 +60,9 @@
 # 4. Google ML Kit Face Detection
 -keep class com.google.mlkit.** { *; }
 -keep class com.google.android.gms.vision.** { *; }
+
+# 5. Build Warnings Suppressions
+-dontwarn com.google.android.gms.**
+-dontwarn javax.annotation.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
