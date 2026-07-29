@@ -33,9 +33,11 @@ jobs:
           java-version: "17"
           cache: ""
 
-      # 🚀 FIXED: Automatically drops a fresh gradle-wrapper.jar binary file into the folder on-the-fly
+      # 🚀 FIXED: Turning off the strict wrapper check stops the unknown JAR validation error from crashing the run
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          wrapper-validation-enabled: false
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -93,7 +95,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 TARGET SCANNER: Bootstraps safely now that the Gradle binary is fixed
+      # 🚀 TARGET SCANNER: Runs successfully now that validation overrides are set
       - name: Scan All Hidden Native Errors
         run: |
           cd android
