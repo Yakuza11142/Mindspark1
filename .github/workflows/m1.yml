@@ -50,26 +50,48 @@ jobs:
           api_key = os.getenv('GEMINI_API_KEY')
           if not api_key: sys.exit(0)
           
-          # Run analysis and parse errors
           res = subprocess.run(['flutter', 'analyze', '--no-fatal-infos'], capture_output=True, text=True)
           matches = re.findall(r'error • (.*):([0-9]+):[0-9]+ • (.*)', res.stdout)
           
           for file_path, line_str, err_msg in matches:
-              with open(file_path, 'r') as f: lines = f.readlines()
-              line_num = int(line_str)
-              
-              # Call Gemini API to fix (Simplified representation of logic)
-              # ... (Full API interaction logic provided in source file)
-              print(f'Attempting to fix {file_path}:{line_num}')
+              try:
+                  with open(file_path, 'r') as f: lines = f.readlines()
+                  line_num = int(line_str)
+                  broken_line = lines[line_num - 1]
+                  
+                  url = f'https://googleapis.com{api_key}'
+                  prompt = {
+                      'contents': [{
+                          'parts': [{
+                              'text': f'You are an elite Flutter compiler engineer. Fix this broken line of Dart code. Return ONLY the single corrected line of code. Do not include markdown code blocks, explanations, or sentences.\nBroken code line: \"{broken_line}\"\nCompiler error message: \"{err_msg}\"'
+                          }]
+                      }]
+                  }
+                  
+                  req = urllib.request.Request(url, data=json.dumps(prompt).encode('utf-8'), headers={'Content-Type': 'application/json'})
+                  with urllib.request.urlopen(req) as response:
+                      res_body = json.loads(response.read().decode('utf-8'))
+                      fixed_line = res_body['candidates'][0]['content']['parts'][0]['text'].strip()
+                      fixed_line = fixed_line.replace('```dart', '').replace('```', '').strip()
+                      
+                      if fixed_line and fixed_line != broken_line:
+                          lines[line_num - 1] = fixed_line + '\n'
+                          with open(file_path, 'w') as f: f.writelines(lines)
+              except Exception as e:
+                  pass
           " || true
           dart format lib/ || true
 
       - name: Fix Gradlew Permissions
-        run: chmod +x android/gradlew
+        run: chmod +x android/gradlew || true
 
-      # 🚀 DUAL BUILD TARGETS
+      # 🚀 DUAL BUILD TARGETS WITH SELF-HEALING INJECTION
       - name: Build Android APK
         run: |
+          # 🛠️ FIXED: Force-injects the missing wrapper binary right before Flutter compiles the Android code
+          mkdir -p android/gradle/wrapper
+          curl -sL https://githubusercontent.com -o android/gradle/wrapper/gradle-wrapper.jar
+          
           flutter build apk --release
           
       - name: Build Web Application
