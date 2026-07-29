@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "25.1.8937393"
 
     def localProperties = new Properties()
     def localPropertiesFile = rootProject.file('local.properties')
@@ -13,17 +13,10 @@ android {
         localPropertiesFile.withInputStream { localProperties.load(it) }
     }
 
-    def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-    if (flutterVersionCode == null) {
-        flutterVersionCode = '1'
-    }
+    def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+    def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
 
-    def flutterVersionName = localProperties.getProperty('flutter.versionName')
-    if (flutterVersionName == null) {
-        flutterVersionName = '1.0.0'
-    }
-
-    compileSdk 36
+    compileSdk 34
 
     namespace "com.mindspark.app"
 
@@ -43,7 +36,6 @@ android {
             if (keystorePropertiesFile.exists()) {
                 def keystoreProperties = new Properties()
                 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-
                 storeFile = file(keystoreProperties['storeFile'])
                 storePassword = keystoreProperties['storePassword']
                 keyAlias = keystoreProperties['keyAlias']
@@ -55,7 +47,7 @@ android {
     defaultConfig {
         applicationId "com.mindspark.app"
         minSdk 24
-        targetSdk 36
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -70,18 +62,27 @@ android {
         }
     }
 
-    // 🚀 FIXED: Resolves the libtoolChecker.so duplicate native library conflict
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
         jniLibs {
             pickFirsts += '**/libtoolChecker.so'
+            pickFirsts += '**/lib*_*'
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core:1.13.1'
+        force 'androidx.core:core-ktx:1.13.1'
+        force 'androidx.window:window:1.2.0'
+        force 'androidx.window:window-java:1.2.0'
     }
 }
 
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 }
