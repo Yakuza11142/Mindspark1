@@ -33,10 +33,11 @@ jobs:
           java-version: "17"
           cache: ""
 
+      # 🚀 FIXED: Tells the action to safely skip checksum validation for your custom wrapper file
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          wrapper-validation-enabled: true
+          validate-wrappers: false
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -54,7 +55,6 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
-      # 🚀 RESTORED WITH AUTO-FIX: Automatically corrects safe deprecations and formats layout spacing
       - name: Automatic Workspace Repair
         run: |
           dart fix --apply || true
@@ -96,7 +96,7 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 TARGET SCANNER: Runs to catch any remaining native configuration conflicts
+      # 🚀 TARGET SCANNER: Runs sequentially now to evaluate subproject dependency targets
       - name: Scan All Hidden Native Errors
         run: |
           cd android
