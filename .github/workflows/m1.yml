@@ -33,7 +33,6 @@ jobs:
           java-version: "17"
           cache: ""
 
-      # 🚀 FIXED: Tells the action to safely skip checksum validation for your custom wrapper file
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -55,9 +54,9 @@ jobs:
       - name: Get Packages
         run: flutter pub get
 
+      # 🚀 FIXED: Removed dart fix --apply completely per instructions
       - name: Automatic Workspace Repair
         run: |
-          dart fix --apply || true
           dart format lib/ || true
 
       - name: Create Secrets
@@ -96,14 +95,12 @@ jobs:
       - name: Fix Gradlew Permissions
         run: chmod +x android/gradlew
 
-      # 🚀 TARGET SCANNER: Runs sequentially now to evaluate subproject dependency targets
       - name: Scan All Hidden Native Errors
         run: |
           cd android
           ./gradlew compileReleaseJavaWithJavac --continue || true
           ./gradlew compileReleaseKotlin --continue || true
 
-      # 🚀 UNIVERSAL FAT APK COMPILATION PASS
       - name: Build APK
         run: |
           flutter build apk \
