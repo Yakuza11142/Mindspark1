@@ -7,7 +7,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'com.android.tools.build:gradle:8.7.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -30,19 +30,17 @@ rootProject.buildDir = "../build"
 
 subprojects { project ->
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-    
+
     if (project.name != "app") {
         project.evaluationDependsOn(":app")
     }
 
-    // 🚀 FIXED: Replaced options.release with source/targetCompatibility to support AGP bootclasspath rules
     project.tasks.withType(JavaCompile).configureEach {
         options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // Synchronizes Kotlin task compilers to compile down to JVM Target 17
     project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
             freeCompilerArgs += ["-Xmx1024m"]
@@ -50,17 +48,16 @@ subprojects { project ->
         }
     }
 
-    // Catches all Android library targets and aligns compile SDKs to match your app
     project.plugins.withId('com.android.library') {
         if (project.android.hasProperty('compileSdkVersion')) {
-            project.android.compileSdkVersion 36
+            project.android.compileSdkVersion 34
         }
-        
+
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
         }
-        
+
         project.android.ext.architectureFixRun = false
         project.android.variantFilter { variant ->
             if (!project.android.ext.architectureFixRun) {
@@ -79,14 +76,13 @@ subprojects { project ->
             }
         }
     }
-    
+
     project.plugins.withId('com.android.application') {
         if (project.android.namespace == null) {
             project.android.namespace = "com.mindspark.app"
         }
     }
 
-    // Intercepts dependency graphs to enforce unified Kotlin engine binaries
     project.configurations.all {
         resolutionStrategy.eachDependency { DependencyResolveDetails details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
