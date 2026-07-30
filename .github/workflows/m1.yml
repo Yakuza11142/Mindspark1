@@ -46,6 +46,12 @@ jobs:
         run: |
           find . -type f \( -name "pubspec.yaml" -o -name "*.dart" \) -exec sed -i '/supabase_[a-zA-Z0-9_]*/{/supabase_flutter/!{/supabase_auth_ui/!d}}' {} +
 
+      # 🛠️ FIXED: Forces the CI machine to delete old versions and match your new pubspec.yaml setup
+      - name: Flush Old Package Lockfiles
+        run: |
+          rm -f pubspec.lock
+          flutter clean
+
       - name: Get Packages
         run: flutter pub get
 
@@ -60,7 +66,6 @@ jobs:
           echo "=== 3. ADVANCED CODE LAYOUT RE-FORMATTING ==="
           dart format lib/
 
-      # 🛠️ FIXED: Deep-purges jcenter reference errors across your project AND your third-party dependencies!
       - name: Apply Auto-Fixes to Native Android Build Pipeline
         run: |
           echo "=== Patching broken JCenter dependencies in all cached pub.dev packages ==="
@@ -74,7 +79,6 @@ jobs:
           sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
           echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
 
-      # 🛠️ FIXED: Corrected broken commented line syntax to prevent parser failures
       # Secrets injection matching your cloud production keys
       - name: Create Secrets
         run: |
@@ -96,14 +100,12 @@ jobs:
           }
           EOF
 
-      # 🛠️ FIXED: Upgraded wrapper version to 8.10.2 to support AGP 8.7.0 and prevent compiler failure
       - name: Auto-Generate Missing Linux Gradle Script
         run: |
           cd android
           gradle wrapper --gradle-version 8.10.2
           chmod +x gradlew
 
-      # 🛠️ FIXED: Pointed artifact compilation to use modern, clean project structures
       - name: Build Android APK
         run: |
           flutter build apk \
@@ -119,7 +121,7 @@ jobs:
           --release \
           --dart-define-from-file=secrets.json
 
-      # 🛠️ FIXED: Adjusted upload paths to locate split multi-architecture APK components correctly
+       Tar: Uploading build targets to project artifacts
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
