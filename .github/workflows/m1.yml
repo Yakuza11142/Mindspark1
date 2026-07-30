@@ -69,40 +69,19 @@ jobs:
       - name: Get Packages
         run: flutter pub get --no-example
 
-      # 🛠️ AUTO-FIX: Automatically patches all the specific error types you reported across your entire lib/ folder
-      - name: Universal Code Type Repair Engine
+      # 🛠️ FIXED: Replaced the looping text modifiers with a non-blocking diagnostic pass
+      - name: Non-Blocking Codebase Diagnostic Gate
         run: |
-          echo "=== 1. Fixing obsolete colons inside parameter assignments (obsolete_colon_for_default_value) ==="
-          find lib/ -name "*.dart" -exec sed -i -E 's/([a-zA-Z0-9_]+)\s*:\s*([a-zA-Z0-9_]+)/\1 = \2/g' {} + 2>/dev/null || true
-          
-          echo "=== 2. Resolving missing function body locks by adding default bodies (missing_function_body) ==="
-          find lib/ -name "*.dart" -exec sed -i -E 's/(\)\s*);\s*$/) {}/g' {} + 2>/dev/null || true
-          
-          echo "=== 3. Cleaning empty statements and stray semicolons (empty_statements / expected_token) ==="
-          find lib/ -name "*.dart" -exec sed -i 's/;;/;/g' {} + 2>/dev/null || true
-          find lib/ -name "*.dart" -exec sed -i 's/: ;/: 0.0;/g' {} + 2>/dev/null || true
-          
-          echo "=== 4. Suppressing untyped field warnings by injecting 'var' (prefer_typing_uninitialized_variables) ==="
-          find lib/ -name "*.dart" -exec sed -i -E 's/^([ \t]*)([a-zA-Z0-9_]+)\s*;\s*$/\1var \2;/g' {} + 2>/dev/null || true
-
-          echo "=== 5. Fixing non-nullable FutureOr returns that complete normally (body_might_complete_normally) ==="
-          find lib/ -name "*.dart" -exec sed -i -E 's/(\}\s*)$/\n  return {};\n\1/g' {} + 2>/dev/null || true
-
-          echo "=== 6. Injecting core fallback class wrappers to neutralize Undefined errors ==="
-          echo -e "\nclass Face {}\nbool isCEO() => true;\nclass ArCoreController {}\nclass ArCoreView {}\nclass ArCoreNode {}" >> lib/ah_view.dart
-
-          echo "=== 7. Running Native Dart Auto-Repair ==="
+          echo "=== Running Code Cleanliness Check ==="
           dart fix --apply || true
+          
+          echo "=== Suppressing Non-Fatal Linting Rules ==="
+          flutter analyze --no-fatal-warnings --no-fatal-infos || true
 
       - name: Execute Database Schema Generators
         run: |
           echo "=== Building missing relational database code maps ==="
           flutter pub run build_runner build --delete-conflicting-outputs || true
-
-      - name: Codebase Analysis and Bypassing Gate
-        run: |
-          echo "=== Final Structural Evaluation ==="
-          flutter analyze --no-fatal-warnings --no-fatal-infos || true
 
       - name: Apply Auto-Fixes to Native Android Build Pipeline
         run: |
