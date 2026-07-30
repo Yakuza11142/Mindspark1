@@ -5,23 +5,10 @@ plugins {
 }
 
 android {
-    ndkVersion = "28.2.13676358"
-
-    def localProperties = new Properties()
-    def localPropertiesFile = rootProject.file('local.properties')
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.withInputStream { localProperties.load(it) }
-    }
-
-    def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
-    def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
-
-    compileSdk 36
-
     namespace "com.mindspark.app"
+    compileSdk 34
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -30,63 +17,24 @@ android {
         jvmTarget = '17'
     }
 
-    signingConfigs {
-        release {
-            def keystorePropertiesFile = rootProject.file('key.properties')
-            if (keystorePropertiesFile.exists()) {
-                def keystoreProperties = new Properties()
-                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-                storeFile = file(keystoreProperties['storeFile'])
-                storePassword = keystoreProperties['storePassword']
-                keyAlias = keystoreProperties['keyAlias']
-                keyPassword = keystoreProperties['keyPassword']
-            }
-        }
-    }
-
     defaultConfig {
         applicationId "com.mindspark.app"
-        minSdk 24
-        targetSdk 36
+        minSdk 24 // Required for standard WebRTC, ARCore, and high-performance MLKit engines
+        targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        multiDexEnabled true
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug // Change to release keys before deployment
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
-    packaging {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
-        }
-        jniLibs {
-            pickFirsts += '**/libtoolChecker.so'
-            pickFirsts += '**/lib*_*'
-        }
-    }
 }
 
-project.ext {
-    androidxCoreVersion = "1.13.1"
-}
-subprojects {
-    project.configurations.configureEach { configuration ->
-        configuration.resolutionStrategy.eachDependency { details ->
-            if (details.requested.group == 'androidx.core' && details.requested.name.startsWith('core')) {
-                details.useVersion project.ext.androidxCoreVersion
-            }
-        }
-    }
-}
-
-dependencies {
-    implementation 'androidx.multidex:multidex:2.0.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+flutter {
+    source '../..'
 }
