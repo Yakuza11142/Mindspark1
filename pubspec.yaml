@@ -113,9 +113,9 @@ dependencies:
   ios_insecure_screen_detector: ^0.1.1
   local_auth: ^2.3.0
   ntp: ^2.0.1
-  pqcrypto: ^0.0.3
+  pqcrypto: ^1.0.4
   pointycastle: ^3.9.1
-  thirds: ^0.1.4
+  thirds: ^0.1.0
 
   # Sharing & Packages
   share_plus: ^10.1.0
