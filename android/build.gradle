@@ -50,7 +50,7 @@ subprojects { project ->
 
     project.plugins.withId('com.android.library') {
         if (project.android.hasProperty('compileSdkVersion')) {
-            project.android.compileSdkVersion 34
+            project.android.compileSdkVersion 36
         }
 
         if (project.android.namespace == null) {
@@ -83,8 +83,8 @@ subprojects { project ->
         }
     }
 
-    project.configurations.all {
-        resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+    project.configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
                 details.useVersion '2.0.20'
             }
