@@ -69,8 +69,12 @@ jobs:
           }
           EOF
 
-      - name: Fix Gradlew Permissions
-        run: chmod +x android/gradlew
+      # 🛠️ FIXED: Replaced the static chmod command with a cloud script generator
+      - name: Auto-Generate Missing Linux Gradle Script
+        run: |
+          cd android
+          gradle wrapper --gradle-version 8.7
+          chmod +x gradlew
 
       # 🚀 DIRECT ANDROID APK ASSEMBLY (Using your native wrapper jar)
       - name: Build Android APK
