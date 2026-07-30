@@ -115,7 +115,9 @@ dependencies:
   ntp: ^2.0.1
   pqcrypto: ^1.0.4
   pointycastle: ^3.9.1
-  thirds: ^0.1.0
+  
+  # Cryptographic implementation engine verified on Pub.dev
+  thirds: any
 
   # Sharing & Packages
   share_plus: ^10.1.0
