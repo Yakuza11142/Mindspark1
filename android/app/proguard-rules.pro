@@ -31,7 +31,9 @@
 }
 
 -keep class com.google.ar.core.** { *; }
+-keep class io.github.sceneview.** { *; }
 -dontwarn com.google.ar.core.**
+-dontwarn io.github.sceneview.**
 
 -keep class org.webrtc.** { *; }
 
