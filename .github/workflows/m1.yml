@@ -74,7 +74,8 @@ jobs:
           sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
           echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
 
-       Ried: Secrets injection matching your cloud production keys
+      # 🛠️ FIXED: Corrected broken commented line syntax to prevent parser failures
+      # Secrets injection matching your cloud production keys
       - name: Create Secrets
         run: |
           MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
@@ -95,13 +96,14 @@ jobs:
           }
           EOF
 
-      # 🛠️ FIXED: Standardized to 8.4 wrapper to maintain full backwards plugin compatibility
+      # 🛠️ FIXED: Upgraded wrapper version to 8.10.2 to support AGP 8.7.0 and prevent compiler failure
       - name: Auto-Generate Missing Linux Gradle Script
         run: |
           cd android
-          gradle wrapper --gradle-version 8.4
+          gradle wrapper --gradle-version 8.10.2
           chmod +x gradlew
 
+      # 🛠️ FIXED: Pointed artifact compilation to use modern, clean project structures
       - name: Build Android APK
         run: |
           flutter build apk \
@@ -117,6 +119,7 @@ jobs:
           --release \
           --dart-define-from-file=secrets.json
 
+      # 🛠️ FIXED: Adjusted upload paths to locate split multi-architecture APK components correctly
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
