@@ -11,59 +11,59 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.1.0
+  cupertino_icons: any
 
   # State Management
-  provider: ^6.1.2
+  provider: any
 
   # Backend
-  supabase_flutter: ^2.15.4
+  supabase_flutter: any
 
   # Environment
-  flutter_dotenv: ^6.1.0
+  flutter_dotenv: any
 
   # Networking
-  dio: ^5.7.0
+  dio: any
 
   # Utilities
-  intl: ^0.19.0
-  crypto: ^3.0.6
-  uuid: ^4.5.1
-  vector_math: ^2.1.4
+  intl: any
+  crypto: any
+  uuid: any
+  vector_math: any
 
   # Device
-  permission_handler: ^11.3.1
-  shared_preferences: ^2.3.3
-  path_provider: ^2.1.5
-  url_launcher: ^6.3.1
+  permission_handler: any
+  shared_preferences: any
+  path_provider: any
+  url_launcher: any
 
   # AI
-  google_generative_ai: ^0.4.7
+  google_generative_ai: any
 
   # Voice
-  flutter_tts: ^4.2.5
+  flutter_tts: any
 
   # Animation
-  flutter_animate: ^4.5.2
+  flutter_animate: any
 
   # Camera & Vision
-  camera: ^0.11.1
-  google_mlkit_face_detection: ^0.12.0
+  camera: any
+  google_mlkit_face_detection: any
 
   # WebRTC
-  flutter_webrtc: ^1.2.1
+  flutter_webrtc: any
 
   # Deep Links
-  app_links: ^6.3.2
+  app_links: any
 
   # WebView
-  webview_flutter: ^4.9.0
+  webview_flutter: any
 
   # Ads
-  google_mobile_ads: ^5.3.0
+  google_mobile_ads: any
 
   # AR (Modern Engine Swap - Fully Verified Stable)
-  ar_flutter_plugin_plus: ^0.2.1
+  ar_flutter_plugin_plus: any
 
   device_info_plus: any
   google_mlkit_language_id: any
@@ -129,10 +129,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^4.0.0
-  build_runner: ^2.4.9
-  source_gen: ^1.5.0
-  flutter_launcher_icons: ^0.14.2
+  flutter_lints: any
+  build_runner: any
+  source_gen: any
+  flutter_launcher_icons: any
 
 flutter:
   uses-material-design: true
