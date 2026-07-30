@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    ndkVersion = "25.1.8937393"
+    ndkVersion = "28.2.13676358"
 
     def localProperties = new Properties()
     def localPropertiesFile = rootProject.file('local.properties')
@@ -16,7 +16,7 @@ android {
     def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
     def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.0'
 
-    compileSdk 34
+    compileSdk 36
 
     namespace "com.mindspark.app"
 
@@ -47,7 +47,7 @@ android {
     defaultConfig {
         applicationId "com.mindspark.app"
         minSdk 24
-        targetSdk 34
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -73,16 +73,20 @@ android {
     }
 }
 
-configurations.all {
-    resolutionStrategy {
-        force 'androidx.core:core:1.13.1'
-        force 'androidx.core:core-ktx:1.13.1'
-        force 'androidx.window:window:1.2.0'
-        force 'androidx.window:window-java:1.2.0'
+project.ext {
+    androidxCoreVersion = "1.13.1"
+}
+subprojects {
+    project.configurations.configureEach { configuration ->
+        configuration.resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'androidx.core' && details.requested.name.startsWith('core')) {
+                details.useVersion project.ext.androidxCoreVersion
+            }
+        }
     }
 }
 
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 }
