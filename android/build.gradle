@@ -1,11 +1,9 @@
 buildscript {
     ext.kotlin_version = '2.0.20'
-
     repositories {
         google()
         mavenCentral()
     }
-
     dependencies {
         classpath 'com.android.tools.build:gradle:8.7.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -17,19 +15,12 @@ allprojects {
         google()
         mavenCentral()
     }
-
-    buildscript {
-        repositories {
-            google()
-            mavenCentral()
-        }
-    }
 }
 
-rootProject.buildDir = "../build"
+rootProject.layout.buildDirectory.set(rootProject.file("../build"))
 
 subprojects { project ->
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
 
     if (project.name != "app") {
         project.evaluationDependsOn(":app")
@@ -48,16 +39,19 @@ subprojects { project ->
         }
     }
 
+    // Dynamic patch engine for unmaintained legacy Flutter plugins
     project.plugins.withId('com.android.library') {
         if (project.android.hasProperty('compileSdkVersion')) {
-            project.android.compileSdkVersion 36
+            project.android.compileSdkVersion 34
         }
-
+        
+        // Automated namespace generation for outdated modules
         if (project.android.namespace == null) {
             String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
             project.android.namespace = "com.mindspark.generated.${cleanName}"
         }
 
+        // Strips ancient breaking package properties from Manifest files
         project.android.ext.architectureFixRun = false
         project.android.variantFilter { variant ->
             if (!project.android.ext.architectureFixRun) {
@@ -70,7 +64,7 @@ subprojects { project ->
                         }
                     }
                 } catch (Exception e) {
-                    logger.quiet("⚠️ Manifest patch skip for [${project.name}]: ${e.getMessage()}")
+                    logger.quiet("⚠️ Manifest patch skipped for [${project.name}]: ${e.getMessage()}")
                 }
                 project.android.ext.architectureFixRun = true
             }
@@ -83,6 +77,7 @@ subprojects { project ->
         }
     }
 
+    // Resolves dependency conflicts by forcing unified Kotlin execution
     project.configurations.configureEach { configuration ->
         configuration.resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
