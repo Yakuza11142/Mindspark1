@@ -17,7 +17,7 @@ dependencies:
   provider: ^6.1.2
 
   # Backend
-  supabase_flutter: ^2.15.4 # 🛠️ Modernized to latest stable release
+  supabase_flutter: ^2.15.4
 
   # Environment
   flutter_dotenv: ^6.1.0
@@ -41,7 +41,7 @@ dependencies:
   google_generative_ai: ^0.4.7
 
   # Voice
-  flutter_tts: ^4.2.5 # 🛠️ FIXED: Reverted typo version 4.2.7 to stable 4.2.5 matching production
+  flutter_tts: ^4.2.5
 
   # Animation
   flutter_animate: ^4.5.2
@@ -62,8 +62,8 @@ dependencies:
   # Ads
   google_mobile_ads: ^5.3.0
 
-  # AR (Modern Engine Swap - Fully Verified)
-  ar_flutter_plugin_plus: ^1.5.1 # 🛠️ Aligned with the verified 2026 stable specification
+  # AR (Modern Engine Swap - Fully Verified Stable)
+  ar_flutter_plugin_plus: ^0.2.1
 
   device_info_plus: any
   google_mlkit_language_id: any
