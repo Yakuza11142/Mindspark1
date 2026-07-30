@@ -51,6 +51,7 @@ dependencies:
   environment_sensors: ^2.0.1
   vibration: ^1.9.0
   screen_brightness: ^1.1.0
+  carrier_info: ^3.0.1
 
   # AI & Large Language Models
   google_generative_ai: ^0.4.6
@@ -119,7 +120,6 @@ dependencies:
   # Sharing & Packages
   share_plus: ^10.1.0
   package_info_plus: ^8.1.0
-  carrier_info: ^3.2.0
 
 dev_dependencies:
   flutter_test:
