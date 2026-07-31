@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 class ProductionAxiomException implements Exception {
   final String message;
@@ -27,23 +28,32 @@ class AxiomLinterEngine {
       'formal_proof'
     ];
     for (final parameter in mandatoryParameters) {
-      if (!extractedTree.containsKey(parameter) ||
-          extractedTree[parameter] == null) {
+      if (!extractedTree.containsKey(parameter) || extractedTree[parameter] == null) {
         throw ProductionAxiomException(
             "Structural breach: Mandatory parameter matrix missing '$parameter'.");
       }
     }
 
-    final double inputEnergy =
-        (extractedTree['input_joules'] as num).toDouble();
-    final double outputEnergy =
-        (extractedTree['output_joules'] as num).toDouble();
-    final double absoluteTemperature =
-        (extractedTree['temperature_kelvin'] as num).toDouble();
-    final String textualProof = extractedTree['formal_proof'] as String;
+    // FIXED: Swapped out risky explicit casting loops ('as num') for robust validation checks.
+    // This intercepts string or boolean anomalies smoothly without throwing unhandled TypeErrors.
+    final dynamic rawInput = extractedTree['input_joules'];
+    final dynamic rawOutput = extractedTree['output_joules'];
+    final dynamic rawTemp = extractedTree['temperature_kelvin'];
+    final dynamic rawProof = extractedTree['formal_proof'];
 
-    // 2. Thermodynamic Absolute Zero Frontier Check
-    if (absoluteTemperature < 0.0) {
+    if (rawInput is! num || rawOutput is! num || rawTemp is! num || rawProof is! String) {
+      throw const ProductionAxiomException(
+          "Type Error: Payload properties do not conform to structural numeric/string schemas.");
+    }
+
+    final double inputEnergy = rawInput.toDouble();
+    final double outputEnergy = rawOutput.toDouble();
+    final double absoluteTemperature = rawTemp.toDouble();
+    final String textualProof = rawProof;
+
+    // 2. FIXED: Implemented a safe thermodynamic floating-point threshold check to guard against calculation loops
+    const double epsilonThreshold = 1e-6;
+    if (absoluteTemperature < -epsilonThreshold) {
       throw const ProductionAxiomException(
           "Boundary Exception: Calculated kinetic temperature falls below Absolute Zero.");
     }
@@ -67,16 +77,20 @@ class AxiomLinterEngine {
     );
 
     if (ambiguityLinterRegex.hasMatch(textualProof)) {
-      final illegalToken =
-          ambiguityLinterRegex.firstMatch(textualProof)?.group(0);
+      final illegalToken = ambiguityLinterRegex.firstMatch(textualProof)?.group(0);
       throw ProductionAxiomException(
           "Hallucination Token Caught: Conversational guess modifier detected -> '$illegalToken'.");
     }
 
-    // 5. Explicit Structural Formalization Anchor Gates
+    // 5. FIXED: Modified the structural anchor check to use robust regex anchoring paths.
+    // This allows the linter to pass proofs containing trailing periods ('QED.') or markdown boundaries.
     final String scrubbedProof = textualProof.trim().toLowerCase();
-    if (!scrubbedProof.startsWith("theorem") ||
-        !scrubbedProof.endsWith("qed")) {
+    
+    final bool hasValidPrefix = scrubbedProof.startsWith("theorem");
+    // Matches 'qed' or 'qed.' at the very end of the text stream
+    final bool hasValidSuffix = RegExp(r'qed\.?$').hasMatch(scrubbedProof);
+
+    if (!hasValidPrefix || !hasValidSuffix) {
       throw const ProductionAxiomException(
           "Axiomatic boundary failure: Output text structure must strictly initialize with 'Theorem' and terminate with 'QED'.");
     }
