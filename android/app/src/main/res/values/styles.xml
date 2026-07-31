@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Core Android primitive layout styles (Guaranteed to resolve instantly) -->
-    <style name="LaunchTheme" parent="android:Theme.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+    <!-- FIXED: Upgraded parent baseline to Theme.AppCompat to protect native UI plugins from crashing -->
+    <style name="LaunchTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- FIXED: Directs the engine to display a dedicated launch background drawable rather than a white canvas -->
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
     </style>
 
-    <style name="NormalTheme" parent="android:Theme.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+    <style name="NormalTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- FIXED: Hardcoded to black to guarantee no visual white flash glitches when transitioning into Flutter -->
+        <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>
