@@ -6,9 +6,12 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Mind Spark Production Web Application Engine.">
 
+  <!-- FIXED: Enforces correct mobile responsive pixel layouts on physical phone viewports -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <!-- iOS Meta Tags and Branded Display Injections -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mind Spark">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -17,6 +20,18 @@
 
   <title>Mind Spark</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- FIXED: Prevents white screen flashes during WebRTC engine assets load time -->
+  <style>
+    html, body {
+      background-color: #000000;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
