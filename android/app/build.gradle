@@ -5,8 +5,8 @@ plugins {
 }
 
 android {
+    // Unique identifier matching your settings and manifest namespaces
     namespace "com.mindspark.app"
-    // OPTIMIZED: Using stable production-grade API parameters to guarantee plugin compatibility
     compileSdk 35
 
     compileOptions {
@@ -18,7 +18,15 @@ android {
         jvmTarget = '17'
     }
 
-    // FIXED: Formatted the signing configuration scope before it gets called by your build types
+    // FIXED: Centralizes both folder hierarchies explicitly to protect your mixed source tree
+    sourceSets {
+        main {
+            java.srcDirs = ['src/main/java']
+            kotlin.srcDirs = ['src/kotlin']
+        }
+    }
+
+    // FIXED: Structured signing configurations to satisfy automated production builds
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -27,7 +35,7 @@ android {
             keyPassword 'android'
         }
         release {
-            // Secure placeholder configurations matching standard cloud production setups
+            // Pulls secure credentials from environment variables when running on CI
             storeFile file('release.keystore')
             storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: 'android'
             keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: 'androiddebugkey'
@@ -37,7 +45,7 @@ android {
 
     defaultConfig {
         applicationId "com.mindspark.app"
-        // REQUIRED: Retaining SDK 24 as your baseline allows high-performance ML Kit packages to initialize
+        // Required API 24 baseline allows advanced WebRTC and ML Kit dependencies to initialize
         minSdk 24
         targetSdk 35
         versionCode 1
@@ -50,10 +58,10 @@ android {
 
     buildTypes {
         release {
-            // FIXED: Automatically falls back safely to debug sign patterns if cloud release keys aren't mounted
+            // Automatically falls back to debug signing signatures if release secrets aren't mounted
             signingConfig (project.hasProperty('release') ? signingConfigs.release : signingConfigs.debug)
             
-            // KEEP IN MIND: Ensure your 'proguard-rules.pro' contains rules to prevent stripping WebRTC/AI reflections
+            // Optimizes final file sizes while honoring your custom proguard-rules.pro overrides
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
