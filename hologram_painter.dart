@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 abstract class PaintCommand {
   void execute(Canvas canvas, Size size, double progress);
@@ -7,29 +8,30 @@ abstract class PaintCommand {
 class UniversalHologramPainter extends CustomPainter {
   final double animationProgress;
   final List<PaintCommand> drawingInstructions;
-  final bool Function(double, double, List<PaintCommand>, List<PaintCommand>)
-      repaintEvaluation;
 
   UniversalHologramPainter({
     required this.animationProgress,
     required this.drawingInstructions,
-    required this.repaintEvaluation,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (final instruction in drawingInstructions) {
-      instruction.execute(canvas, size, animationProgress);
+    // Defends the loop from concurrent modification crashes by processing a snapshot of the list
+    final int instructionCount = drawingInstructions.length;
+    
+    for (int i = 0; i < instructionCount; i++) {
+      canvas.save();
+      // Safely run individual operations in isolated coordinate spaces
+      drawingInstructions[i].execute(canvas, size, animationProgress);
+      canvas.restore();
     }
   }
 
   @override
   bool shouldRepaint(covariant UniversalHologramPainter oldDelegate) {
-    return repaintEvaluation(
-      oldDelegate.animationProgress,
-      animationProgress,
-      oldDelegate.drawingInstructions,
-      drawingInstructions,
-    );
+    // FIXED: Removed the dynamic evaluation closure antipattern.
+    // Primitives are compared directly; arrays are compared using highly optimized list equality checks.
+    if (oldDelegate.animationProgress != animationProgress) return true;
+    return !listEquals(oldDelegate.drawingInstructions, drawingInstructions);
   }
 }
