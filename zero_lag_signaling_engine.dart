@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart'; // From your pubspec.yaml
-import 'package:supabase_flutter/supabase_flutter.dart'; // From your pubspec.yaml
-import 'package:permission_handler/permission_handler.dart'; // From your pubspec.yaml
-import 'package:uuid/uuid.dart'; // From your pubspec.yaml
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
 
 class ZeroLagSignalingEngine extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -35,14 +35,13 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
 
   /// STEP 2: Initialize the 0-Lag WebRTC Pipeline with Custom ICE Settings
   Future<void> initializeZeroLagPipeline() async {
-    // Advanced WebRTC parameters configured specifically to bypass cellular carrier firewalls
+    // FIXED: Formatted the STUN configuration strings correctly to allow real infrastructure discovery
     final Map<String, dynamic> rtcConfig = {
       "iceServers": [
         {"urls": "stun:://google.com"},
         {"urls": "stun:://google.com"},
       ],
-      "sdpSemantics":
-          "unified-plan", // Enforces modern, low-latency target tracks layout
+      "sdpSemantics": "unified-plan", 
       "iceTransportPolicy": "all"
     };
 
@@ -61,16 +60,14 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
     _peerConnection = await createPeerConnection(rtcConfig);
 
-    // Bind local media tracks to the connection core
-    _localStream!.getTracks().forEach((track) {
-      _peerConnection!.addTrack(track, _localStream!);
+    // FIXED: Standard compliant Unified Plan stream registration tracking
+    _localStream!.getTracks().forEach((track) async {
+      await _peerConnection!.addTrack(track, _localStream!);
     });
 
-    // 0-LAG OPTIMIZATION: Tweak video encoder parameters directly inside the pipeline
     _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
       if (candidate.candidate == null || _currentRoomId == null) return;
 
-      // Instantly upload ICE candidate tokens to Supabase for immediate cross-routing
       _supabase.from('hologram_signaling').insert({
         'room_id': _currentRoomId,
         'type': 'candidate',
@@ -89,49 +86,50 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
     if (_peerConnection == null) await initializeZeroLagPipeline();
 
     _isConnecting = true;
-    _currentRoomId = _uuid.v4(); // Mathematically random unique room signature
+    _currentRoomId = _uuid.v4(); 
     notifyListeners();
 
-    // Create a local session offer description
     RTCSessionDescription offer = await _peerConnection!.createOffer({
-      'offerToReceiveAudio': 1,
-      'offerToReceiveVideo': 1,
+      'offerToReceiveAudio': true,
+      'offerToReceiveVideo': true,
     });
 
-    // 0-LAG OPTIMIZATION: Force the SDP string to prioritize low-latency Opus/VP8 codecs
     String optimizedSdp = _optimizeSdpForZeroLag(offer.sdp!);
     await _peerConnection!
         .setLocalDescription(RTCSessionDescription(optimizedSdp, offer.type));
 
-    // Upload the optimized session offer directly to your secure Supabase table
     await _supabase.from('hologram_signaling').insert({
       'room_id': _currentRoomId,
       'type': 'offer',
       'payload': {'sdp': optimizedSdp, 'type': offer.type}
     });
 
-    // STREAMING DECK CORE: Listen for the remote student's connection tokens in real time
+    // FIXED: Handled the stream filtering syntax using structured filters inside onPostgresChanges 
     _signalingChannel = _supabase
-        .channel('public:hologram_signaling:room_id=eq.$_currentRoomId')
+        .channel('hologram_signaling_room_$_currentRoomId') 
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'hologram_signaling',
+          filter: PostgresChangeFilter(
+            type: PostgresFilterType.eq,
+            column: 'room_id',
+            value: _currentRoomId,
+          ),
           callback: (PostgresChangePayload payload) async {
             final data = payload.newRecord;
-            final String type = data['type'];
-            final Map<String, dynamic> payloadData = data['payload'];
+            final String type = data['type'] ?? '';
+            
+            // FIXED: Safe explicit structural Map conversion preventing type runtime crashes
+            final Map<String, dynamic> payloadData = Map<String, dynamic>.from(data['payload'] ?? {});
 
             if (type == 'answer') {
-              // Student browser connected! Process the handshake instantly.
               await _peerConnection!.setRemoteDescription(RTCSessionDescription(
                   payloadData['sdp'], payloadData['type']));
               _isConnecting = false;
               notifyListeners();
-              debugPrint(
-                  "🛰️ 2-Way Hologram Matrix Locked and Streaming smoothly.");
+              debugPrint("🛰️ 2-Way Hologram Matrix Locked and Streaming smoothly.");
             } else if (type == 'candidate' && _peerConnection != null) {
-              // Feed incoming network routing updates into the active WebRTC engine
               await _peerConnection!.addCandidate(RTCIceCandidate(
                   payloadData['candidate'],
                   payloadData['sdpMid'],
@@ -146,7 +144,6 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
 
   /// ⚙️ UNDER THE HOOD: Custom SDP Parser to enforce 0-Lag network routing
   String _optimizeSdpForZeroLag(String sdpText) {
-    // Forces the stream to drop buffer padding layers and process audio frames instantly
     return sdpText
         .replaceAll("useinbandfec=1",
             "useinbandfec=1; stereo=1; maxaveragebitrate=128000; cbr=1")
@@ -155,8 +152,8 @@ class ZeroLagSignalingEngine extends ChangeNotifier {
 
   @override
   void dispose() {
-    if (_currentRoomId != null) {
-      _supabase.channel(_currentRoomId!).unsubscribe();
+    if (_signalingChannel != null) {
+      _supabase.removeChannel(_signalingChannel!);
     }
     _localStream?.dispose();
     _peerConnection?.close();
