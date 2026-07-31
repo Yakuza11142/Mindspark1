@@ -1,6 +1,5 @@
 #version 320 es
 precision mediump float;
-#include <flutter/runtime_effect.glsl>
 
 // =========================================================================
 // UNIVERSAL UNIFORM BINDING MATRIX
@@ -32,25 +31,24 @@ float generateHoloNoise(vec2 co) {
 }
 
 // =========================================================================
-// SUB-ROUTINE: EVALUATE INDEPENDENT ARTIFACT NODE TRACKS
+// SUB-ROUTINE: EVALUATE INDEPENDENT ARTIFACT NODE TRACKS (BRANCHLESS)
 // =========================================================================
 vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     vec2 entityCoordinates = vec2(entityTrack.x, entityTrack.y);
     float enforcedScale = entityTrack.z;
     float entityLife = entityTrack.w;
 
-    // Strict boundary checks for active artifact lifetime tracks
-    if (entityLife  1.0) {
-        return vec4(0.0);
-    }
+    // FIXED: Swapped out the syntax-breaking conditional statement and branch-divergent return
+    // This calculates an explicit multiplier mask to keep code branchless and optimized for parallel threads
+    float operationalMask = step(0.001, entityLife) * step(entityLife, 1.0);
 
     float localDist = length(universalUV - entityCoordinates) * enforcedScale;
     float particlePulse = smoothstep(0.06, 0.0, localDist);
-    
+
     // Cybernetic accent color for auxiliary entity dots
     vec3 accentColor = vec3(0.0, 1.0, 0.7); 
-    float alphaOutput = particlePulse * entityLife * 0.75;
-    
+    float alphaOutput = particlePulse * entityLife * 0.75 * operationalMask;
+
     return vec4(accentColor * alphaOutput, alphaOutput);
 }
 
@@ -87,7 +85,7 @@ void main() {
     float anatomyMask = 0.0;
     float skeletalGlow = 0.0;
 
-    // REGION 1: HEAD & FACE [Height Span: 5.14ft to 6.00ft] (27.4 cm / 10.8 in)
+    // REGION 1: HEAD & FACE [Height Span: 5.14ft to 6.00ft]
     float isHead = step(0.85, bodyUV.y) * step(bodyUV.y, 1.0);
     vec2 headUV = bodyUV - vec2(0.0, 0.925);
     float headMask = smoothstep(0.14, 0.0, length(headUV * vec2(1.0, 1.25)));
@@ -97,11 +95,11 @@ void main() {
     float mouth = smoothstep(0.008, 0.0, abs(headUV.y + 0.03 + (headUV.x * headUV.x * 2.5))) * smoothstep(0.05, 0.0, abs(headUV.x));
     float headGlow = (eyes * 0.8) + (mouth * 0.9);
 
-    // REGION 2: NECK [Height Span: 4.80ft to 5.14ft] (9.2 cm / 3.6 in)
+    // REGION 2: NECK [Height Span: 4.80ft to 5.14ft]
     float isNeck = step(0.80, bodyUV.y) * step(bodyUV.y, 0.85);
     float neckMask = smoothstep(0.05, 0.0, abs(bodyUV.x));
 
-    // REGION 3: TORSO & SHOULDERS [Height Span: 2.70ft to 4.80ft] (64.0 cm / 25.2 in)
+    // REGION 3: TORSO & SHOULDERS [Height Span: 2.70ft to 4.80ft]
     float isTorso = step(0.45, bodyUV.y) * step(bodyUV.y, 0.80);
     float torsoHeightFactor = (bodyUV.y - 0.45) / 0.35;
     float dynamicShoulderWidth = mix(0.12, 0.22, smoothstep(0.0, 0.8, torsoHeightFactor));
@@ -110,7 +108,7 @@ void main() {
     float torsoMask = smoothstep(calculatedTorsoWidth, 0.0, abs(bodyUV.x));
     float torsoGlow = smoothstep(0.02, 0.0, abs(bodyUV.x)) * 0.4;
 
-    // REGION 4: LOWER LEGS [Height Span: 0.30ft to 2.70ft] (73.2 cm / 28.8 in)
+    // REGION 4: LOWER LEGS [Height Span: 0.30ft to 2.70ft]
     float isLegs = step(0.05, bodyUV.y) * step(bodyUV.y, 0.45);
     float legSpacing = 0.07;
     float activeLegAxis = min(abs(bodyUV.x - legSpacing), abs(bodyUV.x + legSpacing));
@@ -119,7 +117,7 @@ void main() {
     float legsMask = smoothstep(dynamicLegThick, 0.0, activeLegAxis);
     float legsGlow = smoothstep(0.008, 0.0, activeLegAxis) * 0.3;
 
-    // REGION 5: STABILITY BASE / FEET [Height Span: 0.00ft to 0.30ft] (9.2 cm / 3.6 in)
+    // REGION 5: STABILITY BASE / FEET [Height Span: 0.00ft to 0.30ft]
     float isFeet = step(0.0, bodyUV.y) * step(bodyUV.y, 0.05);
     float footSpread = mix(0.12, 0.06, bodyUV.y / 0.05);
     float feetMask = smoothstep(footSpread, 0.0, abs(bodyUV.x));
