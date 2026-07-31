@@ -21,6 +21,7 @@ pluginManagement {
         return flutterSdk
     }()
 
+    // Maps the native Gradle plugins directly out of your local framework setup dynamically
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
 
     repositories {
@@ -31,14 +32,16 @@ pluginManagement {
 }
 
 plugins {
-    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+    // FIXED: Removed the hardcoded version strings to let the internal includeBuild inject the matching runtime version
+    id "dev.flutter.flutter-plugin-loader"
+    id "dev.flutter.flutter-gradle-plugin" apply false
     id "com.android.application" version "8.9.1" apply false
     id "org.jetbrains.kotlin.android" version "2.1.10" apply false
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    // FIXED: Centralizes package downloads, protecting your 80+ dependencies from repository desyncs
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
