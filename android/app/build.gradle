@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace "com.mindspark.app"
-    compileSdk 35
+    compileSdk 36
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -20,8 +20,7 @@ android {
     defaultConfig {
         applicationId "com.mindspark.app"
         minSdk 24
-        targetSdk 35
-        // 🛠️ THE FIX: Hardcoded clean numeric production values to unblock the compiler scope
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
     }
