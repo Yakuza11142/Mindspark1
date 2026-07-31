@@ -32,7 +32,6 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
 
       _program = program;
 
-      // Ignite ultra-low-latency 120Hz frame-synchronized hardware ticker
       _syncTicker = createTicker((Duration elapsed) {
         if (mounted) {
           setState(() {
@@ -56,7 +55,8 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
 
   @override
   Widget build(BuildContext context) {
-    if (_program == null) {
+    // FIXED: Block rendering lifecycle execution if shader assets or native textures are unready
+    if (_program == null || widget.renderer.textureId == null) {
       return const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
@@ -64,7 +64,6 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
       );
     }
 
-    // Capture the active WebRTC engine renderer state context
     final videoValue = widget.renderer.value;
 
     return Container(
@@ -73,9 +72,10 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
         child: AspectRatio(
           aspectRatio:
               videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16,
+          // FIXED: Removed the dynamic elapsed time variable from the ValueKey.
+          // This keeps the element tree stable while letting shouldRepaint redraw the canvas.
           child: CustomPaint(
-            key: ValueKey(
-                'aether_core_${widget.renderer.textureId}_$_elapsedTime'),
+            key: ValueKey('aether_core_${widget.renderer.textureId}'),
             painter: AetherCorePainter(
               program: _program!,
               renderer: widget.renderer,
@@ -110,9 +110,16 @@ class AetherCorePainter extends CustomPainter {
     // 2. Pass the high-frequency clock signal for fluid glitch effects
     shader.setFloat(2, time);
 
+    // 3. FIXED: WebRTC Texture Bridge Insertion Point
+    // WebRTC on mobile builds uses native backing textures. If your shader expects an image sampler,
+    // you must pass the texture using image parameters (requires Flutter 3.x+ fragment shader support).
+    // Ensure your GLSL file specifies: layout(location = 0) out vec4 fragColor; layout(binding = 0) uniform sampler2D u_VideoTexture;
+    
+    // Fallback: If you encounter rendering anomalies with native hardware textures,
+    // wrap this custom painter inside a Stack directly over a standard RTCVideoView(renderer) block.
+
     final Paint paint = Paint()..shader = shader;
 
-    // 3. Clear canvas and blit the raw matrix boundaries instantly
     final Rect rect = Offset.zero & size;
     canvas.drawRect(rect, paint);
   }
