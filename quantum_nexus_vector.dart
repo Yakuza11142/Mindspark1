@@ -1,6 +1,6 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:vector_math/vector_math_64.dart' as v64;
 
 class QuantumNexusVector extends StatefulWidget {
@@ -20,13 +20,12 @@ class QuantumNexusVector extends StatefulWidget {
 class _QuantumNexusVectorState extends State<QuantumNexusVector>
     with SingleTickerProviderStateMixin {
   late v64.Matrix4 _projectionModelMatrix;
-  Timer? _matrixProcessingLoop;
+  Ticker? _frameTicker;
   double _frequencyTimer = 0.0;
 
-  // Enforce base anatomical proportions natively
   static const double _baseHologramHeightFeet = 6.0;
   static const double _minLimitFeet = 0.125; // 1.5 inches
-  static const double _maxLimitFeet = 10.0; // 10 feet
+  static const double _maxLimitFeet = 10.0;  // 10 feet
 
   double _currentScaleFactor = 1.0;
   double _verticalAnchorShift = 0.0;
@@ -34,19 +33,15 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector>
   @override
   void initState() {
     super.initState();
-    _initQuantumNexusPipeline();
-  }
-
-  void _initQuantumNexusPipeline() {
     _projectionModelMatrix = v64.Matrix4.identity();
     _calculateProportionalScaling();
 
-    // 120Hz computational projection matrix update loop
-    _matrixProcessingLoop =
-        Timer.periodic(const Duration(microseconds: 8333), (timer) {
+    // FIXED: Swapped out the processor-burning Timer loop for a native, hardware-synchronized Ticker
+    _frameTicker = createTicker((Duration elapsed) {
       if (!mounted) return;
-      _computeMatrixTransformations();
+      _computeMatrixTransformations(elapsed);
     });
+    _frameTicker!.start();
   }
 
   @override
@@ -61,11 +56,11 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector>
     final double clampedInput =
         widget.requestedHeightFeet.clamp(_minLimitFeet, _maxLimitFeet);
 
-    // Calculate local space scale factor relative to the 6ft base blueprint
-    final double targetScaleFactor = _baseHologramHeightFeet / clampedInput;
+    // FIXED: Corrected inverted scale mathematics so assets shrink and grow properly
+    final double targetScaleFactor = clampedInput / _baseHologramHeightFeet;
 
-    // Calculate vertical alignment shift to keep his feet locked to the floor
-    final double targetVerticalShift = 0.5 * (1.0 - (1.0 / targetScaleFactor));
+    // FIXED: Adjust dynamic vertical anchoring parameters relative to correct tracking scales
+    final double targetVerticalShift = 0.5 * (1.0 - targetScaleFactor);
 
     setState(() {
       _currentScaleFactor = targetScaleFactor;
@@ -73,11 +68,11 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector>
     });
   }
 
-  void _computeMatrixTransformations() {
+  void _computeMatrixTransformations(Duration elapsed) {
     setState(() {
-      _frequencyTimer += 0.008333;
+      // Safely fetch continuous delta ticks from frame execution times
+      _frequencyTimer = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
 
-      // Procedural harmonic oscillation simulates human life breathing mechanics
       final double breathSwayY = math.sin(_frequencyTimer * 2.4) * 0.015;
       final double microTremorX = math.cos(_frequencyTimer * 4.1) * 0.004;
 
@@ -89,7 +84,7 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector>
 
   @override
   void dispose() {
-    _matrixProcessingLoop?.cancel();
+    _frameTicker?.dispose();
     super.dispose();
   }
 
@@ -105,6 +100,7 @@ class _QuantumNexusVectorState extends State<QuantumNexusVector>
           verticalShift: _verticalAnchorShift,
           timelineDelta: _frequencyTimer,
           viewportDimensions: sceneViewportSize,
+          projectionMatrix: _projectionModelMatrix, // FIXED: Expose the computed transformation data downstream
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
@@ -121,6 +117,7 @@ class InheritedSparkScale extends InheritedWidget {
   final double verticalShift;
   final double timelineDelta;
   final Size viewportDimensions;
+  final v64.Matrix4 projectionMatrix;
 
   const InheritedSparkScale({
     super.key,
@@ -128,6 +125,7 @@ class InheritedSparkScale extends InheritedWidget {
     required this.verticalShift,
     required this.timelineDelta,
     required this.viewportDimensions,
+    required this.projectionMatrix,
     required super.child,
   });
 
@@ -139,6 +137,7 @@ class InheritedSparkScale extends InheritedWidget {
   bool updateShouldNotify(InheritedSparkScale oldWidget) {
     return oldWidget.scaleFactor != scaleFactor ||
         oldWidget.verticalShift != verticalShift ||
-        oldWidget.timelineDelta != timelineDelta;
+        oldWidget.timelineDelta != timelineDelta ||
+        oldWidget.projectionMatrix != projectionMatrix;
   }
 }
