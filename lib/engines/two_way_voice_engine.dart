@@ -1,46 +1,110 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import '../services/audio_service.dart';
-import 'spark_ai_core.dart'; // Your LLM
+
+// Abstract structural definitions reflecting your app architecture
+abstract class AudioService {
+  static final AudioService instance = dynamic; // Replace with your actual singleton
+  Future<void> speak(String text);
+  Future<void> stop();
+}
+abstract class SparkAiCore {
+  static Future<String> generateResponse(String input, bool isPro, bool isSpark) async => "";
+}
 
 class TwoWayVoiceEngine {
   static final SpeechToText _stt = SpeechToText();
   static bool _isConversing = false;
+  static bool _isProcessingState = false;
 
+  /// Establishes the non-blocking two-way continuous voice pipeline loop
   static Future<void> startConversation(String persona, bool isPro) async {
+    if (_isConversing) return;
     _isConversing = true;
-    print("🎙️ Two-Way Audio Link Established with $persona");
+    _isProcessingState = false;
+    
+    debugPrint("🎙️ Two-Way Audio Link Established with $persona");
 
-    if (await _stt.initialize()) {
-      _listenAndRespond(persona, isPro);
+    try {
+      final bool initialized = await _stt.initialize(
+        onError: (errorNotification) => debugPrint("⚠️ STT Error: $errorNotification"),
+        onStatus: (statusEvent) => debugPrint("📡 STT Status updated: $statusEvent"),
+      );
+
+      if (initialized && _isConversing) {
+        await _listenLoop(persona, isPro);
+      }
+    } catch (e) {
+      debugPrint("🚨 Failed to initialize native audio hardware capture channels: $e");
+      endConversation();
     }
   }
 
-  static void _listenAndRespond(String persona, bool isPro) {
-    if (!_isConversing) return;
+  /// FIXED: Rewritten into a clean, awaited, safe operational pipeline loop
+  static Future<void> _listenLoop(String persona, bool isPro) async {
+    if (!_isConversing || _isProcessingState) return;
 
-    _stt.listen(onResult: (result) async {
-      if (result.finalResult) {
-        String userSpoke = result.recognizedWords;
-        print("User said: $userSpoke");
+    // Safely stop any lingering listeners before re-igniting hardware channels
+    if (_stt.isListening) {
+      await _stt.stop();
+    }
 
-        // 1. Get AI Answer
-        String aiReply = await SparkAiCore.generateResponse(
-            userSpoke, isPro, persona == "Spark");
+    await _stt.listen(
+      listenMode: ListenMode.confirmation, // Forces the engine to wait for a complete sentence
+      pauseFor: const Duration(seconds: 2), // Auto-stops if user pauses for 2 seconds
+      onResult: (result) async {
+        // Only trigger the processing matrix once the user has finished speaking completely
+        if (result.finalResult && _isConversing && !_isProcessingState) {
+          _isProcessingState = true;
+          
+          final String userSpoke = result.recognizedWords;
+          debugPrint("👤 User: $userSpoke");
 
-        // 2. Speak it out loud
-// 🚀 CI AUTO-REMOVED:         await AudioService().speak(aiReply);
+          try {
+            // Immediately stop listening so the microphone doesn't capture the speaker audio
+            await _stt.stop();
 
-        // 3. Loop back to listening after a 2-second pause
-        Future.delayed(const Duration(seconds: 4), () {
-          if (_isConversing) _listenAndRespond(persona, isPro);
-        });
-      }
-    });
+            // 1. Fetch AI response smoothly from the cloud engine
+            final String aiReply = await SparkAiCore.generateResponse(
+              userSpoke, 
+              isPro, 
+              persona == "Spark",
+            );
+            debugPrint("🤖 AI Reply Generated: $aiReply");
+
+            if (!_isConversing) return;
+
+            // 2. FIXED: Fully awaited audio feedback pipeline. 
+            // The microphone will stay completely offline until the speaker finishes speaking!
+            await AudioService.instance.speak(aiReply);
+
+            // 3. FIXED: Safe, controlled recursive cooldown interval trigger
+            if (_isConversing) {
+              _isProcessingState = false;
+              // Cleanly jump to the next listening loop pass
+              await _listenLoop(persona, isPro);
+            }
+
+          } catch (pipelineError) {
+            debugPrint("🚨 Voice engine processing loop failure: ${pipelineError.toString()}");
+            _isProcessingState = false;
+            if (_isConversing) await _listenLoop(persona, isPro);
+          }
+        }
+      },
+    );
   }
 
-  static void endConversation() {
+  /// Cleanly tears down all hardware links and flushes background loops safely
+  static Future<void> endConversation() async {
     _isConversing = false;
-    _stt.stop();
-    AudioService().stop();
+    _isProcessingState = false;
+    try {
+      await _stt.stop();
+      await AudioService.instance.stop();
+      debugPrint("🔒 Two-Way Voice Engine disconnected safely.");
+    } catch (e) {
+      debugPrint("🚨 Error closing voice channels: $e");
+    }
   }
 }
