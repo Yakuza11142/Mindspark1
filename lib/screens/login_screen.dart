@@ -4,6 +4,16 @@ import '../services/auth_service.dart';
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
+  // Private routing wrapper to handle your Google authentication channel securely
+  void _handleGoogleSignIn() {
+    AuthService().signInWithGoogle();
+  }
+
+  // Private routing wrapper to handle your Guest/Anonymous authentication channel safely
+  void _handleGuestSignIn() {
+    AuthService().signInAnonymously(); // Assumes signInAnonymously is declared in AuthService
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,36 +24,45 @@ class LoginScreen extends StatelessWidget {
           children: [
             const Icon(Icons.bolt, size: 100, color: Colors.cyanAccent),
             const SizedBox(height: 20),
-            const Text("MindSpark Cloud",
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+            const Text(
+              "MindSpark Cloud",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 10),
-            const Text("Sync your Brain across devices.",
-                style: TextStyle(color: Colors.grey)),
+            const Text(
+              "Sync your Brain across devices.",
+              style: TextStyle(color: Colors.grey),
+            ),
             const SizedBox(height: 50),
 
             // GOOGLE BUTTON
             ElevatedButton.icon(
               icon: const Icon(Icons.login, color: Colors.black),
-              label: const Text("Continue with Google",
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold)),
+              label: const Text(
+                "Continue with Google",
+                style: TextStyle(
+                  color: Colors.black, 
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15)),
-              onPressed: () => AuthService().signInWithGoogle(),
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              ),
+              onPressed: _handleGoogleSignIn,
             ),
 
             const SizedBox(height: 20),
             TextButton(
-              onPressed: () {
-                // Logic for "Continue as Guest" (Uses Anonymous Auth)
-              },
-              child: const Text("Skip for now",
-                  style: TextStyle(color: Colors.white54)),
+              onPressed: _handleGuestSignIn,
+              child: const Text(
+                "Skip for now",
+                style: TextStyle(color: Colors.white54),
+              ),
             )
           ],
         ),
