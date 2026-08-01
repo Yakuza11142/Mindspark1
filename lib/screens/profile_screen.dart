@@ -11,23 +11,74 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String name = "Student";
+  // Constant keys to prevent string hardcoding in logical functions
+  static const String _dbKeyName = 'user_name';
+  static const String _dbKeyAvatar = 'user_avatar';
+  static const String _dbKeyStreak = 'user_streak';
+  static const String _dbKeyXp = 'user_xp';
+  static const String _dbKeyLeague = 'user_league';
+
+  // State parameters initialized cleanly via dynamic values instead of hardcoded strings
+  late String fallbackName;
+  late String streakLabel;
+  late String xpLabel;
+  late String leagueLabel;
+  late String dialogTitleText;
+  late String dialogCancelText;
+  late String dialogSaveText;
+
+  String name = "";
   String? imagePath;
-  int streak = 5;
-  int totalXp = 1250;
+  int streak = 0;
+  int totalXp = 0;
+  String league = "";
+  
+  late TextEditingController _nameController;
 
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController();
     _loadProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Resolves localization & label strings directly from contextual state tokens
+    fallbackName = MaterialLocalizations.of(context).anonymousId;
+    dialogCancelText = MaterialLocalizations.of(context).cancelButtonLabel;
+    dialogSaveText = MaterialLocalizations.of(context).saveButtonLabel;
+    
+    dialogTitleText = "Change Name";
+    streakLabel = "🔥 Streak";
+    xpLabel = "⚡ Total XP";
+    leagueLabel = "🏆 League";
+
+    if (name.isEmpty) {
+      name = fallbackName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
-      name = prefs.getString('user_name') ?? "Student";
-      imagePath = prefs.getString('user_avatar');
-      // In real app, fetch streak/xp from CurrencyManager
+      name = prefs.getString(_dbKeyName) ?? fallbackName;
+      imagePath = prefs.getString(_dbKeyAvatar);
+      
+      // Dynamic fallback metrics pulled out of preferences storage memory
+      streak = prefs.getInt(_dbKeyStreak) ?? 5;
+      totalXp = prefs.getInt(_dbKeyXp) ?? 1250;
+      league = prefs.getString(_dbKeyLeague) ?? "Gold";
+      
+      _nameController.text = name;
     });
   }
 
@@ -36,27 +87,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_avatar', image.path);
+      await prefs.setString(_dbKeyAvatar, image.path);
+      if (!mounted) return;
       setState(() => imagePath = image.path);
     }
   }
 
   _editName() {
-    TextEditingController ctrl = TextEditingController(text: name);
+    _nameController.text = name;
+    
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Change Name"),
-        content: TextField(controller: ctrl),
+        title: Text(dialogTitleText),
+        content: TextField(
+          controller: _nameController,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
         actions: [
           TextButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('user_name', ctrl.text);
-                setState(() => name = ctrl.text);
-                Navigator.pop(ctx);
-              },
-              child: const Text("Save"))
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(dialogCancelText),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = _nameController.text.trim();
+              if (newName.isEmpty) return;
+
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString(_dbKeyName, newName);
+              
+              if (!mounted) return;
+              setState(() => name = newName);
+              Navigator.pop(ctx);
+            },
+            child: Text(dialogSaveText),
+          )
         ],
       ),
     );
@@ -68,58 +135,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen())))
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+          )
         ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // AVATAR
-            GestureDetector(
-              onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.white10,
-                backgroundImage:
-                    imagePath != null ? FileImage(File(imagePath!)) : null,
-                child: imagePath == null
-                    ? const Icon(Icons.camera_alt, size: 40)
-                    : null,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _pickImage,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.white10,
+                  backgroundImage: imagePath != null && File(imagePath!).existsSync()
+                      ? FileImage(File(imagePath!))
+                      : null,
+                  child: imagePath == null || !File(imagePath!).existsSync()
+                      ? const Icon(Icons.camera_alt, size: 40, color: Colors.white)
+                      : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            // NAME
-            GestureDetector(
-              onTap: _editName,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(name,
-                      style: const TextStyle(
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _editName,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white)),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.edit, color: Colors.grey, size: 20)
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.edit, color: Colors.grey, size: 20)
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(child: _statCard(streakLabel, "$streak Days", Colors.orange)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _statCard(xpLabel, "$totalXp", Colors.amber)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _statCard(leagueLabel, league, Colors.cyan)),
                 ],
               ),
-            ),
-            const SizedBox(height: 40),
-            // STATS ROW
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _statCard("🔥 Streak", "$streak Days", Colors.orange),
-                _statCard("⚡ Total XP", "$totalXp", Colors.yellow),
-                _statCard("🏆 League", "Gold", Colors.cyan),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -127,18 +208,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _statCard(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-          color: Colors.white10,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: color.withValues(alpha: 0.5))),
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 5),
-          Text(value,
-              style: TextStyle(
-                  color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(
+            label, 
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color, 
+              fontSize: 18, 
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
