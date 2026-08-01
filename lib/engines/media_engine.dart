@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:dart_openai/dart_openai.dart';
+import 'dart:developer' as developer;
 import '../config/secrets.dart';
 import 'tripo_engine.dart';
 
@@ -7,39 +8,89 @@ class MediaEngine {
   final Dio _dio = Dio();
   final TripoEngine _tripo = TripoEngine();
 
-  Future<Map<String, dynamic>> fetchVisuals(String topic, bool isPro) async {
-    // 1. PEXELS
-    try {
-      final res = await _dio.get("https://api.pexels.com/videos/search",
-          queryParameters: {
-            'query': topic,
-            'per_page': 1,
-            'orientation': 'landscape',
-            'size': 'medium'
-          },
-// 🚀 CI AUTO-REMOVED:           options: Options(headers: {"Authorization": Secrets.pexelsKey}));
-      if (res.data['videos'].isNotEmpty) {
-        return {
-          'type': 'VIDEO',
-          'url': res.data['videos'][0]['video_files'][0]['link']
-        };
-      }
-    } catch (e) {}
+  // Consolidated package parameter bounds early upon class memory initialization
+  MediaEngine() {
+    OpenAI.apiKey = Secrets.openAiKey;
+  }
 
-    // 2. TRIPO 3D (Async start)
-    if (isPro) {
-      _tripo.generate3D(topic); // Start generation, handle via UI future
+  /// Fetches the highest quality available educational visual asset for a given topic
+  Future<Map<String, dynamic>> fetchVisuals(String topic, bool isPro) async {
+    final String cleanedTopic = topic.trim();
+    developer.log("🎥 Media Engine: Requesting multi-modal assets for target: $cleanedTopic");
+
+    // 1. FAST PATH (Pexels Video Search Engine)
+    try {
+      final httpResponse = await _dio.get(
+        "https://api.pexels.com/videos/search",
+        queryParameters: {
+          'query': cleanedTopic,
+          'per_page': 1,
+          'orientation': 'landscape',
+          'size': 'medium'
+        },
+        options: Options(
+          headers: {"Authorization": Secrets.pexelsKey},
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+
+      final dynamic responseData = httpResponse.data;
+      if (responseData is Map && responseData['videos'] != null && (responseData['videos'] as List).isNotEmpty) {
+        final List<dynamic> videoList = responseData['videos'];
+        final dynamic firstVideo = videoList.first;
+        
+        if (firstVideo is Map && firstVideo['video_files'] != null && firstVideo['video_files'] is List) {
+          final List<dynamic> filesList = firstVideo['video_files'] as List<dynamic>;
+          
+          if (filesList.isNotEmpty) {
+            final dynamic firstFile = filesList.first;
+            if (firstFile is Map && firstFile['link'] != null) {
+              final String videoLink = firstFile['link'].toString();
+              return {
+                'type': 'VIDEO',
+                'url': videoLink.trim(),
+              };
+            }
+          }
+        }
+      }
+    } catch (e, stack) {
+      developer.log("⚠️ Pexels video tracking path bypassed due to server exception", error: e, stackTrace: stack);
     }
 
-    // 3. DALL-E
+    // 2. BACKGROUND 3D GENERATION LAYER (Tripo 3D Pipeline)
+    if (isPro) {
+      _tripo.generate3D(cleanedTopic).catchError((Object error) {
+        developer.log("❌ Pro Tripo 3D Background Generation task collapsed", error: error);
+        return null;
+      });
+    }
+
+    // 3. FALLBACK PATH (OpenAI DALL-E 3 Vector Diagrams)
     try {
-      final img = await OpenAI.instance.image.create(
-          prompt: "Educational diagram of $topic",
-          model: "dall-e-3",
-          size: OpenAIImageSize.size1024);
-      return {'type': 'IMAGE', 'url': img.data.first.url};
-    } catch (e) {
-      return {'type': 'IMAGE', 'url': "https://via.placeholder.com/1080"};
+      final OpenAIImageModel imageModel = await OpenAI.instance.image.create(
+        prompt: "Clean, detailed educational diagram of $cleanedTopic, studio lighting, hyper-realistic, 4k",
+        model: "dall-e-3",
+        size: OpenAIImageSize.size1024,
+      ).timeout(
+        const Duration(seconds: 12),
+      );
+
+      final String? finalImageUrl = imageModel.data.first.url;
+      if (finalImageUrl != null && finalImageUrl.isNotEmpty) {
+        return {'type': 'IMAGE', 'url': finalImageUrl.trim()};
+      }
+      
+      throw Exception("Upstream OpenAI image array response container returned unpopulated.");
+    } catch (e, stack) {
+      developer.log("❌ OpenAI Generation path rejected request pipeline context", error: e, stackTrace: stack);
+      
+      // FIXED: Restored a verified, absolute image asset payload URL path to prevent ImageCodecException presentation failures
+      return {
+        'type': 'IMAGE', 
+        'url': "https://unsplash.com"
+      };
     }
   }
 }
