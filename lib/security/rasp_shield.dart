@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'package:freerasp/freerasp.dart';
 import 'package:flutter/services.dart';
 
 class RaspShield {
+  // Saved stream subscription reference container to manage background resources safely
+  static StreamSubscription<Threat>? _threatStreamSubscription;
+
   static void armDefenses() async {
     // 1. Configure the strict security policies
     final config = TalsecConfig(
@@ -19,31 +23,44 @@ class RaspShield {
       isProd: true,
     );
 
-    // 2. Set up the tripwires
-    final callback = ThreatCallback(
-      onAppIntegrity: () => _executeKillSwitch("App Cloned/Modified"),
-      onObfuscationIssues: () => _executeKillSwitch("Decompiler Detected"),
-      onDebug: () => _executeKillSwitch("Debugger Attached"),
-      onDeviceBinding: () => _executeKillSwitch("Device Binding Broken"),
-      onHooks: () => _executeKillSwitch("Frida/Xposed Hook Detected"),
-      onPrivilegedAccess: () =>
-          _executeKillSwitch("Device is Rooted/Jailbroken"),
-      onSimulator: () => _executeKillSwitch("Running on Emulator"),
-    );
+    // 2. Set up modern threat stream listener to capture security signals dynamically
+    _threatStreamSubscription = Talsec.instance.onThreatDetected.listen((Threat threat) {
+      switch (threat) {
+        case Threat.appIntegrity:
+          _executeKillSwitch("App Cloned/Modified");
+        case Threat.obfuscationIssues:
+          _executeKillSwitch("Decompiler Detected");
+        case Threat.debug:
+          _executeKillSwitch("Debugger Attached");
+        case Threat.deviceBinding:
+          _executeKillSwitch("Device Binding Broken");
+        case Threat.hooks:
+          _executeKillSwitch("Frida/Xposed Hook Detected");
+        case Threat.privilegedAccess:
+          _executeKillSwitch("Device is Rooted/Jailbroken");
+        case Threat.simulator:
+          _executeKillSwitch("Running on Emulator");
+        default:
+          // Optional: Catch-all block for modern capabilities like Threat.systemVPN, Threat.devMode, etc.
+          _executeKillSwitch("Unknown Device Integrity Violation");
+      }
+    });
 
-    // 3. Start the engine
-    Talsec.instance.attachListener(callback);
+    // 3. Start the protection engine
     await Talsec.instance.start(config);
-    print(
-        "🛡️ RASP SHIELD ARMED: Reverse Engineering is now impossible without triggering alarms.");
+    print("🛡️ RASP SHIELD ARMED: Continuous behavioral threat monitoring active.");
+  }
+
+  /// Shuts down background listeners cleanly if your security module ever unloads
+  static void disarmDefenses() {
+    _threatStreamSubscription?.cancel();
+    _threatStreamSubscription = null;
   }
 
   static void _executeKillSwitch(String threatType) {
-    print("🚨 THREAT DETECTED: $threatType. INITIATING APP SELF-DESTRUCT.");
-    // Wipe all local sensitive data instantly
-    // SharedPreferences.getInstance().then((prefs) => prefs.clear());
-
-    // Force close the app immediately so they cannot read the RAM
+    print("🚨 THREAT DETECTED: $threatType. INITIATING APP TERMINATION.");
+    
+    // Force close the app immediately so they cannot dump the system RAM
     SystemChannels.platform.invokeMethod('SystemNavigator.pop');
   }
 }
