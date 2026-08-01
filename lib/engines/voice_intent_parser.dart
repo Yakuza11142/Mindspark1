@@ -1,22 +1,28 @@
 import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 
 class VoiceIntentParser {
-  // FIXED: Separated intents from raw lists into pre-compiled Regex blocks 
-  // to ensure absolute evaluation consistency and lightning-fast tracking speeds.
-  static final Map<String, RegExp> _compiledIntentRegistry = {};
+  // Singleton pattern enforces a single unified tracking footprint across all view ports
+  VoiceIntentParser._internal() {
+    _loadDefaultSystemIntentProfiles();
+  }
+  static final VoiceIntentParser instance = VoiceIntentParser._internal();
+
+  // Class properties isolated cleanly within the specific instance scope to prevent multi-threaded cross-talk
+  final Map<String, RegExp> _compiledIntentRegistry = {};
   static const String defaultIntent = "LESSON_QUERY";
 
-  /// Evaluates speech input strings branchlessly and returns the prioritized matched intent.
-  static String determineIntent(String spokenText) {
-    if (spokenText.trim().isEmpty) return defaultIntent;
-    
-    final String text = spokenText.trim().toLowerCase();
+  /// Evaluates speech input strings branchlessly and returns the prioritized matched intent
+  String determineIntent(String spokenText) {
+    final String cleanedText = spokenText.trim().toLowerCase();
+    if (cleanedText.isEmpty) return defaultIntent;
+
+    // Formulate a local snapshot copy of the registry to prevent concurrent modification exceptions during scanning loops
+    final Map<String, RegExp> activeRegistrySnapshot = Map<String, RegExp>.from(_compiledIntentRegistry);
 
     // Iterate through pre-compiled regex blocks instantly
-    for (final entry in _compiledIntentRegistry.entries) {
-      // FIXED: Uses hardware-optimized pattern matching engines instead of linear string loops.
-      // This drops lookups down to a highly efficient single-pass check per intent.
-      if (entry.value.hasMatch(text)) {
+    for (final MapEntry<String, RegExp> entry in activeRegistrySnapshot.entries) {
+      if (entry.value.hasMatch(cleanedText)) {
         return entry.key;
       }
     }
@@ -25,12 +31,12 @@ class VoiceIntentParser {
   }
 
   /// Method to register new intents dynamically at runtime with strict word boundaries
-  static void registerIntent(String intentName, List<String> triggers) {
-    if (triggers.isEmpty) return;
+  void registerIntent(String intentName, List<String> triggers) {
+    final String cleanedIntent = intentName.trim().toUpperCase();
+    if (cleanedIntent.isEmpty || triggers.isEmpty) return;
 
-    // FIXED: Maps words inside strict Regex Word Boundaries (\b) to completely eliminate 
-    // substring collision traps like "anode" accidentally matching the cancellation trigger "no".
-    final escapedTriggers = triggers
+    // Maps words inside strict Regex Word Boundaries (\b) to completely eliminate substring collision traps
+    final String escapedTriggers = triggers
         .map((t) => RegExp.escape(t.trim().toLowerCase()))
         .where((t) => t.isNotEmpty)
         .join('|');
@@ -39,19 +45,27 @@ class VoiceIntentParser {
 
     try {
       // Compiles the entire array of choices into a single unified tracking block
-      _compiledIntentRegistry[intentName] = RegExp(
+      _compiledIntentRegistry[cleanedIntent] = RegExp(
         '\\b($escapedTriggers)\\b',
         caseSensitive: false,
         multiLine: false,
       );
-      debugPrint("🛰️ Dynamic intent schema initialized safely: [$intentName]");
-    } catch (e) {
-      debugPrint("🚨 Failed to compile intent regex mapping loops: $e");
+      developer.log("🛰️ VoiceIntentParser: Dynamic intent schema initialized safely: [$cleanedIntent]");
+    } catch (e, stackTrace) {
+      developer.log("❌ VoiceIntentParser: Failed to compile intent regex mapping loops", error: e, stackTrace: stackTrace);
     }
   }
 
-  /// Clear registry helper to allow clean workspace resets during hot-reloads
-  static void resetRegistry() {
+  /// Private helper method that populates baseline configurations to ensure the parser never runs empty
+  void _loadDefaultSystemIntentProfiles() {
+    registerIntent("CANCEL", ["stop", "cancel", "no", "abort", "quit"]);
+    registerIntent("HELP", ["help", "info", "explain", "tutorial"]);
+  }
+
+  /// Clear registry helper to allow clean workspace resets during hot-reloads safely
+  void resetRegistry() {
+    developer.log("⚙️ VoiceIntentParser: Purging active intent registry indices. Reverting to base definitions.");
     _compiledIntentRegistry.clear();
+    _loadDefaultSystemIntentProfiles(); // Force immediate baseline re-population to block silent deadfalls
   }
 }
