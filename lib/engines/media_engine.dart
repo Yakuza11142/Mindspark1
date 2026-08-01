@@ -39,10 +39,10 @@ class MediaEngine {
       if (responseData is Map && responseData['videos'] != null && (responseData['videos'] as List).isNotEmpty) {
         final List<dynamic> videoList = responseData['videos'];
         final dynamic firstVideo = videoList.first;
-        
+
         if (firstVideo is Map && firstVideo['video_files'] != null && firstVideo['video_files'] is List) {
           final List<dynamic> filesList = firstVideo['video_files'] as List<dynamic>;
-          
+
           if (filesList.isNotEmpty) {
             final dynamic firstFile = filesList.first;
             if (firstFile is Map && firstFile['link'] != null) {
@@ -81,21 +81,16 @@ class MediaEngine {
       if (finalImageUrl != null && finalImageUrl.isNotEmpty) {
         return {'type': 'IMAGE', 'url': finalImageUrl.trim()};
       }
-      
+
       throw Exception("Upstream OpenAI image array response container returned unpopulated.");
     } catch (e, stack) {
       developer.log("❌ OpenAI Generation path rejected request pipeline context", error: e, stackTrace: stack);
-      
-          } catch (e, stack) {
-      developer.log("❌ OpenAI Generation path rejected request pipeline context", error: e, stackTrace: stack);
-      
+
       // FIXED: Swapped out broken base domain links for an absolute, render-safe fallback image asset URL path
       return {
         'type': 'IMAGE', 
         'url': "https://unsplash.com"
       };
-    }
-
     }
   }
 }
