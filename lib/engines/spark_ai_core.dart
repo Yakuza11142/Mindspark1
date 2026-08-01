@@ -1,75 +1,102 @@
-import 'package:flutter/widgets.dart'; // Added for WidgetsFlutterBinding & runApp
+import 'package:flutter/widgets.dart'; 
 import 'package:dart_openai/dart_openai.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:groq_sdk/groq_sdk.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:developer' as developer;
 import '../services/ai_version_controller.dart';
 
 class SparkAiCore {
   static Future<String> generateResponse(
       String userPrompt, bool isPaidUser) async {
-    String systemInstruction = "You are Spark AI, a global educational genius. "
+    const String systemInstruction = "You are Spark AI, a global educational genius. "
         "Detect the user's language and respond perfectly in that language. "
         "No examples, just direct expertise.";
 
-    final results = await Future.wait([
-      AiVersionController.syncModels(),
-      _processAiRequest(userPrompt, systemInstruction, isPaidUser),
-    ]);
-
-    return results[1] as String;
+    try {
+      await AiVersionController.syncModels();
+      return await _processAiRequest(userPrompt, systemInstruction, isPaidUser);
+    } catch (e, stackTrace) {
+      developer.log("Initialization or sync crash inside SparkAiCore", error: e, stackTrace: stackTrace);
+      return "Initialization error. Please try again.";
+    }
   }
 
   static Future<String> _processAiRequest(
       String prompt, String persona, bool isPaid) async {
-    if (isPaid) {
-      return await _useProBrain(prompt, persona);
-    } else {
-      return await _useFreeBrain(prompt, persona);
-    }
+    return isPaid 
+        ? await _useProBrain(prompt, persona) 
+        : await _useFreeBrain(prompt, persona);
   }
 
   // PRO ENGINE (GROQ + OPENAI FALLBACK)
   static Future<String> _useProBrain(String prompt, String persona) async {
+    // 1. PRIMARY ENGINE: GROQ COMPLETION
     try {
-      final groq = Groq(dotenv.get('GROQ_API_KEY'));
+      final String? apiKey = dotenv.maybeGet('GROQ_API_KEY');
+      if (apiKey == null || apiKey.isEmpty) throw Exception("Missing GROQ Key");
+
+      final groq = Groq(apiKey, model: AiVersionController.groqModel);
+      final chat = groq.startNewChat(); // Corrected: Model is passed to the parent client, not the chat builder
+      final response = await chat.sendMessage("$persona\n\n$prompt"); // Returns a GroqChatMessage
       
-      // Fixed: Restored the CI-deleted chat initialization line
-      final chat = groq.startNewChat(model: AiVersionController.groqModel); 
-      final response = await chat.sendMessage("$persona\n\n$prompt");
-      return response.choices.first.message.content;
-    } catch (e) {
-      try {
-        OpenAI.apiKey = dotenv.get('OPENAI_API_KEY');
-        final chat = await OpenAI.instance.chat.create(
-          model: AiVersionController.openAiModel,
-          messages: [
-            OpenAIChatCompletionChoiceMessageModel(
-                role: OpenAIChatMessageRole.system, content: persona),
-            OpenAIChatCompletionChoiceMessageModel(
-                role: OpenAIChatMessageRole.user, content: prompt),
-          ],
-        );
-        
-        // Fixed: Extracted text directly without the illegal map function
-        return chat.choices.first.message.content?.first.text ?? "No response.";
-      } catch (err) {
-        return "Pro Brain Link unstable.";
+      // FIXED: Directly extracts text from Groq's native message structure
+      final String textContent = response.text;
+      if (textContent.isNotEmpty) return textContent.trim();
+    } catch (e, groqStack) {
+      developer.log("Groq failure pipeline, engaging OpenAI fallback", error: e, stackTrace: groqStack);
+    }
+
+    // 2. FALLBACK ENGINE: OPENAI COMPLETION
+    try {
+      final String? openAiKey = dotenv.maybeGet('OPENAI_API_KEY');
+      if (openAiKey == null || openAiKey.isEmpty) throw Exception("Missing OpenAI Key");
+
+      OpenAI.apiKey = openAiKey;
+      
+      // FIXED: Uses stable, version-agnostic Map initialization to completely bypass constructor changes
+      final chat = await OpenAI.instance.chat.create(
+        model: AiVersionController.openAiModel,
+        messages: [
+          OpenAIChatCompletionChoiceMessageModel.fromMap({
+            "role": "system",
+            "content": persona,
+          }),
+          OpenAIChatCompletionChoiceMessageModel.fromMap({
+            "role": "user",
+            "content": prompt,
+          }),
+        ],
+      );
+      
+      final dynamic rawContent = chat.choices.first.message.content;
+      if (rawContent != null) {
+        return rawContent.toString().trim();
       }
+      return "No response content received.";
+    } catch (err, openAiStack) {
+      developer.log("OpenAI fallback failure pipeline terminated", error: err, stackTrace: openAiStack);
+      return "Pro Brain Link unstable.";
     }
   }
 
   // FREE ENGINE (GEMINI)
   static Future<String> _useFreeBrain(String prompt, String persona) async {
     try {
+      final String? geminiKey = dotenv.maybeGet('GEMINI_API_KEY');
+      if (geminiKey == null || geminiKey.isEmpty) throw Exception("Missing Gemini Key");
+
+      // FIXED: Uses official constructor utilities to ensure strict model compliance
       final model = GenerativeModel(
         model: AiVersionController.geminiModel,
-        apiKey: dotenv.get('GEMINI_API_KEY'),
+        apiKey: geminiKey,
+        systemInstruction: Content.system(persona),
       );
-      final response =
-          await model.generateContent([Content.text("$persona\n\n$prompt")]);
+      
+      final response = await model.generateContent([Content.text(prompt)]);
       return response.text ?? "Brain recalibrating...";
-    } catch (e) {
+    } catch (e, geminiStack) {
+      developer.log("Gemini infrastructure core failure", error: e, stackTrace: geminiStack);
       return "Network error.";
     }
   }
@@ -77,12 +104,14 @@ class SparkAiCore {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env"); 
-  // Make sure MyApp() is defined somewhere in your project scope
-  runApp(const MyApp()); 
+  try {
+    await dotenv.load(fileName: ".env"); 
+  } catch (e) {
+    developer.log("Environment configuration missing target file .env");
+  }
+  runApp(const MyApp());
 }
 
-// Dummy placeholder to prevent compiler warnings in this file context
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
