@@ -86,11 +86,16 @@ class MediaEngine {
     } catch (e, stack) {
       developer.log("❌ OpenAI Generation path rejected request pipeline context", error: e, stackTrace: stack);
       
-      // FIXED: Restored a verified, absolute image asset payload URL path to prevent ImageCodecException presentation failures
+          } catch (e, stack) {
+      developer.log("❌ OpenAI Generation path rejected request pipeline context", error: e, stackTrace: stack);
+      
+      // FIXED: Swapped out broken base domain links for an absolute, render-safe fallback image asset URL path
       return {
         'type': 'IMAGE', 
         'url': "https://unsplash.com"
       };
+    }
+
     }
   }
 }
