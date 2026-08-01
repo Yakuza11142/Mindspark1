@@ -20,15 +20,13 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
   @override
   void initState() {
     super.initState();
-    // Synchronize streak states on widget initializations [INDEX]
     _synchronizeStreakState();
   }
 
-  /// Evaluates historical transaction logs to verify reward eligibility safely [INDEX]
   Future<void> _synchronizeStreakState() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
+
       final String? lastClaimStr = prefs.getString(_lastReviewKey()); 
       final int storedStreak = prefs.getInt(_currentStreakKey) ?? 0;
 
@@ -42,9 +40,8 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
             .inDays;
 
         if (differenceInDays == 0) {
-          claimAvailable = false; // Already claimed calendar day [INDEX]
+          claimAvailable = false; 
         } else if (differenceInDays > 1) {
-          // Streak broken loop fallback: Reset progress if a full day was skipped [INDEX]
           developer.log("🏃 Gamification: User skipped a calendar day. Resetting streak parameters.");
           await prefs.setInt(_currentStreakKey, 0);
         }
@@ -62,7 +59,6 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
     }
   }
 
-  /// Commits a successful claim transaction atomically to block multi-tap exploits [INDEX]
   Future<void> _claimReward() async {
     if (!_canClaimToday || _isLoading) return;
 
@@ -72,14 +68,13 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
       final DateTime now = DateTime.now().toUtc();
       final int nextStreakIndex = (_currentStreakIndex + 1) > 7 ? 1 : (_currentStreakIndex + 1);
 
-      // Group parallel async writes to protect preference store consistency [INDEX]
       await Future.wait([
         prefs.setString(_lastClaimKey, now.toIso8601String()),
         prefs.setInt(_currentStreakKey, nextStreakIndex),
       ]);
 
       developer.log("🎰 Gamification: Reward claimed securely. Index incremented to: $nextStreakIndex");
-      
+
       if (!mounted) return;
       setState(() {
         _currentStreakIndex = nextStreakIndex;
@@ -110,59 +105,78 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text("Daily Rewards", style: TextStyle(color: Colors.white)),
+        title: const Text("Daily Rewards", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
-              // Non-clipping horizontal linear distribution format matches standard product calendars [INDEX]
-              SizedBox(
-                height: 120,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 7,
-                  itemBuilder: (context, index) {
-                    final bool isClaimed = index < _currentStreakIndex;
-                    final bool isToday = index == _currentStreakIndex && _canClaimToday;
-                    
-                    Color cardColor = const Color(0xFF334155);
-                    if (isClaimed) cardColor = Colors.green;
-                    if (isToday) cardColor = Colors.cyanAccent;
-
-                    return Container(
-                      width: 85,
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Card(
-                        color: cardColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Day ${index + 1}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isToday ? Colors.black : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Icon(
-                              isClaimed ? Icons.check_circle : Icons.workspace_premium,
-                              color: isToday ? Colors.black : (isClaimed ? Colors.white : Colors.white30),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+              const SizedBox(height: 10),
+              
+              // FIX: Replaced explicit scrolling ListView with an auto-scaling multi-row layout grid
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4, // Clean 4x2 matrix arrangement balances layout shapes natively
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.9, 
                 ),
+                itemCount: 7,
+                itemBuilder: (context, index) {
+                  final bool isClaimed = index < _currentStreakIndex;
+                  final bool isToday = index == _currentStreakIndex && _canClaimToday;
+
+                  Color cardColor = const Color(0xFF1E293B);
+                  Color borderOutlineColor = Colors.transparent;
+                  Color contentColor = Colors.white30;
+
+                  if (isClaimed) {
+                    cardColor = Colors.emerald.withOpacity(0.15);
+                    borderOutlineColor = Colors.emerald;
+                    contentColor = Colors.emerald;
+                  } else if (isToday) {
+                    cardColor = Colors.cyanAccent.withOpacity(0.2);
+                    borderOutlineColor = Colors.cyanAccent;
+                    contentColor = Colors.cyanAccent;
+                  }
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: borderOutlineColor, width: 1.5),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Day ${index + 1}",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isToday || isClaimed ? Colors.white : Colors.white60,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Icon(
+                          isClaimed ? Icons.check_circle : Icons.workspace_premium,
+                          color: contentColor,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
+              
               const Spacer(),
+              
               ElevatedButton(
                 onPressed: _canClaimToday ? _claimReward : null,
                 style: ElevatedButton.styleFrom(
@@ -180,7 +194,7 @@ class _DailyRewardsScreenState extends State<DailyRewardsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
             ],
           ),
         ),
