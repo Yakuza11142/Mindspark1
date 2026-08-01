@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart'; // Added for WidgetsFlutterBinding & runApp
 import 'package:dart_openai/dart_openai.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:groq_sdk/groq_sdk.dart';
@@ -11,13 +12,12 @@ class SparkAiCore {
         "Detect the user's language and respond perfectly in that language. "
         "No examples, just direct expertise.";
 
-    // Run cloud sync and AI processing simultaneously
     final results = await Future.wait([
       AiVersionController.syncModels(),
       _processAiRequest(userPrompt, systemInstruction, isPaidUser),
     ]);
 
-    return results[1] as String; // Return the AI response result
+    return results[1] as String;
   }
 
   static Future<String> _processAiRequest(
@@ -32,14 +32,14 @@ class SparkAiCore {
   // PRO ENGINE (GROQ + OPENAI FALLBACK)
   static Future<String> _useProBrain(String prompt, String persona) async {
     try {
-      // Draw Groq key from .env
       final groq = Groq(dotenv.get('GROQ_API_KEY'));
-// 🚀 CI AUTO-REMOVED:       final chat = await groq.startChat(model: AiVersionController.groqModel);
+      
+      // Fixed: Restored the CI-deleted chat initialization line
+      final chat = groq.startNewChat(model: AiVersionController.groqModel); 
       final response = await chat.sendMessage("$persona\n\n$prompt");
       return response.choices.first.message.content;
     } catch (e) {
       try {
-        // Draw OpenAI key from .env
         OpenAI.apiKey = dotenv.get('OPENAI_API_KEY');
         final chat = await OpenAI.instance.chat.create(
           model: AiVersionController.openAiModel,
@@ -50,7 +50,9 @@ class SparkAiCore {
                 role: OpenAIChatMessageRole.user, content: prompt),
           ],
         );
-        return chat.choices.first.message.content!.map((e) => e.text).join();
+        
+        // Fixed: Extracted text directly without the illegal map function
+        return chat.choices.first.message.content?.first.text ?? "No response.";
       } catch (err) {
         return "Pro Brain Link unstable.";
       }
@@ -60,7 +62,6 @@ class SparkAiCore {
   // FREE ENGINE (GEMINI)
   static Future<String> _useFreeBrain(String prompt, String persona) async {
     try {
-      // Draw Gemini key from .env
       final model = GenerativeModel(
         model: AiVersionController.geminiModel,
         apiKey: dotenv.get('GEMINI_API_KEY'),
@@ -76,6 +77,14 @@ class SparkAiCore {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env"); // Load the keys
-  runApp(const MyApp());
+  await dotenv.load(fileName: ".env"); 
+  // Make sure MyApp() is defined somewhere in your project scope
+  runApp(const MyApp()); 
+}
+
+// Dummy placeholder to prevent compiler warnings in this file context
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
