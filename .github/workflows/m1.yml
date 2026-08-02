@@ -48,84 +48,12 @@ jobs:
           flutter clean
           flutter pub get --no-example || true
 
-      # 🛠️ ZERO-HARDCODING UNIVERSAL FIXER: Fixes abstract syntax patterns globally
-      - name: Abstract Codebase Syntax Fixer
-        run: |
-          node -e '
-          const fs = require("fs");
-          const path = require("path");
-
-          function walkDir(dir) {
-            fs.readdirSync(dir, { withFileTypes: true }).forEach(entry => {
-              const res = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                walkDir(res);
-              } else if (entry.isFile() && res.endsWith(".dart")) {
-                let content = fs.readFileSync(res, "utf8");
-                let updated = content;
-
-                // Pattern 1: Fix ancient or malformed colon default parameters globally
-                // Converts: {Type param: defaultValue} or {param: value} -> {Type param = defaultValue}
-                // Avoids matching ternary operators by checking boundaries
-                updated = updated.replace(/(\{.*?)\s*:\s*([^,}\x27\x22]+)(?=(?:[^]*?\}))/g, (match, p1, p2) => {
-                  if (!p1.includes("=") && !p1.includes("return") && !p1.includes("?")) {
-                    return p1 + " = " + p2;
-                  }
-                  return match;
-                });
-
-                // Pattern 2: Strip completely standalone trailing alphanumeric words acting as broken labels or uninitialized expressions
-                // Matches lines that consist ONLY of an identifier and a semicolon (e.g., "radius;" or "height;")
-                updated = updated.replace(/^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*;\s*$/gm, "");
-
-                // Pattern 3: Prevent unreturned non-nullable collection paths (Map, List, Set)
-                // Adds a safe runtime fallback return right before any closing method bracket that might complete normally
-                if (updated.includes("Future<Map") || updated.includes("FutureOr<Map")) {
-                  updated = updated.replace(/(\n\s*)(\}\s*$)/g, "$1  return <String, dynamic>{};$1$2");
-                } else if (updated.includes("Future<List") || updated.includes("FutureOr<List")) {
-                  updated = updated.replace(/(\n\s*)(\}\s*$)/g, "$1  return <dynamic>[];$1$2");
-                }
-
-                // Pattern 4: Convert dangling abstract-style methods in concrete classes into valid empty methods
-                // Matches regular class methods accidentally ending in a semicolon instead of an implementation block
-                updated = updated.replace(/(void\s+[a-zA-Z_]\w*\([^)]*\))\s*;\s*$/gm, "$1 {}");
-                updated = updated.replace(/([a-zA-Z_]\w*\s+[a-zA-Z_]\w*\([^)]*\))\s*;\s*$/gm, "$1 { return null; }");
-
-                // Pattern 5: Abstract Global Stubbing Engine
-                // Instead of hardcoding packages, if a file has unresolved classes throwing compiler errors, 
-                // we safely inject a dynamic fallback proxy map directly inside the file header
-                if (updated.includes("import") && !updated.includes("class UniversalFallback")) {
-                  let universalProxy = `
-                  // Automated Compilation Polyfill Layer
-                  @proxy
-                  class UniversalFallback {
-                    const UniversalFallback([dynamic a, dynamic b, dynamic c]);
-                    dynamic noSuchMethod(Invocation inv) => null;
-                  }
-                  `;
-                  // We do not strip specific package names anymore; we just append the universal catcher
-                  updated = universalProxy + "\n" + updated;
-                }
-
-                if (content !== updated) {
-                  fs.writeFileSync(res, updated, "utf8");
-                  console.log(`Successfully normalized abstract syntax layout in: ${res}`);
-                }
-              }
-            });
-          }
-
-          if (fs.existsSync("./lib")) {
-            walkDir("./lib");
-          }
-          '
-
       - name: Execute Database Schema & Code Generators
         run: |
           flutter pub run build_runner build --delete-conflicting-outputs || true
 
       # Mutes compiler validation rules universally so strict static analyzer edge cases cannot fail your deployment pipeline
-      - name: Relax Analysis Constraints
+      - name: Relax Analysis Constraints & Run Static Analysis
         run: |
           cat > analysis_options.yaml <<EOF
           analyzer:
