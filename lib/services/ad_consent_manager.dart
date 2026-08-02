@@ -1,24 +1,46 @@
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+// Replace with your actual project layout namespace
+import 'package:your_project_name/privacy_settings_button.dart';
 
-class AdConsentManager {
-  static Future<void> gatherConsent() async {
-    ConsentDebugSettings debugSettings = ConsentDebugSettings(
-      debugGeography: DebugGeography.debugGeographyDisabled,
-    );
-    ConsentRequestParameters params =
-        ConsentRequestParameters(consentDebugSettings: debugSettings);
+void main() {
+  group('PrivacySettingsButton Interaction Verification Tests', () {
+    Widget buildTestHarness() {
+      return const MaterialApp(
+        home: Scaffold(
+          body: PrivacySettingsButton(),
+        ),
+      );
+    }
 
-    ConsentInformation.instance.requestConsentInfoUpdate(params, () async {
-      if (await ConsentInformation.instance.isConsentFormAvailable()) {
-        ConsentForm.loadConsentForm((form) {
-          form.show((formError) {
-            // Consent gathered, initialize AdMob
-            MobileAds.instance.initialize();
-          });
-        }, (error) => print("Consent Form Error: $error"));
-      } else {
-        MobileAds.instance.initialize(); // Init anyway if not required
-      }
-    }, (error) => print("Consent Info Error: $error"));
-  }
+    testWidgets('Should display standard navigation layouts on baseline initialization', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      expect(find.text('Privacy & Cookie Preferences'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      
+      final listTile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(listTile.enabled, isTrue);
+    });
+
+    testWidgets('Should lock out input channels and spin loading indicators when pressed', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      // Safely manage native platform asynchronous side-effects 
+      await tester.runAsync(() async {
+        await tester.tap(find.byType(ListTile));
+      });
+      
+      // FIX: Pump the layout tree outside the async block to ensure perfect frame sync
+      await tester.pump();
+
+      // Assert interaction constraints lock down securely
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      
+      final disabledListTile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(disabledListTile.enabled, isFalse);
+    });
+  });
 }
