@@ -10,33 +10,42 @@ class PremiumReceiptView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SKSTicketView(
-      backgroundColor: const Color(0xFF0A0E21),
-      contentPadding: const EdgeInsets.symmetric(vertical: 20),
-      drawDivider: true,
-      borderRadius: 12,
-      child: Container(
-        width: 320,
-        color: Colors.white,
-        padding: const EdgeInsets.all(24),
+    return SizedBox(
+      width: 320,
+      child: SKSTicketView(
+        // Set the ticket component itself to white so the clipped corners stay transparent
+        backgroundColor: Colors.white, 
+        contentPadding: const EdgeInsets.all(24),
+        drawDivider: true,
+        borderRadius: 12,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.verified, color: Colors.blue, size: 30),
-            const Text("OFFICIAL SPARK RECEIPT",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                    letterSpacing: 1.2)),
+            const SizedBox(height: 4),
+            const Text(
+              "OFFICIAL SPARK RECEIPT",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+                letterSpacing: 1.2,
+                color: Color(0xFF0A0E21),
+              ),
+            ),
             const SizedBox(height: 15),
 
-            Text("${tx.amount}⚡",
-                style:
-                    const TextStyle(fontSize: 48, fontWeight: FontWeight.w900)),
+            Text(
+              "${tx.amount}⚡",
+              style: const TextStyle(
+                fontSize: 48, 
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF0A0E21),
+              ),
+            ),
 
             const Divider(height: 40, thickness: 1),
 
-            _buildRow("From", tx.sender), // Display Sender
+            _buildRow("From", tx.sender), 
             _buildRow("To", tx.receiver),
             _buildRow("Date", tx.formattedDate),
             _buildRow("Auth Sig", tx.signature.toUpperCase()),
@@ -44,17 +53,20 @@ class PremiumReceiptView extends StatelessWidget {
             const SizedBox(height: 30),
 
             QrImageView(
-              // QR now includes sender info for verification
               data: "VERIFY:${tx.id}:${tx.sender}:${tx.signature}",
               version: QrVersions.auto,
               size: 150,
               eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.circle, color: Color(0xFF0A0E21)),
+                eyeShape: QrEyeShape.circle, 
+                color: Color(0xFF0A0E21),
+              ),
             ),
 
             const SizedBox(height: 10),
-            const Text("SECURE BLOCKCHAIN-HASHED QR",
-                style: TextStyle(fontSize: 8, color: Colors.grey)),
+            const Text(
+              "SECURE BLOCKCHAIN-HASHED QR",
+              style: TextStyle(fontSize: 8, color: Colors.grey),
+            ),
           ],
         ),
       ),
@@ -67,11 +79,24 @@ class PremiumReceiptView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-          Text(value,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+          ),
+          const SizedBox(width: 16), 
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis, 
+              style: const TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 11,
+                color: Color(0xFF0A0E21),
+              ),
+            ),
+          ),
         ],
       ),
     );
