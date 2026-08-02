@@ -1,13 +1,30 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SubscriptionVerifier {
-  static Future<void> updateProStatusInCloud(bool isPro) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
+  static final _supabase = Supabase.instance.client;
 
-    await Supabase.instance.client.from('profiles').update({
-      'is_pro': isPro,
-      'pro_updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', user.id);
+  /// Verifies a Google Play receipt token securely via your backend edge script.
+  /// Returns [true] if the server validates the subscription.
+  static Future<bool> verifyAndUpgradeSubscription({
+    required String purchaseToken,
+    required String productId,
+    required String packageName,
+  }) async {
+    try {
+      // Calls the secure Deno edge pipeline wrapper instead of directly modifying tables
+      final FunctionResponse response = await _supabase.functions.invoke(
+        'verify-google-play',
+        body: {
+          'purchase_token': purchaseToken,
+          'product_id': productId,
+          'package_name': packageName,
+        },
+      );
+
+      return response.status == 200;
+    } catch (e) {
+      print("Google Play server validation failure: $e");
+      return false;
+    }
   }
 }
