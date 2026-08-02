@@ -8,9 +8,16 @@ class Debouncer {
   Debouncer({required this.milliseconds});
 
   void run(VoidCallback action) {
-    if (_timer != null) {
-      _timer!.cancel();
-    }
+    // 1. Clears out any active timer thread instantly using clean conditional execution
+    _timer?.cancel();
+    
+    // 2. Starts the new action cooldown thread safely
     _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
+
+  // 3. CRUCIAL: Call this method in your stateful widget's dispose() to prevent background memory leaks
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
   }
 }
