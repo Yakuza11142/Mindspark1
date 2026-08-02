@@ -1,52 +1,62 @@
-import 'dart:convert';
-import 'package:flutter/widgets.dart';
+import 'package:test/test.dart';
+// Replace with your actual project layout namespace
+import 'package:your_project_name/oracle_sync_engine.dart'; 
 
-enum CognitiveLoadState { receptive, nearOverload, memoryDecayRisk, hyperFocus }
+void main() {
+  group('OracleSyncEngine Precision and State Transformations', () {
+    late OracleSyncEngine engine;
 
-class OracleSyncEngine extends ChangeNotifier {
-  CognitiveLoadState _inferredState = CognitiveLoadState.receptive;
-  double _entropyScore = 1.0; // Measures cognitive processing chaotic vectors
-  final List<Map<String, dynamic>> _behavioralTelemetryBuffer = [];
+    setUp(() {
+      engine = OracleSyncEngine();
+    });
 
-  CognitiveLoadState get inferredState => _inferredState;
-  double get entropyScore => _entropyScore;
+    test('Initial properties match baseline defaults', () {
+      expect(engine.inferredState, equals(CognitiveLoadState.receptive));
+      expect(engine.entropyScore, equals(1.0));
+    });
 
-  /// 🚀 TRACKS MICRO-SUBCONSCIOUS TELEMETRY TO FORWARD-PREDICT MEMORY COLLAPSE
-  void logMicroInteractionTelemetry({
-    required double gazeDwellTimeSeconds,
-    required double vectorHesitationIndex,
-    required List<double> acousticPitchDelta,
-  }) {
-    final interactionSnapshot = {
-      "timestamp": DateTime.now().toIso8601String(),
-      "gaze_dwell": gazeDwellTimeSeconds,
-      "hesitation_index": vectorHesitationIndex,
-      "voice_pitch_variance": acousticPitchDelta
-    };
+    test('Floating-point operations clamp values to exactly 3 decimal places', () {
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 1.0, acousticPitchDelta: []);
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 1.0, acousticPitchDelta: []);
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 0.0, acousticPitchDelta: []);
 
-    _behavioralTelemetryBuffer.add(interactionSnapshot);
-    if (_behavioralTelemetryBuffer.length > 50) {
-      _behavioralTelemetryBuffer.removeAt(0); // Constant sliding data loop
-    }
+      expect(engine.entropyScore, equals(0.667));
+    });
 
-    _calculatePredictiveChronoShift();
-  }
+    test('Sliding ring buffer drops historical packets once it hits capacity limits', () {
+      // Step 1: Fill the buffer entirely with 50 items of 0.0
+      for (int i = 0; i < 50; i++) {
+        engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 0.0, acousticPitchDelta: []);
+      }
+      expect(engine.entropyScore, equals(0.0));
 
-  /// 🚀 LOCAL PREDICTION GATE: Triggers cloud mutation variables before human thought occurs
-  void _calculatePredictiveChronoShift() {
-    if (_behavioralTelemetryBuffer.isEmpty) return;
+      // Step 2: Push exactly 10 items of 1.0 to force out 10 items of 0.0
+      for (int i = 0; i < 10; i++) {
+        engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 1.0, acousticPitchDelta: []);
+      }
 
-    // Advanced local tensor simulation calculation logic stub
-    double localizedSum = _behavioralTelemetryBuffer
-        .map((e) => e["hesitation_index"] as double)
-        .reduce((a, b) => a + b);
-    _entropyScore = localizedSum / _behavioralTelemetryBuffer.length;
+      // 40 items of 0.0 + 10 items of 1.0 = 10.0 sum. 10 / 50 = 0.200
+      expect(engine.entropyScore, equals(0.2));
+    });
 
-    if (_entropyScore > 0.85) {
-      _inferredState = CognitiveLoadState.memoryDecayRisk;
-      debugPrint(
-          "🔮 Oracle Engine Alert: Cognitive decay detected. Initializing preemptive structural transformation sequence.");
-      notifyListeners();
-    }
-  }
+    test('Notifications only fire when state or rounded score changes', () {
+      int notifyCount = 0;
+      engine.addListener(() => notifyCount++);
+
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 0.5, acousticPitchDelta: []);
+      expect(notifyCount, equals(1));
+
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.0, vectorHesitationIndex: 0.5, acousticPitchDelta: []);
+      expect(notifyCount, equals(1));
+    });
+
+    test('resetEngine systematically wipes state machine fields back to zero configurations', () {
+      engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.5, vectorHesitationIndex: 0.99, acousticPitchDelta: []);
+      
+      engine.resetEngine();
+
+      expect(engine.inferredState, equals(CognitiveLoadState.receptive));
+      expect(engine.entropyScore, equals(1.0));
+    });
+  });
 }
