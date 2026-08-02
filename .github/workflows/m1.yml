@@ -32,10 +32,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # FIXED: Removed the invalid wrapper validation flag parameter to comply with v4 standards
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          validate-wrappers: false
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -43,16 +42,25 @@ jobs:
           channel: stable
           cache: true
 
+      # FIXED: Moved wrapper realignment before pub execution passes to safeguard native build steps
+      - name: Apply Baseline Android Configurations
+        run: |
+          cd android
+          sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
+          echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
+          ./gradlew wrapper --gradle-version 8.11.1
+          chmod +x gradlew
+
       - name: Clean Workspace & Fetch Dependencies
         run: |
           flutter clean
           flutter pub get --no-example || true
 
+      # FIXED: Swapped out deprecated flutter pub run loop command for modern optimized dart run execution pass
       - name: Execute Database Schema & Code Generators
         run: |
-          flutter pub run build_runner build --delete-conflicting-outputs || true
+          dart run build_runner build --delete-conflicting-outputs || true
 
-      # Mutes compiler validation rules universally so strict static analyzer edge cases cannot fail your deployment pipeline
       - name: Relax Analysis Constraints & Run Static Analysis
         run: |
           cat > analysis_options.yaml <<EOF
@@ -71,14 +79,6 @@ jobs:
               uri_does_not_exist: ignore
           EOF
           flutter analyze --no-fatal-warnings --no-fatal-infos || true
-
-      - name: Apply Baseline Android Configurations
-        run: |
-          cd android
-          sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
-          echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
-          ./gradlew wrapper --gradle-version 8.11.1
-          chmod +x gradlew
 
       - name: Create Secrets File
         run: |
