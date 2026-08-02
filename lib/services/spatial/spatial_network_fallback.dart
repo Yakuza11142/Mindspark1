@@ -1,62 +1,85 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+// Replace with your actual project layout namespace
+import 'package:your_project_name/spatial_network_guard.dart';
+import 'package:your_project_name/spatial_pipeline_observer.dart';
 
-enum TrackingState { streamingCloud, localFallback, networkOffline }
+void main() {
+  group('SpatialPipelineObserver UI Integration Tests', () {
+    late SpatialNetworkGuard fakeGuard;
 
-class SpatialNetworkGuard extends ChangeNotifier {
-  TrackingState _currentState = TrackingState.streamingCloud;
-  double _currentPingMs = 0.0;
-  Timer? _latencyCheckLoop;
+    const double testLayoutWidth = 400.0;
+    const double testLayoutHeight = 300.0;
 
-  // 🚀 CRITICAL THRESHOLD: If server loop takes over 180ms, switch to local processing instantly
-  final double maxAllowedLatencyMs = 180.0;
+    final Widget greenCloudView = Container(
+      key: const Key('cloud_view'),
+      color: Colors.green,
+    );
 
-  TrackingState get currentState => _currentState;
-  double get currentPingMs => _currentPingMs;
+    final Widget blueLocalView = Container(
+      key: const Key('local_view'),
+      color: Colors.blue,
+    );
 
-  void initializeLatencyGuard() {
-    _latencyCheckLoop = Timer.periodic(const Duration(seconds: 2), (timer) {
-      _evaluateNetworkPipeline();
+    setUp(() {
+      fakeGuard = SpatialNetworkGuard();
     });
-  }
 
-  void reportFrameDeliveryMetrics(double latencyMs) {
-    _currentPingMs = latencyMs;
-    _evaluateNetworkPipeline();
-  }
+    tearDown(() {
+      // Clean up internal resources to guarantee clear event loops across tests
+      fakeGuard.dispose();
+    });
 
-  void _evaluateNetworkPipeline() {
-    if (_currentPingMs == 0.0) {
-      _updateState(TrackingState.networkOffline);
-      return;
+    Widget buildTestHarness() {
+      return MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: testLayoutWidth,
+            height: testLayoutHeight,
+            child: SpatialPipelineObserver(
+              networkGuard: fakeGuard,
+              cloudRenderChild: greenCloudView,
+              localEngineChild: blueLocalView,
+            ),
+          ),
+        ),
+      );
     }
 
-    if (_currentPingMs > maxAllowedLatencyMs) {
-      if (_currentState != TrackingState.localFallback) {
-        debugPrint(
-            "⚠️ High Latency Detected (${_currentPingMs}ms). Diverting vector calculations to local Edge engine.");
-        _updateState(TrackingState.localFallback);
+    testWidgets('Should render the cloud viewport by default when network state initializes', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      expect(find.byKey(const Key('cloud_view')), findsOneWidget);
+      expect(find.byKey(const Key('local_view')), findsNothing);
+      expect(find.text('0.0 ms'), findsOneWidget);
+    });
+
+    testWidgets('Should transition view frames cleanly to local fallback state on bad ping spikes', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      // Saturate the moving average window to simulate stable network degradation
+      for (int i = 0; i < 5; i++) {
+        fakeGuard.reportFrameDeliveryMetrics(250.0);
       }
-    } else {
-      if (_currentState != TrackingState.streamingCloud) {
-        debugPrint(
-            "🚀 Connection Stable (${_currentPingMs}ms). Reconnecting to high-fidelity remote NVIDIA clusters.");
-        _currentState = TrackingState.streamingCloud;
-        notifyListeners();
-      }
-    }
-  }
+      
+      await tester.pump();
 
-  void _updateState(TrackingState newState) {
-    if (_currentState != newState) {
-      _currentState = newState;
-      notifyListeners();
-    }
-  }
+      expect(find.byKey(const Key('cloud_view')), findsNothing);
+      expect(find.byKey(const Key('local_view')), findsOneWidget);
+      expect(find.text('250.0 ms'), findsOneWidget);
+    });
 
-  @override
-  void dispose() {
-    _latencyCheckLoop?.cancel();
-    super.dispose();
-  }
+    testWidgets('Should display connection stalled view when moving average drops to zero', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      // Inject clear stall signal to simulate drop-off thresholds safely
+      fakeGuard.reportFrameDeliveryMetrics(0.0);
+      await tester.pump();
+
+      expect(find.byKey(const Key('cloud_view')), findsNothing);
+      expect(find.byKey(const Key('local_view')), findsNothing);
+      expect(find.text('Connection Stalled'), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+  });
 }
