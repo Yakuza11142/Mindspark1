@@ -1,5 +1,6 @@
 class StringCleaner {
-  static String clean(String input) {
-    return input.replaceAll('*', '').replaceAll('#', '').replaceAll('`', '');
+  static String clean(String? input) {
+    // Returns an empty string if input is null, otherwise strips characters in one pass
+    return input?.replaceAll(RegExp(r'[*#`]'), '') ?? '';
   }
 }
