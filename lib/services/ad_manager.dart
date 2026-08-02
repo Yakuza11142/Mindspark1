@@ -1,57 +1,106 @@
-import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../config/secrets.dart';
+// Replace with your actual project layout namespace
+import 'package:your_project_name/ad_manager.dart';
+import 'package:your_project_name/secure_banner_container.dart';
 
-class AdManager {
-  InterstitialAd? _interstitialAd;
-  RewardedInterstitialAd? _rewardedAd;
-  static int _count = 0;
+/// Minimal testing mock stub implementation to bypass native Google platform initializers
+class MockAdManager implements AdManager {
+  late BannerAd capturedAdInstance;
+  late VoidCallback mockFailureTrigger;
 
-  void init() {
-    MobileAds.instance.initialize();
-    _loadAll();
+  @override
+  void init() {}
+
+  @override
+  BannerAd createManagedBanner({required VoidCallback onAdFailed}) {
+    mockFailureTrigger = onAdFailed;
+    
+    // Instantiate the container using industry-standard mock unit codes
+    capturedAdInstance = BannerAd(
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdFailedToLoad: (ad, error) => onAdFailed(),
+      ),
+    );
+    return capturedAdInstance;
   }
 
-  void _loadAll() {
-    InterstitialAd.load(
-        adUnitId: Secrets.interstitialId,
-        request: const AdRequest(),
-        adLoadCallback: InterstitialAdLoadCallback(
-            onAdLoaded: (ad) => _interstitialAd = ad,
-            onAdFailedToLoad: (e) => _interstitialAd = null));
-    RewardedInterstitialAd.load(
-        adUnitId: Secrets.rewardedId,
-        request: const AdRequest(),
-        rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
-            onAdLoaded: (ad) => _rewardedAd = ad,
-            onAdFailedToLoad: (e) => _rewardedAd = null));
-  }
+  @override
+  void showSmartInterstitial() {}
 
-  BannerAd createBanner() {
-    return BannerAd(
-        adUnitId: Secrets.bannerId,
-        size: AdSize.banner,
-        request: const AdRequest(),
-        listener: BannerAdListener(onAdFailedToLoad: (ad, e) => ad.dispose()));
-  }
+  @override
+  void showRewarded({required VoidCallback onRewardEarned, required VoidCallback onAdUnavailable}) {}
 
-  void showSmartInterstitial() {
-    _count++;
-    if (_count % 2 != 0) return;
-    if (_interstitialAd != null) {
-      _interstitialAd!.show();
-      _interstitialAd = null;
-      _loadAll();
+  @override
+  void dispose() {}
+}
+
+void main() {
+  // Safe platform-level engine channel initialization binding rule
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('SecureBannerContainer Layout Integrity Tests', () {
+    late MockAdManager mockAdManager;
+    const String adChannelName = 'plugins.flutter.io/google_mobile_ads';
+
+    setUp(() {
+      mockAdManager = MockAdManager();
+
+      // Safely intercept native AdMob SDK method calls to isolate test execution
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(const MethodChannel(adChannelName), (MethodCall methodCall) async {
+        if (methodCall.method == 'createAd') {
+          return null; 
+        }
+        if (methodCall.method == 'initialize') {
+          // Return expected type map structures to align with SDK specifications
+          return <dynamic, dynamic>{};
+        }
+        return null;
+      });
+    });
+
+    tearDown(() {
+      // Clean up the channel mock registry after each test execution run
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(const MethodChannel(adChannelName), null);
+    });
+
+    Widget buildTestHarness() {
+      return MaterialApp(
+        home: Scaffold(
+          body: SecureBannerContainer(adManager: mockAdManager),
+        ),
+      );
     }
-  }
 
-  void showRewarded(Function onReward) {
-    if (_rewardedAd != null) {
-      _rewardedAd!.show(onUserEarnedReward: (ad, item) => onReward());
-      _rewardedAd = null;
-      _loadAll();
-    } else {
-      onReward();
-    }
-  }
+    testWidgets('Should render a persistent loading placeholder on baseline initialization', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+
+      // Assert: Verify that structural placeholders mount correctly while fetching network streams
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(AdWidget), findsNothing);
+    });
+
+    testWidgets('Should silently collapse container box profiles to zero when loading fails', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestHarness());
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Act: Force-trigger our failure parameter path mock callback synchronously
+      mockAdManager.mockFailureTrigger();
+      
+      // Re-evaluate layout changes inside the state thread
+      await tester.pump();
+
+      // Assert: Elements must wipe clean cleanly without throwing sizing boundary errors
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(AdWidget), findsNothing);
+      expect(find.byType(SizedBox), findsOneWidget); 
+    });
+  });
 }
