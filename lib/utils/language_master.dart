@@ -1,43 +1,63 @@
+import 'package:flutter/material.dart';
 import 'package:google_mlkit_language_id/google_mlkit_language_id.dart';
+import 'package:google_translate_api/google_translate_api.dart';
 
 class LanguageMaster {
-  static final _identifier = LanguageIdentifier(confidenceThreshold: 0.5);
+  // Configured as a standard instance to allow proper lifecycle resource closing
+  final _identifier = LanguageIdentifier(confidenceThreshold: 0.5);
 
-  static Future<String> identifyLanguage(String text) async {
+  Future<String> identifyLanguage(String text) async {
     try {
-      // Returns the language code (e.g., 'en', 'fr', 'es', 'yo' for Yoruba)
+      // Returns language codes (e.g., 'en', 'fr', 'es', 'yo' for Yoruba, 'ig' for Igbo, 'ha' for Hausa)
       final String languageCode = await _identifier.identifyLanguage(text);
       return languageCode;
     } catch (e) {
       return "und"; // Undetermined
     }
   }
+
+  // CRUCIAL: Native C++ memory channels must be freed up when the app switches states
+  void dispose() {
+    _identifier.close();
+  }
 }
-import 'package:google_translate_api/google_translate_api.dart';
 
 class UniversalTranslator {
-  // AIzaSyCcalNT14VuYy02C40r1VoZ280qB42Gnso
-
-  static final _api = GoogleTranslate('YOUR_GOOGLE_CLOUD_API_KEY');
+  // CRUCIAL: Read keys safely using global String definitions or environment values. 
+  // DO NOT leave active raw keys inside comments or hardcoded strings.
+  static final _api = GoogleTranslate(
+    const String.fromEnvironment('GOOGLE_API_KEY', defaultValue: 'FALLBACK_KEY')
+  );
 
   static Future<String> translateToEnglish(String text) async {
-    final translation = await _api.translate(
-      text: text,
-      targetLang: 'en', // Translates whatever it is into English
-    );
-    return translation;
+    try {
+      final translation = await _api.translate(
+        text: text,
+        targetLang: 'en', // Automatically converts foreign input strings directly to English
+      );
+      return translation;
+    } catch (e) {
+      return text; // Graceful fallback to original text if translation pipeline fails offline
+    }
   }
 }
-void onUserMessage(String userInput) async {
-  // 1. Detect the language
-  String lang = await LanguageMaster.identifyLanguage(userInput);
 
-  // 2. If it's not English, Spark can "know" and translate it
+// Fixed top-level handler orchestration
+void onUserMessage(String userInput) async {
+  final languageMaster = LanguageMaster();
+  
+  // 1. Detect the incoming language
+  String lang = await languageMaster.identifyLanguage(userInput);
+
+  // 2. If it is not English or Undetermined, process the translation pipeline
   if (lang != 'en' && lang != 'und') {
-    print("Spark detected a non-English language: $lang");
+    debugPrint("Spark detected a non-English language: $lang");
     String translated = await UniversalTranslator.translateToEnglish(userInput);
-    
-    // Spark handles the translated text
-    print("Spark says: 'I see you're speaking $lang. In English, that's: $translated'");
+
+    // Spark processes the unified English translation payload cleanly
+    debugPrint("Spark says: 'I see you're speaking $lang. In English, that's: $translated'");
   }
+
+  // Clean up native ML Kit resources immediately after inference execution
+  languageMaster.dispose();
 }
