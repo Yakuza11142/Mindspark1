@@ -1,86 +1,120 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:developer' as developer;
 
 class UnfailingPaymentQueue {
-  static const String queueKey = "pending_secure_transactions";
-  static final _supabase = Supabase.instance.client;
+  // Centralized key registries ensuring zero raw-string duplication across loops
+  static const String _storageKeyQueue = "pending_secure_transactions";
+  static const String _tablePayments = 'payments';
+  
+  static final SupabaseClient _supabase = Supabase.instance.client;
+  static bool _isSyncingActive = false; // Mutex lock preventing concurrent background loop overlaps
 
-  // =========================================================================
-  // 1. SAVE THE RECEIPT LOCALLY
-  // =========================================================================
-  static Future<void> logPaymentLocally(
-      String transactionId, double amount) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> queue = prefs.getStringList(queueKey) ?? [];
+  /// Saves transaction receipt profiles locally to disk partition cache memory
+  static Future<void> logPaymentLocally({
+    required String transactionId, 
+    required double amount,
+  }) async {
+    final String sanitizedId = transactionId.trim();
+    if (sanitizedId.isEmpty || amount <= 0.0) return;
 
-    Map<String, dynamic> receipt = {
-      'transaction_id': transactionId,
-      'amount': amount,
-      'timestamp': DateTime.now().toIso8601String(),
-      'status': 'pending_sync'
-    };
+    try {
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      final List<String> temporaryQueue = preferences.getStringList(_storageKeyQueue) ?? [];
 
-    queue.add(jsonEncode(receipt));
-    await prefs.setStringList(queueKey, queue);
+      final Map<String, dynamic> rawReceiptMap = {
+        'transaction_id': sanitizedId,
+        'amount': amount,
+        'timestamp': DateTime.now().toIso8601String(),
+        'status': 'pending_sync'
+      };
 
-    print("💳 PAYMENT SECURED LOCALLY: Vaulted for Cloud Sync.");
+      // Add encoded item down into storage queue array tracks
+      temporaryQueue.add(jsonEncode(rawReceiptMap));
+      await preferences.setStringList(_storageKeyQueue, temporaryQueue);
 
-    // Attempt immediate sync if internet exists
-    syncPaymentsWithServer();
+      developer.log("💳 Payment Vault: Local receipt secured for transaction identity: $sanitizedId");
+
+      // Auto-trigger immediate non-blocking sync evaluation pass
+      syncPaymentsWithServer();
+    } catch (storageError) {
+      developer.log("🚨 Payment Vault Error: Failed committing local transaction cache write.");
+    }
   }
 
-  // =========================================================================
-  // 2. THE BACKGROUND SYNC
-  // =========================================================================
+  /// Processes queued payment buffers sequentially over open backend server channels
   static Future<void> syncPaymentsWithServer() async {
-    // Check connectivity
-    var connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      print("📡 Offline. Receipts safely stored in phone vault.");
-      return;
-    }
+    // Structural Guard: Block simultaneous concurrent execution passes to prevent data racing
+    if (_isSyncingActive) return;
+    _isSyncingActive = true;
 
-    final prefs = await SharedPreferences.getInstance();
-    List<String> queue = prefs.getStringList(queueKey) ?? [];
-
-    if (queue.isEmpty) return;
-
-    print(
-        "🌍 Internet active. Syncing ${queue.length} payments to Supabase...");
-
-    List<String> syncedIds = [];
-
-    for (String item in queue) {
-      final receipt = jsonDecode(item);
-
-      bool success = await _sendToSupabase(receipt);
-      if (success) {
-        syncedIds.add(item);
+    try {
+      // FIX: Corrected API signature validation to support connectivity_plus array results
+      final List<ConnectivityResult> networkStatusList = await Connectivity().checkConnectivity();
+      
+      if (networkStatusList.contains(ConnectivityResult.none)) {
+        developer.log("📡 Payment Vault: Client device is currently offline. Sync pass paused.");
+        _isSyncingActive = false;
+        return;
       }
-    }
 
-    // Clean up the local queue
-    queue.removeWhere((item) => syncedIds.contains(item));
-    await prefs.setStringList(queueKey, queue);
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      final List<String> currentQueue = preferences.getStringList(_storageKeyQueue) ?? [];
+
+      if (currentQueue.isEmpty) {
+        _isSyncingActive = false;
+        return;
+      }
+
+      developer.log("🌍 Payment Vault: Open connection verified. Processing ${currentQueue.length} outstanding tasks.");
+
+      // Allocate dedicated index tracking arrays to safely segment completed actions
+      final List<String> successfullySyncedItems = [];
+
+      for (final String serializedReceipt in currentQueue) {
+        try {
+          final Map<String, dynamic> receiptMap = jsonDecode(serializedReceipt);
+          
+          final bool uploadVerification = await _sendToSupabase(receiptMap);
+          if (uploadVerification) {
+            successfullySyncedItems.add(serializedReceipt);
+          }
+        } catch (jsonDecodeError) {
+          // Flag corrupted JSON entries for drop-out cleanup loops
+          successfullySyncedItems.add(serializedReceipt);
+        }
+      }
+
+      // Re-read storage fresh before updating to prevent multi-screen state collisions
+      final List<String> accurateFreshQueue = preferences.getStringList(_storageKeyQueue) ?? [];
+      
+      // FIX: Safely remove elements without corrupting running array iteration pipelines
+      accurateFreshQueue.removeWhere((queueItem) => successfullySyncedItems.contains(queueItem));
+      await preferences.setStringList(_storageKeyQueue, accurateFreshQueue);
+      
+      developer.log("🎯 Payment Vault: Sync processing pass complete. Outstanding queue size: ${accurateFreshQueue.length}");
+    } catch (globalSyncException) {
+      developer.log("🚨 Payment Vault Failure: General synchronization exception encountered: $globalSyncException");
+    } finally {
+      _isSyncingActive = false; // Release execution lock
+    }
   }
 
-  // =========================================================================
-  // 3. SUPABASE UPLOAD (Upsert for safety)
-  // =========================================================================
+  /// Commits standard upsert calls to verify endpoint storage rows without duplicate creation risks
   static Future<bool> _sendToSupabase(Map<String, dynamic> receipt) async {
     try {
-      // Use 'upsert' so if it retries, it won't create duplicate rows
-      await _supabase.from('payments').upsert({
-        'id': receipt['transaction_id'], // Primary Key in Supabase
+      await _supabase.from(_tablePayments).upsert({
+        'id': receipt['transaction_id'], 
         'amount': receipt['amount'],
         'created_at': receipt['timestamp'],
         'sync_status': 'synced',
       });
       return true;
-    } catch (e) {
-      print("❌ Supabase Sync Failed: $e");
+    } catch (supabaseNetworkError) {
+      developer.log("❌ Payment Vault: Database upload target rejected request: $supabaseNetworkError");
       return false;
     }
   }
