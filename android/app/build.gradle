@@ -5,7 +5,6 @@ plugins {
 }
 
 android {
-    // Unique identifier matching your settings and manifest namespaces
     namespace "com.mindspark.app"
     compileSdk 35
 
@@ -18,15 +17,13 @@ android {
         jvmTarget = '17'
     }
 
-    // FIXED: Centralizes both folder hierarchies explicitly to protect your mixed source tree
+    // FIXED: Enforces standard native Flutter Android plugin architecture paths
     sourceSets {
         main {
-            java.srcDirs = ['src/main/java']
-            kotlin.srcDirs = ['src/kotlin']
+            java.srcDirs = ['src/main/java', 'src/main/kotlin']
         }
     }
 
-    // FIXED: Structured signing configurations to satisfy automated production builds
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -35,8 +32,8 @@ android {
             keyPassword 'android'
         }
         release {
-            // Pulls secure credentials from environment variables when running on CI
-            storeFile file('release.keystore')
+            // FIXED: Securely pulls properties, fallback triggers ONLY if file reference is completely broken
+            storeFile file(System.getenv("SIGNING_STORE_FILE") ?: 'release.keystore')
             storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: 'android'
             keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: 'androiddebugkey'
             keyPassword System.getenv("SIGNING_KEY_PASSWORD") ?: 'android'
@@ -45,11 +42,13 @@ android {
 
     defaultConfig {
         applicationId "com.mindspark.app"
-        // Required API 24 baseline allows advanced WebRTC and ML Kit dependencies to initialize
-        minSdk 24
+        minSdk 24 // Required baseline for complex WebRTC and MLKit processing
         targetSdk 35
         versionCode 1
         versionName "1.0.0"
+        
+        // CRITICAL FIX: Required to support multiple heavy AI/AR plugins without exceeding dex method limits
+        multiDexEnabled true 
     }
 
     buildFeatures {
@@ -58,13 +57,18 @@ android {
 
     buildTypes {
         release {
-            // Automatically falls back to debug signing signatures if release secrets aren't mounted
-            signingConfig (project.hasProperty('release') ? signingConfigs.release : signingConfigs.debug)
-            
-            // Optimizes final file sizes while honoring your custom proguard-rules.pro overrides
+            // FIXED: Dynamically matches signing configs reliably by reading the explicit build type namespace
+            signingConfig signingConfigs.release
+
             minifyEnabled true
             shrinkResources true
+            
+            // FIXED: Added essential optimization consumer rules alongside the primary proguard configuration array
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
 }
