@@ -3,31 +3,54 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseAuthProvider {
   final _supabase = Supabase.instance.client;
 
-  Future<AuthResponse> signUp(
-      String email, String password, String name) async {
-    final response = await _supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: {'full_name': name},
-    );
+  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
+  User? get currentUser => _supabase.auth.currentUser;
+  Session? get currentSession => _supabase.auth.currentSession;
 
-    // Create initial user profile in the database
-    if (response.user != null) {
-      await _supabase.from('profiles').insert({
-        'id': response.user!.id,
-        'email': email,
-        'name': name,
-        'sparks': 100, // Starting bonus
-        'total_xp': 0,
-        'is_pro': false,
-      });
+  /// Exposes a realtime stream of the currently logged-in user's profile database row.
+  /// Emits a Map containing live keys like 'sparks', 'total_xp', and 'name'.
+  Stream<Map<String, dynamic>?> get profileStream {
+    final userId = currentUser?.id;
+    if (userId == null) {
+      return Stream.value(null);
     }
-    return response;
+    
+    // Listens in realtime exclusively to modifications on this specific user profile row
+    return _supabase
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('id', userId)
+        .map((data) => data.isNotEmpty ? data.first : null);
   }
 
-  Future<AuthResponse> signIn(String email, String password) async {
-    return await _supabase.auth
-        .signInWithPassword(email: email, password: password);
+  Future<AuthResponse> signUp({
+    required String email, 
+    required String password, 
+    required String name,
+  }) async {
+    try {
+      return await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': name},
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<AuthResponse> signIn({
+    required String email, 
+    required String password,
+  }) async {
+    try {
+      return await _supabase.auth.signInWithPassword(
+        email: email, 
+        password: password,
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> signOut() async {
