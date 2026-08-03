@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 1 
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -32,7 +32,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # FIXED: Removed the invalid wrapper validation flag parameter to comply with v4 standards
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -41,25 +40,30 @@ jobs:
         with:
           channel: stable
           cache: true
+          cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
 
-      # FIXED: Moved wrapper realignment before pub execution passes to safeguard native build steps
-      - name: Apply Baseline Android Configurations
+      - name: Auto-Generate Missing Android Project Structure
+        run: |
+          flutter create --platforms=android .
+
+      - name: Apply Baseline Android Configurations & Generate Wrapper
         run: |
           cd android
           sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
           echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
-          ./gradlew wrapper --gradle-version 8.11.1
+          
+          # Uses runner's pre-installed Gradle engine to construct the missing gradlew file
+          gradle wrapper --gradle-version 8.11.1
           chmod +x gradlew
 
       - name: Clean Workspace & Fetch Dependencies
         run: |
           flutter clean
-          flutter pub get --no-example || true
+          flutter pub get
 
-      # FIXED: Swapped out deprecated flutter pub run loop command for modern optimized dart run execution pass
       - name: Execute Database Schema & Code Generators
         run: |
-          dart run build_runner build --delete-conflicting-outputs || true
+          dart run build_runner build --delete-conflicting-outputs
 
       - name: Relax Analysis Constraints & Run Static Analysis
         run: |
@@ -78,7 +82,7 @@ jobs:
               undefined_identifier: ignore
               uri_does_not_exist: ignore
           EOF
-          flutter analyze --no-fatal-warnings --no-fatal-infos || true
+          flutter analyze --no-fatal-warnings --no-fatal-infos
 
       - name: Create Secrets File
         run: |
