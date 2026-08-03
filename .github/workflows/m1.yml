@@ -44,28 +44,48 @@ jobs:
           cache: true
           cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
 
+      - name: Cache Pub Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Regenerate Missing Gradle Wrapper Files
         run: |
           cd android
           gradle wrapper --gradle-version 8.11.1
           chmod +x gradlew
 
-      - name: Clean Workspace & Fetch Dependencies
+      - name: Fetch Dependencies
         run: |
-          flutter clean
-          
-          # Diagnostic: Print all outdated dependencies to the runner console logs
-          flutter pub outdated
-          
-          # Upgrades available package tree bounds inside pubspec specifications
-          flutter pub upgrade
-          
-          # Clean execution block ignoring local sample environments
           flutter pub get --no-example
 
       - name: Execute Database Schema & Code Generators
         run: |
           dart run build_runner build --delete-conflicting-outputs
+
+      # SECURE STEP: We generate the secrets file completely OUTSIDE the workspace root directory
+      - name: Create Secrets File Outside Workspace
+        run: |
+          MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
+          cat > ../secrets.json <<EOF
+          {
+            "SUPABASE_URL":"${{ secrets.SUPABASE_URL }}",
+            "SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}",
+            "GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}",
+            "OPENAI_KEY":"${{ secrets.OPENAI_KEY }}",
+            "GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}",
+            "VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}",
+            "HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}",
+            "RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}",
+            "TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}",
+            "PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}",
+            "MTN_API_KEY":"$MTN_CLEAN",
+            "ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"
+          }
+          EOF
 
       - name: Relax Analysis Constraints & Run Static Analysis
         run: |
@@ -86,26 +106,6 @@ jobs:
           EOF
           flutter analyze --no-fatal-warnings --no-fatal-infos
 
-      - name: Create Secrets File
-        run: |
-          MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
-          cat > secrets.json <<EOF
-          {
-            "SUPABASE_URL":"${{ secrets.SUPABASE_URL }}",
-            "SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}",
-            "GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}",
-            "OPENAI_KEY":"${{ secrets.OPENAI_KEY }}",
-            "GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}",
-            "VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}",
-            "HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}",
-            "RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}",
-            "TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}",
-            "PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}",
-            "MTN_API_KEY":"$MTN_CLEAN",
-            "ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"
-          }
-          EOF
-
       - name: Build Android APK
         run: |
           flutter build apk \
@@ -113,13 +113,17 @@ jobs:
           --obfuscate \
           --split-debug-info=build/app/outputs/symbols \
           --android-skip-build-dependency-validation \
-          --dart-define-from-file=secrets.json
+          --dart-define-from-file=../secrets.json
 
       - name: Build Web Application
         run: |
           flutter build web \
           --release \
-          --dart-define-from-file=secrets.json
+          --dart-define-from-file=../secrets.json
+
+      # EXTRA PROTECTION: Purge the external file from disk before zipping deployment artifacts
+      - name: Shred Secrets File
+        run: rm -f ../secrets.json
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
