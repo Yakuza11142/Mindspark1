@@ -58,21 +58,31 @@ jobs:
           gradle wrapper --gradle-version 8.11.1
           chmod +x gradlew
 
-      # AUTOMATED STRATEGY: Dynamically reads your local targets to build an override script
+      # ZERO HARDCODING: Scrapes version solver error streams and builds overrides dynamically
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
-          flutter pub upgrade --major-versions
-          
-          INTL_VER=$(grep -E '^[[:space:]]*intl:' pubspec.yaml | awk '{print $2}')
-          META_VER=$(grep -E '^[[:space:]]*meta:' pubspec.yaml | awk '{print $2}' || echo "^1.19.0")
-          WEB_VER=$(grep -E '^[[:space:]]*web:' pubspec.yaml | awk '{print $2}' || echo "^0.5.1")
-          
-          cat > pubspec_overrides.yaml <<EOF
-          dependency_overrides:
-            intl: ${INTL_VER:-^0.20.3}
-            meta: ${META_VER:-^1.19.0}
-            web: ${WEB_VER:-^0.5.1}
-          EOF
+          # 1. Force a package upgrade run and capture the exact terminal error output
+          flutter pub upgrade --major-versions > pub_output.txt 2>&1 || true
+          cat pub_output.txt
+
+          # 2. Initialize an empty overrides array
+          echo "dependency_overrides:" > pubspec_overrides.yaml
+
+          # 3. Use grep/awk to look for conflict markers, find the package names, 
+          # and look up their current declared target versions straight from your pubspec.yaml
+          grep -E "depends on|because" pub_output.txt | tr -d '`'"'" | awk '{for(i=1;i<=NF;i++) if($i=="depends" && $(i+1)=="on") print $(i-1)}' | sort -u | while read -r PKG; do
+            if [ ! -z "$PKG" ]; then
+              # Find the package's local version configuration constraint line
+              VER=$(grep -E "^[[:space:]]*${PKG}:" pubspec.yaml | awk '{print $2}')
+              if [ ! -z "$VER" ]; then
+                echo "  ${PKG}: ${VER}" >> pubspec_overrides.yaml
+              fi
+            fi
+          done
+
+          # 4. Print out the dynamically constructed override schema for transparency
+          echo "=== DYNAMIC OVERRIDES CREATED ==="
+          cat pubspec_overrides.yaml
 
       - name: Fetch Dependencies
         run: |
@@ -138,11 +148,12 @@ jobs:
           --base-href "/${{ github.event.repository.name }}/" \
           --dart-define-from-file=../secrets.json
 
-      # EXTRA PROTECTION: Purge the external config data from runner disk space immediately
+      # EXTRA PROTECTION: Purge the temporary configurations completely from disk
       - name: Shred Secrets and Overrides File
         run: |
           rm -f ../secrets.json
           rm -f pubspec_overrides.yaml
+          rm -f pub_output.txt
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
