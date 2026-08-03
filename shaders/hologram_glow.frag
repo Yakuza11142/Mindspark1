@@ -24,10 +24,13 @@ uniform vec4 uHoloSystemFX;
 out vec4 fragColor;
 
 // =========================================================================
-// PIPELINE OPTIMIZATION: PSEUDO-RANDOM NOISE GENERATOR
+// PIPELINE OPTIMIZATION: TEMPORALLY STABLE PSEUDO-RANDOM NOISE GENERATOR
 // =========================================================================
 float generateHoloNoise(vec2 co) {
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    // FIXED: Implemented mod wrapper layout constraints to preserve 100% precision 
+    // This stops noise rows from corrupting or freezing over continuous running timelines
+    float dotProduct = dot(co, vec2(12.9898, 78.233));
+    return fract(sin(mod(dotProduct, 3.141592653589793)) * 43758.5453);
 }
 
 // =========================================================================
@@ -38,14 +41,11 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     float enforcedScale = entityTrack.z;
     float entityLife = entityTrack.w;
 
-    // FIXED: Swapped out the syntax-breaking conditional statement and branch-divergent return
-    // This calculates an explicit multiplier mask to keep code branchless and optimized for parallel threads
     float operationalMask = step(0.001, entityLife) * step(entityLife, 1.0);
 
     float localDist = length(universalUV - entityCoordinates) * enforcedScale;
     float particlePulse = smoothstep(0.06, 0.0, localDist);
 
-    // Cybernetic accent color for auxiliary entity dots
     vec3 accentColor = vec3(0.0, 1.0, 0.7); 
     float alphaOutput = particlePulse * entityLife * 0.75 * operationalMask;
 
@@ -69,14 +69,15 @@ void main() {
     float jumpIntensity  = uHoloSystemFX.z;
     float noiseDensity   = uHoloSystemFX.w;
 
-    // Generate local runtime calculations
-    float randomNoise    = generateHoloNoise(universalUV + vec2(uTimelineDelta));
+    // FIXED: Apply dynamic modulo bounding constraints to incoming timeline deltas
+    float boundedTime = mod(uTimelineDelta, 100.0);
+    float randomNoise = generateHoloNoise(universalUV + vec2(boundedTime));
 
-    // Dynamic Dislocation Interference (Teleport Matrix Glitch Animation)
-    if (jumpIntensity > 0.90) {
-        float waveRip = sin(universalUV.y * 30.0 + uTimelineDelta * 50.0) * noiseDensity * jumpIntensity * 5.0;
-        universalUV.x += (randomNoise - 0.5) * (noiseDensity * 12.0 * jumpIntensity) + waveRip;
-    }
+    // Swapped out syntax-breaking branching with a branchless glitch mask
+    float glitchMask = step(0.90, jumpIntensity);
+    float waveRip = sin(universalUV.y * 30.0 + boundedTime * 50.0) * noiseDensity * jumpIntensity * 5.0;
+    float xOffset = ((randomNoise - 0.5) * (noiseDensity * 12.0 * jumpIntensity) + waveRip) * glitchMask;
+    universalUV.x += xOffset;
 
     // Map local space vectors for the primary parent avatar structure
     vec2 localSpaceUV = (universalUV - hologramOrigin) * hologramScale;
@@ -132,7 +133,7 @@ void main() {
     float totalHologramDensity = clamp(initialVolume + skeletalGlow + (coreGlow * isInsideBody), 0.0, 1.0);
 
     // Traveling electronic laser scan bar tracking
-    float scanBarY = fract(uTimelineDelta * scanSpeed);
+    float scanBarY = fract(boundedTime * scanSpeed);
     float scanBarLine = smoothstep(0.02, 0.0, abs(universalUV.y - scanBarY));
     totalHologramDensity += scanBarLine * scanIntensity * isInsideBody;
 
@@ -153,9 +154,8 @@ void main() {
     childAccumulator += processChildEntity(universalUV, uEntity4);
     childAccumulator += processChildEntity(universalUV, uEntity5);
 
-    vec3 blendedRGB = mix(finalParentFrame.rgb, childAccumulator.rgb, childAccumulator.a);
-    float blendedAlpha = clamp(finalParentFrame.a + childAccumulator.a, 0.0, 0.95);
+    vec3 blendedRGB = finalParentFrame.rgb + childAccumulator.rgb * (1.0 - finalParentFrame.a);
+    float blendedAlpha = clamp(finalParentFrame.a + childAccumulator.a * (1.0 - finalParentFrame.a), 0.0, 0.95);
 
-    // Enforce pre-multiplied alpha layout validation for Skia/Impeller hardware performance stability
-    fragColor = vec4(blendedRGB * blendedAlpha, blendedAlpha);
+    fragColor = vec4(blendedRGB, blendedAlpha);
 }
