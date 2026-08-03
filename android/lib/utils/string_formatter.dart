@@ -1,83 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import '../services/security_service.dart';
 
-class AppBootSequence {
-  static Future<bool> execute(SecurityService securityService) async {
-    debugPrint("🚀 [MindSpark Core] Executing Infrastructure Boot Sequence...");
+class StringFormatter {
+  /// Cleans redundant horizontal spaces universally across Web/Native while protecting code indentations and paragraphs
+  static String clean(String? input) {
+    if (input == null) return '';
+
+    // Step 1: Prevent vertical layout bloat by collapsing 3+ sequential line breaks down to 2
+    final normalizedNewlines = input.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+
+    return normalizedNewlines
+        .split('\n') 
+        .map((line) {
+          // Removes trailing spaces while keeping your left-side indentations locked
+          final trailingCleaned = line.replaceAll(RegExp(r'[ \t\u00A0\u2000-\u200A]+$'), '');
+          
+          // FIXED: Extracted leading indentation to support lookbehind-free web platforms natively
+          final leadingMatch = RegExp(r'^[ \t\u00A0\u2000-\u200A]*').stringMatch(trailingCleaned) ?? '';
+          final contentPart = trailingCleaned.substring(leadingMatch.length);
+
+          // FIXED: Safely condenses spaces inside line bodies without altering the leading indentation blocks
+          final condensedContent = contentPart.replaceAll(RegExp(r'[ \t\u00A0\u2000-\u200A]+'), ' ');
+          
+          return '$leadingMatch$condensedContent';
+        })
+        .join('\n') 
+        .trim();
+  }
+
+  /// Truncates string contents safely by counting visual character clusters instead of raw surrogate code units
+  static String truncate(String? input, int maxLength) {
+    final cleaned = clean(input);
+    
+    if (maxLength <= 0) return '...';
+    
+    final graphemeClusters = cleaned.characters;
+    if (graphemeClusters.length <= maxLength) return cleaned;
 
     try {
-      // FIX: Defensive boundary lock guarantees framework engine binds natively before asset calls execute
-      WidgetsFlutterBinding.ensureInitialized();
-
-      // Capture and validate global environment parameters passed via compile definitions
-      const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-      const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-
-      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-        throw ArgumentError("SUPABASE environmental secrets cannot be parsed. Verify compile flags mapping.");
-      }
-
-      // 1. Engage FreeRASP anti-tamper security layers before opening web connection ports
-      await securityService.initializeSecurityShield();
-
-      if (securityService.isSystemCompromised) {
-        debugPrint("🛑 Boot Sequence Interrupted: Device attestation check failed.");
-        return true; // Return true so main.dart can safely catch and display the secure lockout layout
-      }
-
-      // 2. FIXED: Robust, optimized multi-instance state check prevents StateErrors from blocking thread paths
-      bool isSupabaseInitialized = false;
-      try {
-        // Safe explicit evaluation pattern isolates instance configuration status
-        isSupabaseInitialized = Supabase.instance.client.supabaseUrl.isNotEmpty;
-      } catch (_) {
-        isSupabaseInitialized = false;
-      }
-
-      if (!isSupabaseInitialized) {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          anonKey: supabaseAnonKey,
-        );
-        debugPrint("📡 Supabase Edge Routing Services Verified.");
-      } else {
-        debugPrint("📡 Supabase Client already active. Bypassing initialization cycle.");
-      }
-
-      // 3. Initialize background processes out-of-band to prevent UI freezing
-      _initializeBackgroundSubsystems();
-
-      debugPrint("⚙️ Subsystems initialized successfully.");
-      return true;
-
-    } catch (e, stackTrace) {
-      debugPrint("🚨 Critical AppBootSequence Failure: ${e.toString()}");
-      debugPrint("Stack Trace: $stackTrace");
-      return false;
+      final truncatedText = graphemeClusters.take(maxLength).toString();
+      return '${truncatedText.trimRight()}...';
+    } catch (_) {
+      return '...'; 
     }
-  }
-
-  static void _initializeBackgroundSubsystems() {
-    // Isolates heavy ad profiling, purchase histories, and 3D mesh loads away from the main event frame
-    Future(() async {
-      try {
-        await MobileAds.instance.initialize();
-        await _initializeInAppPurchases();
-        await _preloadCharacterAssets();
-        debugPrint("💎 Background monetization & multimedia subsystems cached.");
-      } catch (e) {
-        debugPrint("⚠️ Non-fatal sub-system background initialization warning: $e");
-      }
-    });
-  }
-
-  static Future<void> _initializeInAppPurchases() async {
-    await Future.delayed(const Duration(milliseconds: 150)); 
-  }
-
-  static Future<void> _preloadCharacterAssets() async {
-    await Future.delayed(const Duration(milliseconds: 200));
   }
 }
