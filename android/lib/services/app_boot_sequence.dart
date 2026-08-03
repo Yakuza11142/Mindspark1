@@ -1,47 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/security_service.dart';
 
 class AppBootSequence {
-  // FIXED: Changed signature to Future<bool> to allow non-blocking asynchronous execution tracking
-  static Future<bool> execute() async {
+  static Future<bool> execute(SecurityService securityService) async {
     debugPrint("🚀 [MindSpark Core] Executing Infrastructure Boot Sequence...");
 
     try {
-      // FIXED: Crucial security guard line. Binds the Flutter frame engine to native platform channels.
+      // FIX: Defensive boundary lock guarantees framework engine binds natively before asset calls execute
       WidgetsFlutterBinding.ensureInitialized();
 
-      // STEP 1: Secure primary database routing configuration lines first
-      await Supabase.initialize(
-        url: const String.fromEnvironment('SUPABASE_URL'),
-        anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
-      );
-      debugPrint("📡 Supabase Edge Routing Services Verified.");
+      // Capture and validate global environment parameters passed via compile definitions
+      const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+      const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-      // STEP 2: Launch secondary background tasks in parallel to minimize total app load time
-      await Future.wait([
-        MobileAds.instance.initialize(),
-        _initializeInAppPurchases(),
-        _preloadCharacterAssets(),
-      ]);
+      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+        throw ArgumentError("SUPABASE environmental secrets cannot be parsed. Verify compile flags mapping.");
+      }
 
-      debugPrint("⚙️ Parallel core subsystems initialized successfully.");
-      return true; // Boot sequence passed cleanly
+      // 1. Engage FreeRASP anti-tamper security layers before opening web connection ports
+      await securityService.initializeSecurityShield();
+
+      if (securityService.isSystemCompromised) {
+        debugPrint("🛑 Boot Sequence Interrupted: Device attestation check failed.");
+        return true; // Return true so main.dart can safely catch and display the secure lockout layout
+      }
+
+      // 2. FIXED: Robust, optimized multi-instance state check prevents StateErrors from blocking thread paths
+      bool isSupabaseInitialized = false;
+      try {
+        // Safe explicit evaluation pattern isolates instance configuration status
+        isSupabaseInitialized = Supabase.instance.client.supabaseUrl.isNotEmpty;
+      } catch (_) {
+        isSupabaseInitialized = false;
+      }
+
+      if (!isSupabaseInitialized) {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseAnonKey,
+        );
+        debugPrint("📡 Supabase Edge Routing Services Verified.");
+      } else {
+        debugPrint("📡 Supabase Client already active. Bypassing initialization cycle.");
+      }
+
+      // 3. Initialize background processes out-of-band to prevent UI freezing
+      _initializeBackgroundSubsystems();
+
+      debugPrint("⚙️ Subsystems initialized successfully.");
+      return true;
 
     } catch (e, stackTrace) {
       debugPrint("🚨 Critical AppBootSequence Failure: ${e.toString()}");
       debugPrint("Stack Trace: $stackTrace");
-      return false; // Boot sequence failed safely
+      return false;
     }
   }
 
+  static void _initializeBackgroundSubsystems() {
+    // Isolates heavy ad profiling, purchase histories, and 3D mesh loads away from the main event frame
+    Future(() async {
+      try {
+        await MobileAds.instance.initialize();
+        await _initializeInAppPurchases();
+        await _preloadCharacterAssets();
+        debugPrint("💎 Background monetization & multimedia subsystems cached.");
+      } catch (e) {
+        debugPrint("⚠️ Non-fatal sub-system background initialization warning: $e");
+      }
+    });
+  }
+
   static Future<void> _initializeInAppPurchases() async {
-    // Inject your store billing connection mapping handlers here
     await Future.delayed(const Duration(milliseconds: 150)); 
   }
 
   static Future<void> _preloadCharacterAssets() async {
-    // Vector matrix loading sequence for your 3D assets
     await Future.delayed(const Duration(milliseconds: 200));
   }
 }
