@@ -21,9 +21,8 @@ allprojects {
 rootProject.layout.buildDirectory.set(rootProject.file("../build"))
 
 subprojects { project ->
+    // Build directory configuration is mapped safely before subproject execution trees evaluate
     project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
-
-    // FIXED: Removed the evaluationDependsOn loop that creates circular compilation lockouts
 
     project.tasks.withType(JavaCompile).configureEach {
         options.compilerArgs << "-Xlint:-unchecked" << "-Xlint:-deprecation"
@@ -33,28 +32,27 @@ subprojects { project ->
 
     project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
-            // FIXED: Removed the syntax-breaking -Xmx memory parameter from compiler arguments array.
-            // Memory heap caps are handled globally via gradle.properties: org.gradle.jvmargs=-Xmx2048m
             jvmTarget = "17"
         }
     }
 
-    project.plugins.withId('com.android.library') {
-        // FIXED: Using compileSdk syntax mapping rather than old compileSdkVersion configuration methods
-        if (project.android.hasProperty('compileSdk')) {
-            project.android.compileSdk = 35 // Kept at stable API 35 production baseline
+    // FIXED: Safe property lookups configure child plugin extensions without throwing raw method exceptions
+    project.plugins.configureEach { plugin ->
+        if (plugin.class.name.contains("com.android.build.gradle.LibraryPlugin")) {
+            project.extensions.configure("android") { ext ->
+                ext.setCompileSdk(35)
+                if (!ext.hasProperty('namespace') || ext.namespace == null) {
+                    String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+                    ext.setNamespace("com.mindspark.generated.${cleanName}")
+                }
+            }
         }
-
-        // FIXED: Gracefully assigns namespaces to older plugins without checking/altering file inputs
-        if (project.android.namespace == null) {
-            String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-            project.android.namespace = "com.mindspark.generated.${cleanName}"
-        }
-    }
-
-    project.plugins.withId('com.android.application') {
-        if (project.android.namespace == null) {
-            project.android.namespace = "com.mindspark.app"
+        if (plugin.class.name.contains("com.android.build.gradle.AppPlugin")) {
+            project.extensions.configure("android") { ext ->
+                if (!ext.hasProperty('namespace') || ext.namespace == null) {
+                    ext.setNamespace("com.mindspark.app")
+                }
+            }
         }
     }
 
