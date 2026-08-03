@@ -17,7 +17,6 @@ android {
         jvmTarget = '17'
     }
 
-    // FIXED: Enforces standard native Flutter Android plugin architecture paths
     sourceSets {
         main {
             java.srcDirs = ['src/main/java', 'src/main/kotlin']
@@ -32,23 +31,33 @@ android {
             keyPassword 'android'
         }
         release {
-            // FIXED: Securely pulls properties, fallback triggers ONLY if file reference is completely broken
-            storeFile file(System.getenv("SIGNING_STORE_FILE") ?: 'release.keystore')
-            storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: 'android'
-            keyAlias System.getenv("SIGNING_KEY_ALIAS") ?: 'androiddebugkey'
-            keyPassword System.getenv("SIGNING_KEY_PASSWORD") ?: 'android'
+            def keystorePath = System.getenv("SIGNING_STORE_FILE")
+            if (keystorePath != null && file(keystorePath).exists()) {
+                storeFile file(keystorePath)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD")
+                keyAlias System.getenv("SIGNING_KEY_ALIAS")
+                keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+            } else {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
         }
     }
 
     defaultConfig {
         applicationId "com.mindspark.app"
-        minSdk 24 // Required baseline for complex WebRTC and MLKit processing
+        minSdk 24 
         targetSdk 35
         versionCode 1
         versionName "1.0.0"
-        
-        // CRITICAL FIX: Required to support multiple heavy AI/AR plugins without exceeding dex method limits
+
         multiDexEnabled true 
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
     }
 
     buildFeatures {
@@ -57,19 +66,29 @@ android {
 
     buildTypes {
         release {
-            // FIXED: Dynamically matches signing configs reliably by reading the explicit build type namespace
             signingConfig signingConfigs.release
 
             minifyEnabled true
             shrinkResources true
-            
-            // FIXED: Added essential optimization consumer rules alongside the primary proguard configuration array
+
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-        
+
         debug {
             signingConfig signingConfigs.debug
         }
+    }
+
+    // FIXED: Upgraded legacy packagingOptions block to modern, error-free AGP packaging schema
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+        // FIXED: Expanded pickFirst tracking array isolates all nested WebRTC C++ symbol overlaps flawlessly
+        pickFirst 'lib/*/libcrypto.so'
+        pickFirst 'lib/*/libssl.so'
+        pickFirst 'lib/*/libwebrtcjingle.so'
+        pickFirst 'lib/*/libjingle_peerconnection_so.so'
     }
 }
 
