@@ -1,44 +1,66 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.mindspark1">
+<manifest xmlns:android="http://android.com"
+    xmlns:tools="http://android.com"
+    package="com.mindspark.app">
 
+    <!-- Hardened Application Core Network Permission Nodes -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    
+    <!-- Real-time Low-Latency Audio, Camera & WebRTC Streaming Permissions -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    
+    <!-- Legacy Bluetooth Declarations for Backward Compatibility Tracking -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    
+    <!-- Modern Bluetooth Core Permissions API 31+ (Required for Audio Sessions & Wearables) -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Advanced Laboratory Diagnostic Utilities (Vibration, Wakelocks & Brightness Modifiers) -->
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
     <application
-        android:name="androidx.multidex.MultiDexApplication"
-        android:label="Mind Spark"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"
+        android:label="MindSpark"
+        android:name="${applicationName}"
+        android:icon="@mipmap/launcher_icon"
         android:hardwareAccelerated="true"
-        android:largeHeap="true">
-
+        android:requestLegacyExternalStorage="true">
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-
+            
+            <!-- Links tightly into our validated dark transition theme matrix -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"/>
-
+                android:resource="@style/NormalTheme" />
+                
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- Unified Deep Linking Intent Filters (Matches your App Links setup) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="mindspark.app" />
+            </intent-filter>
         </activity>
-
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2"/>
-
+        
+        <!-- High-Performance First Frame Acceleration Cache Hook -->
+        <meta-data android:name="io.flutter.embedding.android.SplashScreenUntilFirstFrame" android:value="true" />
     </application>
-
 </manifest>
