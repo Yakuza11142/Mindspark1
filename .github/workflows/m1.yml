@@ -59,7 +59,7 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # UPDATED: Python-powered dependency handler to dynamically force 'any' on all conflicting packages
+      # Python-powered dependency handler to dynamically force 'any' while filtering out the root package name
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           flutter pub upgrade --major-versions > pub_output.txt 2>&1 || true
@@ -76,9 +76,9 @@ jobs:
           packages.update(re.findall(r'\"(.*?)\"', text))
           packages.update(re.findall(r'(?:depends on|because)\s+([a-zA-Z0-9_]+)', text))
           
-          # Strip out invalid keywords caught in regex matching
-          ignored = {'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root'}
-          valid_pkgs = [p for p in packages if p and p.isidentifier() and p not in ignored]
+          # FIXED: Added 'mindspark1' and 'mindspark' to prevent self-dependency override errors (Exit Code 65)
+          ignored = {'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root', 'mindspark1', 'mindspark'}
+          valid_pkgs = [p for p in packages if p and p.isidentifier() and p.lower() not in ignored]
           
           with open('pubspec_overrides.yaml', 'w') as out:
               if valid_pkgs:
