@@ -32,7 +32,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # FIXED: Provisions Gradle 8.11.1 natively via the action to bypass external download/watching lock errors
+      # Provisions Gradle 8.11.1 natively via the action to bypass external download/watching lock errors
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -59,27 +59,40 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # FIXED: Solver strips out the restrictive caret (^) or falls back to 'any' to actually resolve dependency hell
+      # UPDATED: Python-powered dependency handler to dynamically force 'any' on all conflicting packages
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           flutter pub upgrade --major-versions > pub_output.txt 2>&1 || true
           cat pub_output.txt
 
-          echo "dependency_overrides:" > pubspec_overrides.yaml
-
-          grep -E "depends on|because" pub_output.txt | tr -d '`'"'" | awk '{for(i=1;i<=NF;i++) if($i=="depends" && $(i+1)=="on") print $(i-1)}' | sort -u | while read -r PKG; do
-            if [ ! -z "$PKG" ]; then
-              VER=$(grep -E "^[[:space:]]*${PKG}:" pubspec.yaml | awk '{print $2}' | tr -d '^')
-              if [ ! -z "$VER" ]; then
-                echo "  ${PKG}: ${VER}" >> pubspec_overrides.yaml
-              else
-                echo "  ${PKG}: any" >> pubspec_overrides.yaml
-              fi
-            fi
-          done
+          python3 -c "
+          import re
+          
+          with open('pub_output.txt', 'r') as f:
+              text = f.read()
+          
+          # Isolate package names from quotes or direct conflict outputs
+          packages = set(re.findall(r\"'(.*?)'\", text))
+          packages.update(re.findall(r'\"(.*?)\"', text))
+          packages.update(re.findall(r'(?:depends on|because)\s+([a-zA-Z0-9_]+)', text))
+          
+          # Strip out invalid keywords caught in regex matching
+          ignored = {'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root'}
+          valid_pkgs = [p for p in packages if p and p.isidentifier() and p not in ignored]
+          
+          with open('pubspec_overrides.yaml', 'w') as out:
+              if valid_pkgs:
+                  out.write('dependency_overrides:\n')
+                  for pkg in sorted(valid_pkgs):
+                      out.write(f'  {pkg}: any\n')
+          "
 
           echo "=== DYNAMIC OVERRIDES CREATED ==="
-          cat pubspec_overrides.yaml
+          if [ -f pubspec_overrides.yaml ]; then
+            cat pubspec_overrides.yaml
+          else
+            echo "No conflicts detected. Proceeding normally."
+          fi
 
       - name: Fetch Dependencies
         run: |
