@@ -6,7 +6,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Mind Spark Production Web Application Engine.">
 
-  <!-- FIXED: Enforces correct mobile responsive pixel layouts on physical phone viewports -->
+  <!-- Enforces correct mobile responsive pixel layouts on physical phone viewports -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <!-- iOS Meta Tags and Branded Display Injections -->
@@ -21,7 +21,7 @@
   <title>Mind Spark</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- FIXED: Prevents white screen flashes during WebRTC engine assets load time -->
+  <!-- Prevents white screen flashes during WebRTC engine assets load time -->
   <style>
     html, body {
       background-color: #000000;
@@ -31,9 +31,242 @@
       height: 100%;
       overflow: hidden;
     }
+    /* Smooth CSS Loader for Heavy Web Assets */
+    .ms-loading-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: opacity 0.4s ease-out;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 99999;
+    }
+    .ms-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      border-top-color: #38bdf8;
+      animation: spin 1s ease-in-out infinite;
+    }
+    /* Style for unexpected engine failures */
+    .ms-error-container {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100000;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .ms-error-card {
+      max-width: 440px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+    .ms-error-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ef4444;
+    }
+    .ms-error-msg {
+      font-size: 0.875rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    /* Container to visually highlight specific system stack traces safely */
+    .ms-error-details {
+      background-color: #030712;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+      color: #f87171;
+      text-align: left;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-bottom: 24px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .ms-btn {
+      background-color: #1f2937;
+      color: #ffffff;
+      border: 1px solid #374151;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .ms-btn:hover {
+      background-color: #374151;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
+  <!-- Elegant minimal launcher mask is fully responsive and interactive -->
+  <div id="loading-indicator" class="ms-loading-container">
+    <div class="ms-spinner"></div>
+  </div>
+
+  <!-- Clean HTML error UI element hidden by default -->
+  <div id="error-screen" class="ms-error-container">
+    <div class="ms-error-card">
+      <div class="ms-error-title">Initialization Error</div>
+      <div class="ms-error-msg">Mind Spark failed to load its core engine components due to an unhandled system crash or script exception:</div>
+      <div id="error-details" class="ms-error-details">Unknown initialization error occurred.</div>
+      <button class="ms-btn" onclick="window.location.reload()">Reload Application</button>
+    </div>
+  </div>
+
+  <!-- Immediate service worker activation lifecycle strategy -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('flutter_service_worker.js?v=$FLUTTER_SERVICE_WORKER_VERSION')
+        .catch(function(error) {
+          console.error('ServiceWorker registration failed:', error);
+        });
+    }
+  </script>
+
+  <!-- Complete Error Interception Core Orchestration Module -->
+  <script>
+    window._msFatalErrorHandler = (function() {
+      let isLoaderRemoved = false;
+      let fallbackTimeout = null;
+
+      function removeLoader(errorText = null) {
+        if (isLoaderRemoved) return;
+        isLoaderRemoved = true;
+        
+        if (fallbackTimeout) clearTimeout(fallbackTimeout);
+
+        const indicator = document.getElementById('loading-indicator');
+        if (indicator) {
+          indicator.style.opacity = '0';
+          setTimeout(() => {
+            indicator.remove();
+            
+            if (errorText) {
+              const detailsUI = document.getElementById('error-details');
+              if (detailsUI) {
+                detailsUI.textContent = errorText;
+              }
+              const errorUI = document.getElementById('error-screen');
+              if (errorUI) {
+                errorUI.style.display = 'flex';
+              }
+            }
+          }, 400);
+        }
+      }
+
+      // Track an initial backup timer until the official engine initialization method is loaded
+      fallbackTimeout = setTimeout(() => {
+        console.warn('Flutter initialization timed out.');
+        removeLoader('Timeout: Engine asset compilation exceeded 15 seconds.');
+      }, 15000);
+
+      // Diagnostic telemetry filters
+      window.addEventListener('error', function(event) {
+        const srcFile = event.filename || '';
+        const message = event.error && event.error.message ? event.error.message : event.message;
+        const isCrossOriginError = message === 'Script error.' && !srcFile;
+
+        const isFatalTarget = /flutter_bootstrap\.js/i.test(srcFile) || 
+                              /main\.dart\.js/i.test(srcFile) || 
+                              /canvaskit/i.test(srcFile) ||
+                              /\.part\.js/i.test(srcFile);
+
+        if (isFatalTarget || isCrossOriginError) {
+          const filename = srcFile ? ' at ' + srcFile.split('/').pop() : '';
+          const lineno = event.lineno ? ':' + event.lineno : '';
+          const displayMsg = isCrossOriginError 
+            ? 'Fatal Cross-Origin Error: A core engine asset (CDN or CanvasKit script) failed to evaluate safely.'
+            : 'Fatal Engine Error: ' + message + filename + lineno;
+            
+          removeLoader(displayMsg);
+        } else {
+          console.warn('Ignored non-fatal background script error:', message);
+        }
+      });
+
+      window.addEventListener('unhandledrejection', function(event) {
+        const reason = event.reason ? (event.reason.message || event.reason) : 'Promise rejected';
+        const reasonStr = String(reason).toLowerCase();
+        if (reasonStr.includes('flutter') || reasonStr.includes('canvas') || reasonStr.includes('dart') || reasonStr.includes('bootstrap')) {
+          removeLoader('Fatal Promise Rejection: ' + reason);
+        }
+      });
+
+      // Expose loader removal mechanism safely to the engine initializer below
+      return {
+        clearLoader: () => removeLoader(null),
+        triggerError: (msg) => removeLoader(msg),
+        resetTimeout: (newTimeout) => {
+          if (fallbackTimeout) clearTimeout(fallbackTimeout);
+          fallbackTimeout = newTimeout;
+        }
+      };
+    })();
+  </script>
+
+  <!-- FIXED: Compliant custom initialization hook linking the error logic straight to the Flutter engine -->
+  <script>
+    window._flutter = {
+      loader: {
+        load: async function(config) {
+          try {
+            // Update the absolute timeout safety window for slow networks downloading CanvasKit
+            const engineTimeout = setTimeout(() => {
+              window._msFatalErrorHandler.triggerError('Timeout: Engine initialization exceeded compilation bounds.');
+            }, 20000);
+            window._msFatalErrorHandler.resetTimeout(engineTimeout);
+
+            // Correct standard custom engine initialization sequence
+            const engineInitializer = await config.loadEngine();
+            const appRunner = await engineInitializer.initializeEngine();
+            
+            // Wait explicitly for the first frame paint before lifting the custom loading screen
+            window.addEventListener('flutter-first-frame', function() {
+              window._msFatalErrorHandler.clearLoader();
+            });
+
+            await appRunner.runApp();
+          } catch (error) {
+            window._msFatalErrorHandler.triggerError('Engine Bootstrap Failure: ' + (error.message || error));
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Standard, clean async bootstrap parsing pipeline -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
