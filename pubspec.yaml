@@ -60,7 +60,7 @@ dependencies:
   # ===========================================================================
   sensors_plus: ^7.1.0
   environment_sensors: ^0.3.0
-  vector_math: ^2.4.2
+  vector_math: ^2.2.0
 
   # ===========================================================================
   # ON-DEVICE VISION INTELLIGENCE & LLM UTILITIES (With Web Bridges Included)
