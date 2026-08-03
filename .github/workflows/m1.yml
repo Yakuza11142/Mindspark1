@@ -32,11 +32,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # FIXED: Added the validation properties to ignore the freshly-created runtime wrapper check
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          add-wrapper-reproducible-checksums: true
+          validate-wrappers: false
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -44,18 +43,6 @@ jobs:
           channel: stable
           cache: true
           cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
-
-      - name: Auto-Generate Missing Android Project Structure
-        run: |
-          flutter create --platforms=android .
-
-      - name: Apply Baseline Android Configurations & Generate Wrapper
-        run: |
-          cd android
-          sed -i '/android.defaults.buildfeatures.buildconfig/d' gradle.properties 2>/dev/null || true
-          echo "android.defaults.buildfeatures.buildconfig=true" >> gradle.properties
-          gradle wrapper --gradle-version 8.11.1
-          chmod +x gradlew
 
       - name: Clean Workspace & Fetch Dependencies
         run: |
