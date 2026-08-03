@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- FIXED: Upgraded parent baseline to Theme.AppCompat to protect native UI plugins from crashing -->
-    <style name="LaunchTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- FIXED: Directs the engine to display a dedicated launch background drawable rather than a white canvas -->
+    <!-- FIXED: Uses standard device-native DeviceDefault styles to pass resource validation without external dependencies -->
+    <style name="LaunchTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <!-- Directs the engine to display our dedicated launch background drawable rather than a white canvas -->
         <item name="android:windowBackground">@drawable/launch_background</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
+        <!-- Forces navigation and status bars to dark to guarantee a seamless boot signature -->
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
 
-    <style name="NormalTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!-- FIXED: Hardcoded to black to guarantee no visual white flash glitches when transitioning into Flutter -->
+    <!-- FIXED: Rooted style parent to DeviceDefault to eliminate dark theme white flashes and compile natively -->
+    <style name="NormalTheme" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <!-- Hardcoded to black to guarantee no visual white flash glitches when transitioning into Flutter -->
         <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
     </style>
 </resources>
