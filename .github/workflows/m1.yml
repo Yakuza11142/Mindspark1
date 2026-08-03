@@ -58,6 +58,22 @@ jobs:
           gradle wrapper --gradle-version 8.11.1
           chmod +x gradlew
 
+      # AUTOMATED STRATEGY: Dynamically reads your local targets to build an override script
+      - name: Dynamically Solve Transitive Dependency Hell
+        run: |
+          flutter pub upgrade --major-versions
+          
+          INTL_VER=$(grep -E '^[[:space:]]*intl:' pubspec.yaml | awk '{print $2}')
+          META_VER=$(grep -E '^[[:space:]]*meta:' pubspec.yaml | awk '{print $2}' || echo "^1.19.0")
+          WEB_VER=$(grep -E '^[[:space:]]*web:' pubspec.yaml | awk '{print $2}' || echo "^0.5.1")
+          
+          cat > pubspec_overrides.yaml <<EOF
+          dependency_overrides:
+            intl: ${INTL_VER:-^0.20.3}
+            meta: ${META_VER:-^1.19.0}
+            web: ${WEB_VER:-^0.5.1}
+          EOF
+
       - name: Fetch Dependencies
         run: |
           flutter pub get --no-example
@@ -119,11 +135,14 @@ jobs:
         run: |
           flutter build web \
           --release \
+          --base-href "/${{ github.event.repository.name }}/" \
           --dart-define-from-file=../secrets.json
 
-      # EXTRA PROTECTION: Purge the external file from disk before zipping deployment artifacts
-      - name: Shred Secrets File
-        run: rm -f ../secrets.json
+      # EXTRA PROTECTION: Purge the external config data from runner disk space immediately
+      - name: Shred Secrets and Overrides File
+        run: |
+          rm -f ../secrets.json
+          rm -f pubspec_overrides.yaml
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
