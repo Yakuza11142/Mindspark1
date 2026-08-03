@@ -32,7 +32,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Bypasses checking the local repository files for unverified wrapper hashes
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -45,7 +44,6 @@ jobs:
           cache: true
           cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
 
-      # Re-creates the specific wrapper binaries safely inside your existing directory using system Gradle
       - name: Regenerate Missing Gradle Wrapper Files
         run: |
           cd android
@@ -55,6 +53,14 @@ jobs:
       - name: Clean Workspace & Fetch Dependencies
         run: |
           flutter clean
+          
+          # Diagnostic: Print all outdated dependencies to the runner console logs
+          flutter pub outdated
+          
+          # Upgrades available package tree bounds inside pubspec specifications
+          flutter pub upgrade
+          
+          # Clean execution block ignoring local sample environments
           flutter pub get --no-example
 
       - name: Execute Database Schema & Code Generators
