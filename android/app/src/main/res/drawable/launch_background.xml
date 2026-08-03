@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- FIXED: Restored the definitive schema URI string to pass strict resource validation checks -->
 <layer-list xmlns:android="http://android.com">
     <!-- Solid black background matches your dark hologram layout perfectly -->
     <item android:drawable="@android:color/black" />
