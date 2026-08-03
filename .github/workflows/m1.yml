@@ -32,9 +32,11 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # FIXED: Provisions Gradle 8.11.1 natively via the action to bypass external download/watching lock errors
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: "8.11.1"
           validate-wrappers: false
 
       - name: Setup Flutter
@@ -52,35 +54,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      - name: Regenerate Missing Gradle Wrapper Files
+      - name: Initialize Local Android Permissions
         run: |
           cd android
-          gradle wrapper --gradle-version 8.11.1
-          chmod +x gradlew
+          chmod +x gradlew || true
 
-      # ZERO HARDCODING: Scrapes version solver error streams and builds overrides dynamically
+      # FIXED: Solver strips out the restrictive caret (^) or falls back to 'any' to actually resolve dependency hell
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
-          # 1. Force a package upgrade run and capture the exact terminal error output
           flutter pub upgrade --major-versions > pub_output.txt 2>&1 || true
           cat pub_output.txt
 
-          # 2. Initialize an empty overrides array
           echo "dependency_overrides:" > pubspec_overrides.yaml
 
-          # 3. Use grep/awk to look for conflict markers, find the package names, 
-          # and look up their current declared target versions straight from your pubspec.yaml
           grep -E "depends on|because" pub_output.txt | tr -d '`'"'" | awk '{for(i=1;i<=NF;i++) if($i=="depends" && $(i+1)=="on") print $(i-1)}' | sort -u | while read -r PKG; do
             if [ ! -z "$PKG" ]; then
-              # Find the package's local version configuration constraint line
-              VER=$(grep -E "^[[:space:]]*${PKG}:" pubspec.yaml | awk '{print $2}')
+              VER=$(grep -E "^[[:space:]]*${PKG}:" pubspec.yaml | awk '{print $2}' | tr -d '^')
               if [ ! -z "$VER" ]; then
                 echo "  ${PKG}: ${VER}" >> pubspec_overrides.yaml
+              else
+                echo "  ${PKG}: any" >> pubspec_overrides.yaml
               fi
             fi
           done
 
-          # 4. Print out the dynamically constructed override schema for transparency
           echo "=== DYNAMIC OVERRIDES CREATED ==="
           cat pubspec_overrides.yaml
 
@@ -92,7 +89,6 @@ jobs:
         run: |
           dart run build_runner build --delete-conflicting-outputs
 
-      # SECURE STEP: We generate the secrets file completely OUTSIDE the workspace root directory
       - name: Create Secrets File Outside Workspace
         run: |
           MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
@@ -148,7 +144,6 @@ jobs:
           --base-href "/${{ github.event.repository.name }}/" \
           --dart-define-from-file=../secrets.json
 
-      # EXTRA PROTECTION: Purge the temporary configurations completely from disk
       - name: Shred Secrets and Overrides File
         run: |
           rm -f ../secrets.json
