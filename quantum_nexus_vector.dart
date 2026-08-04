@@ -1,114 +1,139 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:vector_math/vector_math_64.dart' as v64;
 
-// Explicit local reference import to pull your InheritedWidget context parameters cleanly
-import 'quantum_nexus_vector.dart'; 
+class QuantumNexusVector extends StatefulWidget {
+  final Widget child; 
+  final double requestedHeightFeet; 
 
-/// The production-grade 3D graphics consumer node designed 
-/// to receive your InheritedSparkScale matrix payloads.
-class AetherCoreProHologram extends StatelessWidget {
-  const AetherCoreProHologram({super.key});
+  const QuantumNexusVector({
+    super.key,
+    required this.child,
+    required this.requestedHeightFeet,
+  });
+
+  @override
+  State<QuantumNexusVector> createState() => _QuantumNexusVectorState();
+}
+
+class _QuantumNexusVectorState extends State<QuantumNexusVector>
+    with SingleTickerProviderStateMixin {
+  late v64.Matrix4 _projectionModelMatrix;
+  Ticker? _frameTicker;
+  double _frequencyTimer = 0.0;
+
+  static const double _baseHologramHeightFeet = 6.0;
+  static const double _minLimitFeet = 0.125; 
+  static const double _maxLimitFeet = 10.0;  
+
+  double _currentScaleFactor = 1.0;
+  double _verticalAnchorShift = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _projectionModelMatrix = v64.Matrix4.identity();
+    _calculateProportionalScaling();
+
+    _frameTicker = createTicker((Duration elapsed) {
+      if (!mounted) return;
+      _computeMatrixTransformations(elapsed);
+    });
+    _frameTicker!.start();
+  }
+
+  @override
+  void didUpdateWidget(covariant QuantumNexusVector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.requestedHeightFeet != widget.requestedHeightFeet) {
+      _calculateProportionalScaling();
+    }
+  }
+
+  void _calculateProportionalScaling() {
+    final double clampedInput =
+        widget.requestedHeightFeet.clamp(_minLimitFeet, _maxLimitFeet);
+
+    final double targetScaleFactor = clampedInput / _baseHologramHeightFeet;
+    final double targetVerticalShift = 0.5 * (1.0 - targetScaleFactor);
+
+    setState(() {
+      _currentScaleFactor = targetScaleFactor;
+      _verticalAnchorShift = targetVerticalShift;
+    });
+  }
+
+  void _computeMatrixTransformations(Duration elapsed) {
+    setState(() {
+      _frequencyTimer = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+
+      final double breathSwayY = math.sin(_frequencyTimer * 2.4) * 0.015;
+      final double microTremorX = math.cos(_frequencyTimer * 4.1) * 0.004;
+
+      // FIXED: Passed all 4 spatial dimensions to translateByDouble to prevent compilation crashes
+      _projectionModelMatrix = v64.Matrix4.identity()
+        ..translateByDouble(microTremorX, breathSwayY, -0.85, 1.0)
+        ..rotateY(math.sin(_frequencyTimer * 0.5) * 0.02);
+    });
+  }
+
+  @override
+  void dispose() {
+    _frameTicker?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 1. Fetch your high-speed matrix transformation constants from the parent node
-    final InheritedSparkScale? sparkData = InheritedSparkScale.of(context);
-    
-    if (sparkData == null) {
-      return const Center(child: Text("Error: Missing QuantumNexusVector Context"));
-    }
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final Size sceneViewportSize =
+            Size(constraints.maxWidth, constraints.maxHeight);
 
-    return RepaintBoundary(
-      child: CustomPaint(
-        size: sparkData.viewportDimensions,
-        painter: HolographicMeshPainter(
-          matrix: sparkData.projectionMatrix,
-          scale: sparkData.scaleFactor,
-          shiftY: sparkData.verticalShift,
-          time: sparkData.timelineDelta,
-        ),
-      ),
+        return InheritedSparkScale(
+          scaleFactor: _currentScaleFactor,
+          verticalShift: _verticalAnchorShift,
+          timelineDelta: _frequencyTimer,
+          viewportDimensions: sceneViewportSize,
+          projectionMatrix: _projectionModelMatrix, 
+          child: SizedBox(
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }
 
-class HolographicMeshPainter extends CustomPainter {
-  final v64.Matrix4 matrix;
-  final double scale;
-  final double shiftY;
-  final double time;
+class InheritedSparkScale extends InheritedWidget {
+  final double scaleFactor;
+  final double verticalShift;
+  final double timelineDelta;
+  final Size viewportDimensions;
+  final v64.Matrix4 projectionMatrix;
 
-  HolographicMeshPainter({
-    required this.matrix,
-    required this.scale,
-    required this.shiftY,
-    required this.time,
+  const InheritedSparkScale({
+    super.key,
+    required this.scaleFactor,
+    required this.verticalShift,
+    required this.timelineDelta,
+    required this.viewportDimensions,
+    required this.projectionMatrix,
+    required super.child,
   });
 
-  // Base 3D coordinate mapping lines defining your permanent 6ft framework
-  final List<v64.Vector3> _skeletalVertices = [
-    v64.Vector3(0.0, 1.83, 0.0),   // Top Node (1.83 meters = exactly 6 feet)
-    v64.Vector3(0.45, 0.95, 0.2),  // Mid-Right perspective vector
-    v64.Vector3(-0.45, 0.95, -0.2), // Mid-Left perspective vector
-    v64.Vector3(0.0, 0.0, 0.0),    // Pin ground anchor
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // 2. Setup the premium Neon Cyan dual-layered paint brushes
-    final Paint neonAuraBrush = Paint()
-      ..color = const Color(0xFF00F3FF).withOpacity(0.35 + (Offset(scale, shiftY).distance % 0.15)) // Subtle pulse effect
-      ..strokeWidth = 14.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0);
-
-    final Paint coreLaserBrush = Paint()
-      ..color = const Color(0xFFE6FFFF)
-      ..strokeWidth = 3.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // 3. Initialize layout transformation space centered on the viewport horizon
-    // FIXED: Upgraded matrix compilation logic to eliminate deprecated warnings
-    final v64.Matrix4 localViewportTransform = v64.Matrix4.identity()
-      ..translateByDouble(size.width / 2, size.height * (0.8 + shiftY)) 
-      ..scale(120.0 * scale, -120.0 * scale); 
-
-    // Combine your live ticker projection calculations with the local layout space
-    final v64.Matrix4 absoluteTransformationMatrix = localViewportTransform * matrix;
-
-    List<Offset> projectedNodes = [];
-    for (var position3d in _skeletalVertices) {
-      // Direct high-speed 3D point cloud transformation pass
-      final v64.Vector3 compiledVector = absoluteTransformationMatrix.transform3(v64.Vector3.copy(position3d));
-      projectedNodes.add(Offset(compiledVector.x, compiledVector.y));
-    }
-
-    // 4. Assemble the structural vector paths onto the viewport coordinates
-    if (projectedNodes.length >= 4) {
-      final Path structurePath = Path()
-        ..moveTo(projectedNodes[3].dx, projectedNodes[3].dy) // Ground point
-        ..lineTo(projectedNodes[2].dx, projectedNodes[2].dy) // Connect to mid-left
-        ..lineTo(projectedNodes[0].dx, projectedNodes[0].dy) // Connect to crown
-        ..lineTo(projectedNodes[1].dx, projectedNodes[1].dy) // Connect to mid-right
-        ..close();
-
-      // Double-pass rendering to synthesize the bright neon core light aura
-      canvas.drawPath(structurePath, neonAuraBrush);
-      canvas.drawPath(structurePath, coreLaserBrush);
-      
-      // Draw sharp vertex node terminals
-      final Paint nodeBrush = Paint()..color = Colors.white;
-      for (var node in projectedNodes) {
-        canvas.drawCircle(node, 5.0, nodeBrush);
-      }
-    }
+  static InheritedSparkScale? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<InheritedSparkScale>();
   }
 
   @override
-  bool shouldRepaint(covariant HolographicMeshPainter oldDelegate) {
-    // Keep rendering continuously synced directly with your parent's structural ticker matrices
-    return oldDelegate.matrix != matrix || oldDelegate.time != time;
+  bool updateShouldNotify(InheritedSparkScale oldWidget) {
+    return oldWidget.scaleFactor != scaleFactor ||
+        oldWidget.verticalShift != verticalShift ||
+        oldWidget.timelineDelta != timelineDelta ||
+        oldWidget.projectionMatrix != projectionMatrix;
   }
 }
