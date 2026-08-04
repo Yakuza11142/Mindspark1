@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
@@ -29,22 +28,25 @@ class SessionExpiryEngine {
 
     try {
       final session = _supabase.auth.currentSession;
-      if (session == null) return; // FIXED: Let try-finally handle state unlock automatically
+      if (session == null) return; 
 
       // 1. Hardened Age Gate Check
       if (UserSecuritySettings.currentUserAge == null) {
         if (!UserSecuritySettings.hasAttemptedAgeFetch) {
           developer.log("Security validation: Fetching age database record.");
-          UserSecuritySettings.hasAttemptedAgeFetch = true; 
+          
           try {
             final userId = _supabase.auth.currentUser?.id;
             if (userId != null) {
-              final dynamic response = await _supabase
+              // Flip toggle immediately before network invocation to isolate execution frame
+              UserSecuritySettings.hasAttemptedAgeFetch = true; 
+              
+              final response = await _supabase
                   .from('profiles')
                   .select('age')
                   .eq('id', userId)
                   .maybeSingle();
-                  
+
               if (response != null && response is Map && response['age'] != null) {
                 UserSecuritySettings.currentUserAge = (response['age'] as num).toInt();
               } else {
@@ -53,7 +55,6 @@ class SessionExpiryEngine {
                 return; 
               }
             } else {
-              UserSecuritySettings.hasAttemptedAgeFetch = false;
               return;
             }
           } catch (e, stack) {
@@ -71,7 +72,8 @@ class SessionExpiryEngine {
           UserSecuritySettings.currentUserAge! < UserSecuritySettings.minimumEmailAge) {
         developer.log("Access Denied: Underage user block active. Purging session.");
         UserSecuritySettings.reset(); 
-        _supabase.auth.signOut(); // FIXED: Removed 'await' to let navigation clear instantly instead of blocking on network responses
+        // Await token cache purging explicitly to block race conditions on subsequent loops
+        await _supabase.auth.signOut(); 
         return;
       }
 
@@ -79,12 +81,12 @@ class SessionExpiryEngine {
       final DateTime? jwtExpiry = session.expiresAt;
       if (jwtExpiry != null && jwtExpiry.isBefore(DateTime.now().toUtc())) {
         developer.log("Local clock indicates token expiration threshold reached.");
-        
+
         final currentAuthSession = _supabase.auth.currentSession;
         if (currentAuthSession == null || (currentAuthSession.expiresAt?.isBefore(DateTime.now().toUtc()) ?? true)) {
           developer.log("Token verification trace failed securely. Forcing clean sign-out cascade.");
           UserSecuritySettings.reset();
-          _supabase.auth.signOut(); // FIXED: Non-blocking un-awaited sign out execution
+          await _supabase.auth.signOut(); 
           return;
         }
       }
@@ -96,7 +98,7 @@ class SessionExpiryEngine {
 
       if (lastLoginStr != null) {
         final DateTime? lastLogin = DateTime.tryParse(lastLoginStr)?.toUtc();
-        
+
         if (lastLogin != null) {
           final Duration elapsed = now.difference(lastLogin);
 
@@ -104,7 +106,7 @@ class SessionExpiryEngine {
             developer.log("Sliding verification window closed or clock manipulated. Requesting re-auth.");
             await prefs.remove(SessionSettings.sessionKey);
             UserSecuritySettings.reset();
-            _supabase.auth.signOut(); // FIXED: Non-blocking un-awaited sign out execution
+            await _supabase.auth.signOut(); 
             return; 
           }
         } else {
