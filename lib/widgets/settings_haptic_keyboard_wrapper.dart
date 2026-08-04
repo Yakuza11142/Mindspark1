@@ -1,18 +1,20 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 class HapticKeyboardWrapper extends StatelessWidget {
   final Widget child;
-  final bool isEnabled; // Add this flag
+  final bool isEnabled; 
 
   const HapticKeyboardWrapper({
     super.key, 
     required this.child, 
-    this.isEnabled = true, // Default to true
+    this.isEnabled = true, 
   });
 
   @override
   Widget build(BuildContext context) {
     return Focus(
       onFocusChange: (hasFocus) {
-        // Only trigger if focus is gained AND setting is enabled
         if (hasFocus && isEnabled) {
           HapticFeedback.lightImpact();
         }
@@ -21,21 +23,23 @@ class HapticKeyboardWrapper extends StatelessWidget {
     );
   }
 }
-bool _hapticEnabled = true;
 
-// In your Settings UI
-SwitchListTile(
-  title = const Text("Keyboard Haptics"),
-  value = _hapticEnabled,
-  onChanged = (bool value) {
-    setState(() => _hapticEnabled = value);
-  },
-),
+class SettingsHapticsTile extends StatelessWidget {
+  final bool hapticEnabled;
+  final ValueChanged<bool> onChanged;
 
-// Wrapping your text fields
-HapticKeyboardWrapper(
-  isEnabled = _hapticEnabled,
-  child = TextField(
-    decoration: InputDecoration(labelText: "Type here"),
-  ),
-),
+  const SettingsHapticsTile({
+    super.key,
+    required this.hapticEnabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      title: const Text("Keyboard Haptics"),
+      value: hapticEnabled,
+      onChanged: onChanged,
+    );
+  }
+}
