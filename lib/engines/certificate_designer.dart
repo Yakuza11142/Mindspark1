@@ -49,7 +49,7 @@ class EliteCertificateService {
                 mainAxisAlignment: pw.MainAxisAlignment.center,
                 children: [
                   pw.SizedBox(height: 25),
-                  pw.Text("MINDSPARK ELITE ACADEMY", style: pw.TextStyle(font: font, fontSize: 28, color: const PdfColor.fromInt(0xFFB8860B), fontWeight: pw.FontWeight.bold, letterSpacing: 1.5)),
+                  pw.Text("MIND SPARK", style: pw.TextStyle(font: font, fontSize: 28, color: const PdfColor.fromInt(0xFFB8860B), fontWeight: pw.FontWeight.bold, letterSpacing: 1.5)),
                   pw.Text("CERTIFICATE OF MASTERED COMPLETION", style: pw.TextStyle(font: font, fontSize: 13, color: PdfColors.grey700, letterSpacing: 1, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 35),
                   pw.Text("This serves to certify that $name", style: pw.TextStyle(font: font, fontSize: 16, fontStyle: pw.FontStyle.italic)),
