@@ -22,8 +22,8 @@ class XpPopup extends StatelessWidget {
           .animate()
           .moveY(begin: 0, end: -100, duration: 1000.ms)
           .fadeOut()
-          // CRUCIAL: Completely removes the widget structure from screen memory paths when opacity hits 0
-          .visibility(maintainState: false),
+          // FIXED: Changed 'maintainState' to 'maintain' to match the correct flutter_animate parameter signature
+          .visibility(maintain: false),
     );
   }
 }
