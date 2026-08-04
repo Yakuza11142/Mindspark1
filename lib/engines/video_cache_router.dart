@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer;
@@ -9,7 +8,7 @@ class VideoCacheRouter {
   static const String _storageBucket = 'hologram_videos';
 
   /// Fetches a verified video path or signed cloud URL.
-  /// Evaluates local storage disk first, falls back to metadata database second. [INDEX]
+  /// Evaluates local storage disk first, falls back to metadata database second.
   static Future<String?> getSavedVideo(String questionHash) async {
     final String cleanHash = questionHash.trim().toLowerCase();
     if (cleanHash.isEmpty) return null;
@@ -17,7 +16,7 @@ class VideoCacheRouter {
     final String expectedFileName = '$cleanHash.mp4';
 
     try {
-      // LAYER 1: Local Device Disk Check (0ms Latency Target) [INDEX]
+      // LAYER 1: Local Device Disk Check (0ms Latency Target)
       final FileInfo? localCacheFile = await DefaultCacheManager().getFileFromCache(expectedFileName);
 
       if (localCacheFile != null && await localCacheFile.file.exists()) {
@@ -25,23 +24,21 @@ class VideoCacheRouter {
         return localCacheFile.file.path; 
       }
 
-      // LAYER 2: Cloud Database Metadata Index Check (<15ms Target) [INDEX]
+      // LAYER 2: Cloud Database Metadata Index Check (<15ms Target)
       final SupabaseClient supabase = Supabase.instance.client;
-      
-      // Swapped out strict parameter signatures for dynamic arrays to safely intercept Postgrest List envelopes [INDEX]
+
       final dynamic databaseResult = await supabase
           .from(_cacheTable)
           .select('storage_path, is_ready')
           .eq('question_hash', cleanHash)
           .limit(1)
-          .timeout(const Duration(seconds: 5)); // Defensive timeout constraint protects local threads from cold-start hangs [INDEX]
+          .timeout(const Duration(seconds: 5)); 
 
       if (databaseResult == null || databaseResult is! List || databaseResult.isEmpty) {
         developer.log("❄️ VideoCacheRouter: [Cache Miss] No previous generation entry found for hash: $cleanHash");
         return null; 
       }
 
-      // Hardened the deserialization tracking tree using safe explicit conversion initializers [INDEX]
       final Map<String, dynamic> cacheRecord = Map<String, dynamic>.from(databaseResult.first as Map);
       final bool isReady = cacheRecord['is_ready'] ?? false;
       final String? cloudStoragePath = cacheRecord['storage_path'] as String?;
@@ -51,25 +48,23 @@ class VideoCacheRouter {
         return null;
       }
 
-      // LAYER 3: Generate Signed URL and Queue Background Download [INDEX]
+      // LAYER 3: Generate Signed URL and Queue Background Download
       final String signedUrl = await supabase.storage
           .from(_storageBucket)
           .createSignedUrl(cloudStoragePath, 3600);
 
-      // Optimized background caching by removing unsafe structural class instance constructor fallbacks [INDEX]
       _downloadAndCacheBackground(signedUrl, expectedFileName);
 
       developer.log("🛰️ VideoCacheRouter: [Cloud Cache Hit] Serving signed streaming vector URL from metadata index.");
       return signedUrl;
 
     } catch (e, stackTrace) {
-      // Replaced legacy debugPrint macros with descriptive diagnostic tracking telemetry hooks [INDEX]
       developer.log("❌ VideoCacheRouter: Intercept pipeline encountered an unexpected exception", error: e, stackTrace: stackTrace);
       return null; 
     }
   }
 
-  /// Registers a newly generated video into the cloud metadata index database table [INDEX]
+  /// Registers a newly generated video into the cloud metadata index database table
   static Future<void> registerNewVideoEntry(String questionHash, String storagePath) async {
     final String cleanHash = questionHash.trim().toLowerCase();
     final String cleanPath = storagePath.trim();
@@ -90,13 +85,14 @@ class VideoCacheRouter {
     }
   }
 
-  /// Safely dispatches un-awaited media fetching streams down background isolates cleanly [INDEX]
+  /// Safely dispatches un-awaited media fetching streams down background isolates cleanly
   static void _downloadAndCacheBackground(String signedUrl, String cacheKey) {
     DefaultCacheManager().downloadFile(signedUrl, key: cacheKey).then((FileInfo fileInfo) {
       developer.log("✅ VideoCacheRouter: Background cache download finalized successfully for asset key: $cacheKey");
     }).catchError((Object error) {
+      // FIXED: Adjusted the asynchronous return signature contract to bypass stream typing failures safely
       developer.log("⚠️ VideoCacheRouter: Background video asset cache pre-fetch skipped gracefully: $error");
-      return null; // Safe terminal fallback boundary terminates the future without polluting state engines [INDEX]
+      return Future<FileInfo?>.value(null); 
     });
   }
 }
