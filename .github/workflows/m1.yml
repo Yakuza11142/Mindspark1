@@ -59,7 +59,7 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # Upgraded Python script to cleanly solve circular dependency loops (Exit Code 65)
+      # Industrial-Grade Dependency Engine forcing 'intl' and all other circular loops to break
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           flutter pub get --no-example > pub_output.txt 2>&1 || true
@@ -71,29 +71,43 @@ jobs:
           with open('pub_output.txt', 'r') as f:
               text = f.read()
           
-          # Isolate genuine package names from conflict logs
+          # 1. Isolate explicit package matches from single/double quotes
           packages = set(re.findall(r\"'(.*?)'\", text))
           packages.update(re.findall(r'\"(.*?)\"', text))
           
-          # Enhanced system filter list to block keywords, system SDKs, and self-dependencies
+          # 2. Extract nested transitive sub-dependencies (like intl, meta, collection) causing the failure
+          packages.update(re.findall(r'(?:depends on|because|uses)\s+([a-zA-Z0-9_]+)', text))
+          
+          # 3. Comprehensive systemic system word blocking array to protect project root names
           ignored = {
               'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root', 
-              'mindspark1', 'mindspark', 'meta', 'collection', 'path', 'crypto', 'async', 'clock'
+              'mindspark1', 'mindspark', 'uses', 'for', 'the', 'failed', 'solving'
           }
+          
+          # Filter down to strict, clean package strings
           valid_pkgs = [p for p in packages if p and p.isidentifier() and p.lower() not in ignored]
           
+          # CRITICAL FIXED STEP: Force 'intl' into the list regardless of regex tracking loops
+          if 'intl' not in valid_pkgs:
+              valid_pkgs.append('intl')
+          
+          # Fallback injection to force resolve common deep conflicts if present in the stack
+          for critical_pkg in ['meta', 'collection', 'crypto', 'path']:
+              if critical_pkg in text and critical_pkg not in valid_pkgs:
+                  valid_pkgs.append(critical_pkg)
+          
+          # 4. Generate the overriding dependency layer to force-compile everything to 'any'
           with open('pubspec_overrides.yaml', 'w') as out:
-              if valid_pkgs:
-                  out.write('dependency_overrides:\n')
-                  for pkg in sorted(valid_pkgs):
-                      out.write(f'  {pkg}: any\n')
+              out.write('dependency_overrides:\n')
+              for pkg in sorted(valid_pkgs):
+                  out.write(f'  {pkg}: any\n')
           "
 
-          echo "=== UPGRADED DYNAMIC OVERRIDES STATUS ==="
+          echo "=== DYNAMIC OVERRIDES CONFIGURED ==="
           if [ -f pubspec_overrides.yaml ]; then
             cat pubspec_overrides.yaml
           else
-            echo "Zero circular conflicts detected. Engine is structurally clear."
+            echo "Error: pubspec_overrides.yaml generation failed."
           fi
 
       - name: Fetch Dependencies
@@ -143,6 +157,7 @@ jobs:
           EOF
           flutter analyze --no-fatal-warnings --no-fatal-infos
 
+      # Compiled via native --obfuscate parameters to shield his core source code arrays
       - name: Build Android APK
         run: |
           flutter build apk \
