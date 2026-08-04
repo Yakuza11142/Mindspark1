@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -17,6 +18,7 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
   Ticker? _syncTicker;
   double _elapsedTime = 0.0;
   bool _isDisposed = false;
+  bool _shaderCompilationFailed = false;
 
   @override
   void initState() {
@@ -25,24 +27,37 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
   }
 
   Future<void> _initAetherCorePipeline() async {
+    // FIXED: Corrected path call targeting the unified assets bundle directory
+    final Future<ui.FragmentProgram> shaderLoader = 
+        ui.FragmentProgram.fromAsset('assets/shaders/hologram_glow.frag');
+    
     try {
-      final program =
-          await ui.FragmentProgram.fromAsset('shaders/hologram_glow.frag');
+      final program = await shaderLoader.timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => throw TimeoutException("GPU Shader Compilation Timeout"),
+      );
+
       if (_isDisposed) return;
 
-      _program = program;
+      setState(() {
+        _program = program;
+      });
 
+      // Synchronize timeline calculations with native display refresh grids
       _syncTicker = createTicker((Duration elapsed) {
-        if (mounted) {
-          setState(() {
-            _elapsedTime =
-                elapsed.inMicroseconds / Duration.microsecondsPerSecond;
-          });
-        }
-      })
-        ..start();
+        if (!mounted) return;
+        setState(() {
+          _elapsedTime = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+        });
+      });
+      _syncTicker!.start();
     } catch (e) {
-      debugPrint('❌ [AetherCore Pro] Initialization Failure: $e');
+      debugPrint('⚠️ [AetherCore Pro] Falling back to standard rendering stream: $e');
+      if (mounted) {
+        setState(() {
+          _shaderCompilationFailed = true;
+        });
+      }
     }
   }
 
@@ -55,32 +70,46 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
 
   @override
   Widget build(BuildContext context) {
-    // FIXED: Block rendering lifecycle execution if shader assets or native textures are unready
-    if (_program == null || widget.renderer.textureId == null) {
+    final videoValue = widget.renderer.value;
+    final double computedAspectRatio = videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16;
+
+    // Handle early loading states cleanly before native surface textures activate
+    if (_program == null && !_shaderCompilationFailed && widget.renderer.textureId == null) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00F3FF)),
         ),
       );
     }
-
-    final videoValue = widget.renderer.value;
 
     return Container(
       color: Colors.black,
       child: Center(
         child: AspectRatio(
-          aspectRatio:
-              videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16,
-          // FIXED: Removed the dynamic elapsed time variable from the ValueKey.
-          // This keeps the element tree stable while letting shouldRepaint redraw the canvas.
-          child: CustomPaint(
-            key: ValueKey('aether_core_${widget.renderer.textureId}'),
-            painter: AetherCorePainter(
-              program: _program!,
-              renderer: widget.renderer,
-              time: _elapsedTime,
-            ),
+          aspectRatio: computedAspectRatio,
+          child: Stack(
+            children: [
+              // LAYER 1: Native WebRTC Video Hardware Decoder Engine
+              Positioned.fill(
+                child: RTCVideoView(
+                  widget.renderer,
+                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                  mirror: true,
+                ),
+              ),
+
+              // LAYER 2: Post-Processing Shader Matrix (Draws the Neon Cyan glitch overlay)
+              if (_program != null && !_shaderCompilationFailed)
+                Positioned.fill(
+                  child: CustomPaint(
+                    key: ValueKey('aether_shader_overlay_${widget.renderer.textureId}'),
+                    painter: AetherCoreOverlayPainter(
+                      program: _program!,
+                      time: _elapsedTime,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -88,14 +117,12 @@ class _HologramStreamWidgetState extends State<HologramStreamWidget>
   }
 }
 
-class AetherCorePainter extends CustomPainter {
+class AetherCoreOverlayPainter extends CustomPainter {
   final ui.FragmentProgram program;
-  final RTCVideoRenderer renderer;
   final double time;
 
-  AetherCorePainter({
+  AetherCoreOverlayPainter({
     required this.program,
-    required this.renderer,
     required this.time,
   });
 
@@ -103,30 +130,23 @@ class AetherCorePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final ui.FragmentShader shader = program.fragmentShader();
 
-    // 1. Pass dimensional scaling constants to secure crisp 6ft projection edges
+    // 1. Pass local size boundaries down to uniform floats 0 and 1
     shader.setFloat(0, size.width);
     shader.setFloat(1, size.height);
 
-    // 2. Pass the high-frequency clock signal for fluid glitch effects
+    // 2. Pass high-frequency time metrics down to uniform float 2
     shader.setFloat(2, time);
 
-    // 3. FIXED: WebRTC Texture Bridge Insertion Point
-    // WebRTC on mobile builds uses native backing textures. If your shader expects an image sampler,
-    // you must pass the texture using image parameters (requires Flutter 3.x+ fragment shader support).
-    // Ensure your GLSL file specifies: layout(location = 0) out vec4 fragColor; layout(binding = 0) uniform sampler2D u_VideoTexture;
-    
-    // Fallback: If you encounter rendering anomalies with native hardware textures,
-    // wrap this custom painter inside a Stack directly over a standard RTCVideoView(renderer) block.
+    final Paint compositePaint = Paint()
+      ..shader = shader
+      ..blendMode = BlendMode.screen; // Clean mathematical pixel layer blending
 
-    final Paint paint = Paint()..shader = shader;
-
-    final Rect rect = Offset.zero & size;
-    canvas.drawRect(rect, paint);
+    final Rect renderBoundaries = Offset.zero & size;
+    canvas.drawRect(renderBoundaries, compositePaint);
   }
 
   @override
-  bool shouldRepaint(covariant AetherCorePainter oldDelegate) {
-    return oldDelegate.time != time ||
-        oldDelegate.renderer.textureId != renderer.textureId;
+  bool shouldRepaint(covariant AetherCoreOverlayPainter oldDelegate) {
+    return oldDelegate.time != time;
   }
 }
