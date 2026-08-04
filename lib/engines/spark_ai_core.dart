@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart'; 
 import 'package:dart_openai/dart_openai.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:groq_sdk/groq_sdk.dart';
@@ -9,7 +8,7 @@ import '../services/ai_version_controller.dart';
 class SparkAiCore {
   static Future<String> generateResponse(
       String userPrompt, bool isPaidUser) async {
-    const String systemInstruction = "You are Spark AI, a global educational genius. "
+    const String systemInstruction = "You are Spark, a global educational genius. "
         "Detect the user's language and respond perfectly in that language. "
         "No examples, just direct expertise.";
 
@@ -37,12 +36,12 @@ class SparkAiCore {
       if (apiKey == null || apiKey.isEmpty) throw Exception("Missing GROQ Key");
 
       final groq = Groq(apiKey, model: AiVersionController.groqModel);
-      final chat = groq.startNewChat(); // Corrected: Model is passed to the parent client, not the chat builder
-      final response = await chat.sendMessage("$persona\n\n$prompt"); // Returns a GroqChatMessage
-      
-      // FIXED: Directly extracts text from Groq's native message structure
-      final String textContent = response.text;
-      if (textContent.isNotEmpty) return textContent.trim();
+      final chat = groq.startNewChat(); 
+      final response = await chat.sendMessage("$persona\n\n$prompt"); 
+
+      // FIXED: Safely extract response text by diving into the choices container array hierarchy
+      final String? textContent = response.choices.first.message.content;
+      if (textContent != null && textContent.isNotEmpty) return textContent.trim();
     } catch (e, groqStack) {
       developer.log("Groq failure pipeline, engaging OpenAI fallback", error: e, stackTrace: groqStack);
     }
@@ -53,25 +52,25 @@ class SparkAiCore {
       if (openAiKey == null || openAiKey.isEmpty) throw Exception("Missing OpenAI Key");
 
       OpenAI.apiKey = openAiKey;
-      
-      // FIXED: Uses stable, version-agnostic Map initialization to completely bypass constructor changes
+
+      // FIXED: Used canonical, type-safe API constructors replacing broken .fromMap calls
       final chat = await OpenAI.instance.chat.create(
         model: AiVersionController.openAiModel,
         messages: [
-          OpenAIChatCompletionChoiceMessageModel.fromMap({
-            "role": "system",
-            "content": persona,
-          }),
-          OpenAIChatCompletionChoiceMessageModel.fromMap({
-            "role": "user",
-            "content": prompt,
-          }),
+          OpenAIChatCompletionChoiceMessageModel(
+            role: OpenAIChatMessageRole.system,
+            content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(persona)],
+          ),
+          OpenAIChatCompletionChoiceMessageModel(
+            role: OpenAIChatMessageRole.user,
+            content: [OpenAIChatCompletionChoiceMessageContentItemModel.text(prompt)],
+          ),
         ],
       );
-      
-      final dynamic rawContent = chat.choices.first.message.content;
+
+      final String? rawContent = chat.choices.first.message.content?.first.text;
       if (rawContent != null) {
-        return rawContent.toString().trim();
+        return rawContent.trim();
       }
       return "No response content received.";
     } catch (err, openAiStack) {
@@ -86,13 +85,15 @@ class SparkAiCore {
       final String? geminiKey = dotenv.maybeGet('GEMINI_API_KEY');
       if (geminiKey == null || geminiKey.isEmpty) throw Exception("Missing Gemini Key");
 
-      // FIXED: Uses official constructor utilities to ensure strict model compliance
+      // FIXED: Bound configuration block safely using valid content wrappers matching Google SDK changes
       final model = GenerativeModel(
         model: AiVersionController.geminiModel,
         apiKey: geminiKey,
-        systemInstruction: Content.system(persona),
+        config: GenerateContentConfig(
+          systemInstruction: Content.system(persona),
+        ),
       );
-      
+
       final response = await model.generateContent([Content.text(prompt)]);
       return response.text ?? "Brain recalibrating...";
     } catch (e, geminiStack) {
@@ -100,20 +101,4 @@ class SparkAiCore {
       return "Network error.";
     }
   }
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await dotenv.load(fileName: ".env"); 
-  } catch (e) {
-    developer.log("Environment configuration missing target file .env");
-  }
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
 }
