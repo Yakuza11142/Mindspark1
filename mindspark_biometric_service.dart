@@ -89,7 +89,7 @@ class MindSparkBiometricResolver {
     }
 
     print("Identity cleanly resolved via spatial computer vision: ${candidateMatches.first.key.fullName}");
-    return candidateMatches.first.key;
+    return candidateMatches.key;
   }
 
   Future<bool> _enforceFingerprintVerification() async {
@@ -101,14 +101,12 @@ class MindSparkBiometricResolver {
         return false;
       }
 
-      // FIXED: Aligned parameters and messages array to match your exact local_auth v3.0.2 requirements
+      // FIXED: Flattened layout named arguments to natively match the local_auth version 3.x method signature
       return await _hardwareAuth.authenticate(
         localizedReason: 'MindSpark detected look-alike ambiguity. Fingerprint required to target exact twin.',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-          useErrorDialogs: true,
-        ),
+        biometricOnly: true,  
+        stickyAuth: true,     
+        useErrorDialogs: true,
         authMessages: const [
           AndroidAuthMessages(
             signInTitle: 'MindSpark Twin Verification',
