@@ -1,152 +1,101 @@
-import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:vector_math/vector_math_64.dart' as v64;
+import 'quantum_nexus_vector.dart';
 
-class HologramStreamWidget extends StatefulWidget {
-  final RTCVideoRenderer renderer;
-  const HologramStreamWidget({super.key, required this.renderer});
-
-  @override
-  State<HologramStreamWidget> createState() => _HologramStreamWidgetState();
-}
-
-class _HologramStreamWidgetState extends State<HologramStreamWidget>
-    with SingleTickerProviderStateMixin {
-  ui.FragmentProgram? _program;
-  Ticker? _syncTicker;
-  double _elapsedTime = 0.0;
-  bool _isDisposed = false;
-  bool _shaderCompilationFailed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initAetherCorePipeline();
-  }
-
-  Future<void> _initAetherCorePipeline() async {
-    // FIXED: Corrected path call targeting the unified assets bundle directory
-    final Future<ui.FragmentProgram> shaderLoader = 
-        ui.FragmentProgram.fromAsset('assets/shaders/hologram_glow.frag');
-    
-    try {
-      final program = await shaderLoader.timeout(
-        const Duration(seconds: 3),
-        onTimeout: () => throw TimeoutException("GPU Shader Compilation Timeout"),
-      );
-
-      if (_isDisposed) return;
-
-      setState(() {
-        _program = program;
-      });
-
-      // Synchronize timeline calculations with native display refresh grids
-      _syncTicker = createTicker((Duration elapsed) {
-        if (!mounted) return;
-        setState(() {
-          _elapsedTime = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
-        });
-      });
-      _syncTicker!.start();
-    } catch (e) {
-      debugPrint('⚠️ [AetherCore Pro] Falling back to standard rendering stream: $e');
-      if (mounted) {
-        setState(() {
-          _shaderCompilationFailed = true;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _isDisposed = true;
-    _syncTicker?.dispose();
-    super.dispose();
-  }
+class AetherCoreProHologram extends StatelessWidget {
+  const AetherCoreProHologram({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final videoValue = widget.renderer.value;
-    final double computedAspectRatio = videoValue.aspectRatio > 0 ? videoValue.aspectRatio : 9 / 16;
-
-    // Handle early loading states cleanly before native surface textures activate
-    if (_program == null && !_shaderCompilationFailed && widget.renderer.textureId == null) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00F3FF)),
-        ),
-      );
+    final InheritedSparkScale? sparkData = InheritedSparkScale.of(context);
+    
+    if (sparkData == null) {
+      return const Center(child: Text("Error: Missing QuantumNexusVector Context"));
     }
 
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: computedAspectRatio,
-          child: Stack(
-            children: [
-              // LAYER 1: Native WebRTC Video Hardware Decoder Engine
-              Positioned.fill(
-                child: RTCVideoView(
-                  widget.renderer,
-                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  mirror: true,
-                ),
-              ),
-
-              // LAYER 2: Post-Processing Shader Matrix (Draws the Neon Cyan glitch overlay)
-              if (_program != null && !_shaderCompilationFailed)
-                Positioned.fill(
-                  child: CustomPaint(
-                    key: ValueKey('aether_shader_overlay_${widget.renderer.textureId}'),
-                    painter: AetherCoreOverlayPainter(
-                      program: _program!,
-                      time: _elapsedTime,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: sparkData.viewportDimensions,
+        painter: HolographicMeshPainter(
+          matrix: sparkData.projectionMatrix,
+          scale: sparkData.scaleFactor,
+          shiftY: sparkData.verticalShift,
+          time: sparkData.timelineDelta,
         ),
       ),
     );
   }
 }
 
-class AetherCoreOverlayPainter extends CustomPainter {
-  final ui.FragmentProgram program;
+class HolographicMeshPainter extends CustomPainter {
+  final v64.Matrix4 matrix;
+  final double scale;
+  final double shiftY;
   final double time;
 
-  AetherCoreOverlayPainter({
-    required this.program,
+  HolographicMeshPainter({
+    required this.matrix,
+    required this.scale,
+    required this.shiftY,
     required this.time,
   });
 
+  final List<v64.Vector3> _skeletalVertices = [
+    v64.Vector3(0.0, 1.83, 0.0),   
+    v64.Vector3(0.45, 0.95, 0.2),  
+    v64.Vector3(-0.45, 0.95, -0.2), 
+    v64.Vector3(0.0, 0.0, 0.0),    
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
-    final ui.FragmentShader shader = program.fragmentShader();
+    // FIXED: Swapped out deprecated withOpacity method for modern withValues alpha layers
+    final Paint neonAuraBrush = Paint()
+      ..color = const Color(0xFF00F3FF).withValues(alpha: 0.35 + (Offset(scale, shiftY).distance % 0.15)) 
+      ..strokeWidth = 14.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0);
 
-    // 1. Pass local size boundaries down to uniform floats 0 and 1
-    shader.setFloat(0, size.width);
-    shader.setFloat(1, size.height);
+    final Paint coreLaserBrush = Paint()
+      ..color = const Color(0xFFE6FFFF)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-    // 2. Pass high-frequency time metrics down to uniform float 2
-    shader.setFloat(2, time);
+    // FIXED: Swapped out deprecated scale method for type-safe scaleByDouble adjustments
+    final v64.Matrix4 localViewportTransform = v64.Matrix4.identity()
+      ..translateByDouble(size.width / 2, size.height * (0.8 + shiftY), 0.0, 1.0) 
+      ..scaleByDouble(120.0 * scale, -120.0 * scale, 1.0); 
 
-    final Paint compositePaint = Paint()
-      ..shader = shader
-      ..blendMode = BlendMode.screen; // Clean mathematical pixel layer blending
+    final v64.Matrix4 absoluteTransformationMatrix = localViewportTransform * matrix;
 
-    final Rect renderBoundaries = Offset.zero & size;
-    canvas.drawRect(renderBoundaries, compositePaint);
+    List<Offset> projectedNodes = [];
+    for (var position3d in _skeletalVertices) {
+      final v64.Vector3 compiledVector = absoluteTransformationMatrix.transform3(v64.Vector3.copy(position3d));
+      projectedNodes.add(Offset(compiledVector.x, compiledVector.y));
+    }
+
+    if (projectedNodes.length >= 4) {
+      final Path structurePath = Path()
+        ..moveTo(projectedNodes[3].dx, projectedNodes[3].dy) 
+        ..lineTo(projectedNodes[2].dx, projectedNodes[2].dy) 
+        ..lineTo(projectedNodes[0].dx, projectedNodes[0].dy) 
+        ..lineTo(projectedNodes[1].dx, projectedNodes[1].dy) 
+        ..close();
+
+      canvas.drawPath(structurePath, neonAuraBrush);
+      canvas.drawPath(structurePath, coreLaserBrush);
+      
+      final Paint nodeBrush = Paint()..color = Colors.white;
+      for (var node in projectedNodes) {
+        canvas.drawCircle(node, 5.0, nodeBrush);
+      }
+    }
   }
 
   @override
-  bool shouldRepaint(covariant AetherCoreOverlayPainter oldDelegate) {
-    return oldDelegate.time != time;
+  bool shouldRepaint(covariant HolographicMeshPainter oldDelegate) {
+    return oldDelegate.matrix != matrix || oldDelegate.time != time;
   }
 }
