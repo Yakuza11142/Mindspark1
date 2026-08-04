@@ -57,7 +57,7 @@ class EliteCertificateService {
                   pw.Text("MASTERED THE PRACTICAL:", style: pw.TextStyle(font: font, fontSize: 20, fontWeight: pw.FontWeight.bold, color: navy)),
                   pw.Text("[$practical]", style: pw.TextStyle(font: font, fontSize: 26, fontWeight: pw.FontWeight.bold, color: navy)),
                   pw.SizedBox(height: 20),
-                  pw.Text("Issued by Mindspark AI Academy on $date", style: pw.TextStyle(font: font, fontSize: 13, color: PdfColors.grey600)),
+                  pw.Text("Issued by Mind Spark on $date", style: pw.TextStyle(font: font, fontSize: 13, color: PdfColors.grey600)),
                   pw.Spacer(),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -65,7 +65,7 @@ class EliteCertificateService {
                     children: [
                       _sig("Lead Architect\nYakuza11142", "Yakuza11142", font),
                       _seal(font),
-                      _sig("Academy Director", "Academy Director", font),
+                      _sig("The Founder", "Academy Director", font),
                     ],
                   ),
                   pw.SizedBox(height: 10),
