@@ -4,12 +4,24 @@ class ParentalPinDialog extends StatefulWidget {
   final String correctPin;
   final int pinLength;
 
-  // Pass the required PIN and length dynamically
   const ParentalPinDialog({
     super.key, 
     required this.correctPin, 
     this.pinLength = 4,
   });
+
+  /// Static helper to trigger the dialog and await the dynamic PIN result
+  static Future<bool> show(BuildContext context, {required String correctPin}) async {
+    final bool? unlocked = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ParentalPinDialog(
+        correctPin: correctPin,
+        pinLength: 4,
+      ),
+    );
+    return unlocked ?? false;
+  }
 
   @override
   State<ParentalPinDialog> createState() => _ParentalPinDialogState();
@@ -17,7 +29,7 @@ class ParentalPinDialog extends StatefulWidget {
 
 class _ParentalPinDialogState extends State<ParentalPinDialog> {
   final TextEditingController _ctrl = TextEditingController();
-  
+
   @override
   void dispose() {
     _ctrl.dispose();
@@ -32,41 +44,28 @@ class _ParentalPinDialogState extends State<ParentalPinDialog> {
         controller: _ctrl, 
         keyboardType: TextInputType.number, 
         obscureText: true,
-        maxLength: widget.pinLength, // Use dynamic length
+        maxLength: widget.pinLength, 
         decoration: InputDecoration(
           labelText: "Enter ${widget.pinLength}-digit PIN",
-          counterText: "", // Hides the character counter
-        )
+          counterText: "", 
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false), 
-          child: const Text("Cancel")
+          child: const Text("Cancel"),
         ),
         TextButton(
           onPressed: () {
-            // Compare against the dynamic PIN passed to the widget
             if (_ctrl.text == widget.correctPin) {
               Navigator.pop(context, true); 
             } else {
-              // Optional: Clear on wrong pin or show error
               _ctrl.clear();
             }
           }, 
-          child: const Text("Unlock")
-        )
+          child: const Text("Unlock"),
+        ),
       ],
     );
   }
-}
-final bool? unlocked = await showDialog<bool>(
-  context: context,
-  builder: (context) => const ParentalPinDialog(
-    correctPin: "5566", // Your dynamic PIN
-    pinLength: 4,
-  ),
-);
-
-if (unlocked == true) {
-  // Go to parent settings
 }
