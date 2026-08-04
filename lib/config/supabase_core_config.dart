@@ -6,17 +6,18 @@ class SupabaseCoreConfig {
   static const String url = String.fromEnvironment('SUPABASE_URL');
   static const String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  // Track the configuration state internally to prevent duplicate initialization crashes
-  static bool _isInitialized = false;
-
   static Future<void> initialize() async {
-    if (_isInitialized) {
-      debugPrint("ℹ️ Supabase core services are already active. Skipping initialization loop.");
-      return;
+    // Directly inspect the underlying Singleton layer.
+    // This provides structural idempotency across hot restarts without relying on a reset-prone bool.
+    try {
+      if (Supabase.instance.client.supabaseUrl.isNotEmpty) {
+        debugPrint("ℹ️ Supabase core services are already active. Skipping initialization loop.");
+        return;
+      }
+    } catch (_) {
+      // An exception caught here explicitly means the instance is uninitialized and safe to mount.
     }
 
-    // FIXED: Swapped silent failure print loops for explicit state assertions.
-    // This allows your main AppBootSequence launcher to catch missing configuration keys safely.
     if (url.isEmpty || anonKey.isEmpty) {
       throw ArgumentError(
         "❌ FATAL: Supabase configuration credentials are missing from your build environment. "
@@ -24,35 +25,26 @@ class SupabaseCoreConfig {
       );
     }
 
-    try {
-      await Supabase.initialize(
-        url: url,
-        anonKey: anonKey,
-        authOptions: const FlutterAuthClientOptions(
-          authFlowType: AuthFlowType.pkce, // Enforces secure hardware authentication loops
-        ),
-        realtimeClientOptions: const RealtimeClientOptions(
-          eventsPerSecond: 15, // Slightly optimized handling for high-frequency WebRTC signaling packages
-        ),
-      );
-      
-      _isInitialized = true;
-      debugPrint("☁️ SYSTEM BASELINE: SUPABASE PRODUCTION CLOUD CONNECTED.");
-    } catch (e) {
-      // Catch exceptions where Supabase might have been initialized outside this class context
-      if (e.toString().contains('has already been initialized')) {
-        _isInitialized = true;
-        return;
-      }
-      rethrow;
-    }
+    await Supabase.initialize(
+      url: url,
+      anonKey: anonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce, // Enforces secure hardware authentication loops
+      ),
+      realtimeClientOptions: const RealtimeClientOptions(
+        eventsPerSecond: 15, // Slightly optimized handling for high-frequency WebRTC signaling packages
+      ),
+    );
+
+    debugPrint("☁️ SYSTEM BASELINE: SUPABASE PRODUCTION CLOUD CONNECTED.");
   }
 
-  // FIXED: Added a state assertion rule to the getter to provide explicit troubleshooting tracing logs
+  // State checking queries the actual instance dynamically instead of using a cached local field
   static SupabaseClient get client {
-    if (!_isInitialized) {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
       throw StateError("❌ SupabaseCoreConfig client accessed before initialize() execution loop passed.");
     }
-    return Supabase.instance.client;
   }
 }
