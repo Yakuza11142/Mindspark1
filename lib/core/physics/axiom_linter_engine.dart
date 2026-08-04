@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 class ProductionAxiomException implements Exception {
   final String message;
@@ -34,8 +33,6 @@ class AxiomLinterEngine {
       }
     }
 
-    // FIXED: Swapped out risky explicit casting loops ('as num') for robust validation checks.
-    // This intercepts string or boolean anomalies smoothly without throwing unhandled TypeErrors.
     final dynamic rawInput = extractedTree['input_joules'];
     final dynamic rawOutput = extractedTree['output_joules'];
     final dynamic rawTemp = extractedTree['temperature_kelvin'];
@@ -51,7 +48,7 @@ class AxiomLinterEngine {
     final double absoluteTemperature = rawTemp.toDouble();
     final String textualProof = rawProof;
 
-    // 2. FIXED: Implemented a safe thermodynamic floating-point threshold check to guard against calculation loops
+    // 2. Implemented a safe thermodynamic floating-point threshold check to guard against calculation loops
     const double epsilonThreshold = 1e-6;
     if (absoluteTemperature < -epsilonThreshold) {
       throw const ProductionAxiomException(
@@ -65,6 +62,11 @@ class AxiomLinterEngine {
     }
 
     final double efficiencyRatio = outputEnergy / inputEnergy;
+    if (efficiencyRatio.isInfinite || efficiencyRatio.isNaN) {
+      throw const ProductionAxiomException(
+          "Conservation of Energy Breach: Evaluation math overflowed to Infinity.");
+    }
+
     if (efficiencyRatio > 1.0) {
       throw ProductionAxiomException(
           "Conservation of Energy Breach: Perpetual system rejected. Real-world efficiency cannot exceed 100%. Calculated at: ${(efficiencyRatio * 100).toStringAsFixed(6)}%.");
@@ -82,13 +84,11 @@ class AxiomLinterEngine {
           "Hallucination Token Caught: Conversational guess modifier detected -> '$illegalToken'.");
     }
 
-    // 5. FIXED: Modified the structural anchor check to use robust regex anchoring paths.
-    // This allows the linter to pass proofs containing trailing periods ('QED.') or markdown boundaries.
+    // 5. Adjusted regex anchoring patterns to accept trailing whitespaces or syntax markdown blocks safely
     final String scrubbedProof = textualProof.trim().toLowerCase();
-    
+
     final bool hasValidPrefix = scrubbedProof.startsWith("theorem");
-    // Matches 'qed' or 'qed.' at the very end of the text stream
-    final bool hasValidSuffix = RegExp(r'qed\.?$').hasMatch(scrubbedProof);
+    final bool hasValidSuffix = RegExp(r'qed\.?\s*$').hasMatch(scrubbedProof);
 
     if (!hasValidPrefix || !hasValidSuffix) {
       throw const ProductionAxiomException(
