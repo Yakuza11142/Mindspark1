@@ -1,71 +1,117 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'dart:developer' as developer;
 
-class VoiceIntentParser {
-  // Singleton pattern enforces a single unified tracking footprint across all view ports
-  VoiceIntentParser._internal() {
-    _loadDefaultSystemIntentProfiles();
+abstract class StreamableBrainEngine {
+  Stream<String> generateLessonStream(String input);
+}
+
+abstract class QueueAudioService {
+  Future<void> enqueueAndSpeak(String textChunk);
+  Future<void> stopAllPlayback();
+}
+
+class VoiceChatEngine {
+  static final VoiceChatEngine _instance = VoiceChatEngine._internal();
+  factory VoiceChatEngine() => _instance;
+  VoiceChatEngine._internal();
+
+  StreamableBrainEngine? _brainEngine;
+  QueueAudioService? _audioService;
+
+  bool _isCurrentlyProcessing = false;
+  StreamSubscription<String>? _activeStreamSubscription;
+
+  /// External dependency injection configuration locks concrete service framework structures securely
+  void initializeDependencies({
+    required StreamableBrainEngine brain,
+    required QueueAudioService audio,
+  }) {
+    _brainEngine = brain;
+    _audioService = audio;
   }
-  static final VoiceIntentParser instance = VoiceIntentParser._internal();
 
-  // Class properties isolated cleanly within the specific instance scope to prevent multi-threaded cross-talk
-  final Map<String, RegExp> _compiledIntentRegistry = {};
-  static const String defaultIntent = "LESSON_QUERY";
+  /// Process inbound voice text loops using high-efficiency sentence stream pipelines
+  Future<void> processVoiceConversation(String userVoiceInput) async {
+    final String cleanedInput = userVoiceInput.trim();
+    if (cleanedInput.isEmpty) return;
 
-  /// Evaluates speech input strings branchlessly and returns the prioritized matched intent
-  String determineIntent(String spokenText) {
-    final String cleanedText = spokenText.trim().toLowerCase();
-    if (cleanedText.isEmpty) return defaultIntent;
-
-    // Formulate a local snapshot copy of the registry to prevent concurrent modification exceptions during scanning loops
-    final Map<String, RegExp> activeRegistrySnapshot = Map<String, RegExp>.from(_compiledIntentRegistry);
-
-    // Iterate through pre-compiled regex blocks instantly
-    for (final MapEntry<String, RegExp> entry in activeRegistrySnapshot.entries) {
-      if (entry.value.hasMatch(cleanedText)) {
-        return entry.key;
-      }
+    if (_brainEngine == null || _audioService == null) {
+      developer.log("❌ VoiceChatEngine: Execution aborted. Dependencies are uninitialized.");
+      return;
     }
 
-    return defaultIntent;
-  }
+    if (_isCurrentlyProcessing) {
+      developer.log("⚙️ VoiceChatEngine: Intercepting concurrent thread loop. Terminating preceding stream channels safely.");
+      await _activeStreamSubscription?.cancel();
+      await _audioService!.stopAllPlayback();
+    }
 
-  /// Method to register new intents dynamically at runtime with strict word boundaries
-  void registerIntent(String intentName, List<String> triggers) {
-    final String cleanedIntent = intentName.trim().toUpperCase();
-    if (cleanedIntent.isEmpty || triggers.isEmpty) return;
+    _isCurrentlyProcessing = true;
+    developer.log("🎙️ VoiceChatEngine: Initializing zero-lag conversational stream routing...");
 
-    // Maps words inside strict Regex Word Boundaries (\b) to completely eliminate substring collision traps
-    final String escapedTriggers = triggers
-        .map((t) => RegExp.escape(t.trim().toLowerCase()))
-        .where((t) => t.isNotEmpty)
-        .join('|');
-
-    if (escapedTriggers.isEmpty) return;
+    final StringBuffer sentenceBuffer = StringBuffer();
+    // FIXED: Wrapped pattern in capture parenthesis to preserve punctuation characters during splits
+    final RegExp sentenceEndPattern = RegExp(r'((?<!\b(?:Dr|Mr|Ms|St|e\.g|i\.e))\s*[.!?\n]\s*)');
 
     try {
-      // Compiles the entire array of choices into a single unified tracking block
-      _compiledIntentRegistry[cleanedIntent] = RegExp(
-        '\\b($escapedTriggers)\\b',
-        caseSensitive: false,
-        multiLine: false,
+      final Stream<String> textStream = _brainEngine!.generateLessonStream(cleanedInput);
+      final Completer<void> streamCompletionCompleter = Completer<void>();
+
+      _activeStreamSubscription = textStream.listen(
+        (String textChunk) {
+          sentenceBuffer.write(textChunk);
+          final String currentText = sentenceBuffer.toString();
+
+          if (sentenceEndPattern.hasMatch(currentText)) {
+            // FIXED: Using split keeps matched delimiters in the array as alternating items
+            final List<String> parts = currentText.split(sentenceEndPattern);
+            
+            // Re-allocate the un-finalized fragment at the very end
+            final String remainingFragment = parts.isNotEmpty ? parts.removeLast() : "";
+
+            // Systematically stitch sentences back to their trailing punctuation marks
+            for (int i = 0; i < parts.length; i += 2) {
+              if (i + 1 < parts.length) {
+                final String finalizedSentence = (parts[i] + parts[i + 1]).trim();
+                if (finalizedSentence.isNotEmpty) {
+                  _audioService!.enqueueAndSpeak(finalizedSentence);
+                  developer.log("🔊 VoiceChatEngine: Pipelining audio chunk: \"$finalizedSentence\"");
+                }
+              } else {
+                final String isolatedFragment = parts[i].trim();
+                if (isolatedFragment.isNotEmpty) {
+                  _audioService!.enqueueAndSpeak(isolatedFragment);
+                }
+              }
+            }
+
+            sentenceBuffer.clear();
+            sentenceBuffer.write(remainingFragment);
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          developer.log("❌ VoiceChatEngine: Upstream stream channel emitted a processing fault", error: error, stackTrace: stack);
+          if (!streamCompletionCompleter.isCompleted) streamCompletionCompleter.complete();
+        },
+        onDone: () {
+          // FIXED: Pipelining trailing fragments immediately inside onDone before state unlocks
+          final String remainingText = sentenceBuffer.toString().trim();
+          if (remainingText.isNotEmpty) {
+            _audioService!.enqueueAndSpeak(remainingText);
+            developer.log("🔊 VoiceChatEngine: Pipelining trailing audio chunk: \"$remainingText\"");
+          }
+          if (!streamCompletionCompleter.isCompleted) streamCompletionCompleter.complete();
+        },
+        cancelOnError: true,
       );
-      developer.log("🛰️ VoiceIntentParser: Dynamic intent schema initialized safely: [$cleanedIntent]");
+
+      await streamCompletionCompleter.future;
+
     } catch (e, stackTrace) {
-      developer.log("❌ VoiceIntentParser: Failed to compile intent regex mapping loops", error: e, stackTrace: stackTrace);
+      developer.log("❌ VoiceChatEngine: Media processing pipeline collapsed seamlessly", error: e, stackTrace: stackTrace);
+    } finally {
+      _isCurrentlyProcessing = false;
+      _activeStreamSubscription = null;
     }
-  }
-
-  /// Private helper method that populates baseline configurations to ensure the parser never runs empty
-  void _loadDefaultSystemIntentProfiles() {
-    registerIntent("CANCEL", ["stop", "cancel", "no", "abort", "quit"]);
-    registerIntent("HELP", ["help", "info", "explain", "tutorial"]);
-  }
-
-  /// Clear registry helper to allow clean workspace resets during hot-reloads safely
-  void resetRegistry() {
-    developer.log("⚙️ VoiceIntentParser: Purging active intent registry indices. Reverting to base definitions.");
-    _compiledIntentRegistry.clear();
-    _loadDefaultSystemIntentProfiles(); // Force immediate baseline re-population to block silent deadfalls
   }
 }
