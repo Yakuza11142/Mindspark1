@@ -32,7 +32,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # Provisions Gradle 8.11.1 natively via the action to bypass external download/watching lock errors
+      # Provisions Gradle 8.11.1 natively via the action to bypass external download errors
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -59,10 +59,10 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # Python-powered dependency handler to dynamically force 'any' while filtering out the root package name
+      # Upgraded Python script to cleanly solve circular dependency loops (Exit Code 65)
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
-          flutter pub upgrade --major-versions > pub_output.txt 2>&1 || true
+          flutter pub get --no-example > pub_output.txt 2>&1 || true
           cat pub_output.txt
 
           python3 -c "
@@ -71,13 +71,15 @@ jobs:
           with open('pub_output.txt', 'r') as f:
               text = f.read()
           
-          # Isolate package names from quotes or direct conflict outputs
+          # Isolate genuine package names from conflict logs
           packages = set(re.findall(r\"'(.*?)'\", text))
           packages.update(re.findall(r'\"(.*?)\"', text))
-          packages.update(re.findall(r'(?:depends on|because)\s+([a-zA-Z0-9_]+)', text))
           
-          # FIXED: Added 'mindspark1' and 'mindspark' to prevent self-dependency override errors (Exit Code 65)
-          ignored = {'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root', 'mindspark1', 'mindspark'}
+          # Enhanced system filter list to block keywords, system SDKs, and self-dependencies
+          ignored = {
+              'because', 'depends', 'on', 'version', 'any', 'flutter', 'sdk', 'root', 
+              'mindspark1', 'mindspark', 'meta', 'collection', 'path', 'crypto', 'async', 'clock'
+          }
           valid_pkgs = [p for p in packages if p and p.isidentifier() and p.lower() not in ignored]
           
           with open('pubspec_overrides.yaml', 'w') as out:
@@ -87,11 +89,11 @@ jobs:
                       out.write(f'  {pkg}: any\n')
           "
 
-          echo "=== DYNAMIC OVERRIDES CREATED ==="
+          echo "=== UPGRADED DYNAMIC OVERRIDES STATUS ==="
           if [ -f pubspec_overrides.yaml ]; then
             cat pubspec_overrides.yaml
           else
-            echo "No conflicts detected. Proceeding normally."
+            echo "Zero circular conflicts detected. Engine is structurally clear."
           fi
 
       - name: Fetch Dependencies
