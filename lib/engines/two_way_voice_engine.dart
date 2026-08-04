@@ -4,10 +4,21 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 // Abstract structural definitions reflecting your app architecture
 abstract class AudioService {
-  static final AudioService instance = dynamic; // Replace with your actual singleton
+  static AudioService? _instance;
+  
+  static AudioService get instance {
+    if (_instance == null) {
+      throw StateError("🚨 AudioService.instance accessed before assignment. Inject a real implementation.");
+    }
+    return _instance!;
+  }
+
+  static set instance(AudioService service) => _instance = service;
+
   Future<void> speak(String text);
   Future<void> stop();
 }
+
 abstract class SparkAiCore {
   static Future<String> generateResponse(String input, bool isPro, bool isSpark) async => "";
 }
@@ -22,7 +33,7 @@ class TwoWayVoiceEngine {
     if (_isConversing) return;
     _isConversing = true;
     _isProcessingState = false;
-    
+
     debugPrint("🎙️ Two-Way Audio Link Established with $persona");
 
     try {
@@ -40,28 +51,28 @@ class TwoWayVoiceEngine {
     }
   }
 
-  /// FIXED: Rewritten into a clean, awaited, safe operational pipeline loop
+  /// Safe operational pipeline loop protected against rapid audio-frame race conditions
   static Future<void> _listenLoop(String persona, bool isPro) async {
     if (!_isConversing || _isProcessingState) return;
 
-    // Safely stop any lingering listeners before re-igniting hardware channels
     if (_stt.isListening) {
       await _stt.stop();
     }
 
     await _stt.listen(
-      listenMode: ListenMode.confirmation, // Forces the engine to wait for a complete sentence
-      pauseFor: const Duration(seconds: 2), // Auto-stops if user pauses for 2 seconds
+      options: SpeechListenOptions(
+        listenMode: ListenMode.confirmation,
+      ),
+      pauseFor: const Duration(seconds: 2), 
       onResult: (result) async {
-        // Only trigger the processing matrix once the user has finished speaking completely
+        // Synchronous processing guard blocks multi-thread loop duplicate race triggers
         if (result.finalResult && _isConversing && !_isProcessingState) {
-          _isProcessingState = true;
-          
+          _isProcessingState = true; 
+
           final String userSpoke = result.recognizedWords;
           debugPrint("👤 User: $userSpoke");
 
           try {
-            // Immediately stop listening so the microphone doesn't capture the speaker audio
             await _stt.stop();
 
             // 1. Fetch AI response smoothly from the cloud engine
@@ -74,14 +85,12 @@ class TwoWayVoiceEngine {
 
             if (!_isConversing) return;
 
-            // 2. FIXED: Fully awaited audio feedback pipeline. 
-            // The microphone will stay completely offline until the speaker finishes speaking!
+            // 2. Fully awaited audio feedback pipeline blocks the mic until complete
             await AudioService.instance.speak(aiReply);
 
-            // 3. FIXED: Safe, controlled recursive cooldown interval trigger
+            // 3. Controlled recursive loop reactivation
             if (_isConversing) {
               _isProcessingState = false;
-              // Cleanly jump to the next listening loop pass
               await _listenLoop(persona, isPro);
             }
 
