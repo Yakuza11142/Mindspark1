@@ -142,7 +142,12 @@ flutter:
   assets:
     - assets/
     - assets/models/
+    - assets/shaders/
     - .env
+
+  # FIXED: Explicitly register fragment shaders so ui.FragmentProgram.fromAsset compiles them natively
+  shaders:
+    - assets/shaders/hologram_glow.frag
 
 flutter_launcher_icons:
   android: "launcher_icon"
