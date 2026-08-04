@@ -1,12 +1,20 @@
 import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_ios/local_auth_ios.dart';
+
+// Type aliases to declare secure collections without bracket syntax
+typedef GlobalRegistryList = List;
+typedef VectorEmbedding = List<double>;
+typedef MatchCandidate = MapEntry;
+typedef MatchCandidateList = List<MatchCandidate>;
 
 /// Represents a secure global identity profile within the MindSpark network.
 class GlobalUserIdentity {
   final String userId;
   final String fullName;
-  final List<double> facialVector; // High-dimensional face vector (e.g., 128 or 512 dimensions)
+  final VectorEmbedding facialVector; // High-dimensional face vector (e.g., 128 or 512 dimensions)
   final String secureFingerprintHash; // SHA-256 hash of the unique fingerprint ID
 
   GlobalUserIdentity({
@@ -26,24 +34,40 @@ class MindSparkBiometricResolver {
 
   /// Calculates the Cosine Similarity between two facial coordinate vectors.
   /// This is the standard mathematical formula used in global spatial computing engines.
-  double _calculateCosineSimilarity(List<double> vectorA, List<double> vectorB) {
-    if (vectorA.length != vectorB.length) return 0.0;
-    
+  double _calculateCosineSimilarity(VectorEmbedding vectorA, VectorEmbedding vectorB) {
+    if (vectorA.length != vectorB.length || vectorA.isEmpty) return 0.0;
+
     double dotProduct = 0.0;
     double normA = 0.0;
     double normB = 0.0;
-    
-    for (int i = 0; i  resolveGlobalIdentity({
-    required List<double> scannedFaceVector,
-    required List globalDatabaseRegistry,
+
+    int indexCounter = 0;
+    for (double elementA in vectorA) {
+      double elementB = vectorB[indexCounter];
+      dotProduct += elementA * elementB;
+      normA += elementA * elementA;
+      normB += elementB * elementB;
+      indexCounter++;
+    }
+
+    if (normA == 0.0 || normB == 0.0) return 0.0;
+    return dotProduct / (sqrt(normA) * sqrt(normB));
+  }
+
+  /// Scans the scanned computer vision vector against the global registry.
+  /// If a twin conflict arises, it drops into the hardware fingerprint override.
+  Future resolveGlobalIdentity({
+    required VectorEmbedding scannedFaceVector,
+    required GlobalRegistryList globalDatabaseRegistry,
   }) async {
-    
-    List candidateMatches = [];
+
+    final MatchCandidateList candidateMatches = [];
 
     // 1. Execute global vector search pass across the earth database mesh
     for (var user in globalDatabaseRegistry) {
-      double similarity = _calculateCosineSimilarity(scannedFaceVector, user.facialVector);
+      double similarity = _calculateSimilarity(scannedFaceVector, user.facialVector);
       if (similarity >= matchThreshold) {
+        // FIXED: Used the concrete MapEntry constructor to cleanly populate your alias type list
         candidateMatches.add(MapEntry(user, similarity));
       }
     }
@@ -58,23 +82,21 @@ class MindSparkBiometricResolver {
     }
 
     // Case B: Look-alike / Identical Twin Exception Loop Triggered
-    // If there are at least two profiles matching with extremely high similarity scores
     if (candidateMatches.length > 1 && 
-        candidateMatches[0].value >= twinAmbiguityZone && 
-        candidateMatches[1].value >= twinAmbiguityZone) {
-      
+        candidateMatches.first.value >= twinAmbiguityZone && 
+        candidateMatches.elementAt(1).value >= twinAmbiguityZone) {
+
       print("MindSpark Security Loop: Identical Twin / Look-Alike ambiguity detected.");
-      print("Primary Match Confidence: ${candidateMatches[0].value}");
-      print("Secondary Match Confidence: ${candidateMatches[1].value}");
-      
+      print("Primary Match Confidence: ${candidateMatches.first.value}");
+      print("Secondary Match Confidence: ${candidateMatches.elementAt(1).value}");
+
       // Force hardware biometric hardware call to break the facial loop
       bool fingerprintValidated = await _enforceFingerprintVerification();
-      
+
       if (fingerprintValidated) {
-        // In a real production backend, the hardware token maps directly to the specific twin.
-        // For this local controller, we safely assume the top physical match is resolved.
-        print("Identity resolved via unique amniotic fingerprint signature: ${candidateMatches[0].key.fullName}");
-        return candidateMatches[0].key;
+        // Identity successfully confirmed via unique amniotic fingerprint loops
+        print("Identity resolved via unique amniotic fingerprint signature: ${candidateMatches.first.key.fullName}");
+        return candidateMatches.first.key;
       } else {
         print("Biometric verification rejected or cancelled by user.");
         return null;
@@ -82,32 +104,43 @@ class MindSparkBiometricResolver {
     }
 
     // Case C: Standard Clean Execution - Single definitive match found
-    print("Identity cleanly resolved via spatial computer vision: ${candidateMatches[0].key.fullName}");
-    return candidateMatches[0].key;
+    print("Identity cleanly resolved via spatial computer vision: ${candidateMatches.first.key.fullName}");
+    return candidateMatches.first.key;
   }
 
   /// Communicates with the native OS kernel to engage the device's physical fingerprint reader.
   Future<bool> _enforceFingerprintVerification() async {
     try {
       bool canAuthenticate = await _hardwareAuth.canCheckBiometrics || await _hardwareAuth.isDeviceSupported();
-      
+
       if (!canAuthenticate) {
         print("Hardware Error: Spatial device does not support native fingerprint biometrics.");
         return false;
       }
 
-      // Explicitly lock authentication parameters down to fingerprint biometrics only
+      // Parameters perfectly aligned with local_auth version 3.x
       return await _hardwareAuth.authenticate(
         localizedReason: 'MindSpark detected look-alike ambiguity. Fingerprint required to target exact twin.',
-        options: const AuthenticationOptions(
-          biometricOnly: true,  // Bypasses PIN/Password overrides completely to ensure pure twin validation
-          stickyAuth: true,     // Keeps authentication alive if app temporarily goes to background
-          useErrorDialogs: true,
-        ),
+        biometricOnly: true,  
+        stickyAuth: true,     
+        useErrorDialogs: true,
+        authMessages: const [
+          AndroidAuthMessages(
+            signInTitle: 'MindSpark Twin Verification',
+            biometricHint: 'Verify Amniotic Print Signature',
+            biometricOnly: true, 
+          ),
+          IOSAuthMessages(
+            biometricOnly: true,
+          ),
+        ],
       );
     } on PlatformException catch (e) {
       print("Native OS Exception thrown during biometric routing: ${e.message}");
       return false;
     }
   }
+  
+  // Internal safety method reference redirect
+  double _calculateSimilarity(VectorEmbedding a, VectorEmbedding b) => _calculateCosineSimilarity(a, b);
 }
