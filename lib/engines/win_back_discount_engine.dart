@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io'; 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer' as developer;
 
@@ -16,7 +14,7 @@ class WinBackDiscountEngine {
       if (lastLoginStr == null || lastLoginStr.isEmpty) return false;
 
       final DateTime lastLogin = DateTime.parse(lastLoginStr).toUtc();
-      
+
       // Swapped out vulnerable device clocks for a reliable network-time delta offset check
       final DateTime currentTrueTime = await _getSecureNetworkTime();
 
@@ -42,20 +40,23 @@ class WinBackDiscountEngine {
   /// Private helper method that fetches a secure, un-spoofable network timestamp.
   /// Falls back safely to device time if the user is completely offline.
   static Future<DateTime> _getSecureNetworkTime() async {
+    final HttpClient client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
     try {
-      // Use a fast, low-overhead HTTP HEAD request against a highly reliable global NTP server pool
-      final HttpClient client = HttpClient()..connectionTimeout = const Duration(seconds: 3);
+      // Use a fast, low-overhead HTTP HEAD request against a highly reliable global server pool
       final HttpClientRequest request = await client.headUrl(Uri.parse("https://google.com"));
       final HttpClientResponse response = await request.close();
-      
+
       final String? dateHeader = response.headers.value(HttpHeaders.dateHeader);
       if (dateHeader != null && dateHeader.isNotEmpty) {
         return HttpDate.parse(dateHeader).toUtc();
       }
     } catch (e) {
       developer.log("⚠️ WinBackEngine: Secure network time unavailable. Falling back to localized device clock.");
+    } finally {
+      // Formally closed the HttpClient socket pool resource to completely eliminate network memory leaks
+      client.close();
     }
-    
+
     // Secure secondary fallback configuration
     return DateTime.now().toUtc();
   }
