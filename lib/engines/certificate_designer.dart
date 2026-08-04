@@ -63,7 +63,7 @@ class EliteCertificateService {
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      _sig("Lead Architect\nYakuza11142", "Yakuza11142", font),
+                      _sig("Lead Architect\nTheFounder", "Yakuza11142", font),
                       _seal(font),
                       _sig("The Founder", "Academy Director", font),
                     ],
