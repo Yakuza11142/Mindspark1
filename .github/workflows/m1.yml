@@ -59,7 +59,7 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # Brute-Force Dependency Solver: Overrides EVERY single package to 'any' automatically
+      # Brute-Force Dependency Solver: Overrides packages to 'any' while preserving local SDK links
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           python3 -c "
@@ -72,10 +72,10 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
-          # System block keywords to prevent overriding core Flutter/Dart system layers
+          # CRITICAL FIXED ARRAY: Added 'flutter_test' to prevent public pub.dev lookup loops
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
-              'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides'
+              'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test'
           }
           
           for line in lines:
