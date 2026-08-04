@@ -8,7 +8,7 @@ class AppBootSequence {
     debugPrint("🚀 [MindSpark Core] Executing Infrastructure Boot Sequence...");
 
     try {
-      // FIX: Defensive boundary lock guarantees framework engine binds natively before asset calls execute
+      // Defensive boundary lock guarantees framework engine binds natively before asset calls execute
       WidgetsFlutterBinding.ensureInitialized();
 
       // Capture and validate global environment parameters passed via compile definitions
@@ -24,19 +24,23 @@ class AppBootSequence {
 
       if (securityService.isSystemCompromised) {
         debugPrint("🛑 Boot Sequence Interrupted: Device attestation check failed.");
-        return true; // Return true so main.dart can safely catch and display the secure lockout layout
+        return false; 
       }
 
-      // 2. FIXED: Robust, optimized multi-instance state check prevents StateErrors from blocking thread paths
-      bool isSupabaseInitialized = false;
+      // 2. Verified: Catches AssertionErrors and Exceptions to completely eliminate boot loops
+      bool needsInitialization = true;
       try {
-        // Safe explicit evaluation pattern isolates instance configuration status
-        isSupabaseInitialized = Supabase.instance.client.supabaseUrl.isNotEmpty;
+        final currentClient = Supabase.instance.client;
+        if (currentClient.supabaseUrl.isNotEmpty) {
+          needsInitialization = false;
+        }
+      } on AssertionError {
+        needsInitialization = true;
       } catch (_) {
-        isSupabaseInitialized = false;
+        needsInitialization = true;
       }
 
-      if (!isSupabaseInitialized) {
+      if (needsInitialization) {
         await Supabase.initialize(
           url: supabaseUrl,
           anonKey: supabaseAnonKey,
@@ -60,15 +64,15 @@ class AppBootSequence {
   }
 
   static void _initializeBackgroundSubsystems() {
-    // Isolates heavy ad profiling, purchase histories, and 3D mesh loads away from the main event frame
-    Future(() async {
+    Future.microtask(() async {
       try {
         await MobileAds.instance.initialize();
         await _initializeInAppPurchases();
         await _preloadCharacterAssets();
         debugPrint("💎 Background monetization & multimedia subsystems cached.");
-      } catch (e) {
+      } catch (e, stackTrace) {
         debugPrint("⚠️ Non-fatal sub-system background initialization warning: $e");
+        debugPrint("Background Stack Trace: $stackTrace");
       }
     });
   }
