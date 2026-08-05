@@ -1,3 +1,15 @@
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Assumptions based on your setup imports:
+// These classes must be defined in your app core or configuration scopes.
+abstract class SupabaseCoreConfig {
+  static final SupabaseClient client = Supabase.instance.client;
+}
+abstract class SupabaseOfflineMutations {
+  static void queueWrite(String table, Map<String, dynamic> data) {}
+}
+
 class SupabaseExamLedger {
   SupabaseExamLedger._internal();
   static final SupabaseExamLedger instance = SupabaseExamLedger._internal();
@@ -25,39 +37,8 @@ class SupabaseExamLedger {
       }
     } catch (e) {
       // If Edge call fails, fallback to your offline queue
-      print("Edge Processing failed, queuing offline: $e");
+      debugPrint("Edge Processing failed, queuing offline: $e");
       SupabaseOfflineMutations.queueWrite('exam_results', payload);
     }
   }
 }
-// supabase/functions/upload-score/index.ts
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-
-Deno.serve(async (req) => {
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Parse the JSON payload from the Flutter client
-    const { exam_type, score, user_id, created_at } = await req.json()
-
-    const { error } = await supabase
-      .from('exam_results')
-      .insert({ 
-        user_id, 
-        exam_type, 
-        score, 
-        created_at: created_at ?? new Date().toISOString() 
-      })
-
-    if (error) throw error
-
-    return new Response(JSON.stringify({ success: true }), { 
-      headers: { "Content-Type": "application/json" } 
-    })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 400 })
-  }
-})
