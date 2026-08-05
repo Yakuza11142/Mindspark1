@@ -5,8 +5,8 @@ class TranslationEngine {
   // Pull credentials securely out of compile-time environment definitions
   static const String _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
 
-  // FIXED: Standard string array regex strips leading/trailing quotes cleanly without syntax clashes
-  static final RegExp _matchingQuotesRegex = RegExp('^["\'](.*)["\']$');
+  // FIXED: Double quotes handle inner single quotes gracefully, while the escaped $ symbol works perfectly inside Dart strings
+  static final RegExp _matchingQuotesRegex = RegExp("^[\"'](.*)[\"']\$");
 
   // Cached internal reference for the singleton engine instance
   static GenerativeModel? _cachedModel;
