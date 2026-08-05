@@ -8,8 +8,8 @@ class SttAutocorrectEngine {
   SttAutocorrectEngine._internal();
   static final SttAutocorrectEngine instance = SttAutocorrectEngine._internal();
 
-  // FIXED: Wrapped the regex in raw double quotes r"..." so the internal single quote does not break the syntax.
-  static final RegExp _cleanEnclosureRegex = RegExp(r"^纽纽(["\'])(.*?)\1$纽纽");
+  // FIXED: Standard string array regex strips leading/trailing quotes cleanly without syntax clashes
+  static final RegExp _cleanEnclosureRegex = RegExp('^["\'](.*)["\']$');
 
   /// Cleans and refactors speech text fragments instantly using high-speed backend models.
   Future<String> cleanSpeech(String rawSpeech) async {
@@ -37,8 +37,8 @@ class SttAutocorrectEngine {
       final String polishedText = responseText.trim();
       if (polishedText.isEmpty) return cleanInput;
 
-      // SUCCESS: Targets capture group 2 since group 1 is tracking the symmetric quotes
-      return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(2) ?? polishedText);
+      // SUCCESS: Targets capture group 1 to drop the bounding punctuation cleanly
+      return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(1) ?? polishedText);
 
     } catch (e) {
       developer.log("⚠️ Autocorrect processing loop failure: ${e.toString()}");
