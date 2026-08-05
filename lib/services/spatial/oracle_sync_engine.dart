@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/oracle_sync_engine.dart'; 
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/oracle_sync_engine.dart'; 
 
 void main() {
   group('OracleSyncEngine Precision and State Transformations', () {
@@ -52,7 +52,7 @@ void main() {
 
     test('resetEngine systematically wipes state machine fields back to zero configurations', () {
       engine.logMicroInteractionTelemetry(gazeDwellTimeSeconds: 0.5, vectorHesitationIndex: 0.99, acousticPitchDelta: []);
-      
+
       engine.resetEngine();
 
       expect(engine.inferredState, equals(CognitiveLoadState.receptive));
