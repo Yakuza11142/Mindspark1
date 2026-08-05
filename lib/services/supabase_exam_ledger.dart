@@ -1,4 +1,3 @@
-
 class SupabaseExamLedger {
   SupabaseExamLedger._internal();
   static final SupabaseExamLedger instance = SupabaseExamLedger._internal();
