@@ -50,7 +50,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
@@ -59,20 +59,18 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # FIXED: Added 'your_project_name' to the system_ignored set to prevent public pub.dev lookup loops
+      # Dynamically Solve Transitive Dependency Hell
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           python3 -c "
           import re
           
-          # Read your root pubspec file directly to find everything your app uses
           with open('pubspec.yaml', 'r') as f:
               lines = f.readlines()
           
           all_packages = set()
           is_inside_dependencies = False
           
-          # CRITICAL FIXED ARRAY: Added your internal project names to keep them safe
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
               'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
@@ -81,26 +79,23 @@ jobs:
           
           for line in lines:
               clean_line = line.strip()
-              # Track when we are inside the dependency declaration blocks
               if clean_line.startswith('dependencies:') or clean_line.startswith('dev_dependencies:'):
                   is_inside_dependencies = True
                   continue
               if clean_line.startswith('flutter:') or clean_line.startswith('flutter_launcher_icons:'):
                   is_inside_dependencies = False
               
-              if is_inside_dependencies and clean_line and not clean_line.startswith('#'):
-                  # Extract the package identifier name before the colon
+              # 🚀 FIXED: Hardened strip check filtering to ensure trailing/indented comments are ignored cleanly
+              if is_inside_dependencies and clean_line and not clean_line.startswith('#') and not line.lstrip().startswith('#'):
                   match = re.match(r'^([a-zA-Z0-9_-]+):', clean_line)
                   if match:
                       pkg_name = match.group(1)
                       if pkg_name not in system_ignored:
                           all_packages.add(pkg_name)
           
-          # Hardcoded safety injectors to catch any hidden sub-packages throwing errors in logs
           for hidden_pkg in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus']:
               all_packages.add(hidden_pkg)
           
-          # Generate the ultimate master pubspec_overrides file
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
@@ -115,6 +110,10 @@ jobs:
             echo "Error: Override file generation failed."
           fi
 
+      - name: Flush Stale Cache Mappings
+        run: |
+          flutter pub clean
+
       - name: Fetch Dependencies
         run: |
           flutter pub get --no-example
@@ -124,8 +123,13 @@ jobs:
         run: |
           dart fix --apply
 
+      - name: Force Format Structural Layouts
+        run: |
+          dart format lib/
+
       - name: Execute Database Schema & Code Generators
         run: |
+          dart run build_runner clean
           dart run build_runner build --delete-conflicting-outputs
 
       - name: Create Secrets File Outside Workspace
