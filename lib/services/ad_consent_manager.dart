@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/privacy_settings_button.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/privacy_settings_button.dart';
 
 void main() {
   group('PrivacySettingsButton Interaction Verification Tests', () {
@@ -19,7 +19,7 @@ void main() {
       expect(find.text('Privacy & Cookie Preferences'), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      
+
       final listTile = tester.widget<ListTile>(find.byType(ListTile));
       expect(listTile.enabled, isTrue);
     });
@@ -31,14 +31,14 @@ void main() {
       await tester.runAsync(() async {
         await tester.tap(find.byType(ListTile));
       });
-      
+
       // FIX: Pump the layout tree outside the async block to ensure perfect frame sync
       await tester.pump();
 
       // Assert interaction constraints lock down securely
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
-      
+
       final disabledListTile = tester.widget<ListTile>(find.byType(ListTile));
       expect(disabledListTile.enabled, isFalse);
     });
