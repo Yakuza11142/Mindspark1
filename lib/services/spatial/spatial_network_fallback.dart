@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/spatial_network_guard.dart';
-import 'package:your_project_name/spatial_pipeline_observer.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/spatial_network_guard.dart';
+import 'package:mindspark1/spatial_pipeline_observer.dart';
 
 void main() {
   group('SpatialPipelineObserver UI Integration Tests', () {
@@ -61,7 +61,7 @@ void main() {
       for (int i = 0; i < 5; i++) {
         fakeGuard.reportFrameDeliveryMetrics(250.0);
       }
-      
+
       await tester.pump();
 
       expect(find.byKey(const Key('cloud_view')), findsNothing);
