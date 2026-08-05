@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/ad_failure_reward_giver.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/ad_failure_reward_giver.dart';
 
 /// Lightweight custom test spy implementation to monitor currency balance increments.
 class FakeCurrencyProcessor implements CurrencyProcessor {
   int sparksAdded = 0;
-  
+
   @override
   void addSparks(int amount) {
     sparksAdded += amount;
@@ -46,7 +46,7 @@ void main() {
     test('Should populate tracking states smoothly when historical data exists on disk', () async {
       // FIX: Replaced hardcoded date value with a dynamic runtime string generator to block test decay
       final String activeDateToken = _getSafeCurrentDateString();
-      
+
       SharedPreferences.setMockInitialValues({
         countKey: 2,
         dateKey: activeDateToken,
