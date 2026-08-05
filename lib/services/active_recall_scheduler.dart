@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
-// Replace with your actual project layout namespace
-import 'package:your_project_name/active_recall_scheduler.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/active_recall_scheduler.dart';
 
 void main() {
   // Safe platform-level engine channel initialization binding rule
@@ -29,7 +29,7 @@ void main() {
 
     test('Should populate cache smoothly when historical serialization exists on disk', () async {
       final String safeTimeAnchor = DateTime.now().add(const Duration(hours: 12)).toIso8601String();
-      
+
       SharedPreferences.setMockInitialValues({
         storageKey: '[{"id":12345,"topic":"Flutter Hooks","scheduledTime":"$safeTimeAnchor","interval":"daily"}]',
       });
