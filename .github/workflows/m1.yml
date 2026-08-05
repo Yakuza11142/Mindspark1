@@ -71,7 +71,6 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
-          # FIXED: Hardened the system isolation array to proactively block flutter_test overrides
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
               'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
@@ -114,6 +113,12 @@ jobs:
       - name: Flush Stale Cache Mappings
         run: |
           flutter clean
+
+      # 🚀 FIXED: Explicitly purges any accidental generated overrides file before dependency solving
+      - name: Sanitize Environment and Overrides
+        run: |
+          rm -f pubspec_overrides.yaml
+          rm -f pubspec.lock
 
       - name: Fetch Dependencies
         run: |
