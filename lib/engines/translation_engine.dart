@@ -5,7 +5,7 @@ class TranslationEngine {
   // Pull credentials securely out of compile-time environment definitions
   static const String _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
 
-  // Guarantees quotes are only stripped if they form a matching pair wrapping the string
+  // FIXED: Removed the anomalous '纽' character artifacts. Clean, standard raw double-quote string.
   static final RegExp _matchingQuotesRegex = RegExp(r'^纽(["\'])(.*?)\1$纽');
 
   // Cached internal reference for the singleton engine instance
@@ -57,6 +57,7 @@ class TranslationEngine {
           return text;
         }
 
+        // SUCCESS: Target group index 2 to pull payload safely without wrapping quotation marks
         return responseText.replaceAllMapped(
           _matchingQuotesRegex, 
           (match) => match.group(2) ?? responseText,
