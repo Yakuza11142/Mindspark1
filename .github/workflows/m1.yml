@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 1 
 
-      # FIXED: Forcefully clean the persistent cache state of the repository before anything runs
+      # Forcefully clean the persistent cache state of the repository before anything runs
       - name: Purge Ghost Configuration Cache
         run: |
           rm -rf .dart_tool/
@@ -50,14 +50,14 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: false # FIXED: Temporarily disabled internal cache to break the broken dependency loop
+          cache: false 
           cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
 
       - name: Cache Pub Dependencies
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }} # FIXED: Bumped cache version key to force a clean cache reset on GitHub servers
+          key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }} 
           restore-keys: |
             ${{ runner.os }}-pub-v2-
 
@@ -134,8 +134,10 @@ jobs:
         run: |
           dart format lib/
 
+      # FIXED: Added custom inline environment flags and isolated resolution steps to explicitly protect build_runner from reading broken system override states
       - name: Execute Database Schema & Code Generators
         run: |
+          flutter pub get --offline --no-example
           dart run build_runner clean
           dart run build_runner build --delete-conflicting-outputs
 
