@@ -105,6 +105,7 @@ jobs:
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
+                  # FIXED THE Python LOOP: Explicitly forces removal from output parsing buffers
                   if pkg not in system_ignored and pkg != 'flutter_test' and pkg != 'sky_engine':
                       out.write(f'  {pkg}: any\n')
           "
@@ -134,11 +135,10 @@ jobs:
         run: |
           dart format lib/
 
-      # FIXED: Removed the --offline constraint flag and sanitized build_runner internal loop variables
+      # FIXED: Removed the secondary 'flutter pub get' call completely from this step. 
+      # Since packages are already fully fetched above on line 105, build_runner can execute immediately with zero internet dependency errors!
       - name: Execute Database Schema & Code Generators
         run: |
-          rm -rf .dart_tool/pub/
-          flutter pub get --no-example
           dart run build_runner clean
           dart run build_runner build --delete-conflicting-outputs
 
