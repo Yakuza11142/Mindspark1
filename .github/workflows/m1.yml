@@ -85,7 +85,6 @@ jobs:
               if clean_line.startswith('flutter:') or clean_line.startswith('flutter_launcher_icons:'):
                   is_inside_dependencies = False
               
-              # 🚀 FIXED: Hardened strip check filtering to ensure trailing/indented comments are ignored cleanly
               if is_inside_dependencies and clean_line and not clean_line.startswith('#') and not line.lstrip().startswith('#'):
                   match = re.match(r'^([a-zA-Z0-9_-]+):', clean_line)
                   if match:
@@ -110,9 +109,10 @@ jobs:
             echo "Error: Override file generation failed."
           fi
 
+      # 🚀 FIXED: Modified syntax from "flutter pub clean" to the correct framework command "flutter clean"
       - name: Flush Stale Cache Mappings
         run: |
-          flutter pub clean
+          flutter clean
 
       - name: Fetch Dependencies
         run: |
