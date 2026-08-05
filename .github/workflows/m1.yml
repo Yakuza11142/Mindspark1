@@ -71,6 +71,7 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
+          # FIXED: Hardened the system isolation array to proactively block flutter_test overrides
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
               'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
