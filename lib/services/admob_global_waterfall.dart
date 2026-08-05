@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/admob_global_waterfall.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/admob_global_waterfall.dart';
 
 void main() {
   // Safe platform-level engine channel initialization binding rule
