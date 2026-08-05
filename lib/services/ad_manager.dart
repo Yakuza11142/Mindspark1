@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/ad_manager.dart';
-import 'package:your_project_name/secure_banner_container.dart';
+// FIXED: Updated package namespace targets from template strings to your concrete project name
+import 'package:mindspark1/ad_manager.dart';
+import 'package:mindspark1/secure_banner_container.dart';
 
 /// Minimal testing mock stub implementation to bypass native Google platform initializers
 class MockAdManager implements AdManager {
