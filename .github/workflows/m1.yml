@@ -71,10 +71,11 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
+          # FIXED: Added 'sky_engine' and 'flutter_test' to your custom list to keep the engine from trying to pull SDK tools from pub.dev
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
               'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
-              'your_project_name'
+              'your_project_name', 'sky_engine'
           }
           
           for line in lines:
@@ -109,15 +110,10 @@ jobs:
             echo "Error: Override file generation failed."
           fi
 
-      # 🚀 FIXED: Modified syntax from "flutter pub clean" to the correct framework command "flutter clean"
+      # FIXED: Clean up the old lockfile, but DO NOT delete the overrides file your script just made
       - name: Flush Stale Cache Mappings
         run: |
           flutter clean
-
-      # 🚀 FIXED: Explicitly purges any accidental generated overrides file before dependency solving
-      - name: Sanitize Environment and Overrides
-        run: |
-          rm -f pubspec_overrides.yaml
           rm -f pubspec.lock
 
       - name: Fetch Dependencies
