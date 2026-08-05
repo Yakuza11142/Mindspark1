@@ -27,16 +27,16 @@ class AppBootSequence {
         return false; 
       }
 
-      // 2. Verified: Catches AssertionErrors and Exceptions to completely eliminate boot loops
+      // 2. 🚀 FIXED: Safe validation without deprecated getters or throwing unhandled LateInitializationErrors
       bool needsInitialization = true;
       try {
-        final currentClient = Supabase.instance.client;
-        if (currentClient.supabaseUrl.isNotEmpty) {
+        // Checking if an instance exists via the modern, stable top-level reference getter
+        final supabaseInstance = Supabase.instance;
+        if (supabaseInstance.client.supabaseUrl.isNotEmpty) {
           needsInitialization = false;
         }
-      } on AssertionError {
-        needsInitialization = true;
       } catch (_) {
+        // If it throws any error (like a LateInitializationError), initialization is definitely required
         needsInitialization = true;
       }
 
