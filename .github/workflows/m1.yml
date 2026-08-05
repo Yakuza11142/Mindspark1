@@ -96,16 +96,17 @@ jobs:
                   match = re.match(r'^([a-zA-Z0-9_-]+):', clean_line)
                   if match:
                       pkg_name = match.group(1)
-                      if pkg_name not in system_ignored:
+                      # FIXED LOGIC: Strict filtering directly inside the capture block prevents it from entering the set
+                      if pkg_name not in system_ignored and pkg_name != 'flutter_test' and pkg_name != 'sky_engine':
                           all_packages.add(pkg_name)
           
           for hidden_pkg in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus']:
-              all_packages.add(hidden_pkg)
+              if hidden_pkg not in system_ignored:
+                  all_packages.add(hidden_pkg)
           
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
-                  # FIXED THE Python LOOP: Explicitly forces removal from output parsing buffers
                   if pkg not in system_ignored and pkg != 'flutter_test' and pkg != 'sky_engine':
                       out.write(f'  {pkg}: any\n')
           "
@@ -135,8 +136,6 @@ jobs:
         run: |
           dart format lib/
 
-      # FIXED: Removed the secondary 'flutter pub get' call completely from this step. 
-      # Since packages are already fully fetched above on line 105, build_runner can execute immediately with zero internet dependency errors!
       - name: Execute Database Schema & Code Generators
         run: |
           dart run build_runner clean
