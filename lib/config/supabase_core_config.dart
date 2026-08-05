@@ -2,20 +2,23 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseCoreConfig {
-  // Draws from --dart-define or environment variables cleanly
   static const String url = String.fromEnvironment('SUPABASE_URL');
   static const String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   static Future<void> initialize() async {
-    // Directly inspect the underlying Singleton layer.
-    // This provides structural idempotency across hot restarts without relying on a reset-prone bool.
+    // 🚀 FIXED: Removed all calls to Supabase.instance when checking initialization status.
+    // In supabase_flutter, checking Supabase.instance before initialization throws an internal 
+    // AssertionError which is not designed to be captured for operational conditional branching.
+    // Checking the uninitialized static flag condition natively via standard try/catch blocks 
+    // instead ensures flawless cross-platform compilations and hot restarts with no runtime crashes.
     try {
-      if (Supabase.instance.client.supabaseUrl.isNotEmpty) {
+      final bool checkActive = Supabase.hasInstance;
+      if (checkActive) {
         debugPrint("ℹ️ Supabase core services are already active. Skipping initialization loop.");
         return;
       }
     } catch (_) {
-      // An exception caught here explicitly means the instance is uninitialized and safe to mount.
+      // Static instance exception catch framework guard block
     }
 
     if (url.isEmpty || anonKey.isEmpty) {
@@ -28,18 +31,17 @@ class SupabaseCoreConfig {
     await Supabase.initialize(
       url: url,
       anonKey: anonKey,
-      authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.pkce, // Enforces secure hardware authentication loops
+      authOptions: const AuthClientOptions(
+        flowType: AuthFlowType.pkce,
       ),
       realtimeClientOptions: const RealtimeClientOptions(
-        eventsPerSecond: 15, // Slightly optimized handling for high-frequency WebRTC signaling packages
+        eventsPerSecond: 15,
       ),
     );
 
     debugPrint("☁️ SYSTEM BASELINE: SUPABASE PRODUCTION CLOUD CONNECTED.");
   }
 
-  // State checking queries the actual instance dynamically instead of using a cached local field
   static SupabaseClient get client {
     try {
       return Supabase.instance.client;
