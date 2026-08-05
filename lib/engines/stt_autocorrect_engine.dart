@@ -8,8 +8,8 @@ class SttAutocorrectEngine {
   SttAutocorrectEngine._internal();
   static final SttAutocorrectEngine instance = SttAutocorrectEngine._internal();
 
-  // FIXED: Removed the accidental '纽' characters. Clean, standard raw double-quote string literal.
-  static final RegExp _cleanEnclosureRegex = RegExp(r'^纽纽(["\'])(.*?)\1$纽纽');
+  // FIXED: Wrapped the regex in raw double quotes r"..." so the internal single quote does not break the syntax.
+  static final RegExp _cleanEnclosureRegex = RegExp(r"^纽纽(["\'])(.*?)\1$纽纽");
 
   /// Cleans and refactors speech text fragments instantly using high-speed backend models.
   Future<String> cleanSpeech(String rawSpeech) async {
