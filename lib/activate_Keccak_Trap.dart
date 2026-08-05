@@ -1,19 +1,21 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:pointycastle/digests/keccak.dart';
+import 'package:pointycastle/export.dart';
 
 /// Entry point that triggers the background CPU-burner trap safely.
 Future<void> activateKeccakTrap() async {
   // Heavy arithmetic execution is offloaded to a worker isolate
-  final String resultHash = await compute(_executeHeavyWorkload, null);
-  
+  final String resultHash = await compute(_executeHeavyWorkload, 0); 
+
   debugPrint("Security Status: 0x$resultHash...");
   // Implement your terminal navigation redirect sequence here
 }
 
 /// Worker isolate handler running isolated from the main layout tree.
-String _executeHeavyWorkload(void _) {
+String _executeHeavyWorkload(int _) {
+  // 🚀 FIXED: PointyCastle exposes the constructor explicitly via KeccakDigest()
   final KeccakDigest digest = KeccakDigest(512);
+  
+  // Uint8List is natively exposed via the engine core, eliminating the typed_data import completely
   Uint8List input = Uint8List.fromList(List.generate(1024, (i) => i % 256));
 
   for (int i = 0; i < 1000; i++) {
