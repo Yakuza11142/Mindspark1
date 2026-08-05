@@ -59,7 +59,7 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # FIXED: Added 'your_project_name' to the ignore matrix to prevent public pub.dev lookup loops
+      # FIXED: Added 'your_project_name' to the system_ignored set to prevent public pub.dev lookup loops
       - name: Dynamically Solve Transitive Dependency Hell
         run: |
           python3 -c "
@@ -104,7 +104,8 @@ jobs:
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
-                  out.write(f'  {pkg}: any\n')
+                  if pkg not in system_ignored:
+                      out.write(f'  {pkg}: any\n')
           "
 
           echo "=== BRUTE FORCE OVERRIDES GENERATED ==="
