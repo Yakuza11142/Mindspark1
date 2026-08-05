@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:video_player/video_player.dart'; // 🚀 ADDED REQUIRED IMPORT
 import 'dart:math' as math;
 
 // CONDITIONAL IMPORT BLOCK: Swaps code targets cleanly so web doesn't crash on mobile plugins!
@@ -41,13 +42,11 @@ void main() async {
   if (supabaseUrl.isEmpty ||
       supabaseKey.isEmpty ||
       supabaseUrl == "https://supabase.co") {
-    // 💡 Mobile devs tip: Put your emergency debug testing credentials right here if needed
     supabaseUrl = "";
     supabaseKey = "";
   }
 
   try {
-    // 🚀 FIXED: Hardened URL validation check logic strings
     if (supabaseUrl.isNotEmpty &&
         supabaseKey.isNotEmpty &&
         !supabaseUrl.contains("your-supabase-project") &&
@@ -67,7 +66,6 @@ void main() async {
 
   await initAdmob;
 
-  // SAFE SPATIAL INITIALIZATION: Triggers AR on Mobile or Canvas layout on Web automatically!
   try {
     final spatialEngine = getSpatialEngine();
     spatialEngine.initializeTutor();
@@ -96,7 +94,103 @@ class MindSparkApp extends StatelessWidget {
       title: 'Mind Spark',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: const MainDevelopmentPage(),
+      // 🚀 FIXED: Pointed home directly to our new IntroVideoScreen
+      home: const IntroVideoScreen(), 
+    );
+  }
+}
+
+// 🚀 NEW: Intro Video Screen Widget
+class IntroVideoScreen extends StatefulWidget {
+  const IntroVideoScreen({super.key});
+
+  @override
+  State<IntroVideoScreen> createState() => _IntroVideoScreenState();
+}
+
+class _IntroVideoScreenState extends State<IntroVideoScreen> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Explicit network location for your specific GitHub asset target
+    final Uri videoUri = Uri.parse(
+      'https://github.com',
+    );
+
+    _controller = VideoPlayerController.networkUrl(videoUri)
+      ..initialize().then((_) {
+        setState(() {
+          _isInitialized = true;
+        });
+        _controller.play();
+        _controller.addListener(_videoListener);
+      }).catchError((error) {
+        debugPrint("⚠️ Failure fetching intro video stream asset online: $error");
+        _navigateToHome(); // Instantly move forward if the network drops
+      });
+  }
+
+  void _videoListener() {
+    if (_controller.value.position >= _controller.value.duration) {
+      _controller.removeListener(_videoListener);
+      _navigateToHome();
+    }
+  }
+
+  void _navigateToHome() {
+    if (mounted) {
+      // pushReplacement wipes the stack clean so users can't hardware-back navigate into the intro again
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainDevelopmentPage()),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_videoListener);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: _isInitialized
+                ? SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover, // Ensures fullscreen video coverage edge-to-edge
+                      child: SizedBox(
+                        width: _controller.value.size.width,
+                        height: _controller.value.size.height,
+                        child: VideoPlayer(_controller),
+                      ),
+                    ),
+                  )
+                : const CircularProgressIndicator(color: Colors.white),
+          ),
+          Positioned(
+            top: 50,
+            right: 20,
+            child: TextButton(
+              onPressed: _navigateToHome,
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.black54,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Skip'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -147,7 +241,7 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Convenient alias for Supabase operations inside your state views
+    // 🚀 Check warning check: Safe initialization placeholder block string checks
     final supabaseClient = Supabase.instance.client;
 
     return Scaffold(
