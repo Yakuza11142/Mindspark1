@@ -8,13 +8,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user ID from the request
     const userId = req.headers.get('x-user-id');
     const contentType = req.headers.get('content-type') || 'image/jpeg';
 
     if (!userId) throw new Error('Missing User ID');
 
-    // Read the binary body directly
     const arrayBuffer = await req.arrayBuffer();
     const path = `avatars/${userId}.jpg`;
 
