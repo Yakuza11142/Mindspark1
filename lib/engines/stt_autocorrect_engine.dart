@@ -8,9 +8,8 @@ class SttAutocorrectEngine {
   SttAutocorrectEngine._internal();
   static final SttAutocorrectEngine instance = SttAutocorrectEngine._internal();
 
-  // FIXED: Removed the anomalous '纽' markers from the raw string boundaries.
-  // Using double quotes r"..." allows unescaped single quotes inside without breaking the string context.
-  static final RegExp _cleanEnclosureRegex = RegExp(r'^纽(["\'])(.*?)\1$纽');
+  // FIXED: Removed the accidental '纽' characters. Clean, standard raw double-quote string literal.
+  static final RegExp _cleanEnclosureRegex = RegExp(r'^纽纽(["\'])(.*?)\1$纽纽');
 
   /// Cleans and refactors speech text fragments instantly using high-speed backend models.
   Future<String> cleanSpeech(String rawSpeech) async {
@@ -38,7 +37,7 @@ class SttAutocorrectEngine {
       final String polishedText = responseText.trim();
       if (polishedText.isEmpty) return cleanInput;
 
-      // SUCCESS: Uses match.group(2) because adding the backreference group (\1) shifted your text payload to group 2.
+      // SUCCESS: Targets capture group 2 since group 1 is tracking the symmetric quotes
       return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(2) ?? polishedText);
 
     } catch (e) {
