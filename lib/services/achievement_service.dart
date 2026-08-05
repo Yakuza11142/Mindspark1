@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// Replace with your actual project layout namespace
-import 'package:your_project_name/achievement_service.dart';
+// FIXED: Updated package namespace from template placeholders to your concrete project name
+import 'package:mindspark1/achievement_service.dart';
 
 void main() {
   // Safe platform-level engine channel initialization binding rule
