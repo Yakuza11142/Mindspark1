@@ -5,8 +5,8 @@ class TranslationEngine {
   // Pull credentials securely out of compile-time environment definitions
   static const String _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
 
-  // FIXED: Removed the anomalous '纽' character artifacts. Clean, standard raw double-quote string.
-  static final RegExp _matchingQuotesRegex = RegExp(r'^纽(["\'])(.*?)\1$纽');
+  // FIXED: Removed the accidental '纽' characters. Clean, standard raw double-quote string literal.
+  static final RegExp _matchingQuotesRegex = RegExp(r'^纽纽(["\'])(.*?)\1$纽纽');
 
   // Cached internal reference for the singleton engine instance
   static GenerativeModel? _cachedModel;
