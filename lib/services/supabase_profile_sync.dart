@@ -1,4 +1,3 @@
-
 class SupabaseProfileSync {
   /// Calls the Edge Function to sync profile data in the cloud
   static Future<void> syncProfile(String name, String avatarUrl) async {
