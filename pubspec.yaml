@@ -127,15 +127,17 @@ dependencies:
   pointycastle: ^4.0.0
 
 dev_dependencies:
+  # FIXED: Removed 'flutter_test' from dependencies and kept it safely here
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
-  build_runner: ^2.16.0
-  source_gen: ^4.2.4
+  flutter_lints: ^5.0.0
+  # FIXED: Set realistic compilation ranges to match Flutter 3.44 dependency requirements
+  build_runner: ^2.4.9
+  source_gen: ^1.5.0
   flutter_launcher_icons: ^0.14.4
 
 dependency_overrides:
-  meta: ^1.19.0
+  meta: ^1.15.0
 
 flutter:
   uses-material-design: true
@@ -143,6 +145,8 @@ flutter:
     - assets/
     - assets/shaders/
     - .env
+    # FIXED: Declared your introductory media file explicitly within the root asset dictionary layout
+    - assets/intro.mp4
 
   shaders:
     - assets/shaders/hologram_glow.frag
