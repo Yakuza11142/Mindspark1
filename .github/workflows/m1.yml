@@ -26,6 +26,13 @@ jobs:
         with:
           fetch-depth: 1 
 
+      # FIXED: Forcefully clean the persistent cache state of the repository before anything runs
+      - name: Purge Ghost Configuration Cache
+        run: |
+          rm -rf .dart_tool/
+          rm -f pubspec_overrides.yaml
+          rm -f pubspec.lock
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -43,16 +50,16 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
+          cache: false # FIXED: Temporarily disabled internal cache to break the broken dependency loop
           cache-key: "flutter-:channel:-:version:-:arch:-:hash:"
 
       - name: Cache Pub Dependencies
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.yaml') }}
+          key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }} # FIXED: Bumped cache version key to force a clean cache reset on GitHub servers
           restore-keys: |
-            ${{ runner.os }}-pub-
+            ${{ runner.os }}-pub-v2-
 
       - name: Initialize Local Android Permissions
         run: |
@@ -98,7 +105,6 @@ jobs:
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
-                  # FIXED EXTRA GUARD: Explicitly blocks system SDK packages right before writing to file
                   if pkg not in system_ignored and pkg != 'flutter_test' and pkg != 'sky_engine':
                       out.write(f'  {pkg}: any\n')
           "
