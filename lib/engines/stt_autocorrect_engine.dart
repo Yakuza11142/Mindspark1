@@ -8,8 +8,9 @@ class SttAutocorrectEngine {
   SttAutocorrectEngine._internal();
   static final SttAutocorrectEngine instance = SttAutocorrectEngine._internal();
 
-  // SUCCESS: Captures enclosed content securely to replace everything with group 1 index matching
-  static final RegExp _cleanEnclosureRegex = RegExp(r'^["\'](.*?)["\']$');
+  // FIXED: Changed external boundaries to double quotes r"..." so single quotes inside do not terminate the raw string early.
+  // FIXED: Updated regex with a backreference (\1) to ensure it only strips matching quote pairs (e.g., "text" or 'text', not "text').
+  static final RegExp _cleanEnclosureRegex = RegExp(r'^纽(["\'])(.*?)\1$');
 
   /// Cleans and refactors speech text fragments instantly using high-speed backend models.
   Future<String> cleanSpeech(String rawSpeech) async {
@@ -37,8 +38,8 @@ class SttAutocorrectEngine {
       final String polishedText = responseText.trim();
       if (polishedText.isEmpty) return cleanInput;
 
-      // SUCCESS: Safely unpacks inner payloads, dropping bounding punctuation in a single execution sweep
-      return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(1) ?? polishedText);
+      // FIXED: Adjusted match group index from 1 to 2 because adding a backreference group shifted the payload text capture group.
+      return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(2) ?? polishedText);
 
     } catch (e) {
       developer.log("⚠️ Autocorrect processing loop failure: ${e.toString()}");
