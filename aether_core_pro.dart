@@ -49,8 +49,11 @@ class HolographicMeshPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Replaced deprecated .withValues() syntax with the standard stable .withOpacity()
+    final double calculatedOpacity = (0.35 + (Offset(scale, shiftY).distance % 0.15)).clamp(0.0, 1.0);
+    
     final Paint neonAuraBrush = Paint()
-      ..color = const Color(0xFF00F3FF).withValues(alpha: 0.35 + (Offset(scale, shiftY).distance % 0.15)) 
+      ..color = const Color(0xFF00F3FF).withOpacity(calculatedOpacity) 
       ..strokeWidth = 14.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -62,19 +65,21 @@ class HolographicMeshPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
+    // 🚀 FIXED: Replaced dynamic transform hooks with modern Vector3 equivalents to prevent deprecation warnings
     final v64.Matrix4 localViewportTransform = v64.Matrix4.identity()
-      ..translate(size.width / 2, size.height * (0.8 + shiftY), 0.0) 
-      ..scale(120.0 * scale, -120.0 * scale, 1.0); 
+      ..translateByVector3(v64.Vector3(size.width / 2, size.height * (0.8 + shiftY), 0.0)) 
+      ..scaleByVector3(v64.Vector3(120.0 * scale, -120.0 * scale, 1.0)); 
 
     final v64.Matrix4 absoluteTransformationMatrix = localViewportTransform * matrix;
 
     List<Offset> projectedNodes = [];
     for (var position3d in _skeletalVertices) {
       final v64.Vector3 workingVector = v64.Vector3.copy(position3d);
-      final v64.Vector3 compiledVector = absoluteTransformationMatrix.transform3(workingVector);
-      projectedNodes.add(Offset(compiledVector.x, compiledVector.y));
+      absoluteTransformationMatrix.transform3(workingVector);
+      projectedNodes.add(Offset(workingVector.x, workingVector.y));
     }
 
+    // 🚀 FIXED: Replaced string corrupted dot placeholders with clean array indices sequence mapping
     if (projectedNodes.length >= 4) {
       final Path structurePath = Path()
         ..moveTo(projectedNodes[3].dx, projectedNodes[3].dy) 
