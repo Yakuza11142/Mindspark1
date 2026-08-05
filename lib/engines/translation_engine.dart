@@ -5,8 +5,8 @@ class TranslationEngine {
   // Pull credentials securely out of compile-time environment definitions
   static const String _geminiKey = String.fromEnvironment('GEMINI_API_KEY');
 
-  // FIXED: Wrapped the regex in raw double quotes r"..." so the internal single quote does not break the syntax.
-  static final RegExp _matchingQuotesRegex = RegExp(r"^纽纽(["\'])(.*?)\1$纽纽");
+  // FIXED: Standard string array regex strips leading/trailing quotes cleanly without syntax clashes
+  static final RegExp _matchingQuotesRegex = RegExp('^["\'](.*)["\']$');
 
   // Cached internal reference for the singleton engine instance
   static GenerativeModel? _cachedModel;
@@ -57,10 +57,10 @@ class TranslationEngine {
           return text;
         }
 
-        // SUCCESS: Target group index 2 to pull payload safely without wrapping quotation marks
+        // SUCCESS: Target group index 1 to pull payload safely without wrapping quotation marks
         return responseText.replaceAllMapped(
           _matchingQuotesRegex, 
-          (match) => match.group(2) ?? responseText,
+          (match) => match.group(1) ?? responseText,
         );
 
       } catch (exception, stackTrace) {
