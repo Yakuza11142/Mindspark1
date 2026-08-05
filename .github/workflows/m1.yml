@@ -71,7 +71,6 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
-          # FIXED: Added 'sky_engine' and 'flutter_test' to your custom list to keep the engine from trying to pull SDK tools from pub.dev
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
               'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
@@ -99,7 +98,8 @@ jobs:
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
-                  if pkg not in system_ignored:
+                  # FIXED EXTRA GUARD: Explicitly blocks system SDK packages right before writing to file
+                  if pkg not in system_ignored and pkg != 'flutter_test' and pkg != 'sky_engine':
                       out.write(f'  {pkg}: any\n')
           "
 
@@ -110,7 +110,6 @@ jobs:
             echo "Error: Override file generation failed."
           fi
 
-      # FIXED: Clean up the old lockfile, but DO NOT delete the overrides file your script just made
       - name: Flush Stale Cache Mappings
         run: |
           flutter clean
