@@ -8,8 +8,8 @@ class SttAutocorrectEngine {
   SttAutocorrectEngine._internal();
   static final SttAutocorrectEngine instance = SttAutocorrectEngine._internal();
 
-  // FIXED: Standard string array regex strips leading/trailing quotes cleanly without syntax clashes
-  static final RegExp _cleanEnclosureRegex = RegExp('^["\'](.*)["\']$');
+  // FIXED: Standard double-quoted layout resolves the syntax conflict and passes the formatter cleanly
+  static final RegExp _cleanEnclosureRegex = RegExp("^[\"'](.*)[\"']\$");
 
   /// Cleans and refactors speech text fragments instantly using high-speed backend models.
   Future<String> cleanSpeech(String rawSpeech) async {
@@ -37,7 +37,7 @@ class SttAutocorrectEngine {
       final String polishedText = responseText.trim();
       if (polishedText.isEmpty) return cleanInput;
 
-      // SUCCESS: Targets capture group 1 to drop the bounding punctuation cleanly
+      // SUCCESS: Targets capture group 1 to drop bounding punctuation cleanly
       return polishedText.replaceAllMapped(_cleanEnclosureRegex, (match) => match.group(1) ?? polishedText);
 
     } catch (e) {
