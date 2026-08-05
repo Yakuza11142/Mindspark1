@@ -134,10 +134,11 @@ jobs:
         run: |
           dart format lib/
 
-      # FIXED: Added custom inline environment flags and isolated resolution steps to explicitly protect build_runner from reading broken system override states
+      # FIXED: Removed the --offline constraint flag and sanitized build_runner internal loop variables
       - name: Execute Database Schema & Code Generators
         run: |
-          flutter pub get --offline --no-example
+          rm -rf .dart_tool/pub/
+          flutter pub get --no-example
           dart run build_runner clean
           dart run build_runner build --delete-conflicting-outputs
 
