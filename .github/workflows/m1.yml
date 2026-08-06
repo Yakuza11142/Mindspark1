@@ -142,20 +142,19 @@ jobs:
         run: |
           dart format lib/
 
-      # FIXED: Hardened code generation step with fail-safe self-healing logic
+      # FIXED: Modernized commands and dropped overrides early to unblock the engine
       - name: Execute Database Schema & Code Generators
         run: |
+          echo "Dropping temporary override restrictions for compilation..."
+          rm -f pubspec_overrides.yaml
+          
           echo "Executing Database Generator Subsystem..."
-          flutter pub run build_runner clean || true
+          dart run build_runner clean || true
           
           echo "Compiling schemas and structural models..."
-          flutter pub run build_runner build --delete-conflicting-outputs || {
-            echo "Warning: Build runner failed. Attempting structural override reset and rebuild..."
-            rm -f pubspec.lock
-            flutter pub get
-            flutter pub run build_runner build --delete-conflicting-outputs
-          }
+          dart run build_runner build --delete-conflicting-outputs
 
+      # FIXED: Removed pubspec_overrides from this step since it is shredded early above
       - name: Create Secrets File Outside Workspace
         run: |
           MTN_CLEAN=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
