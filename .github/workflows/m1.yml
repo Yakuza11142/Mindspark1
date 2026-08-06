@@ -78,10 +78,11 @@ jobs:
           all_packages = set()
           is_inside_dependencies = False
           
+          # Added core SDK packages to the explicit ignore block
           system_ignored = {
               'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
-              'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test',
-              'your_project_name', 'sky_engine'
+              'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 
+              'flutter_test', 'flutter_driver', 'sky_engine', 'your_project_name'
           }
           
           for line in lines:
@@ -96,8 +97,7 @@ jobs:
                   match = re.match(r'^([a-zA-Z0-9_-]+):', clean_line)
                   if match:
                       pkg_name = match.group(1)
-                      # FIXED LOGIC: Strict filtering directly inside the capture block prevents it from entering the set
-                      if pkg_name not in system_ignored and pkg_name != 'flutter_test' and pkg_name != 'sky_engine':
+                      if pkg_name not in system_ignored:
                           all_packages.add(pkg_name)
           
           for hidden_pkg in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus']:
@@ -107,7 +107,8 @@ jobs:
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for pkg in sorted(all_packages):
-                  if pkg not in system_ignored and pkg != 'flutter_test' and pkg != 'sky_engine':
+                  # Hard defensive filter ensuring no Flutter core packages are listed as 'any'
+                  if pkg not in system_ignored and not pkg.startswith('flutter_'):
                       out.write(f'  {pkg}: any\n')
           "
 
