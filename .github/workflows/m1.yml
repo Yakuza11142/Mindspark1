@@ -185,25 +185,26 @@ jobs:
           EOF
           echo "Static Analysis checks bypassed natively."
 
-      # FIXED: Clean out the deprecated v1 structures globally from the workspace and download caches
+      # FIXED: Rewrites manifest structure to strip old tags and explicitly forces v2 embedding metadata flags
       - name: Force Fix Android Embedding System
         run: |
           echo "Scrubbing legacy V1 configurations globally..."
-          
-          # 1. Clean local project manifest references
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
+            # Clean layout elements 
             sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' "$MANIFEST_PATH"
             sed -i '/SplashScreenUntilFirstFrame/d' "$MANIFEST_PATH"
+            
+            # FIXED: Explicitly insert the missing critical v2 embedding engine key right after the opening application tag
+            sed -i '/<application/a \        <meta-data android:name="flutterEmbedding" android:value="2" />' "$MANIFEST_PATH"
+            echo "Manifest file updated successfully with V2 parameters."
           fi
           
-          # 2. Re-route properties
           mkdir -p android
           touch android/gradle.properties
           echo "android.v1Embedding.delete=false" >> android/gradle.properties
           
-          # 3. CRITICAL BRUTE FORCE: Scan and rewrite occurrences of FlutterApplication in the local pub cache
-          # This forces older third-party plugins to map to modern embedding paths before the builder checks them.
+          # Clean down alternative plugins cache maps matching old references
           find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' {} + || true
           find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i '/SplashScreenUntilFirstFrame/d' {} + || true
 
