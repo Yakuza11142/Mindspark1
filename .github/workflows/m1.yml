@@ -78,12 +78,15 @@ jobs:
           MP="android/app/src/main/AndroidManifest.xml"
           [ -f "$MP" ] && sed -i '/SplashScreenUntilFirstFrame/d' "$MP"
           mkdir -p android && touch android/gradle.properties
-          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\nandroid.v1Embedding.delete=true\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m\nandroid.experimental.lint.suppress.warnings=true" >> android/gradle.properties
+          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m\nandroid.experimental.lint.suppress.warnings=true" >> android/gradle.properties
           echo "ext.kotlin_version = '1.9.24'" >> android/build.gradle 2>/dev/null || true
           if [ -d "/home/runner/.pub-cache" ]; then
             find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' {} + || true
             find /home/runner/.pub-cache/ -type f -name "build.gradle" -exec sed -i 's/abortOnError true/abortOnError false/g' {} + || true
+            find /home/runner/.pub-cache/ -type f \( -name "*.java" -o -name "*.kt" \) -exec sed -i 's/io.flutter.app.FlutterActivity/io.flutter.embedding.android.FlutterActivity/g' {} + || true
+            find /home/runner/.pub-cache/ -type f \( -name "*.java" -o -name "*.kt" \) -exec sed -i 's/io.flutter.plugin.common.PluginRegistry.Registrar/io.flutter.embedding.engine.plugins.FlutterPlugin/g' {} + || true
           fi
+          [ -f "android/app/build.gradle" ] && sed -i '/v1Embedding/d' android/app/build.gradle || true
       - name: Build Android APK
         run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
       - name: Build Web Application
