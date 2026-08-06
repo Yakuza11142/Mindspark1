@@ -185,9 +185,18 @@ jobs:
           EOF
           echo "Static Analysis checks bypassed natively."
 
-      # FIXED: Force Gradle compilation block to bypass and ignore the legacy V1 checks 
+      # FIXED: Force Manifest structural transformations to wipe out V1 Application hooks entirely
       - name: Force Fix Android Embedding System
         run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            echo "Transforming Manifest file architectures..."
+            # Replace old FlutterApplication reference with default placeholder token mapping
+            sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' "$MANIFEST_PATH"
+            # Remove the legacy splash screen block which triggers V1 complaints
+            sed -i '/android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"/d' "$MANIFEST_PATH"
+          fi
+          
           mkdir -p android
           touch android/gradle.properties
           echo "android.v1Embedding.delete=false" >> android/gradle.properties
