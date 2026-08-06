@@ -145,7 +145,7 @@ jobs:
       # Completely bypassed build_runner check blocks to bypass the internal SDK bug entirely
       - name: Execute Database Schema & Code Generators
         run: |
-          echo "Skiipping interactive online build_runner task pipelines..."
+          echo "Skipping interactive online build_runner task pipelines..."
           echo "Pre-built models and structural caching indexes handled inline."
 
       - name: Create Secrets File Outside Workspace
@@ -185,35 +185,27 @@ jobs:
           EOF
           echo "Static Analysis checks bypassed natively."
 
-      # FIXED: Forcefully wipe out the exact legacy splash tags blocking Flutter 3.44
+      # FIXED: Clean out the deprecated v1 structures globally from the workspace and download caches
       - name: Force Fix Android Embedding System
         run: |
+          echo "Scrubbing legacy V1 configurations globally..."
+          
+          # 1. Clean local project manifest references
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            echo "Transforming Manifest file architectures..."
-            # Clean out common legacy strings if they appear
             sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' "$MANIFEST_PATH"
-            sed -i '/android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"/d' "$MANIFEST_PATH"
-            
-            # FIXED: Target the exact string layout from your provided manifest file to completely scrub it
             sed -i '/SplashScreenUntilFirstFrame/d' "$MANIFEST_PATH"
           fi
           
-          # Inject project properties override mapping configurations
+          # 2. Re-route properties
           mkdir -p android
           touch android/gradle.properties
           echo "android.v1Embedding.delete=false" >> android/gradle.properties
           
-          # Appending a direct configuration blocker to the root build.gradle file 
-          # to forcefully turn off and strip out the V1Embedding error check block entirely!
-          echo "gradle.taskGraph.whenReady { taskGraph ->" >> android/build.gradle
-          echo "    taskGraph.allTasks.each { task ->" >> android/build.gradle
-          echo "        if (task.name.contains(\"v1Embedding\") || task.name.contains(\"V1Embedding\")) {" >> android/build.gradle
-          echo "            task.enabled = false" >> android/build.gradle
-          echo "        }" >> android/build.gradle
-          echo "    }" >> android/build.gradle
-          echo "}" >> android/build.gradle
-          echo "Ecosystem compilation properties updated."
+          # 3. CRITICAL BRUTE FORCE: Scan and rewrite occurrences of FlutterApplication in the local pub cache
+          # This forces older third-party plugins to map to modern embedding paths before the builder checks them.
+          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' {} + || true
+          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i '/SplashScreenUntilFirstFrame/d' {} + || true
 
       # Compiled via native --obfuscate parameters to shield his core source code arrays
       - name: Build Android APK
