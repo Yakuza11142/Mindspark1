@@ -66,58 +66,17 @@ jobs:
           cd android
           chmod +x gradlew || true
 
-      # Dynamically Solve Transitive Dependency Hell
-      - name: Dynamically Solve Transitive Dependency Hell
+      # Inject Explicit Validated Overrides For Flutter 3.44.8 Ecosystem Harmony
+      - name: Inject Strict Ecosystem Resolution Maps
         run: |
-          python3 -c "
-          import re
-          
-          with open('pubspec.yaml', 'r') as f:
-              lines = f.readlines()
-          
-          all_packages = set()
-          is_inside_dependencies = False
-          
-          # Added core SDK packages to the explicit ignore block
-          system_ignored = {
-              'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets',
-              'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 
-              'flutter_test', 'flutter_driver', 'sky_engine', 'your_project_name'
-          }
-          
-          for line in lines:
-              clean_line = line.strip()
-              if clean_line.startswith('dependencies:') or clean_line.startswith('dev_dependencies:'):
-                  is_inside_dependencies = True
-                  continue
-              if clean_line.startswith('flutter:') or clean_line.startswith('flutter_launcher_icons:'):
-                  is_inside_dependencies = False
-              
-              if is_inside_dependencies and clean_line and not clean_line.startswith('#') and not line.lstrip().startswith('#'):
-                  match = re.match(r'^([a-zA-Z0-9_-]+):', clean_line)
-                  if match:
-                      pkg_name = match.group(1)
-                      if pkg_name not in system_ignored:
-                          all_packages.add(pkg_name)
-          
-          for hidden_pkg in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus']:
-              if hidden_pkg not in system_ignored:
-                  all_packages.add(hidden_pkg)
-          
-          with open('pubspec_overrides.yaml', 'w') as out:
-              out.write('dependency_overrides:\n')
-              for pkg in sorted(all_packages):
-                  # Hard defensive filter ensuring no Flutter core packages are listed as 'any'
-                  if pkg not in system_ignored and not pkg.startswith('flutter_'):
-                      out.write(f'  {pkg}: any\n')
-          "
-
-          echo "=== BRUTE FORCE OVERRIDES GENERATED ==="
-          if [ -f pubspec_overrides.yaml ]; then
-            cat pubspec_overrides.yaml
-          else
-            echo "Error: Override file generation failed."
-          fi
+          cat > pubspec_overrides.yaml <<EOF
+          dependency_overrides:
+            meta: ^1.15.0
+            flutter_lints: ^4.0.0
+            web: ^0.5.1
+          EOF
+          echo "=== PRODUCTION ECOSYSTEM OVERRIDES INJECTED ==="
+          cat pubspec_overrides.yaml
 
       - name: Flush Stale Cache Mappings
         run: |
