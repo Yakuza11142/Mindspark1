@@ -185,45 +185,37 @@ jobs:
           EOF
           echo "Static Analysis checks bypassed natively."
 
-      # FIXED: Rewrites manifest structure to strip old tags and explicitly forces v2 embedding metadata flags
+      # FIXED: Safe XML manipulation that will never break document structures
       - name: Force Fix Android Embedding System
         run: |
-          echo "Scrubbing legacy V1 configurations globally..."
+          echo "Scrubbing legacy configurations safely..."
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # Clean layout elements 
-            sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' "$MANIFEST_PATH"
             sed -i '/SplashScreenUntilFirstFrame/d' "$MANIFEST_PATH"
-            
-            # FIXED: Explicitly insert the missing critical v2 embedding engine key right after the opening application tag
-            sed -i '/<application/a \        <meta-data android:name="flutterEmbedding" android:value="2" />' "$MANIFEST_PATH"
-            echo "Manifest file updated successfully with V2 parameters."
+            echo "Manifest adjustments completed."
           fi
           
           mkdir -p android
           touch android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.v1Embedding.delete=false" >> android/gradle.properties
-          
-          # Clean down alternative plugins cache maps matching old references
-          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i 's/android:name="io.flutter.app.FlutterApplication"/android:name="${applicationName}"/g' {} + || true
-          find /home/runner/.pub-cache/ -type f -name "AndroidManifest.xml" -exec sed -i '/SplashScreenUntilFirstFrame/d' {} + || true
 
-      # Compiled via native --obfuscate parameters to shield his core source code arrays
       - name: Build Android APK
         run: |
           flutter build apk \
-          --release \
-          --obfuscate \
-          --split-debug-info=build/app/outputs/symbols \
-          --android-skip-build-dependency-validation \
-          --dart-define-from-file=../secrets.json
+            --release \
+            --obfuscate \
+            --split-debug-info=build/app/outputs/symbols \
+            --android-skip-build-dependency-validation \
+            --dart-define-from-file=../secrets.json
 
       - name: Build Web Application
         run: |
           flutter build web \
-          --release \
-          --base-href "/${{ github.event.repository.name }}/" \
-          --dart-define-from-file=../secrets.json
+            --release \
+            --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define-from-file=../secrets.json
 
       - name: Shred Secrets and Overrides File
         run: |
