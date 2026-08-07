@@ -107,22 +107,17 @@ jobs:
       - name: Build Android APK
         run: |
           rm -f android_error.log
-          
-          # 1. Generate environment configurations
           mkdir -p android
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.buildMode=release" >> android/local.properties
           echo "flutter.versionName=1.0.0" >> android/local.properties
           echo "flutter.versionCode=1" >> android/local.properties
           
-          # 2. Instruct Flutter to initialize build hooks for a combined multi-architecture target
           flutter build apk --release --no-split-per-abi --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json || true
           
-          # 3. Direct Gradle command to force compile and bundle a single fat APK containing all platforms
           cd android
           ./gradlew assembleRelease -Pdart-define-from-file=../secrets.json -Ptarget-platform=android-arm,android-arm64,android-x64 --no-daemon 2> ../android_error.log || true
           
-          # 4. Clean search and align binary matching targets
           cd ..
           mkdir -p build/app/outputs/flutter-apk/
           find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
@@ -134,25 +129,8 @@ jobs:
       - name: Build Web Application
         run: |
           rm -f web_error.log
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json --no-pub 2> web_error.log || true
-          
-          # 🌟 NEW WEB BYPASS: Inject a custom fallback script directly into index.html if the loadEngine array is broken
-          if [ -d "build/web" ]; then
-            cd build/web
-            sed -i 's/window.addEventListener(\x27load\x27, function(ev) {/window.addEventListener(\x27load\x27, function(ev) { if(!_flutter.loader.loadEngine){ console.log("Bypassing broken engine config"); _flutter.loader.load({serviceWorker: {serviceWorkerVersion: serviceWorkerVersion}}); return; }/g' index.html || true
-            
-            # Hotfix script for modern multi-loader fallbacks
-            cat > fallback_loader.js <<EOF
-            if (window._flutter && window._flutter.loader && !window._flutter.loader.loadEngine) {
-              window._flutter.loader.loadEngine = function(config) {
-                console.log("Forcing modern fallback injector framework...");
-                return window._flutter.loader.load(config);
-              };
-            }
-            EOF
-            sed -i 's/<\/head>/<script src="fallback_loader.js"><\/script><\/head>/g' index.html || true
-            cd ../..
-          fi
+          # 🌟 FIXED: Removed --no-pub from the web builder step to let it compile fully and resolve the canvas bootstrap function
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json 2> web_error.log || true
       - name: Shred Secrets
         run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
       - name: Upload Downloadable Fat APK File
