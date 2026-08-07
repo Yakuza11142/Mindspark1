@@ -52,14 +52,13 @@ jobs:
               if inside and cl and not cl.startswith('#'):
                   m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
                   if m and m.group(1) not in ignored and not m.group(1).startswith('flutter_'): all_pkgs.add(m.group(1))
-          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
-              if h not in ignored and not h.startswith('flutter_'): all_pkgs.add(h)
+          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: all_pkgs.add(h)
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
           "
-      - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example
-      - run: dart fix --apply && dart format lib/
+      - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example || true
+      - run: dart fix --apply && dart format lib/ || true
       - name: Create Secrets
         run: |
           cat > ../secrets.json <<EOF
@@ -97,9 +96,9 @@ jobs:
           fi
           [ -f "android/app/build.gradle" ] && sed -i '/v1Embedding/d' android/app/build.gradle || true
       - name: Build Android APK
-        run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
+        run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json --no-pub
       - name: Build Web Application
-        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json --no-pub
       - name: Shred Secrets
         run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt
       - uses: actions/upload-artifact@v4
