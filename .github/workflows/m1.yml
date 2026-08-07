@@ -95,6 +95,11 @@ jobs:
             find /home/runner/.pub-cache/ -type f \( -name "*.java" -o -name "*.kt" \) -exec sed -i 's/io.flutter.plugin.common.PluginRegistry.Registrar/io.flutter.embedding.engine.plugins.FlutterPlugin/g' {} + || true
           fi
           [ -f "android/app/build.gradle" ] && sed -i '/v1Embedding/d' android/app/build.gradle || true
+      - name: Force Rebuild Missing Gradle Wrapper
+        run: |
+          cd android
+          gradle wrapper --gradle-version 8.11.1 --distribution-type bin
+          chmod +x gradlew
       - name: Build Android APK
         run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json --no-pub
       - name: Build Web Application
