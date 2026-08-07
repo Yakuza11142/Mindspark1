@@ -36,7 +36,8 @@ jobs:
           key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-v2-
       - run: cd android && chmod +x gradlew || true
-      - run: |
+      - name: Solve Dependencies
+        run: |
           python3 -c "
           import re
           with open('pubspec.yaml', 'r') as f: lines = f.readlines()
@@ -50,18 +51,21 @@ jobs:
               if inside and cl and not cl.startswith('#'):
                   m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
                   if m and m.group(1) not in ignored and not m.group(1).startswith('flutter_'): all_pkgs.add(m.group(1))
-          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: all_pkgs.add(h)
+          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
+              if h not in ignored: all_pkgs.add(h)
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
           "
-      - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example || true
+      - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example
       - run: dart fix --apply && dart format lib/ || true
-      - run: |
+      - name: Create Secrets
+        run: |
           cat > ../secrets.json <<EOF
           {"SUPABASE_URL":"${{ secrets.SUPABASE_URL }}","SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}","GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}","OPENAI_KEY":"${{ secrets.OPENAI_KEY }}","GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}","VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}","HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}","RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}","TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}","PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}","MTN_API_KEY":"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')","ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"}
           EOF
-      - run: |
+      - name: Bypass Analysis Checks
+        run: |
           rm -f pubspec_overrides.yaml
           cat > analysis_options.yaml <<EOF
           analyzer:
@@ -69,7 +73,8 @@ jobs:
           linter:
             rules: []
           EOF
-      - run: |
+      - name: Force Fix Android Embedding System
+        run: |
           MP="android/app/src/main/AndroidManifest.xml"
           [ -f "$MP" ] && sed -i '/SplashScreenUntilFirstFrame/d' "$MP"
           mkdir -p android && touch android/gradle.properties
@@ -88,31 +93,31 @@ jobs:
             find /home/runner/.pub-cache/ -type f \( -name "*.java" -o -name "*.kt" \) -exec sed -i 's/io.flutter.plugin.common.PluginRegistry.Registrar/io.flutter.embedding.engine.plugins.FlutterPlugin/g' {} + || true
           fi
           [ -f "android/app/build.gradle" ] && sed -i '/v1Embedding/d' android/app/build.gradle || true
-      - run: |
+      - name: Force Rebuild Missing Gradle Wrapper
+        run: |
           cd android
           gradle wrapper --gradle-version 8.11.1 --distribution-type bin || true
           chmod +x gradlew || true
-      - run: |
+      - name: Build Android APK
+        run: |
           rm -f android_error.log
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
-          flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json || true
+          
+          # 🌟 CRITICAL ENFORCEMENT: Removed '|| true' so that the pipeline fails loudly if a code resource is missing,
+          # forcing Flutter to process all assets and full library parameters into the output build binary bundle.
+          flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
+          
           cd android
-          ./gradlew assembleRelease -Pdart-define-from-file=../secrets.json -Ptarget-platform=android-arm,android-arm64,android-x64 --no-daemon 2> ../android_error.log || true
+          ./gradlew assembleRelease -Pdart-define-from-file=../secrets.json -Ptarget-platform=android-arm,android-arm64,android-x64 --no-daemon
+          
           cd ..
           mkdir -p build/app/outputs/flutter-apk/
-          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
-          find . -name "*release*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
-          if [ ! -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            echo "Fallback placeholder generated due to pipeline block" > build/app/outputs/flutter-apk/app-release.apk
-          fi
-      - run: |
+          cp android/app/build/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || find android/app/build/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
+      - name: Build Web Application
+        run: |
           rm -f web_error.log
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json --no-pub 2> web_error.log || true
-          mkdir -p build/web
-          if [ ! -f "build/web/index.html" ]; then
-            echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Mind Spark v2</title><style>body{margin:0;background-color:#0B0E14;font-family:-apple-system,sans-serif;color:#E6FFFF;display:flex;flex-direction:column;height:100vh;overflow:hidden}.header{background:#141923;padding:16px;font-weight:700;border-bottom:1px solid #1F2937;text-align:center;color:#00F3FF;box-shadow:0 4px 12px rgba(0,0,0,0.3)}.chat-area{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}.bubble{max-width:75%;padding:12px 16px;border-radius:16px;font-size:15px;line-height:1.4;box-shadow:0 2px 8px rgba(0,0,0,0.15)}.user{background:#00F3FF;color:#0B0E14;align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}.ai{background:#141923;color:#E6FFFF;align-self:flex-start;border-bottom-left-radius:4px;border:1px solid #1F2937}.input-container{background:#141923;padding:12px;display:flex;gap:8px;border-top:1px solid #1F2937;padding-bottom:calc(12px + env(safe-area-inset-bottom))}.fallback-input{flex:1;background:#0B0E14;border:1px solid #1F2937;border-radius:24px;padding:12px 20px;color:#fff;font-size:15px;outline:none}.fallback-input:focus{border-color:#00F3FF}.fallback-btn{background:#00F3FF;border:none;width:44px;height:44px;border-radius:50%;color:#0B0E14;font-weight:700;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}</style></head><body><div class="header">MindSpark Engine v2.0</div><div class="chat-area"><div class="bubble fallback-ai">Welcome back. Core 1-Watt vector pipelines and high-fidelity matrix components are running. How can I assist your session?</div><div class="bubble fallback-user">Render the vector skeleton model.</div><div class="bubble fallback-ai">AetherCorePro wireframe rigging initialized. Tracing nodes across 4 dimensions smoothly.</div></div><div class="fallback-input-container"><input type="text" class="fallback-input" placeholder="Type a message..."><button class="fallback-btn">➔</button></div></body></html>' > build/web/index.html
-          fi
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
       - run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
       - uses: actions/upload-artifact@v4
         with:
