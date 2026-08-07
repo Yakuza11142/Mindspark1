@@ -114,9 +114,10 @@ jobs:
             echo "::error::===================================="
           fi
           
-          # Force backup path generation if structure diverged
+          # Smart Mobile Fallback: Aggressively harvest and align generated outputs across all potential paths
           mkdir -p build/app/outputs/flutter-apk/
-          find build/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
+          find . -type f -name "*-release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
+          find . -type f -name "app-release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
       - name: Build Web Application
         run: |
           rm -f web_error.log
@@ -128,10 +129,10 @@ jobs:
         with:
           name: MindSpark-Android-APK
           path: |
-            build/app/outputs/flutter-apk/*.apk
-            build/app/outputs/bundle/release/*.aab
-          if-no-files-found: warn
-        continue-on-error: true
+            build/app/outputs/flutter-apk/app-release.apk
+            **/build/outputs/apk/release/*.apk
+            **/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
