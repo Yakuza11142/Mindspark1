@@ -135,6 +135,24 @@ jobs:
         run: |
           rm -f web_error.log
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json --no-pub 2> web_error.log || true
+          
+          # 🌟 NEW WEB BYPASS: Inject a custom fallback script directly into index.html if the loadEngine array is broken
+          if [ -d "build/web" ]; then
+            cd build/web
+            sed -i 's/window.addEventListener(\x27load\x27, function(ev) {/window.addEventListener(\x27load\x27, function(ev) { if(!_flutter.loader.loadEngine){ console.log("Bypassing broken engine config"); _flutter.loader.load({serviceWorker: {serviceWorkerVersion: serviceWorkerVersion}}); return; }/g' index.html || true
+            
+            # Hotfix script for modern multi-loader fallbacks
+            cat > fallback_loader.js <<EOF
+            if (window._flutter && window._flutter.loader && !window._flutter.loader.loadEngine) {
+              window._flutter.loader.loadEngine = function(config) {
+                console.log("Forcing modern fallback injector framework...");
+                return window._flutter.loader.load(config);
+              };
+            }
+            EOF
+            sed -i 's/<\/head>/<script src="fallback_loader.js"><\/script><\/head>/g' index.html || true
+            cd ../..
+          fi
       - name: Shred Secrets
         run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
       - name: Upload Downloadable Fat APK File
