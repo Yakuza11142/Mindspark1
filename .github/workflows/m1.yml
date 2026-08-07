@@ -43,16 +43,21 @@ jobs:
           with open('pubspec.yaml', 'r') as f: lines = f.readlines()
           all_pkgs = set()
           inside = False
-          ignored = {'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets', 'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test', 'flutter_driver', 'sky_engine'}
+          # STRICT FILTER: Added explicit safeguards for testing engines to block them from corrupting overrides
+          ignored = {'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets', 'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test', 'flutter_driver', 'sky_engine', 'integration_test'}
           for l in lines:
               cl = l.strip()
               if cl.startswith('dependencies:') or cl.startswith('dev_dependencies:'): inside = True; continue
               if cl.startswith('flutter:') or cl.startswith('flutter_launcher_icons:'): inside = False
               if inside and cl and not cl.startswith('#'):
                   m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
-                  if m and m.group(1) not in ignored and not m.group(1).startswith('flutter_'): all_pkgs.add(m.group(1))
-          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
-              if h not in ignored: all_pkgs.add(h)
+                  if m:
+                      pkg_name = m.group(1)
+                      # REAL PROTECTION: Block any string tracking test framework variables or system files completely
+                      if pkg_name not in ignored and not pkg_name.startswith('flutter_') and 'test' not in pkg_name:
+                          all_pkgs.add(pkg_name)
+          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web']: 
+              if h not in ignored and 'test' not in h: all_pkgs.add(h)
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
@@ -104,8 +109,7 @@ jobs:
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           
-          # 🌟 CRITICAL ENFORCEMENT: Removed '|| true' so that the pipeline fails loudly if a code resource is missing,
-          # forcing Flutter to process all assets and full library parameters into the output build binary bundle.
+          # NO COMPROMISE: Real build execution with zero mask filters to bundle all source assets completely
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
           
           cd android
@@ -117,6 +121,7 @@ jobs:
       - name: Build Web Application
         run: |
           rm -f web_error.log
+          # NO COMPROMISE: Compiles all your real code assets cleanly into the deployment directory
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
       - run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
       - uses: actions/upload-artifact@v4
