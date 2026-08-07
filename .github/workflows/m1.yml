@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock
+      # 🌟 CRITICAL REPAIR: Wipe old override assets completely before executing script operations
+      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock .pub-cache/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -43,7 +44,6 @@ jobs:
           with open('pubspec.yaml', 'r') as f: lines = f.readlines()
           all_pkgs = set()
           inside = False
-          # UPGRADED GUARD LAYER: Blocks testing frameworks and internal SDK engines from throwing Exit Code 69
           ignored = {'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets', 'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test', 'flutter_driver', 'sky_engine', 'integration_test'}
           for l in lines:
               cl = l.strip()
@@ -52,17 +52,15 @@ jobs:
               if inside and cl and not cl.startswith('#'):
                   m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
                   if m:
-                      pkg_name = m.group(1)
-                      # Strict String Interceptor filters out tracking frameworks safely
-                      if pkg_name not in ignored and not pkg_name.startswith('flutter_') and 'test' not in pkg_name:
-                          all_pkgs.add(pkg_name)
+                      p = m.group(1)
+                      if p not in ignored and not p.startswith('flutter_') and 'test' not in p:
+                          all_pkgs.add(p)
           for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
               if h not in ignored and 'test' not in h: all_pkgs.add(h)
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
           "
-      # Pure, unmasked compilation targeting your solver matrix
       - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example
       - run: dart fix --apply && dart format lib/ || true
       - name: Create Secrets
@@ -110,7 +108,7 @@ jobs:
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           
-          # Pure, unmasked compilation targeting your genuine solver overrides
+          # NO FALlBACKMASKS: Complete core production build execution
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
           
           cd android
