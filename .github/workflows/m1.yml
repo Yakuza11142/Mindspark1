@@ -129,7 +129,6 @@ jobs:
       - name: Build Web Application
         run: |
           rm -f web_error.log
-          # 🌟 FIXED: Removed --no-pub from the web builder step to let it compile fully and resolve the canvas bootstrap function
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json 2> web_error.log || true
       - name: Shred Secrets
         run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
@@ -139,8 +138,10 @@ jobs:
           name: MindSpark-Fat-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload Web Artifact to Pages Slot
+        uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages # 🌟 FIXED: Explicitly set name parameter so deploy-pages can capture it
           path: build/web
         continue-on-error: true
   deploy:
