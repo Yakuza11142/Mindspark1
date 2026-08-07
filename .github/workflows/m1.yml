@@ -1,3 +1,4 @@
+
 name: MindSpark Production CI
 on:
   workflow_dispatch:
@@ -52,7 +53,8 @@ jobs:
               if inside and cl and not cl.startswith('#'):
                   m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
                   if m and m.group(1) not in ignored and not m.group(1).startswith('flutter_'): all_pkgs.add(m.group(1))
-          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: all_pkgs.add(h)
+          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
+              if h not in ignored: all_pkgs.add(h)
           with open('pubspec_overrides.yaml', 'w') as out:
               out.write('dependency_overrides:\n')
               for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
