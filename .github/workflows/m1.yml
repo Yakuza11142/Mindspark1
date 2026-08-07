@@ -107,17 +107,25 @@ jobs:
       - name: Build Android APK
         run: |
           rm -f android_error.log
-          flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json --no-pub 2> android_error.log || true
+          
+          # 1. Step 1: Pre-compile dependencies using Flutter tool assets
+          flutter build apk --config-only --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json --no-pub || true
+          
+          # 2. Step 2: Use regular Gradle tool direct compilation to completely force bundle the APK file
+          cd android
+          ./gradlew assembleRelease -Pdart-define-from-file=../secrets.json --no-daemon 2> ../android_error.log || true
+          
+          cd ..
           if [ -s android_error.log ]; then
-            echo "::error::==== ANDROID COMPILATION DETAILS ===="
+            echo "::error::==== HARDWARE COMPILATION DETAILS ===="
             cat android_error.log
             echo "::error::===================================="
           fi
           
-          # Smart Mobile Fallback: Aggressively harvest and align generated outputs across all potential paths
+          # Safe Copy Output matching target
           mkdir -p build/app/outputs/flutter-apk/
-          find . -type f -name "*-release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
-          find . -type f -name "app-release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
+          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
+          find . -name "*release.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \; 2>/dev/null || true
       - name: Build Web Application
         run: |
           rm -f web_error.log
@@ -129,9 +137,9 @@ jobs:
         with:
           name: MindSpark-Android-APK
           path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            **/build/outputs/apk/release/*.apk
-            **/build/outputs/bundle/release/*.aab
+            build/app/outputs/flutter-apk/*.apk
+            android/app/build/outputs/apk/release/*.apk
+            **/build/outputs/**/*.apk
           if-no-files-found: error
       - uses: actions/upload-pages-artifact@v3
         with:
