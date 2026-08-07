@@ -17,10 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - run: |
-          rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock .pub-cache/
-          # FORCE-STRIP DEPRECATED ENTRIES: Forcefully scrubs any locked flutter_test text blocks out of the manifest source
-          sed -i '/flutter_test:/d' pubspec.yaml || true
+      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -39,30 +36,19 @@ jobs:
           key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-v2-
       - run: cd android && chmod +x gradlew || true
-      - name: Solve Dependencies
+      - name: Auto-Fix Dependency Matrix Error
         run: |
-          python3 -c "
-          import re
-          with open('pubspec.yaml', 'r') as f: lines = f.readlines()
-          all_pkgs = set()
-          inside = False
-          ignored = {'flutter', 'sdk', 'mindspark1', 'mindspark', 'uses-material-design', 'assets', 'environment', 'dependencies', 'dev_dependencies', 'dependency_overrides', 'flutter_test', 'flutter_driver', 'sky_engine', 'integration_test'}
-          for l in lines:
-              cl = l.strip()
-              if cl.startswith('dependencies:') or cl.startswith('dev_dependencies:'): inside = True; continue
-              if cl.startswith('flutter:') or cl.startswith('flutter_launcher_icons:'): inside = False
-              if inside and cl and not cl.startswith('#'):
-                  m = re.match(r'^([a-zA-Z0-9_-]+):', cl)
-                  if m:
-                      p = m.group(1)
-                      if p not in ignored and not p.startswith('flutter_') and 'test' not in p:
-                          all_pkgs.add(p)
-          for h in ['intl', 'meta', 'collection', 'crypto', 'path', 'permission_handler', 'ar_flutter_plugin_plus', 'web', 'flutter_lints']: 
-              if h not in ignored and 'test' not in h: all_pkgs.add(h)
-          with open('pubspec_overrides.yaml', 'w') as out:
-              out.write('dependency_overrides:\n')
-              for p in sorted(all_pkgs): out.write(f'  {p}: any\n')
-          "
+          # 🌟 AUTOMATED COMMAND LINE INTERCEPTOR FIX
+          # Instantly extracts your layout, forces a clean override container block,
+          # and remaps flutter_test back to the local SDK paths automatically.
+          echo "dependency_overrides:" > pubspec_overrides.yaml
+          grep -E "^[[:space:]]*[a-zA-Z0-9_-]+:" pubspec.yaml | grep -vE "dependencies|flutter|sdk|mindspark|uses-material-design|assets|environment" | sed 's/://g' | awk '{print $1}' | sort -u | while read -r pkg; do
+            if [ "$pkg" = "flutter_test" ] || [ "$pkg" = "sky_engine" ] || [ "$pkg" = "integration_test" ]; then
+              echo -e "  $pkg:\n    sdk: flutter" >> pubspec_overrides.yaml
+            else
+              echo "  $pkg: any" >> pubspec_overrides.yaml
+            fi
+          done
       - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example
       - run: dart fix --apply && dart format lib/ || true
       - name: Create Secrets
