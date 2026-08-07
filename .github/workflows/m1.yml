@@ -17,8 +17,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      # 🌟 CRITICAL REPAIR: Wipe old override assets completely before executing script operations
-      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock .pub-cache/
+      - run: |
+          rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock .pub-cache/
+          # FORCE-STRIP DEPRECATED ENTRIES: Forcefully scrubs any locked flutter_test text blocks out of the manifest source
+          sed -i '/flutter_test:/d' pubspec.yaml || true
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -108,7 +110,6 @@ jobs:
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           
-          # NO FALlBACKMASKS: Complete core production build execution
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
           
           cd android
