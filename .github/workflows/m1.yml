@@ -43,7 +43,7 @@ jobs:
           environment: {sdk: '>=3.0.0 <4.0.0'}
           dependencies: {flutter: {sdk: flutter}, intl: any, meta: any, collection: any, crypto: any, path: any, permission_handler: any, ar_flutter_plugin_plus: any, web: any, provider: any, flutter_dotenv: any, supabase_flutter: any, google_mobile_ads: any, video_player: any}
           dev_dependencies: {flutter_lints: any}
-          flutter: {uses-material-design: true, assets: [- assets/.env, - assets/icon_launcher.png, - assets/intro.mp4], shaders: [- assets/shaders/hologram_glow.frag]}
+          flutter: {uses-material-design: true, assets: ["assets/.env", "assets/icon_launcher.png", "assets/intro.mp4"], shaders: ["assets/shaders/hologram_glow.frag"]}
           EOF
           mkdir -p web && [ ! -f "web/index.html" ] && echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           find . -type f -exec sed -i '/pqc/d' {} + || true
