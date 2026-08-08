@@ -39,11 +39,15 @@ jobs:
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           [ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; }
+          
+          # 🌟 AUTOMATED IN-PLACE PERMISSION INJECTION
+          # Replaces the opening tag with valid, cleanly formatted permission matrices inside the template
           MP="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MP" ]; then
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>' "$MP"
-            sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>' "$MP"
+            sed -i 's|<manifest[^>]*>|<manifest xmlns:android="http://google.com">\n    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>|g' "$MP"
+            sed -i 's|<application[^>]*>|<application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">\n        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>|g' "$MP"
           fi
+          
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           publish_to: 'none'
@@ -114,7 +118,6 @@ jobs:
             rm -f b.log; flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log
             [ "$OK" = "true" ] && break
-            # 🌟 REAL-TIME LOG SCANNER & MISSING FILE/PROPERTY GENERATOR
             if grep -q "NullPointerException" b.log; then
               find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true
             fi
@@ -129,7 +132,6 @@ jobs:
               M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true)
               [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true
             fi
-            # 🌟 MISSING FILE AUTOGENERATOR (Ensures required files like build.gradle exist if stripped)
             [ ! -f "android/build.gradle" ] && flutter create --platforms=android . || true
             [ $ATTEMPT -eq 5 ] && exit 1
           done
