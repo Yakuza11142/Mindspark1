@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -43,9 +41,9 @@ jobs:
           if [ -d "../vault/android" ]; then
             find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true
             find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true
-            if [ -f "../vault/android/app/src/main/AndroidManifest.xml" ]; then cp ../vault/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml; fi
-            if [ -f "../vault/android/build.gradle" ]; then cp ../vault/android/build.gradle android/build.gradle; fi
-            if [ -f "../vault/android/app/build.gradle" ]; then cp ../vault/android/app/build.gradle android/app/build.gradle; fi
+            [ -f "../vault/android/app/src/main/AndroidManifest.xml" ] && cp ../vault/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+            [ -f "../vault/android/build.gradle" ] && cp ../vault/android/build.gradle android/build.gradle
+            [ -f "../vault/android/app/build.gradle" ] && cp ../vault/android/app/build.gradle android/app/build.gradle
           fi
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
@@ -75,7 +73,6 @@ jobs:
           flutter:
             uses-material-design: true
             assets:
-              - assets/
               - assets/.env
               - assets/icon_launcher.png
               - assets/intro.mp4
@@ -105,11 +102,10 @@ jobs:
         run: |
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
-          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.defaults.buildfeatures.buildconfig=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
+          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           if [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ]; then
             echo -e "SIGNING_STORE_FILE=../debug.keystore\nSIGNING_STORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}\nSIGNING_KEY_ALIAS=${{ secrets.SIGNING_KEY_ALIAS }}\nSIGNING_KEY_PASSWORD=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
           fi
-
           apply_baseline_patches() {
             if [ -f "android/app/build.gradle" ]; then
               sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
@@ -117,32 +113,29 @@ jobs:
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdk [0-9]*/compileSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdk [0-9]*/targetSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 36/g' {} + 2>/dev/null || true
           }
           apply_baseline_patches
-
           MAX_ATTEMPTS=5
           for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
             echo "Execution round: $ATTEMPT of $MAX_ATTEMPTS..."
             rm -f build_output.log
-            
             flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > build_output.log 2>&1 && BUILD_SUCCESS=true || BUILD_SUCCESS=false
             cat build_output.log
-            
             if [ "$BUILD_SUCCESS" = "true" ]; then
               echo "Android binary compiled successfully!"
               break
             fi
-
             echo "Compiler block detected. Initializing self-healing regex scanner..."
-            
             if grep -q "plugins {" build_output.log && grep -q "only buildscript" build_output.log; then
               sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
             fi
-
             if grep -q "NullPointerException" build_output.log; then
               find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sed -i '/plugins {/a \    id "org.jetbrains.kotlin.android" version "2.0.20" apply false' {} + 2>/dev/null || true
             fi
-            
             if grep -q "namespace" build_output.log || grep -q "Extension with name 'android'" build_output.log; then
               find /home/runner/.pub-cache/ hosted/ -name "AndroidManifest.xml" | while read -r manifest; do
                 PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
@@ -152,25 +145,17 @@ jobs:
                 fi
               done
             fi
-
-            if grep -q "compileSdkVersion" build_output.log || grep -q "targetSdkVersion" build_output.log; then
-              find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' {} + 2>/dev/null || true
-              find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 34/g' {} + 2>/dev/null || true
-            fi
-
             if grep -q "Could not find method" build_output.log; then
               BAD_METHOD=$(grep -oP "Could not find method \K[^\s(]+" build_output.log | head -n 1 || true)
               if [ -n "$BAD_METHOD" ]; then
                 find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$BAD_METHOD/d" {} + 2>/dev/null || true
               fi
             fi
-
             if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
               echo "Compiler reached limits. Halting stream."
               exit 1
             fi
           done
-
           mkdir -p build/app/outputs/flutter-apk/
           cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || find build/app/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
       - name: Build Genuine Web Application
