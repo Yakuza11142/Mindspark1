@@ -113,10 +113,10 @@ jobs:
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdk [0-9]*/compileSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdk [0-9]*/targetSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdk\s+[0-9]*/compileSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdk\s+[0-9]*/targetSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdkVersion\s+[0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdkVersion\s+[0-9]*/targetSdkVersion 36/g' {} + 2>/dev/null || true
           }
           apply_baseline_patches
           MAX_ATTEMPTS=5
@@ -134,7 +134,7 @@ jobs:
               sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
             fi
             if grep -q "NullPointerException" build_output.log; then
-              find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sed -i '/plugins {/a \    id "org.jetbrains.kotlin.android" version "2.0.20" apply false' {} + 2>/dev/null || true
+              find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true
             fi
             if grep -q "namespace" build_output.log || grep -q "Extension with name 'android'" build_output.log; then
               find /home/runner/.pub-cache/ hosted/ -name "AndroidManifest.xml" | while read -r manifest; do
