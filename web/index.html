@@ -1,45 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Mind Spark Production Web Application Engine.">
 
-  <!-- Enforces correct mobile responsive pixel layouts on physical phone viewports -->
+  <!-- Mobile Viewport Setup -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <!-- iOS Meta Tags and Branded Display Injections -->
+  <!-- iOS Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mind Spark">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon Core Mapping Elements -->
+  <!-- Favicon Core Mapping -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>Mind Spark</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Application Layout and Theme Styling Modules -->
+  <!-- Minimal Loader Styling -->
   <style>
+    * {
+      box-sizing: border-box;
+    }
     html, body {
-      background-color: #000000;
+      background-color: #080A0F;
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
-    /* Smooth CSS Loader for Heavy Web Assets */
+
+    /* Native Flutter Loading Indicator */
     .ms-loading-container {
       width: 100%;
       height: 100%;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      background-color: #000000;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #080A0F;
       transition: opacity 0.4s ease-out;
       position: absolute;
       top: 0;
@@ -47,214 +52,58 @@
       z-index: 99999;
     }
     .ms-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.1);
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(0, 243, 255, 0.15);
       border-radius: 50%;
-      border-top-color: #38bdf8;
-      animation: spin 1s ease-in-out infinite;
+      border-top-color: #00F3FF;
+      animation: spin 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
     }
-    /* High-Fidelity Custom Dark Mode Chat Layout */
-    .fallback-chat-wrapper {
-      display: none;
-      flex-direction: column;
-      height: 100vh;
-      background-color: #0B0E14;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #E6FFFF;
-    }
-    .fallback-header {
-      background: #141923;
-      padding: 16px;
-      font-weight: bold;
-      border-bottom: 1px solid #1F2937;
-      text-align: center;
-      color: #00F3FF;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .fallback-chat-area {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .fallback-bubble {
-      max-width: 75%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 15px;
-      line-height: 1.4;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .fallback-user {
-      background: #00F3FF;
-      color: #0B0E14;
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-      font-weight: 500;
-    }
-    .fallback-ai {
-      background: #141923;
-      color: #E6FFFF;
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-      border: 1px solid #1F2937;
-    }
-    .fallback-input-container {
-      background: #141923;
-      padding: 12px;
-      display: flex;
-      gap: 8px;
-      border-top: 1px solid #1F2937;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    }
-    .fallback-input {
-      flex: 1;
-      background: #0B0E14;
-      border: 1px solid #1F2937;
-      border-radius: 24px;
-      padding: 12px 20px;
-      color: white;
-      font-size: 15px;
-      outline: none;
-    }
-    .fallback-input:focus {
-      border-color: #00F3FF;
-    }
-    .fallback-btn {
-      background: #00F3FF;
-      border: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      color: #0B0E14;
-      font-weight: bold;
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <!-- Elegant minimal launcher mask is fully responsive and interactive -->
+
+  <!-- Minimal Engine Loader -->
   <div id="loading-indicator" class="ms-loading-container">
     <div class="ms-spinner"></div>
   </div>
 
-  <!-- High-Fidelity Crash-Immune Fallback Application Viewport -->
-  <div id="fallback-ui" class="fallback-chat-wrapper">
-    <div class="fallback-header">MindSpark Engine v2.0</div>
-    <div class="fallback-chat-area">
-      <div class="fallback-bubble fallback-ai">Welcome back. Core 1-Watt vector pipelines and high-fidelity matrix components are running. How can I assist your session?</div>
-      <div class="fallback-bubble fallback-user">Render the vector skeleton model.</div>
-      <div class="fallback-bubble fallback-ai">AetherCorePro wireframe rigging initialized. Tracing nodes across 4 dimensions smoothly.</div>
-    </div>
-    <div class="fallback-input-container">
-      <input type="text" class="fallback-input" placeholder="Type a message...">
-      <button class="fallback-btn">➔</button>
-    </div>
-  </div>
-
-  <!-- Immediate service worker activation lifecycle strategy -->
+  <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('flutter_service_worker.js?v=$FLUTTER_SERVICE_WORKER_VERSION')
+      navigator.serviceWorker.register('flutter_service_worker.js')
         .catch(function(error) {
           console.error('ServiceWorker registration failed:', error);
         });
     }
   </script>
 
-  <!-- Complete Error Interception Core Orchestration Module -->
-  <script>
-    window._msFatalErrorHandler = (function() {
-      let isLoaderRemoved = false;
-      let fallbackTimeout = null;
-
-      function removeLoader(errorText = null) {
-        if (isLoaderRemoved) return;
-        isLoaderRemoved = true;
-
-        if (fallbackTimeout) clearTimeout(fallbackTimeout);
-
-        const indicator = document.getElementById('loading-indicator');
-        if (indicator) {
-          indicator.style.opacity = '0';
-          setTimeout(() => {
-            indicator.remove();
-
-            if (errorText) {
-              console.warn("Intercepted Fatal Pipeline Block:", errorText);
-              // SMART LAZY INTERCEPTOR: Instead of printing the default crash panel, dynamically mount your clean chat UI
-              const fallbackUI = document.getElementById('fallback-ui');
-              if (fallbackUI) {
-                fallbackUI.style.display = 'flex';
-              }
-            }
-          }, 400);
-        }
-      }
-
-      // Track a safety timeout handler window for slow network layers loading components
-      fallbackTimeout = setTimeout(() => {
-        console.warn('Flutter initialization timed out. Launching fallback view layout...');
-        removeLoader('Timeout');
-      }, 6000); // Route to clean application fallback view after 6 seconds of setup lag
-
-      // Telemetry error event listeners
-      window.addEventListener('error', function(event) {
-        const srcFile = event.filename || '';
-        const message = event.error && event.error.message ? event.error.message : event.message;
-        removeLoader('Fatal: ' + message + (srcFile ? ' at ' + srcFile.split('/').pop() : ''));
-      });
-
-      window.addEventListener('unhandledrejection', function(event) {
-        const reason = event.reason ? (event.reason.message || event.reason) : 'Promise rejected';
-        removeLoader('Unhandled Rejection: ' + reason);
-      });
-
-      // Expose state control APIs cleanly to the engine initialization module down tree
-      return {
-        clearLoader: () => removeLoader(null),
-        triggerError: (msg) => removeLoader(msg),
-        resetTimeout: (newTimeout) => {
-          if (fallbackTimeout) clearTimeout(fallbackTimeout);
-          fallbackTimeout = newTimeout;
-        }
-      };
-    })();
-  </script>
-
-  <!-- Orchestrates secure Flutter web engine bootstrap mapping hooks -->
+  <!-- Clean Flutter Engine Bootstrap -->
   <script>
     window._flutter = {
       loader: {
         load: async function(config) {
           try {
-            // Guard clause to catch structural package load breaks before they trigger browser errors
-            if (!config || typeof config.loadEngine !== 'function') {
-              window._msFatalErrorHandler.triggerError('Missing configuration hooks');
-              return;
-            }
-
             const engineInitializer = await config.loadEngine();
             const appRunner = await engineInitializer.initializeEngine();
 
-            // Safely detach custom launcher layers on the first visual vector frame pass
+            // Detach loader on first frame pass from Flutter
             window.addEventListener('flutter-first-frame', function() {
-              window._msFatalErrorHandler.clearLoader();
+              const indicator = document.getElementById('loading-indicator');
+              if (indicator) {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 400);
+              }
             });
 
             await appRunner.runApp();
           } catch (error) {
-            window._msFatalErrorHandler.triggerError('Engine Bootstrap Failure: ' + (error.message || error));
+            console.error('Engine Bootstrap Failure:', error);
           }
         }
       }
