@@ -38,19 +38,19 @@ jobs:
             if grep -q "NullPointerException" b.log; then find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true; fi
             if grep -q -E "namespace|Extension with name 'android'" b.log; then find /home/runner/.pub-cache/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true); G_FILE=$(dirname "$manifest")/../build.gradle; [ -f "$G_FILE" ] && [ -n "$PKG" ] && sed -i "/android {/a \    namespace \"$PKG\"" "$G_FILE" || true; done; fi
             if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
-            [ ! -f "android/build.gradle" ] && flutter create --platforms=android . || true
+            [ ! -d "android" ] && flutter create --platforms=android . || true
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
       - name: Build Genuine Web Application
         run: |
-          [ ! -d "web" ] && flutter create --platforms=web . || true
+          rm -rf build/web web
+          cp -r ../vault/web ./web 2>/dev/null || flutter create --platforms=web .
           [ ! -f "web/index.html" ] && echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json && rm -f ../secrets.json || true
       - uses: actions/upload-artifact@v4
         with: {name: MindSpark-Fat-Android-APK,path: final_apk/app-debug.apk,if-no-files-found: error}
       - uses: actions/upload-pages-artifact@v3
         with: {name: github-pages,path: build/web}
-        continue-on-error: true
   deploy:
     needs: build
     runs-on: ubuntu-24.04
