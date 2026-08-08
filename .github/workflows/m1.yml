@@ -39,15 +39,9 @@ jobs:
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           [ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; }
-          
-          # 🌟 AUTOMATED IN-PLACE PERMISSION INJECTION
-          # Replaces the opening tag with valid, cleanly formatted permission matrices inside the template
-          MP="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MP" ]; then
-            sed -i 's|<manifest[^>]*>|<manifest xmlns:android="http://google.com">\n    <uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>|g' "$MP"
-            sed -i 's|<application[^>]*>|<application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">\n        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>|g' "$MP"
-          fi
-          
+          cat > android/app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://google.com"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>
+          EOF
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           publish_to: 'none'
@@ -55,8 +49,7 @@ jobs:
           environment:
             sdk: '>=3.0.0 <4.0.0'
           dependencies:
-            flutter:
-              sdk: flutter
+            flutter: {sdk: flutter}
             intl: any
             meta: any
             collection: any
@@ -74,22 +67,14 @@ jobs:
             flutter_lints: any
           flutter:
             uses-material-design: true
-            assets:
-              - assets/.env
-              - assets/icon_launcher.png
-              - assets/intro.mp4
-            shaders:
-              - assets/shaders/hologram_glow.frag
+            assets: [- assets/.env, - assets/icon_launcher.png, - assets/intro.mp4]
+            shaders: [- assets/shaders/hologram_glow.frag]
           EOF
           mkdir -p web && [ ! -f "web/index.html" ] && echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
           cat > pubspec_overrides.yaml <<'EOF'
-          dependency_overrides:
-            flutter_test: {sdk: flutter}
-            flutter_driver: {sdk: flutter}
-            integration_test: {sdk: flutter}
-            sky_engine: {sdk: flutter}
+          dependency_overrides: {flutter_test: {sdk: flutter}, flutter_driver: {sdk: flutter}, integration_test: {sdk: flutter}, sky_engine: {sdk: flutter}}
           EOF
           flutter pub get --no-example
       - name: Inject Secrets
@@ -153,11 +138,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/deploy-pages@v4
+    permissions: {pages: write, id-token: write}
+    environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
+    steps: [- uses: actions/deploy-pages@v4]
