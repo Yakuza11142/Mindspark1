@@ -94,9 +94,21 @@ jobs:
             cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
           fi
           
-          # 🌟 AUTOMATED CLEANUP INJECTION
-          # Automatically applies system fixes and enforces clean code styling parameters natively
           dart fix --apply && dart format lib/ || true
+          
+          # 🌟 AUTOMATED SYSTEM LAYER INTERCEPTOR COMMAND
+          # Forcefully writes a clean local override block into the fresh sandbox directory BEFORE pub get can execute
+          cat > pubspec_overrides.yaml <<'EOF'
+          dependency_overrides:
+            flutter_test:
+              sdk: flutter
+            flutter_driver:
+              sdk: flutter
+            integration_test:
+              sdk: flutter
+            sky_engine:
+              sdk: flutter
+          EOF
           
           flutter pub get --no-example
       - name: Inject Production Secrets
