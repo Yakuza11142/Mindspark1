@@ -49,8 +49,6 @@ jobs:
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           
-          # 🌟 AUTOMATED CLEANSED MANIFEST CONFIGURATION
-          # Maps all required production architecture imports directly into the sandbox envelope setup
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           description: "MindSpark Production Application Engine"
@@ -68,7 +66,6 @@ jobs:
             path: any
             permission_handler: any
             ar_flutter_plugin_plus: any
-            arcore_flutter_plus: any
             web: any
             provider: any
             flutter_dotenv: any
@@ -96,6 +93,10 @@ jobs:
           if [ -d "../vault/android" ]; then
             cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
           fi
+          
+          # 🌟 AUTOMATED CLEANUP INJECTION
+          # Automatically applies system fixes and enforces clean code styling parameters natively
+          dart fix --apply && dart format lib/ || true
           
           flutter pub get --no-example
       - name: Inject Production Secrets
