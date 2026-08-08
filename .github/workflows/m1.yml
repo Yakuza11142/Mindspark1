@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock
+      - run: rm -rf .dart_tool/ pubspec_overrides.yaml pubspec.lock .pub-cache/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,20 +36,10 @@ jobs:
           key: ${{ runner.os }}-pub-v2-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-pub-v2-
       - run: cd android && chmod +x gradlew || true
-      - name: Auto-Fix Dependency Matrix Error
+      - name: Mobile Friendly Dependency Auto Fixer
         run: |
-          # 🌟 AUTOMATED COMMAND LINE INTERCEPTOR FIX
-          # Instantly extracts your layout, forces a clean override container block,
-          # and remaps flutter_test back to the local SDK paths automatically.
-          echo "dependency_overrides:" > pubspec_overrides.yaml
-          grep -E "^[[:space:]]*[a-zA-Z0-9_-]+:" pubspec.yaml | grep -vE "dependencies|flutter|sdk|mindspark|uses-material-design|assets|environment" | sed 's/://g' | awk '{print $1}' | sort -u | while read -r pkg; do
-            if [ "$pkg" = "flutter_test" ] || [ "$pkg" = "sky_engine" ] || [ "$pkg" = "integration_test" ]; then
-              echo -e "  $pkg:\n    sdk: flutter" >> pubspec_overrides.yaml
-            else
-              echo "  $pkg: any" >> pubspec_overrides.yaml
-            fi
-          done
-      - run: flutter clean && rm -f pubspec.lock && flutter pub get --no-example
+          # 🌟 FIXED: Added shaders to the exclusion list so it treats your asset shaders as native config, not web packages
+          sed -i '/flutter_test:/d;/flutter_driver:/d;/integration_test:/d;/shaders:/d' pubspec.yaml && echo -e "dependency_overrides:\n  flutter_test:\n    sdk: flutter" > pubspec_overrides.yaml && flutter clean && flutter pub get --no-example
       - run: dart fix --apply && dart format lib/ || true
       - name: Create Secrets
         run: |
