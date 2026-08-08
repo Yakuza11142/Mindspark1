@@ -111,6 +111,9 @@ jobs:
           fi
 
           apply_baseline_patches() {
+            if [ -f "android/app/build.gradle" ]; then
+              sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
+            fi
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
@@ -132,6 +135,10 @@ jobs:
 
             echo "Compiler block detected. Initializing self-healing regex scanner..."
             
+            if grep -q "plugins {" build_output.log && grep -q "only buildscript" build_output.log; then
+              sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
+            fi
+
             if grep -q "NullPointerException" build_output.log; then
               find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sed -i '/plugins {/a \    id "org.jetbrains.kotlin.android" version "2.0.20" apply false' {} + 2>/dev/null || true
             fi
