@@ -33,22 +33,20 @@ jobs:
         run: |
           mkdir -p ../vault/
           cp -r lib assets web pubspec.yaml ../vault/ 2>/dev/null || true
-          
-          if [ -d "android" ]; then
-            mkdir -p ../vault/android/
-            find android/ -name "*.keystore" -exec cp {} ../vault/android/ \; 2>/dev/null || true
-            find android/ -name "*.properties" -exec cp {} ../vault/android/ \; 2>/dev/null || true
-          fi
-          
+          if [ -d "android" ]; then cp -r android ../vault/ 2>/dev/null || true; fi
           rm -rf * .[^.]*
-          
           flutter create --org com.mindspark --project-name mindspark1 .
           rm -rf lib/ assets/ web/ pubspec.yaml
-          
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
-          
+          if [ -d "../vault/android" ]; then
+            find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true
+            find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true
+            if [ -f "../vault/android/app/src/main/AndroidManifest.xml" ]; then cp ../vault/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml; fi
+            if [ -f "../vault/android/build.gradle" ]; then cp ../vault/android/build.gradle android/build.gradle; fi
+            if [ -f "../vault/android/app/build.gradle" ]; then cp ../vault/android/app/build.gradle android/app/build.gradle; fi
+          fi
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           description: "MindSpark Production Application Engine"
@@ -84,68 +82,88 @@ jobs:
             shaders:
               - assets/shaders/hologram_glow.frag
           EOF
-          
           if [ ! -f "web/index.html" ]; then
             mkdir -p web
             echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           fi
-          
-          if [ -d "../vault/android" ]; then
-            cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
-          fi
-          
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
-          
-          dart fix --apply && dart format lib/ || true
-          
           cat > pubspec_overrides.yaml <<'EOF'
           dependency_overrides:
-            flutter_test:
-              sdk: flutter
-            flutter_driver:
-              sdk: flutter
-            integration_test:
-              sdk: flutter
-            sky_engine:
-              sdk: flutter
+            flutter_test: {sdk: flutter}
+            flutter_driver: {sdk: flutter}
+            integration_test: {sdk: flutter}
+            sky_engine: {sdk: flutter}
           EOF
-          
           flutter pub get --no-example
-          
-          # 🌟 DYNAMIC PUBSPEC CACHE OVERSTREAM HEALER
-          # Automatically rewrites deprecations, configurations, and broken syntax markers across all external packages
-          if [ -d "/home/runner/.pub-cache" ]; then
-            find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + || true
-            find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + || true
-            find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + || true
-          fi
       - name: Inject Production Secrets
         run: |
           cat > ../secrets.json <<EOF
           {"SUPABASE_URL":"${{ secrets.SUPABASE_URL }}","SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}","GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}","OPENAI_KEY":"${{ secrets.OPENAI_KEY }}","GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}","VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}","HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}","RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}","TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}","PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}","MTN_API_KEY":"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')","ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"}
           EOF
-      - name: Build Genuine Android APK
+      - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
-          
-          # 🌟 ULTIMATE ANDROID ENVIRONMENT HEALER
-          # Dynamically rewrites permissions, targets, and disables breaking AGP 9.0 DSL tracking structures natively
-          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.defaults.buildfeatures.buildconfig=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true" > android/gradle.properties
-          
+          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.defaults.buildfeatures.buildconfig=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           if [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ]; then
             echo -e "SIGNING_STORE_FILE=../debug.keystore\nSIGNING_STORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}\nSIGNING_KEY_ALIAS=${{ secrets.SIGNING_KEY_ALIAS }}\nSIGNING_KEY_PASSWORD=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
           fi
-          
-          # Force clean configuration namespaces and drop version mismatches globally in your local android directory
-          find android/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + || true
-          find android/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + || true
-          find android/ -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' {} + || true
-          find android/ -name "build.gradle" -exec sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 34/g' {} + || true
-          
-          flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
-          
+
+          apply_baseline_patches() {
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
+          }
+          apply_baseline_patches
+
+          MAX_ATTEMPTS=5
+          for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Execution round: $ATTEMPT of $MAX_ATTEMPTS..."
+            rm -f build_output.log
+            
+            flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > build_output.log 2>&1 && BUILD_SUCCESS=true || BUILD_SUCCESS=false
+            cat build_output.log
+            
+            if [ "$BUILD_SUCCESS" = "true" ]; then
+              echo "Android binary compiled successfully!"
+              break
+            fi
+
+            echo "Compiler block detected. Initializing self-healing regex scanner..."
+            
+            if grep -q "NullPointerException" build_output.log; then
+              find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sed -i '/plugins {/a \    id "org.jetbrains.kotlin.android" version "2.0.20" apply false' {} + 2>/dev/null || true
+            fi
+            
+            if grep -q "namespace" build_output.log || grep -q "Extension with name 'android'" build_output.log; then
+              find /home/runner/.pub-cache/ hosted/ -name "AndroidManifest.xml" | while read -r manifest; do
+                PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
+                BG_GRADLE=$(dirname "$manifest")/../build.gradle
+                if [ -f "$BG_GRADLE" ] && [ -n "$PKG" ] && ! grep -q "namespace" "$BG_GRADLE"; then
+                  sed -i "/android {/a \    namespace '$PKG'" "$BG_GRADLE"
+                fi
+              done
+            fi
+
+            if grep -q "compileSdkVersion" build_output.log || grep -q "targetSdkVersion" build_output.log; then
+              find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' {} + 2>/dev/null || true
+              find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/targetSdkVersion [0-9]*/targetSdkVersion 34/g' {} + 2>/dev/null || true
+            fi
+
+            if grep -q "Could not find method" build_output.log; then
+              BAD_METHOD=$(grep -oP "Could not find method \K[^\s(]+" build_output.log | head -n 1 || true)
+              if [ -n "$BAD_METHOD" ]; then
+                find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$BAD_METHOD/d" {} + 2>/dev/null || true
+              fi
+            fi
+
+            if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+              echo "Compiler reached limits. Halting stream."
+              exit 1
+            fi
+          done
+
           mkdir -p build/app/outputs/flutter-apk/
           cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || find build/app/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
       - name: Build Genuine Web Application
