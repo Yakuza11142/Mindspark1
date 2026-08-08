@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <base href="/">
+  <!-- Relative base href dynamically detects your repo path on GitHub Pages -->
+  <script>
+    document.write('<base href="' + document.location.pathname + '" />');
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Mind Spark Production Web Application Engine.">
+  <meta name="description" content="Web Application Engine.">
 
   <!-- Mobile Viewport Setup -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -12,13 +16,13 @@
   <!-- iOS Meta Tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Mind Spark">
+  <meta name="apple-mobile-web-app-title" content="App Engine">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon Core Mapping -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Mind Spark</title>
+  <title>Application Engine</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Minimal Loader Styling -->
@@ -73,6 +77,17 @@
     <div class="ms-spinner"></div>
   </div>
 
+  <!-- Standard Event Listener for First Frame -->
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      const indicator = document.getElementById('loading-indicator');
+      if (indicator) {
+        indicator.style.opacity = '0';
+        setTimeout(() => indicator.remove(), 400);
+      }
+    });
+  </script>
+
   <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
@@ -83,33 +98,7 @@
     }
   </script>
 
-  <!-- Clean Flutter Engine Bootstrap -->
-  <script>
-    window._flutter = {
-      loader: {
-        load: async function(config) {
-          try {
-            const engineInitializer = await config.loadEngine();
-            const appRunner = await engineInitializer.initializeEngine();
-
-            // Detach loader on first frame pass from Flutter
-            window.addEventListener('flutter-first-frame', function() {
-              const indicator = document.getElementById('loading-indicator');
-              if (indicator) {
-                indicator.style.opacity = '0';
-                setTimeout(() => indicator.remove(), 400);
-              }
-            });
-
-            await appRunner.runApp();
-          } catch (error) {
-            console.error('Engine Bootstrap Failure:', error);
-          }
-        }
-      }
-    };
-  </script>
-
+  <!-- Official Flutter Web Bootstrap -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
