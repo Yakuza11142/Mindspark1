@@ -48,7 +48,7 @@ jobs:
           rm -rf build/web web && mkdir -p web
           cp -r ../vault/web/. ./web/ 2>/dev/null || flutter create --platforms=web .
           echo '<!DOCTYPE html><html><head><base href="/"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
-          flutter build web --release --base-href "/" --dart-define-from-file=../secrets.json || (mkdir -p build/web && cp web/index.html build/web/index.html)
+          flutter build web --release --web-renderer html --base-href "/" --dart-define-from-file=../secrets.json || (mkdir -p build/web && cp web/index.html build/web/index.html)
           rm -f ../secrets.json || true
       - uses: actions/upload-artifact@v4
         with: {name: MindSpark-Fat-Android-APK,path: final_apk/app-debug.apk,if-no-files-found: error}
