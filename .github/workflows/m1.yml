@@ -33,21 +33,28 @@ jobs:
           cp -r lib assets web pubspec.yaml ../vault/ 2>/dev/null || true
           if [ -d "android" ]; then cp -r android ../vault/ 2>/dev/null || true; fi
           rm -rf * .[^.]*
-          flutter create --org com.mindspark --project-name mindspark1 .
+          
+          # 🚀 STEP 1: INITIALIZE CRUNCHED BASELINE SCAFFOLDING
+          # Flutter automatically creates a pristine, latest-standards android/ folder template right here
+          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           rm -rf lib/ assets/ web/ pubspec.yaml
+          
+          # 🚀 STEP 2: RESTORE SOURCE DIRECTORIES
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
+
+          # Merge your original custom keys/manifest adjustments from vault if they exist
           if [ -d "../vault/android" ]; then
             find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true
             find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true
             [ -f "../vault/android/app/src/main/AndroidManifest.xml" ] && cp ../vault/android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
-            [ -f "../vault/android/build.gradle" ] && cp ../vault/android/build.gradle android/build.gradle
-            [ -f "../vault/android/app/build.gradle" ] && cp ../vault/android/app/build.gradle android/app/build.gradle
           fi
+          
+          # 🚀 STEP 3: SANITIZE MANIFEST DEPENDENCY TRACKS
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
-          description: "MindSpark Production Application Engine"
+          description: "MindSpark Engine"
           publish_to: 'none'
           version: 1.0.0+1
           environment:
@@ -93,7 +100,7 @@ jobs:
             sky_engine: {sdk: flutter}
           EOF
           flutter pub get --no-example
-      - name: Inject Production Secrets
+      - name: Inject Secrets
         run: |
           cat > ../secrets.json <<EOF
           {"SUPABASE_URL":"${{ secrets.SUPABASE_URL }}","SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}","GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}","OPENAI_KEY":"${{ secrets.OPENAI_KEY }}","GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}","VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}","HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}","RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}","TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}","PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}","MTN_API_KEY":"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')","ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"}
@@ -107,16 +114,13 @@ jobs:
             echo -e "SIGNING_STORE_FILE=../debug.keystore\nSIGNING_STORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}\nSIGNING_KEY_ALIAS=${{ secrets.SIGNING_KEY_ALIAS }}\nSIGNING_KEY_PASSWORD=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
           fi
           apply_baseline_patches() {
-            if [ -f "android/app/build.gradle" ]; then
-              sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
-            fi
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdk\s+[0-9]*/compileSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdk\s+[0-9]*/targetSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdkVersion\s+[0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdkVersion\s+[0-9]*/targetSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdk\s+[0-9]*+.*$/compileSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdk\s+[0-9]*+.*$/targetSdk 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdkVersion\s+[0-9]*+.*$/compileSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdkVersion\s+[0-9]*+.*$/targetSdkVersion 36/g' {} + 2>/dev/null || true
           }
           apply_baseline_patches
           MAX_ATTEMPTS=5
@@ -130,9 +134,6 @@ jobs:
               break
             fi
             echo "Compiler block detected. Initializing self-healing regex scanner..."
-            if grep -q "plugins {" build_output.log && grep -q "only buildscript" build_output.log; then
-              sed -i '1,/plugins {/ { /plugins {/!d }' android/app/build.gradle
-            fi
             if grep -q "NullPointerException" build_output.log; then
               find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true
             fi
