@@ -38,10 +38,10 @@ jobs:
       - run: cd android && chmod +x gradlew || true
       - name: Mobile Friendly Dependency Auto Fixer
         run: |
-          # Safe inline interceptor scrubs conflicting entries before compiling
           sed -i '/flutter_test:/d;/flutter_driver:/d;/integration_test:/d;/shaders:/d;/publish_to:/d' pubspec.yaml || true
           echo -e "dependency_overrides:\n  flutter_test:\n    sdk: flutter" > pubspec_overrides.yaml
           flutter clean && flutter pub get --no-example
+      - run: dart fix --apply && dart format lib/ || true
       - name: Create Secrets
         run: |
           cat > ../secrets.json <<EOF
@@ -70,9 +70,7 @@ jobs:
           rm -f android_error.log
           mkdir -p android
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
-          
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
-          
           cd android
           ./gradlew assembleRelease -Pdart-define-from-file=../secrets.json -Ptarget-platform=android-arm,android-arm64,android-x64 --no-daemon
           cd ..
@@ -81,8 +79,11 @@ jobs:
       - name: Build Genuine Web Application
         run: |
           rm -f web_error.log
-          
-          # 🚀 GENUINE COMPILATION: Compiles your real custom Dart UI and asset arrays cleanly into Javascript web bundles
+          # 🌟 AUTOMATED SLOT INITIALIZATION: Guarantees that Flutter Web has its template files structured natively before executing compilation
+          if [ ! -f "web/index.html" ]; then
+            mkdir -p web
+            echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
+          fi
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
       - run: rm -f ../secrets.json pubspec_overrides.yaml pub_output.txt || true
       - uses: actions/upload-artifact@v4
