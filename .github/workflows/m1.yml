@@ -16,17 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+        with: {distribution: temurin, java-version: "17"}
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.11.1"
-          validate-wrappers: false
+        with: {gradle-version: "8.11.1", validate-wrappers: false}
       - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: false
+        with: {channel: stable, cache: false}
       - name: Sandbox Template Factory Execution
         run: |
           mkdir -p ../vault/
@@ -40,42 +34,21 @@ jobs:
           cp -r ../vault/web ./web
           [ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; }
           cat > android/app/src/main/AndroidManifest.xml <<'EOF'
-          <manifest xmlns:android="http://google.com"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>
+          <manifest xmlns:android="http://android.com" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>
           EOF
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           publish_to: 'none'
           version: 1.0.0+1
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-          dependencies:
-            flutter: {sdk: flutter}
-            intl: any
-            meta: any
-            collection: any
-            crypto: any
-            path: any
-            permission_handler: any
-            ar_flutter_plugin_plus: any
-            web: any
-            provider: any
-            flutter_dotenv: any
-            supabase_flutter: any
-            google_mobile_ads: any
-            video_player: any
-          dev_dependencies:
-            flutter_lints: any
-          flutter:
-            uses-material-design: true
-            assets: [- assets/.env, - assets/icon_launcher.png, - assets/intro.mp4]
-            shaders: [- assets/shaders/hologram_glow.frag]
+          environment: {sdk: '>=3.0.0 <4.0.0'}
+          dependencies: {flutter: {sdk: flutter}, intl: any, meta: any, collection: any, crypto: any, path: any, permission_handler: any, ar_flutter_plugin_plus: any, web: any, provider: any, flutter_dotenv: any, supabase_flutter: any, google_mobile_ads: any, video_player: any}
+          dev_dependencies: {flutter_lints: any}
+          flutter: {uses-material-design: true, assets: [- assets/.env, - assets/icon_launcher.png, - assets/intro.mp4], shaders: [- assets/shaders/hologram_glow.frag]}
           EOF
           mkdir -p web && [ ! -f "web/index.html" ] && echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
-          cat > pubspec_overrides.yaml <<'EOF'
-          dependency_overrides: {flutter_test: {sdk: flutter}, flutter_driver: {sdk: flutter}, integration_test: {sdk: flutter}, sky_engine: {sdk: flutter}}
-          EOF
+          echo "dependency_overrides: {flutter_test: {sdk: flutter}, flutter_driver: {sdk: flutter}, integration_test: {sdk: flutter}, sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           flutter pub get --no-example
       - name: Inject Secrets
         run: |
@@ -93,24 +66,22 @@ jobs:
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
             find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdk\s+[0-9]*+.*$/compileSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdk\s+[0-9]*+.*$/targetSdk 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/compileSdkVersion\s+[0-9]*+.*$/compileSdkVersion 36/g' {} + 2>/dev/null || true
-            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/targetSdkVersion\s+[0-9]*+.*$/targetSdkVersion 36/g' {} + 2>/dev/null || true
+            find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           }
           patch_build_gradles
           for ATTEMPT in {1..5}; do
+            [ $ATTEMPT -gt 2 ] && find android/ -name "AndroidManifest.xml" -exec sed -i '/<uses-permission/d' {} + 2>/dev/null || true
             rm -f b.log; flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log
             [ "$OK" = "true" ] && break
             if grep -q "NullPointerException" b.log; then
               find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true
             fi
-            if grep -q "namespace" b.log || grep -q "Extension with name 'android'" b.log; then
+            if grep -q -E "namespace|Extension with name 'android'" b.log; then
               find /home/runner/.pub-cache/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do
                 PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
                 G_FILE=$(dirname "$manifest")/../build.gradle
-                [ -f "$G_FILE" ] && [ -n "$PKG" ] && ! grep -q "namespace" "$G_FILE" && sed -i "/android {/a \    namespace '$PKG'" "$G_FILE"
+                [ -f "$G_FILE" ] && [ -n "$PKG" ] && sed -i "/android {/a \    namespace \"$PKG\"" "$G_FILE" || true
               done
             fi
             if grep -q "Could not find method" b.log; then
@@ -126,18 +97,15 @@ jobs:
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
       - run: rm -f ../secrets.json || true
       - uses: actions/upload-artifact@v4
-        with:
-          name: MindSpark-Fat-Android-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+        with: {name: MindSpark-Fat-Android-APK, path: build/app/outputs/flutter-apk/app-release.apk, if-no-files-found: error}
       - uses: actions/upload-pages-artifact@v3
-        with:
-          name: github-pages
-          path: build/web
+        with: {name: github-pages, path: build/web}
         continue-on-error: true
   deploy:
     needs: build
     runs-on: ubuntu-24.04
     permissions: {pages: write, id-token: write}
     environment: {name: github-pages, url: "${{ steps.deployment.outputs.page_url }}"}
-    steps: [- uses: actions/deploy-pages@v4]
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
