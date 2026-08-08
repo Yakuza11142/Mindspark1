@@ -100,6 +100,10 @@ jobs:
           
           # 8. Pull and align development frameworks cleanly against the sanitized platform template
           flutter pub get --no-example
+      - name: Code Quality Optimization Engine
+        run: |
+          # 🚀 FIXED: Incorporated your automated code auto-fixer and text formatting modules natively
+          dart fix --apply && dart format lib/ || true
       - name: Inject Production Secrets
         run: |
           cat > ../secrets.json <<EOF
@@ -111,19 +115,16 @@ jobs:
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=release\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g" > android/gradle.properties
           
-          # Inject production key credentials to sign the binary bundle matching your physical security configurations
           if [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ]; then
             echo -e "SIGNING_STORE_FILE=../debug.keystore\nSIGNING_STORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}\nSIGNING_KEY_ALIAS=${{ secrets.SIGNING_KEY_ALIAS }}\nSIGNING_KEY_PASSWORD=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
           fi
           
-          # Official command compiles your genuine logic parameters into native machine code cleanly
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
           
           mkdir -p build/app/outputs/flutter-apk/
           cp build/app/outputs/apk/release/app-release.apk build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || find build/app/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;
       - name: Build Genuine Web Application
         run: |
-          # Official command compiles all custom widget views cleanly into JavaScript browser channels
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
       - run: rm -f ../secrets.json || true
       - uses: actions/upload-artifact@v4
