@@ -1,12 +1,3 @@
-// =========================================================================
-// SMART-LAZY WEB PIPELINE INJECTION HOOK (Saves artifact from flutter clean)
-// =========================================================================
-def forceWebArtifact = new File("${project.rootDir}/../build/web")
-if (!forceWebArtifact.exists()) {
-    forceWebArtifact.mkdirs()
-    new File(forceWebArtifact, "index.html").text = """<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Mind Spark v2</title><style>body{margin:0;background-color:#0B0E14;font-family:-apple-system,sans-serif;color:#E6FFFF;display:flex;flex-direction:column;height:100vh;overflow:hidden}.header{background:#141923;padding:16px;font-weight:700;border-bottom:1px solid #1F2937;text-align:center;color:#00F3FF}.chat-area{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px}.bubble{max-width:75%;padding:12px 16px;border-radius:16px}.user{background:#00F3FF;color:#0B0E14;align-self:flex-end}.ai{background:#141923;color:#E6FFFF;align-self:flex-start;border:1px solid #1F2937}</style></head><body><div class="header">MindSpark Engine v2.0</div><div class="chat-area"><div class="bubble ai">Welcome back. Core 1-Watt vector pipelines and high-fidelity matrix components are running.</div><div class="bubble user">Render the vector skeleton model.</div><div class="bubble ai">AetherCorePro wireframe rigging initialized. Tracing nodes across 4 dimensions smoothly.</div></div></body></html>"""
-}
-
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
@@ -15,7 +6,7 @@ plugins {
 
 android {
     namespace "com.mindspark.app"
-    compileSdk 35
+    compileSdk 36
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -58,7 +49,7 @@ android {
     defaultConfig {
         applicationId "com.mindspark.app"
         minSdk 24 
-        targetSdk 35
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
 
