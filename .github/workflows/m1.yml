@@ -31,11 +31,9 @@ jobs:
           cache: false
       - name: Sandbox Template Factory Execution
         run: |
-          # 1. Stash your pristine custom features safely out of the root path
           mkdir -p ../vault/
           cp -r lib assets web pubspec.yaml ../vault/ 2>/dev/null || true
           
-          # Carry over signature keystore blocks if present in your repository source structures
           if [ -d "android" ]; then
             mkdir -p ../vault/android/
             find android/ -name "*.keystore" -exec cp {} ../vault/android/ \; 2>/dev/null || true
@@ -44,18 +42,15 @@ jobs:
           
           rm -rf * .[^.]*
           
-          # 2. Build a brand-new, clean, error-immune Flutter project layout
           flutter create --org com.mindspark --project-name mindspark1 .
-          
-          # 3. Clean template blocks to make room for your genuine development files
           rm -rf lib/ assets/ web/ pubspec.yaml
           
-          # 4. Copy your actual, production-ready 638 files and asset data back into the slots
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           
-          # 5. Automatically write an uncrashable, perfectly formatted pubspec manifest config
+          # 🌟 AUTOMATED CLEANSED MANIFEST CONFIGURATION
+          # Maps all required production architecture imports directly into the sandbox envelope setup
           cat > pubspec.yaml <<'EOF'
           name: mindspark1
           description: "MindSpark Production Application Engine"
@@ -73,7 +68,13 @@ jobs:
             path: any
             permission_handler: any
             ar_flutter_plugin_plus: any
+            arcore_flutter_plus: any
             web: any
+            provider: any
+            flutter_dotenv: any
+            supabase_flutter: any
+            google_mobile_ads: any
+            video_player: any
           dev_dependencies:
             flutter_lints: any
           flutter:
@@ -87,23 +88,16 @@ jobs:
               - assets/shaders/hologram_glow.frag
           EOF
           
-          # 6. Map custom web index framework assets cleanly if missing from your repository
           if [ ! -f "web/index.html" ]; then
             mkdir -p web
             echo '<!DOCTYPE html><html><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><title>Mind Spark</title><script src="flutter_bootstrap.js" async></script></head><body></body></html>' > web/index.html
           fi
           
-          # 7. Safe fallback to drop secure signature parameters inside the fresh Android project template block
           if [ -d "../vault/android" ]; then
             cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
           fi
           
-          # 8. Pull and align development frameworks cleanly against the sanitized platform template
           flutter pub get --no-example
-      - name: Code Quality Optimization Engine
-        run: |
-          # 🚀 FIXED: Incorporated your automated code auto-fixer and text formatting modules natively
-          dart fix --apply && dart format lib/ || true
       - name: Inject Production Secrets
         run: |
           cat > ../secrets.json <<EOF
