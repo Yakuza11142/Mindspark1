@@ -94,9 +94,12 @@ jobs:
             cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
           fi
           
-          # 🌟 ABSOLUTE DEEP-CLEAN INTERCEPTOR
-          # Scans every single file in the workspace (.yaml, .dart, everything) and scrubs any corrupt 'pqc' lines instantly
+          # 🌟 AUTOMATED SYSTEM LAYER SCRUBBER & REPAIR
+          # 1. Erase any residual corrupted text or typos automatically
           find . -type f -exec sed -i '/pqc/d' {} + || true
+          
+          # 2. De-couple legacy plugin imports inside your features so they don't force background downloads
+          find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
           
           dart fix --apply && dart format lib/ || true
           
@@ -113,6 +116,11 @@ jobs:
           EOF
           
           flutter pub get --no-example
+          
+          # 3. Dynamic Cache Interceptor Patch: Fixes legacy configuration property errors inside pub-cache if they populate
+          if [ -d "/home/runner/.pub-cache" ]; then
+            find /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + || true
+          fi
       - name: Inject Production Secrets
         run: |
           cat > ../secrets.json <<EOF
@@ -127,6 +135,9 @@ jobs:
           if [ -n "${{ secrets.SIGNING_STORE_PASSWORD }}" ]; then
             echo -e "SIGNING_STORE_FILE=../debug.keystore\nSIGNING_STORE_PASSWORD=${{ secrets.SIGNING_STORE_PASSWORD }}\nSIGNING_KEY_ALIAS=${{ secrets.SIGNING_KEY_ALIAS }}\nSIGNING_KEY_PASSWORD=${{ secrets.SIGNING_KEY_PASSWORD }}" >> android/key.properties
           fi
+          
+          # Dynamic Gradle Build Patch right before execution to prevent configuration container crashes
+          find android/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + || true
           
           flutter build apk --release --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
           
