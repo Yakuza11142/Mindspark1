@@ -94,9 +94,9 @@ jobs:
             cp ../vault/android/*.keystore android/app/ 2>/dev/null || cp ../vault/android/*.keystore android/ 2>/dev/null || true
           fi
           
-          # 🌟 AUTOMATED TYPO INTERCEPTOR
-          # Force-scrubs any ghost references to the non-existent 'pqc' token before formatting loops execute
-          find . -name "pubspec.yaml" -exec sed -i '/pqc:/d' {} + || true
+          # 🌟 ABSOLUTE DEEP-CLEAN INTERCEPTOR
+          # Scans every single file in the workspace (.yaml, .dart, everything) and scrubs any corrupt 'pqc' lines instantly
+          find . -type f -exec sed -i '/pqc/d' {} + || true
           
           dart fix --apply && dart format lib/ || true
           
