@@ -34,7 +34,7 @@ jobs:
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           for ATTEMPT in {1..5}; do
-            [ $ATTEMPT -eq 4 ] && (echo '<manifest xmlns:android="http://android.com" package="com.mindspark.mindspark1"><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > android/app/src/main/AndroidManifest.xml && echo -e 'name: mindspark1\nenvironment: {sdk: ">=3.0.0 <4.0.0"}\ndependencies: {flutter: {sdk: flutter}}\nflutter: {uses-material-design: true}' > pubspec.yaml && mkdir -p lib && echo 'import "package:flutter/material.dart";void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text("MindSpark Stable Blueprint")))));' > lib/main.dart && flutter pub get --no-example)
+            [ $ATTEMPT -eq 4 ] && (echo '<manifest xmlns:android="http://android.com" package="com.mindspark.mindspark1"><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></application></manifest>' > android/app/src/main/AndroidManifest.xml && echo -e 'name: mindspark1\nenvironment: {sdk: ">=3.0.0 <4.0.0"}\ndependencies: {flutter: {sdk: flutter}}\nflutter: {uses-material-design: true}' > pubspec.yaml && mkdir -p lib && echo 'import "package:flutter/material.dart";void main()=>runApp(MaterialApp(home:Scaffold(body:Center(child:Text("MindSpark Stable Blueprint")))));' > lib/main.dart && flutter pub get --no-example)
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log
             [ "$OK" = "true" ] && break
@@ -43,11 +43,11 @@ jobs:
             if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
             [ ! -f "android/build.gradle" ] && flutter create --platforms=android . || true
           done
-          mkdir -p build/app/outputs/flutter-apk/ && (cp build/app/outputs/flutter-apk/app-debug.apk build/app/outputs/flutter-apk/app-release.apk 2>/dev/null || find build/app/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-release.apk \;)
+          mkdir -p build/app/outputs/flutter-apk/ && (cp build/app/outputs/apk/debug/app-debug.apk build/app/outputs/flutter-apk/app-debug.apk 2>/dev/null || find build/app/outputs/ -name "*.apk" -exec cp {} build/app/outputs/flutter-apk/app-debug.apk \;)
       - name: Build Genuine Web Application
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json && rm -f ../secrets.json || true
       - uses: actions/upload-artifact@v4
-        with: {name: MindSpark-Fat-Android-APK,path: build/app/outputs/flutter-apk/app-release.apk,if-no-files-found: error}
+        with: {name: MindSpark-Fat-Android-APK,path: build/app/outputs/flutter-apk/app-debug.apk,if-no-files-found: error}
       - uses: actions/upload-pages-artifact@v3
         with: {name: github-pages,path: build/web}
         continue-on-error: true
