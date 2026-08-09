@@ -72,7 +72,7 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:[a-zA-Z0-9_]*/package:mindspark1/g' {} + 2>/dev/null || true
           
           flutter pub get
-          flutter build web --release --renderer auto --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
+          flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
 
       - name: Setup Pages Infrastructure
         uses: actions/configure-pages@v5
