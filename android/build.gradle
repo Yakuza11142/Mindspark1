@@ -5,7 +5,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // MATCHING TOOLCHAINS: Gradle 8.9.1 pairs perfectly with Kotlin 2.1.x plugins
         classpath 'com.android.tools.build:gradle:8.9.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -21,7 +20,6 @@ allprojects {
 rootProject.layout.buildDirectory.set(rootProject.file("../build"))
 
 subprojects { project ->
-    // Build directory configuration is mapped safely before subproject execution trees evaluate
     project.layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
 
     project.tasks.withType(JavaCompile).configureEach {
@@ -36,27 +34,23 @@ subprojects { project ->
         }
     }
 
-    // FIXED: Safe property lookups configure child plugin extensions without throwing raw method exceptions
-    project.plugins.configureEach { plugin ->
-        if (plugin.class.name.contains("com.android.build.gradle.LibraryPlugin")) {
-            project.extensions.configure("android") { ext ->
-                ext.setCompileSdk(35)
-                if (!ext.hasProperty('namespace') || ext.namespace == null) {
-                    String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
-                    ext.setNamespace("com.mindspark.generated.${cleanName}")
-                }
+    // SAFE NAMESPACE & SDK INJECTION
+    project.afterEvaluate {
+        if (project.hasProperty('android')) {
+            // Apply compileSdk globally across all modules/plugins
+            if (project.android.hasProperty('compileSdkVersion')) {
+                project.android.compileSdkVersion 35
             }
-        }
-        if (plugin.class.name.contains("com.android.build.gradle.AppPlugin")) {
-            project.extensions.configure("android") { ext ->
-                if (!ext.hasProperty('namespace') || ext.namespace == null) {
-                    ext.setNamespace("com.mindspark.app")
-                }
+
+            // Fallback for subproject libraries missing a namespace
+            if (project.android.namespace == null) {
+                String cleanName = project.name.replaceAll(/[^a-zA-Z0-9_]/, "")
+                project.android.namespace = "com.mindspark.generated.${cleanName}"
             }
         }
     }
 
-    // Forces unified sub-dependency resolution parameters across all transitive plugin lines
+    // Force unified Kotlin dependency versions
     project.configurations.configureEach { configuration ->
         configuration.resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin' && !details.requested.name.startsWith('kotlinx-')) {
