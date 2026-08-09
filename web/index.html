@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <script>
+    // Force direct absolute subdirectory tracking calculation for GitHub Pages
+    (function () {
+      var path = window.location.pathname;
+      if (!path.endsWith('/')) {
+        path = path.substring(0, path.lastIndexOf('/') + 1);
+      }
+      var baseTag = document.createElement('base');
+      baseTag.href = path;
+      document.head.appendChild(baseTag);
+    }());
+  </script>
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Mind Spark Production Engine.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MindSpark">
-
   <title>Application Engine</title>
-  <link rel="manifest" href="manifest.json">
-
+  
   <style>
     * { box-sizing: border-box; }
     html, body {
@@ -27,6 +34,7 @@
       display: flex; justify-content: center; align-items: center;
       background-color: #080A0F;
       position: absolute; top: 0; left: 0; z-index: 99999;
+      transition: opacity 0.3s ease-out;
     }
     .ms-spinner {
       width: 48px; height: 48px;
@@ -39,9 +47,41 @@
   </style>
 </head>
 <body>
+
   <div id="loading-indicator" class="ms-loading-container">
     <div class="ms-spinner"></div>
   </div>
-  <script src="flutter_bootstrap.js" async></script>
+
+  <!-- Unified Web Bootstrapper -->
+  <script>
+    window.addEventListener('load', function() {
+      var script = document.createElement('script');
+      script.src = "flutter_bootstrap.js";
+      script.async = true;
+      
+      // Setup the engine initialization callback tracking
+      window._flutter = {
+        loader: {
+          didCreateEngineInitializer: function(engineInitializer) {
+            engineInitializer.initializeEngine({
+              useColorWithAlpha: true
+            }).then(function(appRunner) {
+              appRunner.runApp();
+              
+              // Fade out and remove spinner from DOM once initialization settles
+              setTimeout(function() {
+                var indicator = document.getElementById('loading-indicator');
+                if (indicator) {
+                  indicator.style.opacity = '0';
+                  setTimeout(function() { indicator.remove(); }, 300);
+                }
+              }, 500);
+            });
+          }
+        }
+      };
+      document.body.appendChild(script);
+    });
+  </script>
 </body>
 </html>
