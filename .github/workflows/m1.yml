@@ -2,7 +2,6 @@ name: MindSpark Production CI
 on: [workflow_dispatch, push]
 permissions: {contents: write, pages: write, id-token: write}
 concurrency: {group: mindspark-production, cancel-in-progress: true}
-
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -14,39 +13,59 @@ jobs:
         with: {gradle-version: "8.11.1", validate-wrappers: false}
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: false}
-        
       - name: Sandbox Template Factory Execution
         run: |
           mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
           echo '<manifest xmlns:android="http://android.com" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
-          echo -e 'name: mindspark1\npublish_to: "none"\nversion: 1.0.0+1\nenvironment:\n  sdk: ">=3.12.0 <4.0.0"\ndependencies: {flutter: {sdk: flutter},intl: any,meta: any,collection: any,crypto: any,path: any,permission_handler: any,ar_flutter_plugin_plus: any,web: any,provider: any,flutter_dotenv: any,supabase_flutter: any,google_mobile_ads: any,video_player: any}\ndev_dependencies: {flutter_lints: any}\nflutter: {uses-material-design: true,assets: ["assets/.env","assets/icon_launcher.png","assets/intro.mp4"],shaders: ["assets/shaders/hologram_glow.frag"]}' > pubspec.yaml
+          cat << 'EOF' > pubspec.yaml
+          name: mindspark1
+          publish_to: "none"
+          version: 1.0.0+1
+          environment:
+            sdk: ">=3.12.0 <4.0.0"
+          dependencies:
+            flutter: {sdk: flutter}
+            intl: any
+            meta: any
+            collection: any
+            crypto: any
+            path: any
+            permission_handler: any
+            ar_flutter_plugin_plus: any
+            web: any
+            provider: any
+            flutter_dotenv: any
+            supabase_flutter: any
+            google_mobile_ads: any
+            video_player: any
+            url_launcher: any
+          dev_dependencies:
+            flutter_lints: any
+          flutter:
+            uses-material-design: true
+            assets: ["assets/.env","assets/icon_launcher.png","assets/intro.mp4"]
+            shaders: ["assets/shaders/hologram_glow.frag"]
+          EOF
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           flutter pub get --no-example
-
       - name: Inject Secrets Safely
         run: |
           CLEAN_MTN_KEY=$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')
           echo "{\"SUPABASE_URL\":\"${{ secrets.SUPABASE_URL }}\",\"SUPABASE_ANON_KEY\":\"${{ secrets.SUPABASE_ANON_KEY }}\",\"GEMINI_API_KEY\":\"${{ secrets.GEMINI_API_KEY }}\",\"OPENAI_KEY\":\"${{ secrets.OPENAI_KEY }}\",\"GROQ_API_KEY\":\"${{ secrets.GROQ_API_KEY }}\",\"VERTEX_API_KEY\":\"${{ secrets.VERTEX_API_KEY }}\",\"HEYGEN_KEY\":\"${{ secrets.HEYGEN_KEY }}\",\"RUNWAYML_API_SECRET\":\"${{ secrets.RUNWAYML_API_SECRET }}\",\"TRIPO_API_KEY\":\"${{ secrets.TRIPO_API_KEY }}\",\"PEXELS_API_KEY\":\"${{ secrets.PEXELS_API_KEY }}\",\"MTN_API_KEY\":\"$CLEAN_MTN_KEY\",\"ELEVEN_LAB_API_KEY\":\"${{ secrets.ELEVEN_LAB_API_KEY }}\"}" > ../secrets.json
-
       - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
-          rm -rf android
-          flutter create --platforms=android .
-          
+          rm -rf android && flutter create --platforms=android .
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
-          
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:mindspark\//package:mindspark1\//g' {} + 2>/dev/null || true
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:mind_spark\//package:mindspark1\//g' {} + 2>/dev/null || true
-          
           dart format lib/ 2>/dev/null || true
           dart fix --apply 2>/dev/null || true
-          
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log
@@ -56,47 +75,28 @@ jobs:
             if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
-
       - name: Build Genuine Web Application
         run: |
-          rm -rf build/web
-          if [ ! -d "web" ]; then
-            if [ -d "../vault/web" ]; then
-              cp -r ../vault/web ./web
-            else
-              flutter create --platforms=web .
-            fi
-          fi
-          
+          rm -rf build/web && ( [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web . )
           mkdir -p assets/shaders
           [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
           [ ! -f "assets/icon_launcher.png" ] && touch assets/icon_launcher.png || true
           [ ! -f "assets/intro.mp4" ] && touch assets/intro.mp4 || true
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() {\n    fragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}' > assets/shaders/hologram_glow.frag || true
-          
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:mindspark\//package:mindspark1\//g' {} + 2>/dev/null || true
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:mind_spark\//package:mindspark1\//g' {} + 2>/dev/null || true
-          
           dart format lib/ 2>/dev/null || true
           dart fix --apply 2>/dev/null || true
-          
           flutter pub get
           flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
-
       - name: Setup Pages Infrastructure
         uses: actions/configure-pages@v5
-
       - name: Pack Web Distribution Package
         uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./build/web
-
+        with: {path: ./build/web}
       - name: Live Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
-        with:
-          name: flutter-android-apk
-          path: final_apk/app-debug.apk
+        with: {name: flutter-android-apk, path: final_apk/app-debug.apk}
