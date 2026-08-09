@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- The exact literal placeholder token required by the Flutter Web compiler -->
+  <!-- The exact literal token the compiler needs to inject your repository path -->
   <base href="$FLUTTER_BASE_HREF">
 
   <script>
-    // Fallback: If the compiler doesn't swap it, auto-detect the path dynamically
+    // Fallback block: Prevents crashes during local device testing
     (function () {
       var baseTag = document.querySelector('base');
       if (baseTag && baseTag.getAttribute('href') === '$FLUTTER_BASE_HREF') {
@@ -81,6 +81,7 @@
 
   <script>
     window.addEventListener('load', function() {
+      // Modern Flutter Engine Bootstrapper Initialization
       _flutter = {
         loader: {
           didCreateEngineInitializer: function(engineInitializer) {
