@@ -41,6 +41,12 @@ jobs:
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           
+          find lib/ -type f -name "*.dart" -exec sed -i 's/package:mindspark\//package:mindspark1\//g' {} + 2>/dev/null || true
+          find lib/ -type f -name "*.dart" -exec sed -i 's/package:mind_spark\//package:mindspark1\//g' {} + 2>/dev/null || true
+          
+          dart format lib/ 2>/dev/null || true
+          dart fix --apply 2>/dev/null || true
+          
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log
@@ -68,19 +74,29 @@ jobs:
           [ ! -f "assets/intro.mp4" ] && touch assets/intro.mp4 || true
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() {\n    fragColor = vec4(0.0, 0.0, 0.0, 1.0);\n}' > assets/shaders/hologram_glow.frag || true
           
-          flutter build web --release
+          find lib/ -type f -name "*.dart" -exec sed -i 's/package:mindspark\//package:mindspark1\//g' {} + 2>/dev/null || true
+          find lib/ -type f -name "*.dart" -exec sed -i 's/package:mind_spark\//package:mindspark1\//g' {} + 2>/dev/null || true
+          
+          dart format lib/ 2>/dev/null || true
+          dart fix --apply 2>/dev/null || true
+          
+          flutter pub get
+          flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
+
+      - name: Setup Pages Infrastructure
+        uses: actions/configure-pages@v5
+
+      - name: Pack Web Distribution Package
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build/web
+
+      - name: Live Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mindspark-android-apk
+          name: flutter-android-apk
           path: final_apk/app-debug.apk
-
-      - name: Upload Web Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-
-      - name: Deploy Web to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
