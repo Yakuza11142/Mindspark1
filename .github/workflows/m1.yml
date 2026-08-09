@@ -1,18 +1,20 @@
 name: MindSpark Production CI
-on: [workflow_dispatch,push]
-permissions: {contents: write,pages: write,id-token: write}
-concurrency: {group: mindspark-production,cancel-in-progress: true}
+on: [workflow_dispatch, push]
+permissions: {contents: write, pages: write, id-token: write}
+concurrency: {group: mindspark-production, cancel-in-progress: true}
+
 jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: {distribution: temurin,java-version: "17"}
+        with: {distribution: temurin, java-version: "17"}
       - uses: gradle/actions/setup-gradle@v4
-        with: {gradle-version: "8.11.1",validate-wrappers: false}
+        with: {gradle-version: "8.11.1", validate-wrappers: false}
       - uses: subosito/flutter-action@v2
-        with: {channel: stable,cache: false}
+        with: {channel: stable, cache: false}
+        
       - name: Sandbox Template Factory Execution
         run: |
           mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
@@ -22,8 +24,10 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i "/arcore_flutter_plus/d" {} + || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           flutter pub get --no-example
+
       - name: Inject Secrets
         run: echo '{"SUPABASE_URL":"${{ secrets.SUPABASE_URL }}","SUPABASE_ANON_KEY":"${{ secrets.SUPABASE_ANON_KEY }}","GEMINI_API_KEY":"${{ secrets.GEMINI_API_KEY }}","OPENAI_KEY":"${{ secrets.OPENAI_KEY }}","GROQ_API_KEY":"${{ secrets.GROQ_API_KEY }}","VERTEX_API_KEY":"${{ secrets.VERTEX_API_KEY }}","HEYGEN_KEY":"${{ secrets.HEYGEN_KEY }}","RUNWAYML_API_SECRET":"${{ secrets.RUNWAYML_API_SECRET }}","TRIPO_API_KEY":"${{ secrets.TRIPO_API_KEY }}","PEXELS_API_KEY":"${{ secrets.PEXELS_API_KEY }}","MTN_API_KEY":"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')","ELEVEN_LAB_API_KEY":"${{ secrets.ELEVEN_LAB_API_KEY }}"}' > ../secrets.json
+
       - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
@@ -42,21 +46,15 @@ jobs:
             [ ! -d "android" ] && flutter create --platforms=android . || true
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
+
       - name: Build Genuine Web Application
         run: |
-          rm -rf build/web web && mkdir -p web && cp -r ../vault/web/. ./web/ 2>/dev/null || flutter create --platforms=web .
-          echo '<!DOCTYPE html><html lang="en"><head><base href="/"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Mind Spark."><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="App Engine"><link rel="apple-touch-icon" href="icons/Icon-192.png"><link rel="icon" type="image/png" href="favicon.png"/><title>Application Engine</title><link rel="manifest" href="manifest.json"><style>*{box-sizing:border-box}html,body{background-color:#080A0F;margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080A0F;transition:opacity.4s ease-out;position:absolute;top:0;left:0;z-index:99999}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,0.15);border-radius:50%;border-top-color:#00F3FF;animation:spin .8s cubic-bezier(0.68,-0.55,0.27,1.55) infinite;box-shadow:0 0 15px rgba(0,243,255,0.2)}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div></div><script>window.addEventListener("flutter-first-frame",function(){const e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(()=>e.remove(),400))})</script><script>if("serviceWorker"in navigator){navigator.serviceWorker.register("flutter_service_worker.js").catch(function(e){console.error("ServiceWorker registration failed:",e)})}</script><script src="flutter_bootstrap.js" async></script></body></html>' > web/index.html
-          flutter build web --release --web-renderer html --base-href "/" --dart-define-from-file=../secrets.json || (mkdir -p build/web && cp web/index.html build/web/index.html)
-          rm -f ../secrets.json || true
-      - uses: actions/upload-artifact@v4
-        with: {name: MindSpark-Fat-Android-APK,path: final_apk/app-debug.apk,if-no-files-found: error}
-      - uses: actions/upload-pages-artifact@v3
-        with: {name: github-pages,path: build/web}
-  deploy:
-    needs: build
-    runs-on: ubuntu-24.04
-permissions: {pages: write,id-token: write}
-environment: {name: github-pages,url: "${{ steps.deployment.outputs.page_url }}"}
-steps:
-- uses: actions/deploy-pages@v4
-id: deployment
+          rm -rf build/web web
+          flutter create --platforms=web .
+          flutter build web --release --dart-define-from-file=../secrets.json
+
+      - name: Deploy Compiled Application to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
