@@ -62,7 +62,7 @@ jobs:
             fi
           fi
           
-          # Auto-Heal Missing Assets & Inject Valid Fragment Shader Blueprint
+          # Auto-Heal Missing Assets
           mkdir -p assets/shaders
           [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
           [ ! -f "assets/icon_launcher.png" ] && touch assets/icon_launcher.png || true
@@ -72,7 +72,7 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i 's/package:[a-zA-Z0-9_]*/package:mindspark1/g' {} + 2>/dev/null || true
           
           flutter pub get
-          flutter build web --release --web-renderer auto --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
+          flutter build web --release --renderer auto --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
 
       - name: Setup Pages Infrastructure
         uses: actions/configure-pages@v5
