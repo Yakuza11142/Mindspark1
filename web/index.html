@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- The exact literal placeholder token required by the Flutter Web compiler -->
+  <base href="$FLUTTER_BASE_HREF">
+
   <script>
+    // Fallback: If the compiler doesn't swap it, auto-detect the path dynamically
     (function () {
-      var path = window.location.pathname;
-      if (!path.endsWith('/')) {
-        path = path.substring(0, path.lastIndexOf('/') + 1);
+      var baseTag = document.querySelector('base');
+      if (baseTag && baseTag.getAttribute('href') === '$FLUTTER_BASE_HREF') {
+        var path = window.location.pathname;
+        if (!path.endsWith('/')) {
+          path = path.substring(0, path.lastIndexOf('/') + 1);
+        }
+        baseTag.setAttribute('href', path);
       }
-      document.write('<base href="' + path + '" />');
     }());
   </script>
 
