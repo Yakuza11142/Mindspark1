@@ -17,8 +17,6 @@ jobs:
         run: |
           rm -rf build android web pubspec_overrides.yaml 2>/dev/null || true
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
-          
-          # Force a clean multi-line pubspec template with intl locked to a universally compatible key
           cat << 'EOF' > pubspec.yaml
           name: mindspark1
           publish_to: "none"
@@ -27,7 +25,7 @@ jobs:
             sdk: ">=3.12.0 <4.0.0"
           dependencies:
             flutter: {sdk: flutter}
-            intl: 0.19.0
+            intl: any
             meta: any
             collection: any
             crypto: any
@@ -42,7 +40,6 @@ jobs:
             video_player: any
             url_launcher: any
             flutter_tex: any
-            dash_chat_2: any
           dev_dependencies:
             flutter_lints: any
           flutter:
@@ -50,25 +47,17 @@ jobs:
             assets: ["assets/.env","assets/icon_launcher.png","assets/intro.mp4"]
             shaders: ["assets/shaders/hologram_glow.frag"]
           EOF
-          
-          # Force overrides map parameters before resolving project layers
-          echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter},intl: 0.19.0}" > pubspec_overrides.yaml
+          echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           echo "{\"SUPABASE_URL\":\"${{ secrets.SUPABASE_URL }}\",\"SUPABASE_ANON_KEY\":\"${{ secrets.SUPABASE_ANON_KEY }}\",\"GEMINI_API_KEY\":\"${{ secrets.GEMINI_API_KEY }}\",\"OPENAI_KEY\":\"${{ secrets.OPENAI_KEY }}\",\"GROQ_API_KEY\":\"${{ secrets.GROQ_API_KEY }}\",\"VERTEX_API_KEY\":\"${{ secrets.VERTEX_API_KEY }}\",\"HEYGEN_KEY\":\"${{ secrets.HEYGEN_KEY }}\",\"RUNWAYML_API_SECRET\":\"${{ secrets.RUNWAYML_API_SECRET }}\",\"TRIPO_API_KEY\":\"${{ secrets.TRIPO_API_KEY }}\",\"PEXELS_API_KEY\":\"${{ secrets.PEXELS_API_KEY }}\",\"MTN_API_KEY\":\"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')\",\"ELEVEN_LAB_API_KEY\":\"${{ secrets.ELEVEN_LAB_API_KEY }}\"}" > ../secrets.json
-          
           mkdir -p assets/shaders android/app/src/main 2>/dev/null || true
           [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
           [ ! -f "assets/icon_launcher.png" ] && touch assets/icon_launcher.png || true
           [ ! -f "assets/intro.mp4" ] && touch assets/intro.mp4 || true
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.0, 0.0, 1.0); }' > assets/shaders/hologram_glow.frag || true
-          
           echo '<manifest xmlns:android="http://android.com" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
-          
           find . -type f -exec sed -i '/pqc/d' {} + || true
-          find lib/ -type f -name "*.dart" -exec sed -i -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
-          
-          # Force dependencies sync with overrides locked in place
+          find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           flutter pub get --no-example
-          
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do
             PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
             GRADLE_FILE=$(dirname "$manifest")/../build.gradle
@@ -78,12 +67,10 @@ jobs:
               sed -i "/android {/a \    namespace \"$PKG\"" "$GRADLE_FILE" || true
             fi
           done
-
           dart format lib/ 2>/dev/null || true; dart fix --apply 2>/dev/null || true
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
-          
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
@@ -92,11 +79,8 @@ jobs:
             if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
-          
-          # Remove intro video boundaries to clear final web asset tracking structures
           sed -i 's/"assets\/intro.mp4"//g' pubspec.yaml
           sed -i 's/- assets\/intro.mp4//g' pubspec.yaml
-          
           flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
           rm -f build/web/assets/assets/intro.mp4 2>/dev/null || true
           sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
