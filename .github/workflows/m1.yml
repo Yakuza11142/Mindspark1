@@ -17,6 +17,7 @@ jobs:
         run: |
           rm -rf build android web pubspec_overrides.yaml 2>/dev/null || true
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
+          
           cat << 'EOF' > pubspec.yaml
           name: mindspark1
           publish_to: "none"
@@ -49,7 +50,7 @@ jobs:
             shaders: ["assets/shaders/hologram_glow.frag"]
           EOF
           
-          # CRITICAL FIXED POSITION: Force override variables injection BEFORE any pub get calls occur
+          # FIXED ORDER: Override file is created here so the very first dependency resolution uses it
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter},intl: 0.19.0}" > pubspec_overrides.yaml
           echo "{\"SUPABASE_URL\":\"${{ secrets.SUPABASE_URL }}\",\"SUPABASE_ANON_KEY\":\"${{ secrets.SUPABASE_ANON_KEY }}\",\"GEMINI_API_KEY\":\"${{ secrets.GEMINI_API_KEY }}\",\"OPENAI_KEY\":\"${{ secrets.OPENAI_KEY }}\",\"GROQ_API_KEY\":\"${{ secrets.GROQ_API_KEY }}\",\"VERTEX_API_KEY\":\"${{ secrets.VERTEX_API_KEY }}\",\"HEYGEN_KEY\":\"${{ secrets.HEYGEN_KEY }}\",\"RUNWAYML_API_SECRET\":\"${{ secrets.RUNWAYML_API_SECRET }}\",\"TRIPO_API_KEY\":\"${{ secrets.TRIPO_API_KEY }}\",\"PEXELS_API_KEY\":\"${{ secrets.PEXELS_API_KEY }}\",\"MTN_API_KEY\":\"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')\",\"ELEVEN_LAB_API_KEY\":\"${{ secrets.ELEVEN_LAB_API_KEY }}\"}" > ../secrets.json
           
@@ -89,7 +90,7 @@ jobs:
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
           
-          # Drops intro video asset compilation paths strictly for the web target deployment package
+          # Remove video tracking limits exclusively for web output compilation
           sed -i 's/"assets\/intro.mp4"//g' pubspec.yaml
           sed -i 's/- assets\/intro.mp4//g' pubspec.yaml
           
