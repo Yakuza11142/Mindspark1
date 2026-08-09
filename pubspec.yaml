@@ -50,7 +50,6 @@ dependencies:
   battery_plus: ^7.1.1
   vibration: ^3.2.0
   screen_brightness: ^2.1.11
-  carrier_info: ^3.0.3
   app_links: ^7.2.1
   ntp: ^2.0.0
   timezone: ^0.11.1
