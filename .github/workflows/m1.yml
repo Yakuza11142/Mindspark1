@@ -52,21 +52,21 @@ jobs:
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           echo "{\"SUPABASE_URL\":\"${{ secrets.SUPABASE_URL }}\",\"SUPABASE_ANON_KEY\":\"${{ secrets.SUPABASE_ANON_KEY }}\",\"GEMINI_API_KEY\":\"${{ secrets.GEMINI_API_KEY }}\",\"OPENAI_KEY\":\"${{ secrets.OPENAI_KEY }}\",\"GROQ_API_KEY\":\"${{ secrets.GROQ_API_KEY }}\",\"VERTEX_API_KEY\":\"${{ secrets.VERTEX_API_KEY }}\",\"HEYGEN_KEY\":\"${{ secrets.HEYGEN_KEY }}\",\"RUNWAYML_API_SECRET\":\"${{ secrets.RUNWAYML_API_SECRET }}\",\"TRIPO_API_KEY\":\"${{ secrets.TRIPO_API_KEY }}\",\"PEXELS_API_KEY\":\"${{ secrets.PEXELS_API_KEY }}\",\"MTN_API_KEY\":\"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')\",\"ELEVEN_LAB_API_KEY\":\"${{ secrets.ELEVEN_LAB_API_KEY }}\"}" > ../secrets.json
           flutter pub get --no-example
-      - name: Build Genuine Android APK with Auto-Healer compiler
-        run: |
-          rm -rf android && flutter create --platforms=android .
-          mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
-          find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do
             PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
             GRADLE_FILE=$(dirname "$manifest")/../build.gradle
-            if [ ! -f "$GRADLE_FILE" ]; then GRADLE_FILE=$(dirname "$manifest")/build.gradle; fi
+            if [ ! -f "$GRADLE_FILE" ] ; then GRADLE_FILE=$(dirname "$manifest")/build.gradle; fi
             if [ -f "$GRADLE_FILE" ] && [ -n "$PKG" ]; then
               sed -i "/namespace\s/d" "$GRADLE_FILE" || true
               sed -i "/android {/a \    namespace \"$PKG\"" "$GRADLE_FILE" || true
             fi
           done
           dart format lib/ 2>/dev/null || true; dart fix --apply 2>/dev/null || true
+      - name: Build Genuine Android APK with Auto-Healer compiler
+        run: |
+          rm -rf android && flutter create --platforms=android .
+          mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
+          find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
@@ -80,6 +80,10 @@ jobs:
           rm -rf build/web && ( [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web . )
           mkdir -p assets/shaders; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png assets/intro.mp4
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.0, 0.0, 1.0); }' > assets/shaders/hologram_glow.frag || true
+          
+          # Force placeholder injection back into the active index file template to satisfy compiler requirements
+          grep -q '<base href=' web/index.html && sed -i 's|<base href="[^"]*">|<base href="\$FLUTTER_BASE_HREF">|g' web/index.html || sed -i '/<head>/a \  <base href="\$FLUTTER_BASE_HREF">' web/index.html
+          
           sed -i 's/"assets\/intro.mp4"//g' pubspec.yaml
           sed -i 's/- assets\/intro.mp4//g' pubspec.yaml
           flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
@@ -87,7 +91,7 @@ jobs:
           sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
       - name: Deploy Infrastructure Configuration
         uses: actions/configure-pages@v5
-      - name: Pack Web Distribution Bundle
+      - name: Pack Web Distribution Package
         uses: actions/upload-pages-artifact@v3
         with: {path: ./build/web}
       - name: Live Deploy to GitHub Pages
