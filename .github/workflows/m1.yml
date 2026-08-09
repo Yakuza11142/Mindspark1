@@ -38,7 +38,10 @@ jobs:
       - name: Sandbox Template Factory Execution
         run: |
           mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
-          echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="io.flutter.app.FlutterApplication" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
+          
+          # Clean AndroidManifest without legacy v1 FlutterApplication
+          echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
+          
           cat << 'EOF' > pubspec.yaml
           name: mindspark1
           publish_to: "none"
@@ -73,16 +76,19 @@ jobs:
             shaders:
               - assets/shaders/hologram_glow.frag
           EOF
+          
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           echo "{\"SUPABASE_URL\":\"${{ secrets.SUPABASE_URL }}\",\"SUPABASE_ANON_KEY\":\"${{ secrets.SUPABASE_ANON_KEY }}\",\"GEMINI_API_KEY\":\"${{ secrets.GEMINI_API_KEY }}\",\"OPENAI_KEY\":\"${{ secrets.OPENAI_KEY }}\",\"GROQ_API_KEY\":\"${{ secrets.GROQ_API_KEY }}\",\"VERTEX_API_KEY\":\"${{ secrets.VERTEX_API_KEY }}\",\"HEYGEN_KEY\":\"${{ secrets.HEYGEN_KEY }}\",\"RUNWAYML_API_SECRET\":\"${{ secrets.RUNWAYML_API_SECRET }}\",\"TRIPO_API_KEY\":\"${{ secrets.TRIPO_API_KEY }}\",\"PEXELS_API_KEY\":\"${{ secrets.PEXELS_API_KEY }}\",\"MTN_API_KEY\":\"$(echo "${{ secrets.MTN_API_KEY }}" | tr -d '\r\n\t ')\",\"ELEVEN_LAB_API_KEY\":\"${{ secrets.ELEVEN_LAB_API_KEY }}\"}" > ../secrets.json
+          
           flutter pub get --no-example
           dart format lib/ 2>/dev/null || true; dart fix --apply 2>/dev/null || true
 
       - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
+          find /home/runner/.pub-cache/ -name "AndroidManifest.xml" -exec sed -i '/io.flutter.app.FlutterApplication/d' {} + 2>/dev/null || true
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do
             PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
             GRADLE_FILE=$(dirname "$manifest")/../build.gradle
@@ -102,14 +108,94 @@ jobs:
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
-      - name: Build Genuine Web Application
+      - name: Build Genuine Web Application with Direct Tracking Bootstrapper
         run: |
           rm -rf build/web && ( [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web . )
-          mkdir -p assets/shaders; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png
+          mkdir -p assets/shaders web; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.0, 0.0, 1.0); }' > assets/shaders/hologram_glow.frag || true
-          grep -q '<base href=' web/index.html && sed -i 's|<base href="[^"]*">|<base href="\$FLUTTER_BASE_HREF">|g' web/index.html || sed -i '/<head>/a \  <base href="\$FLUTTER_BASE_HREF">' web/index.html
-          flutter build web --release --base-href="/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
+          
+          # Inject custom dynamic base href web index
+          cat << 'EOF' > web/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <script>
+              (function () {
+                var path = window.location.pathname;
+                if (!path.endsWith('/')) {
+                  path = path.substring(0, path.lastIndexOf('/') + 1);
+                }
+                var baseTag = document.createElement('base');
+                baseTag.href = path;
+                document.head.appendChild(baseTag);
+              }());
+            </script>
+            <meta charset="UTF-8">
+            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+            <meta name="description" content="Mind Spark Production Engine.">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>Application Engine</title>
+            <style>
+              * { box-sizing: border-box; }
+              html, body {
+                background-color: #080A0F;
+                margin: 0; padding: 0;
+                width: 100%; height: 100%;
+                overflow: hidden;
+              }
+              .ms-loading-container {
+                width: 100%; height: 100%;
+                display: flex; justify-content: center; align-items: center;
+                background-color: #080A0F;
+                position: absolute; top: 0; left: 0; z-index: 99999;
+                transition: opacity 0.3s ease-out;
+              }
+              .ms-spinner {
+                width: 48px; height: 48px;
+                border: 3px solid rgba(0, 243, 255, 0.15);
+                border-radius: 50%;
+                border-top-color: #00F3FF;
+                animation: spin 0.8s linear infinite;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+            </style>
+          </head>
+          <body>
+            <div id="loading-indicator" class="ms-loading-container">
+              <div class="ms-spinner"></div>
+            </div>
+            <script>
+              window.addEventListener('load', function() {
+                var script = document.createElement('script');
+                script.src = "flutter_bootstrap.js";
+                script.async = true;
+                window._flutter = {
+                  loader: {
+                    didCreateEngineInitializer: function(engineInitializer) {
+                      engineInitializer.initializeEngine({
+                        useColorWithAlpha: true
+                      }).then(function(appRunner) {
+                        appRunner.runApp();
+                        setTimeout(function() {
+                          var indicator = document.getElementById('loading-indicator');
+                          if (indicator) {
+                            indicator.style.opacity = '0';
+                            setTimeout(function() { indicator.remove(); }, 300);
+                          }
+                        }, 500);
+                      });
+                    }
+                  }
+                };
+                document.body.appendChild(script);
+              });
+            </script>
+          </body>
+          </html>
+          EOF
+
+          flutter build web --release --dart-define-from-file=../secrets.json
+          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
 
       - name: Deploy Infrastructure Configuration
         uses: actions/configure-pages@v5
