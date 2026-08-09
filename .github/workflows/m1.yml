@@ -1,4 +1,4 @@
-name: MindSpark Production CI
+Name: MindSpark Production CI
 
 on:
   workflow_dispatch:
@@ -88,22 +88,31 @@ jobs:
       - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
-          find /home/runner/.pub-cache/ -name "AndroidManifest.xml" -exec sed -i '/io.flutter.app.FlutterApplication/d' {} + 2>/dev/null || true
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "AndroidManifest.xml" 2>/dev/null | while read -r manifest; do
-            PKG=$(grep -oP 'package="\K[^"]+' "$manifest" || true)
-            GRADLE_FILE=$(dirname "$manifest")/../build.gradle
-            if [ ! -f "$GRADLE_FILE" ] ; then GRADLE_FILE=$(dirname "$manifest")/build.gradle; fi
-            if [ -f "$GRADLE_FILE" ] && [ -n "$PKG" ]; then
-              sed -i "/namespace\s/d" "$GRADLE_FILE" || true
-              sed -i "/android {/a \    namespace \"$PKG\"" "$GRADLE_FILE" || true
-            fi
-          done
+          
+          # Force AGP 8.0+ namespace injection across all pub cache libraries directly
+          python3 -c "
+          import os, glob, re
+          pub_cache = os.path.expanduser('~/.pub-cache')
+          for root, dirs, files in os.walk(pub_cache):
+              if 'build.gradle' in files:
+                  gradle_path = os.path.join(root, 'build.gradle')
+                  with open(gradle_path, 'r', encoding='utf-8', errors='ignore') as f:
+                      content = f.read()
+                  if 'namespace' not in content and 'android {' in content:
+                      folder_name = os.path.basename(os.path.dirname(gradle_path)).replace('-', '_')
+                      clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
+                      namespace_str = f'com.mindspark.generated.{clean_name}'
+                      new_content = content.replace('android {', f'android {{\n    namespace \"{namespace_str}\"', 1)
+                      with open(gradle_path, 'w', encoding='utf-8') as f:
+                          f.write(new_content)
+          "
+          
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
+          
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
             if grep -q "NullPointerException" b.log; then find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.0.20\" apply false" "$1"' _ {} \; 2>/dev/null || true; fi
-            if grep -q -E "namespace|Extension with name 'android'" b.log; then find /home/runner/.pub-cache/ -name "AndroidManifest.xml" 2>/dev/null | while read -r m; do P=$(grep -oP 'package="\K[^"]+' "$m" || true); G=$(dirname "$m")/../build.gradle; [ -f "$G" ] && [ -n "$P" ] && sed -i "/android {/a \    namespace \"$P\"" "$G" || true; done; fi
             if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
@@ -114,7 +123,7 @@ jobs:
           mkdir -p assets/shaders web; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.0, 0.0, 1.0); }' > assets/shaders/hologram_glow.frag || true
           
-          # Inject custom dynamic base href web index
+          # Inject custom dynamic base href web index compatible with modern Flutter Web engine initialization
           cat << 'EOF' > web/index.html
           <!DOCTYPE html>
           <html lang="en">
@@ -159,35 +168,19 @@ jobs:
               }
               @keyframes spin { to { transform: rotate(360deg); } }
             </style>
+            <script src="flutter_bootstrap.js" async></script>
           </head>
           <body>
             <div id="loading-indicator" class="ms-loading-container">
               <div class="ms-spinner"></div>
             </div>
             <script>
-              window.addEventListener('load', function() {
-                var script = document.createElement('script');
-                script.src = "flutter_bootstrap.js";
-                script.async = true;
-                window._flutter = {
-                  loader: {
-                    didCreateEngineInitializer: function(engineInitializer) {
-                      engineInitializer.initializeEngine({
-                        useColorWithAlpha: true
-                      }).then(function(appRunner) {
-                        appRunner.runApp();
-                        setTimeout(function() {
-                          var indicator = document.getElementById('loading-indicator');
-                          if (indicator) {
-                            indicator.style.opacity = '0';
-                            setTimeout(function() { indicator.remove(); }, 300);
-                          }
-                        }, 500);
-                      });
-                    }
-                  }
-                };
-                document.body.appendChild(script);
+              window.addEventListener('flutter-first-frame', function () {
+                var indicator = document.getElementById('loading-indicator');
+                if (indicator) {
+                  indicator.style.opacity = '0';
+                  setTimeout(function() { indicator.remove(); }, 300);
+                }
               });
             </script>
           </body>
