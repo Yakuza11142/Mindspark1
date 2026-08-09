@@ -37,7 +37,7 @@ jobs:
 
       - name: Sandbox Template Factory Execution
         run: |
-          mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp "../vault/pubspec.yaml" ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
+          mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
           
           echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
           
@@ -65,6 +65,7 @@ jobs:
             video_player: any
             url_launcher: any
             flutter_tex: any
+            flutter_jailbreak_detection: any
           dev_dependencies:
             flutter_lints: any
           flutter:
@@ -80,7 +81,6 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           
-          # Safely write secrets JSON
           python3 -c "
           import json, os
           secrets = {
@@ -108,18 +108,41 @@ jobs:
         run: |
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           
+          # Dual-pass Python script to extract package from AndroidManifest and inject namespace into build.gradle
           python3 -c "
-          import os, glob, re
+          import os, re, xml.etree.ElementTree as ET
           pub_cache = os.path.expanduser('~/.pub-cache')
           for root, dirs, files in os.walk(pub_cache):
               if 'build.gradle' in files:
                   gradle_path = os.path.join(root, 'build.gradle')
                   with open(gradle_path, 'r', encoding='utf-8', errors='ignore') as f:
                       content = f.read()
+                  
                   if 'namespace' not in content and 'android {' in content:
-                      folder_name = os.path.basename(os.path.dirname(gradle_path)).replace('-', '_')
-                      clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
-                      namespace_str = f'com.mindspark.generated.{clean_name}'
+                      namespace_str = None
+                      manifest_path = os.path.join(root, 'src', 'main', 'AndroidManifest.xml')
+                      if not os.path.exists(manifest_path):
+                          # Check alternate layout
+                          for subroot, subdirs, subfiles in os.walk(root):
+                              if 'AndroidManifest.xml' in subfiles:
+                                  manifest_path = os.path.join(subroot, 'AndroidManifest.xml')
+                                  break
+                      
+                      if os.path.exists(manifest_path):
+                          try:
+                              tree = ET.parse(manifest_path)
+                              root_elem = tree.getroot()
+                              pkg = root_elem.attrib.get('{http://schemas.android.com/apk/res/android}package') or root_elem.attrib.get('package')
+                              if pkg:
+                                  namespace_str = pkg
+                          except Exception:
+                              pass
+                      
+                      if not namespace_str:
+                          folder_name = os.path.basename(root).replace('-', '_')
+                          clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
+                          namespace_str = f'com.mindspark.generated.{clean_name}'
+                      
                       new_content = content.replace('android {', f'android {{\n    namespace \"{namespace_str}\"', 1)
                       with open(gradle_path, 'w', encoding='utf-8') as f:
                           f.write(new_content)
