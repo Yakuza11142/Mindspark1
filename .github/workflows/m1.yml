@@ -32,7 +32,6 @@ jobs:
 
       - name: Build Genuine Android APK with Auto-Healer compiler
         run: |
-          # Recreate completely fresh structural files to guarantee modern V2 Embedding configuration
           rm -rf android
           flutter create --platforms=android .
           
@@ -40,7 +39,7 @@ jobs:
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i 's/jcenter()/mavenCentral()/g' {} + 2>/dev/null || true
           find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i '/android.newDsl/d' {} + 2>/dev/null || true
-          find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 35/g' {} + 2>/dev/null || true
+          find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -E 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
@@ -63,3 +62,9 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-android-apk
+          path: final_apk/app-debug.apk
