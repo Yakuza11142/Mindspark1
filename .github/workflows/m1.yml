@@ -73,66 +73,46 @@ jobs:
           mkdir -p android/app/src/main
           echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
           
-          cat << 'EOF' > pubspec.yaml
-          name: mindspark1
-          publish_to: "none"
-          version: 1.0.0+1
-          environment:
-            sdk: ">=3.12.0 <4.0.0"
-          dependencies:
-            flutter:
-              sdk: flutter
-            intl: any
-            meta: any
-            collection: any
-            crypto: any
-            path: any
-            permission_handler: any
-            ar_flutter_plugin_plus: any
-            web: any
-            provider: any
-            flutter_dotenv: any
-            supabase_flutter: any
-            google_mobile_ads: any
-            video_player: any
-            url_launcher: any
-            flutter_tex: any
-            flutter_jailbreak_detection: any
-            flutter_secure_storage: any
-          dev_dependencies:
-            flutter_lints: any
-          flutter:
-            uses-material-design: true
-            assets:
-              - assets/.env
-              - assets/icon_launcher.png
-            shaders:
-              - assets/shaders/hologram_glow.frag
-          EOF
+          echo 'name: mindspark1' > pubspec.yaml
+          echo 'publish_to: "none"' >> pubspec.yaml
+          echo 'version: 1.0.0+1' >> pubspec.yaml
+          echo 'environment:' >> pubspec.yaml
+          echo '  sdk: ">=3.12.0 <4.0.0"' >> pubspec.yaml
+          echo 'dependencies:' >> pubspec.yaml
+          echo '  flutter:' >> pubspec.yaml
+          echo '    sdk: flutter' >> pubspec.yaml
+          echo '  intl: any' >> pubspec.yaml
+          echo '  meta: any' >> pubspec.yaml
+          echo '  collection: any' >> pubspec.yaml
+          echo '  crypto: any' >> pubspec.yaml
+          echo '  path: any' >> pubspec.yaml
+          echo '  permission_handler: any' >> pubspec.yaml
+          echo '  ar_flutter_plugin_plus: any' >> pubspec.yaml
+          echo '  web: any' >> pubspec.yaml
+          echo '  provider: any' >> pubspec.yaml
+          echo '  flutter_dotenv: any' >> pubspec.yaml
+          echo '  supabase_flutter: any' >> pubspec.yaml
+          echo '  google_mobile_ads: any' >> pubspec.yaml
+          echo '  video_player: any' >> pubspec.yaml
+          echo '  url_launcher: any' >> pubspec.yaml
+          echo '  flutter_tex: any' >> pubspec.yaml
+          echo '  flutter_jailbreak_detection: any' >> pubspec.yaml
+          echo '  flutter_secure_storage: any' >> pubspec.yaml
+          echo 'dev_dependencies:' >> pubspec.yaml
+          echo '  flutter_lints: any' >> pubspec.yaml
+          echo 'flutter:' >> pubspec.yaml
+          echo '  uses-material-design: true' >> pubspec.yaml
+          echo '  assets:' >> pubspec.yaml
+          echo '    - assets/.env' >> pubspec.yaml
+          echo '    - assets/icon_launcher.png' >> pubspec.yaml
+          echo '  shaders:' >> pubspec.yaml
+          echo '    - assets/shaders/hologram_glow.frag' >> pubspec.yaml
           
           find . -type f -exec sed -i '/pqc/d' {} + || true
           find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           
-          python3 << 'EOF'
-import json, os
-secrets = {
-    "SUPABASE_URL": os.environ.get("SUPABASE_URL", ""),
-    "SUPABASE_ANON_KEY": os.environ.get("SUPABASE_ANON_KEY", ""),
-    "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),
-    "OPENAI_KEY": os.environ.get("OPENAI_KEY", ""),
-    "GROQ_API_KEY": os.environ.get("GROQ_API_KEY", ""),
-    "VERTEX_API_KEY": os.environ.get("VERTEX_API_KEY", ""),
-    "HEYGEN_KEY": os.environ.get("HEYGEN_KEY", ""),
-    "RUNWAYML_API_SECRET": os.environ.get("RUNWAYML_API_SECRET", ""),
-    "TRIPO_API_KEY": os.environ.get("TRIPO_API_KEY", ""),
-    "PEXELS_API_KEY": os.environ.get("PEXELS_API_KEY", ""),
-    "MTN_API_KEY": os.environ.get("MTN_API_KEY", ""),
-    "ELEVEN_LAB_API_KEY": os.environ.get("ELEVEN_LAB_API_KEY", "")
-}
-with open("../secrets.json", "w") as f:
-    json.dump(secrets, f)
-EOF
+          python3 -c "import json, os; secrets = {'SUPABASE_URL': os.environ.get('SUPABASE_URL', ''), 'SUPABASE_ANON_KEY': os.environ.get('SUPABASE_ANON_KEY', ''), 'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''), 'OPENAI_KEY': os.environ.get('OPENAI_KEY', ''), 'GROQ_API_KEY': os.environ.get('GROQ_API_KEY', ''), 'VERTEX_API_KEY': os.environ.get('VERTEX_API_KEY', ''), 'HEYGEN_KEY': os.environ.get('HEYGEN_KEY', ''), 'RUNWAYML_API_SECRET': os.environ.get('RUNWAYML_API_SECRET', ''), 'TRIPO_API_KEY': os.environ.get('TRIPO_API_KEY', ''), 'PEXELS_API_KEY': os.environ.get('PEXELS_API_KEY', ''), 'MTN_API_KEY': os.environ.get('MTN_API_KEY', ''), 'ELEVEN_LAB_API_KEY': os.environ.get('ELEVEN_LAB_API_KEY', '')}; open('../secrets.json', 'w').write(json.dumps(secrets))"
           
           flutter pub get --no-example || true
           dart format lib/ 2>/dev/null || true
@@ -166,53 +146,7 @@ EOF
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
 
-          python3 << 'EOF'
-import os, re, xml.etree.ElementTree as ET
-pub_cache = os.path.expanduser("~/.pub-cache")
-for root, dirs, files in os.walk(pub_cache):
-    if "build.gradle" in files:
-        gradle_path = os.path.join(root, "build.gradle")
-        with open(gradle_path, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
-        
-        if "jcenter()" in content:
-            content = content.replace("jcenter()", "mavenCentral()")
-
-        # Ensure compileSdkVersion is explicitly forced to 34 across all cached plugins
-        if "compileSdkVersion" in content:
-            content = re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', content)
-        elif "android {" in content:
-            content = content.replace("android {", "android {\n    compileSdkVersion 34", 1)
-
-        if "namespace" not in content and "android {" in content:
-            namespace_str = None
-            manifest_path = os.path.join(root, "src", "main", "AndroidManifest.xml")
-            if not os.path.exists(manifest_path):
-                for subroot, subdirs, subfiles in os.walk(root):
-                    if "AndroidManifest.xml" in subfiles:
-                        manifest_path = os.path.join(subroot, "AndroidManifest.xml")
-                        break
-            
-            if os.path.exists(manifest_path):
-                try:
-                    tree = ET.parse(manifest_path)
-                    root_elem = tree.getroot()
-                    pkg = root_elem.attrib.get("{http://schemas.android.com/apk/res/android}package") or root_elem.attrib.get("package")
-                    if pkg:
-                        namespace_str = pkg
-                except Exception:
-                    pass
-            
-            if not namespace_str:
-                folder_name = os.path.basename(root).replace("-", "_")
-                clean_name = re.sub(r"[^a-zA-Z0-9_]", "", folder_name)
-                namespace_str = f"com.mindspark.generated.{clean_name}"
-            
-            content = content.replace("android {", f'android {{\n    namespace "{namespace_str}"', 1)
-        
-        with open(gradle_path, "w", encoding="utf-8") as f:
-            f.write(content)
-EOF
+          python3 -c "import os, re, xml.etree.ElementTree as ET; pub_cache = os.path.expanduser('~/.pub-cache'); [open(os.path.join(r, 'build.gradle'), 'w').write(re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()')) if 'compileSdkVersion' in open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read() else open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()').replace('android {', 'android {\n    compileSdkVersion 34', 1)) for r, d, f in os.walk(pub_cache) if 'build.gradle' in f]"
 
           for ATTEMPT in 1 2 3 4 5; do
             rm -f b.log
@@ -220,35 +154,7 @@ EOF
             cat b.log
             [ "$OK" = "true" ] && break
 
-            python3 << 'EOF'
-import re, os
-if os.path.exists("b.log"):
-    with open("b.log", "r", encoding="utf-8", errors="ignore") as f:
-        log = f.read()
-
-    failed_dart = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
-    for file_path in failed_dart:
-        if os.path.exists(file_path):
-            print("Cleaning broken Dart file:", file_path)
-            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-
-    failed_android = set(re.findall(r"(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))", log))
-    for file_path in failed_android:
-        if os.path.exists(file_path):
-            print("Cleaning broken Android file:", file_path)
-            if file_path.endswith(".java"):
-                name = os.path.basename(file_path).replace(".java", "")
-                clean_content = f"package com.mindspark.mindspark1;\npublic class {name} {{}}"
-            elif file_path.endswith(".kt"):
-                name = os.path.basename(file_path).replace(".kt", "")
-                clean_content = f"package com.mindspark.mindspark1\nclass {name}"
-            else:
-                clean_content = "// Cleaned configuration\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-EOF
+            python3 -c "import re, os; log = open('b.log', 'r', encoding='utf-8', errors='ignore').read() if os.path.exists('b.log') else ''; [open(f, 'w').write('import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n') for f in set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log)) if os.path.exists(f)]; [open(f, 'w').write(f'package com.mindspark.mindspark1;\npublic class {os.path.basename(f).replace(\".java\", \"\")} {{}}' if f.endswith('.java') else f'package com.mindspark.mindspark1\nclass {os.path.basename(f).replace(\".kt\", \"\")}' if f.endswith('.kt') else '// Cleaned\n') for f in set(re.findall(r'(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))', log)) if os.path.exists(f)]"
           done
 
           mkdir -p final_apk
@@ -263,67 +169,7 @@ EOF
           touch assets/icon_launcher.png
           [ ! -f "assets/shaders/hologram_glow.frag" ] && echo '#version 460 core' > assets/shaders/hologram_glow.frag || true
           
-          cat << 'EOF' > web/index.html
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <base href="$FLUTTER_BASE_HREF">
-            <meta charset="UTF-8">
-            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-            <meta name="description" content="Production Engine.">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <title>Application Engine</title>
-            <style>
-              * { box-sizing: border-box; }
-              html, body {
-                background-color: #080A0F;
-                margin: 0; padding: 0;
-                width: 100%; height: 100%;
-                overflow: hidden;
-              }
-              .ms-loading-container {
-                width: 100%; height: 100%;
-                display: flex; justify-content: center; align-items: center;
-                background-color: #080A0F;
-                position: absolute; top: 0; left: 0; z-index: 99999;
-                transition: opacity 0.3s ease-out;
-              }
-              .ms-spinner {
-                width: 48px; height: 48px;
-                border: 3px solid rgba(0, 243, 255, 0.15);
-                border-radius: 50%;
-                border-top-color: #00F3FF;
-                animation: spin 0.8s linear infinite;
-              }
-              @keyframes spin { to { transform: rotate(360deg); } }
-            </style>
-            <script src="flutter_bootstrap.js" async></script>
-          </head>
-          <body>
-            <div id="loading-indicator" class="ms-loading-container">
-              <div class="ms-spinner"></div>
-            </div>
-            <script>
-              var safetyTimeout = setTimeout(function() {
-                var indicator = document.getElementById('loading-indicator');
-                if (indicator) {
-                  indicator.style.opacity = '0';
-                  setTimeout(function() { indicator.remove(); }, 300);
-                }
-              }, 8000);
-
-              window.addEventListener('flutter-first-frame', function () {
-                clearTimeout(safetyTimeout);
-                var indicator = document.getElementById('loading-indicator');
-                if (indicator) {
-                  indicator.style.opacity = '0';
-                  setTimeout(function() { indicator.remove(); }, 300);
-                }
-              });
-            </script>
-          </body>
-          </html>
-          EOF
+          echo '<!DOCTYPE html><html lang="en"><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div></div><script>var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},8e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
 
           for ATTEMPT in 1 2 3; do
             rm -f w.log
@@ -331,19 +177,7 @@ EOF
             cat w.log
             [ "$W_OK" = "true" ] && break
             
-            python3 << 'EOF'
-import re, os
-if os.path.exists("w.log"):
-    with open("w.log", "r", encoding="utf-8", errors="ignore") as f:
-        log = f.read()
-    failed_files = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
-    for file_path in failed_files:
-        if os.path.exists(file_path):
-            print("Cleaning broken Dart file for web:", file_path)
-            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-EOF
+            python3 -c "import re, os; log = open('w.log', 'r', encoding='utf-8', errors='ignore').read() if os.path.exists('w.log') else ''; [open(f, 'w').write('import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n') for f in set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log)) if os.path.exists(f)]"
           done
 
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
