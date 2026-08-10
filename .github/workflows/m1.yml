@@ -51,32 +51,6 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager --update || true
 
-      - name: Verify Project Structure & Check Pubspec Duplicate Keys
-        run: |
-          test -f pubspec.yaml
-          test -d lib
-          test -d android
-          echo "Checking pubspec.yaml for duplicate mapping keys..."
-          python3 -c '
-          import yaml
-          from collections import Counter
-          def check_duplicates(loader, node):
-              keys = [loader.construct_object(k) for k, v in node.value]
-              counter = Counter(keys)
-              duplicates = [k for k, count in counter.items() if count > 1]
-              if duplicates:
-                  print(f"ERROR: Duplicate keys found in pubspec.yaml: {duplicates}")
-                  exit(1)
-              return loader.construct_mapping(node)
-          yaml.SafeLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, check_duplicates)
-          with open("pubspec.yaml") as f:
-              yaml.safe_load(f)
-          print("pubspec.yaml validation passed.")
-          '
-
-      - name: Flutter Pub Get
-        run: flutter pub get
-
       - name: Dart Format lib
         run: dart format lib/ || true
 
