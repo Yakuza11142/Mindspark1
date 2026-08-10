@@ -51,6 +51,34 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager --update || true
 
+      - name: Fix Pubspec Duplicate Keys Automatically
+        shell: bash
+        run: |
+          python3 -c '
+          import yaml
+          from collections import OrderedDict
+
+          class UniqueKeyLoader(yaml.SafeLoader):
+              def construct_mapping(s, node, deep=False):
+                  mapping = OrderedDict()
+                  for key_node, value_node in node.value:
+                      key = s.construct_object(key_node, deep=deep)
+                      value = s.construct_object(value_node, deep=deep)
+                      if key in mapping:
+                          print(f"Removing duplicate key found in pubspec.yaml: {key}")
+                      else:
+                          mapping[key] = value
+                  return mapping
+
+          with open("pubspec.yaml", "r") as f:
+              data = yaml.load(f, Loader=UniqueKeyLoader)
+
+          with open("pubspec.yaml", "w") as f:
+              yaml.dump(data, f, sort_keys=False)
+
+          print("pubspec.yaml duplicate keys successfully cleaned.")
+          '
+
       - name: Dart Format lib
         run: dart format lib/ || true
 
