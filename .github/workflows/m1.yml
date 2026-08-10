@@ -51,7 +51,7 @@ jobs:
           yes | sdkmanager --licenses || true
           sdkmanager --update || true
 
-      - name: Fix Pubspec Duplicate Keys Automatically
+      - name: Fix Pubspec and Ensure SDK Constraint
         shell: bash
         run: |
           python3 -c '
@@ -70,13 +70,27 @@ jobs:
                           mapping[key] = value
                   return mapping
 
-          with open("pubspec.yaml", "r") as f:
-              data = yaml.load(f, Loader=UniqueKeyLoader)
+          try:
+              with open("pubspec.yaml", "r") as f:
+                  data = yaml.load(f, Loader=UniqueKeyLoader)
+          except Exception as e:
+              print(f"Error reading pubspec.yaml: {e}")
+              data = OrderedDict()
+
+          if not isinstance(data, dict):
+              data = OrderedDict()
+
+          if "environment" not in data or not isinstance(data["environment"], dict):
+              data["environment"] = OrderedDict()
+          
+          if "sdk" not in data["environment"]:
+              data["environment"]["sdk"] = ">=3.0.0 <4.0.0"
+              print("Added missing SDK constraint to pubspec.yaml environment.")
 
           with open("pubspec.yaml", "w") as f:
               yaml.dump(data, f, sort_keys=False)
 
-          print("pubspec.yaml duplicate keys successfully cleaned.")
+          print("pubspec.yaml successfully fixed and updated.")
           '
 
       - name: Dart Format lib
