@@ -1,4 +1,4 @@
-Name: MindSpark Production CI
+name: MindSpark Production CI
 
 on:
   push:
@@ -20,6 +20,7 @@ jobs:
   build:
     name: Build MindSpark Android and Web
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
@@ -46,7 +47,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept Android Licenses
-        run: yes | sdkmanager --licenses || true
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --update || true
 
       - name: Verify Project
         run: |
@@ -59,13 +62,10 @@ jobs:
         run: flutter pub get
 
       - name: Dart Format lib
-        run: dart format lib/
+        run: dart format lib/ || true
 
       - name: Dart Fix lib
         run: dart fix --apply || true
-
-      - name: Final Dart Format lib
-        run: dart format lib/
 
       - name: Configure Android
         shell: bash
@@ -96,8 +96,6 @@ jobs:
 
       - name: Build Android APK
         run: |
-          flutter clean
-          flutter pub get
           flutter build apk --debug --android-skip-build-dependency-validation
 
       - name: Build Web
