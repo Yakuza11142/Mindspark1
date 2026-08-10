@@ -154,6 +154,20 @@ jobs:
           echo "android.newDsl=false" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
 
+          # Completely purge legacy v1 registerWith methods or imports from pub-cache packages to prevent v1 embedding failures
+          python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); 
+          for r, d, files in os.walk(pub_cache):
+              for f in files:
+                  if f.endswith('.java') or f.endswith('.kt'):
+                      fp = os.path.join(r, f)
+                      try:
+                          content = open(fp, 'r', encoding='utf-8', errors='ignore').read()
+                          content = content.replace('io.flutter.app.FlutterActivity', 'io.flutter.embedding.android.FlutterActivity')
+                          content = re.sub(r'public static void registerWith\s*\(.*?\)\s*\{.*?\}', '', content, flags=re.DOTALL)
+                          open(fp, 'w', encoding='utf-8').write(content)
+                      except Exception:
+                          pass"
+
           python3 -c "import os, re, xml.etree.ElementTree as ET; pub_cache = os.path.expanduser('~/.pub-cache'); [open(os.path.join(r, 'build.gradle'), 'w').write(re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()')) if 'compileSdkVersion' in open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read() else open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()').replace('android {', 'android {\n    compileSdkVersion 34', 1)) for r, d, f in os.walk(pub_cache) if 'build.gradle' in f]"
 
           for ATTEMPT in {1..10}; do
