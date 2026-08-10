@@ -17,6 +17,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    
+    env:
+      ORG_GRADLE_PROJECT_jvmargs: "-Xmx4g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +28,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Cache Gradle Packages and Wrapper
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -34,6 +48,9 @@ jobs:
         with:
           channel: stable
           cache: false
+
+      - name: Setup Android SDK and Accept Licenses
+        uses: android-actions/setup-android@v3
 
       - name: Sandbox Template Factory Execution
         run: |
@@ -107,6 +124,9 @@ jobs:
 
       - name: Build Genuine Android APK with Universal Dependency Sanitizer
         run: |
+          rm -rf .gradle/caches/*.lock
+          rm -rf ~/.gradle/caches/build-cache-1
+
           mkdir -p android && echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties && echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true\nandroid.newDsl=false" > android/gradle.properties
           
           cat << 'EOF' > android/settings.gradle
@@ -199,7 +219,6 @@ jobs:
 
           find /home/runner/.pub-cache/ -name "build.gradle" -type f -exec sed -i 's/version "2.0.20"/version "2.3.20"/g' {} + 2>/dev/null || true
 
-          # Explicitly inject top-level build.gradle with correct plugin management repositories
           cat << 'EOF' > android/build.gradle
           buildscript {
               repositories {
