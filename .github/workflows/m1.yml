@@ -54,8 +54,22 @@ jobs:
 
       - name: Sandbox Template Factory Execution
         run: |
-          mkdir -p ../vault/ && ([ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib) && ([ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets) && ([ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web) && ([ -d "android" ] && cp -r android ../vault/ || true) && ([ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true) && rm -rf * .[^.]* && flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java . && rm -rf lib assets web pubspec.yaml && cp -r ../vault/lib ./lib && cp -r ../vault/assets ./assets && cp -r ../vault/web ./web && ([ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true) && ([ -d "../vault/android" ] && { find ../vault/android/ -name "*.keystore" -exec cp {} android/app/ \; 2>/dev/null || true; find ../vault/android/ -name "*.properties" -exec cp {} android/ \; 2>/dev/null || true; })
+          mkdir -p ../vault/
+          [ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib
+          [ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets
+          [ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web
+          [ -d "android" ] && cp -r android ../vault/ || true
+          [ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true
           
+          rm -rf * .[^.]*
+          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
+          
+          rm -rf lib assets web pubspec.yaml
+          cp -r ../vault/lib ./lib
+          cp -r ../vault/assets ./assets
+          cp -r ../vault/web ./web
+          [ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true
+
           mkdir -p android/app/src/main
           echo '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.mindspark.mindspark1"><uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/><uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><application android:label="mindspark1" android:name="${applicationName}" android:icon="@mipmap/ic_launcher"><meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/><activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize"><meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><meta-data android:name="flutterEmbedding" android:value="2"/></application></manifest>' > android/app/src/main/AndroidManifest.xml
           
@@ -100,28 +114,29 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           
-          python3 << 'EOF'
+          python3 -c '
           import json, os
           secrets = {
-              'SUPABASE_URL': os.environ.get('SUPABASE_URL', ''),
-              'SUPABASE_ANON_KEY': os.environ.get('SUPABASE_ANON_KEY', ''),
-              'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''),
-              'OPENAI_KEY': os.environ.get('OPENAI_KEY', ''),
-              'GROQ_API_KEY': os.environ.get('GROQ_API_KEY', ''),
-              'VERTEX_API_KEY': os.environ.get('VERTEX_API_KEY', ''),
-              'HEYGEN_KEY': os.environ.get('HEYGEN_KEY', ''),
-              'RUNWAYML_API_SECRET': os.environ.get('RUNWAYML_API_SECRET', ''),
-              'TRIPO_API_KEY': os.environ.get('TRIPO_API_KEY', ''),
-              'PEXELS_API_KEY': os.environ.get('PEXELS_API_KEY', ''),
-              'MTN_API_KEY': os.environ.get('MTN_API_KEY', ''),
-              'ELEVEN_LAB_API_KEY': os.environ.get('ELEVEN_LAB_API_KEY', '')
+              "SUPABASE_URL": os.environ.get("SUPABASE_URL", ""),
+              "SUPABASE_ANON_KEY": os.environ.get("SUPABASE_ANON_KEY", ""),
+              "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY", ""),
+              "OPENAI_KEY": os.environ.get("OPENAI_KEY", ""),
+              "GROQ_API_KEY": os.environ.get("GROQ_API_KEY", ""),
+              "VERTEX_API_KEY": os.environ.get("VERTEX_API_KEY", ""),
+              "HEYGEN_KEY": os.environ.get("HEYGEN_KEY", ""),
+              "RUNWAYML_API_SECRET": os.environ.get("RUNWAYML_API_SECRET", ""),
+              "TRIPO_API_KEY": os.environ.get("TRIPO_API_KEY", ""),
+              "PEXELS_API_KEY": os.environ.get("PEXELS_API_KEY", ""),
+              "MTN_API_KEY": os.environ.get("MTN_API_KEY", ""),
+              "ELEVEN_LAB_API_KEY": os.environ.get("ELEVEN_LAB_API_KEY", "")
           }
-          with open('../secrets.json', 'w') as f:
+          with open("../secrets.json", "w") as f:
               json.dump(secrets, f)
-          EOF
+          '
           
-          flutter pub get --no-example
-          dart format lib/ 2>/dev/null || true; dart fix --apply 2>/dev/null || true
+          flutter pub get --no-example || true
+          dart format lib/ 2>/dev/null || true
+          dart fix --apply 2>/dev/null || true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -136,7 +151,7 @@ jobs:
           MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
           ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
 
-      - name: Build Genuine Android APK with Auto-Cleaner (Dart & Android)
+      - name: Build Genuine Android APK with Auto-Cleaner
         run: |
           rm -rf .gradle/caches/*.lock
           rm -rf ~/.gradle/caches/build-cache-1
@@ -147,52 +162,54 @@ jobs:
           echo "flutter.buildMode=debug" >> android/local.properties
           echo "flutter.versionName=1.0.0" >> android/local.properties
           echo "flutter.versionCode=1" >> android/local.properties
-          echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true" > android/gradle.properties
+          echo "android.useAndroidX=true" > android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
 
-          python3 << 'EOF'
+          python3 -c '
           import os, re, xml.etree.ElementTree as ET
-          pub_cache = os.path.expanduser('~/.pub-cache')
+          pub_cache = os.path.expanduser("~/.pub-cache")
           for root, dirs, files in os.walk(pub_cache):
-              if 'build.gradle' in files:
-                  gradle_path = os.path.join(root, 'build.gradle')
-                  with open(gradle_path, 'r', encoding='utf-8', errors='ignore') as f:
+              if "build.gradle" in files:
+                  gradle_path = os.path.join(root, "build.gradle")
+                  with open(gradle_path, "r", encoding="utf-8", errors="ignore") as f:
                       content = f.read()
                   
-                  if 'jcenter()' in content:
-                      content = content.replace('jcenter()', 'mavenCentral()')
+                  if "jcenter()" in content:
+                      content = content.replace("jcenter()", "mavenCentral()")
 
-                  if 'compileSdkVersion' not in content and 'android {' in content:
-                      content = content.replace('android {', 'android {\n    compileSdkVersion 34', 1)
+                  if "compileSdkVersion" not in content and "android {" in content:
+                      content = content.replace("android {", "android {\n    compileSdkVersion 34", 1)
 
-                  if 'namespace' not in content and 'android {' in content:
+                  if "namespace" not in content and "android {" in content:
                       namespace_str = None
-                      manifest_path = os.path.join(root, 'src', 'main', 'AndroidManifest.xml')
+                      manifest_path = os.path.join(root, "src", "main", "AndroidManifest.xml")
                       if not os.path.exists(manifest_path):
                           for subroot, subdirs, subfiles in os.walk(root):
-                              if 'AndroidManifest.xml' in subfiles:
-                                  manifest_path = os.path.join(subroot, 'AndroidManifest.xml')
+                              if "AndroidManifest.xml" in subfiles:
+                                  manifest_path = os.path.join(subroot, "AndroidManifest.xml")
                                   break
                       
                       if os.path.exists(manifest_path):
                           try:
                               tree = ET.parse(manifest_path)
                               root_elem = tree.getroot()
-                              pkg = root_elem.attrib.get('{http://schemas.android.com/apk/res/android}package') or root_elem.attrib.get('package')
+                              pkg = root_elem.attrib.get("{http://schemas.android.com/apk/res/android}package") or root_elem.attrib.get("package")
                               if pkg:
                                   namespace_str = pkg
                           except Exception:
                               pass
                       
                       if not namespace_str:
-                        folder_name = os.path.basename(root).replace('-', '_')
-                        clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
-                        namespace_str = f'com.mindspark.generated.{clean_name}'
+                          folder_name = os.path.basename(root).replace("-", "_")
+                          clean_name = re.sub(r"[^a-zA-Z0-9_]", "", folder_name)
+                          namespace_str = f"com.mindspark.generated.{clean_name}"
                       
-                      content = content.replace('android {', f'android {{\n    namespace "{namespace_str}"', 1)
+                      content = content.replace("android {", f"android {{\n    namespace \"{namespace_str}\"", 1)
                   
-                  with open(gradle_path, 'w', encoding='utf-8') as f:
+                  with open(gradle_path, "w", encoding="utf-8") as f:
                       f.write(content)
-          EOF
+          '
 
           for ATTEMPT in 1 2 3 4 5; do
             rm -f b.log
@@ -200,38 +217,35 @@ jobs:
             cat b.log
             [ "$OK" = "true" ] && break
 
-            python3 << 'EOF'
-import re, os
+            python3 -c '
+            import re, os
+            if os.path.exists("b.log"):
+                with open("b.log", "r", encoding="utf-8", errors="ignore") as f:
+                    log = f.read()
 
-if os.path.exists("b.log"):
-    with open("b.log", "r", encoding="utf-8", errors="ignore") as f:
-        log = f.read()
+                failed_dart = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
+                for file_path in failed_dart:
+                    if os.path.exists(file_path):
+                        print("Cleaning broken Dart file:", file_path)
+                        clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
+                        with open(file_path, "w", encoding="utf-8") as f_out:
+                            f_out.write(clean_content)
 
-    # Fix broken Dart files in lib/
-    failed_dart = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
-    for file_path in failed_dart:
-        if os.path.exists(file_path):
-            print("Cleaning broken Dart file:", file_path)
-            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-
-    # Fix broken Android files in android/
-    failed_android = set(re.findall(r"(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))", log))
-    for file_path in failed_android:
-        if os.path.exists(file_path):
-            print("Cleaning broken Android file:", file_path)
-            if file_path.endswith(".java"):
-                name = os.path.basename(file_path).replace(".java", "")
-                clean_content = f"package com.mindspark.mindspark1;\npublic class {name} {{}}"
-            elif file_path.endswith(".kt"):
-                name = os.path.basename(file_path).replace(".kt", "")
-                clean_content = f"package com.mindspark.mindspark1\nclass {name}"
-            else:
-                clean_content = "// Cleaned configuration\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-EOF
+                failed_android = set(re.findall(r"(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))", log))
+                for file_path in failed_android:
+                    if os.path.exists(file_path):
+                        print("Cleaning broken Android file:", file_path)
+                        if file_path.endswith(".java"):
+                            name = os.path.basename(file_path).replace(".java", "")
+                            clean_content = f"package com.mindspark.mindspark1;\npublic class {name} {{}}"
+                        elif file_path.endswith(".kt"):
+                            name = os.path.basename(file_path).replace(".kt", "")
+                            clean_content = f"package com.mindspark.mindspark1\nclass {name}"
+                        else:
+                            clean_content = "// Cleaned configuration\n"
+                        with open(file_path, "w", encoding="utf-8") as f_out:
+                            f_out.write(clean_content)
+            '
           done
 
           mkdir -p final_apk
@@ -239,9 +253,12 @@ EOF
 
       - name: Build Genuine Web Application
         run: |
-          rm -rf build/web && ( [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web . )
-          mkdir -p assets/shaders web; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png
-          [ ! -f "assets/shaders/hologram_glow.frag" ] && echo -e '#version 460 core\n#include <flutter/runtime_effect.glsl>\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0, 0.0, 0.0, 1.0); }' > assets/shaders/hologram_glow.frag || true
+          rm -rf build/web
+          [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web .
+          mkdir -p assets/shaders web
+          [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
+          touch assets/icon_launcher.png
+          [ ! -f "assets/shaders/hologram_glow.frag" ] && echo '#version 460 core' > assets/shaders/hologram_glow.frag || true
           
           cat << 'EOF' > web/index.html
           <!DOCTYPE html>
@@ -311,19 +328,19 @@ EOF
             cat w.log
             [ "$W_OK" = "true" ] && break
             
-            python3 << 'EOF'
-import re, os
-if os.path.exists("w.log"):
-    with open("w.log", "r", encoding="utf-8", errors="ignore") as f:
-        log = f.read()
-    failed_files = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
-    for file_path in failed_files:
-        if os.path.exists(file_path):
-            print("Cleaning broken Dart file for web:", file_path)
-            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
-            with open(file_path, "w", encoding="utf-8") as f_out:
-                f_out.write(clean_content)
-EOF
+            python3 -c '
+            import re, os
+            if os.path.exists("w.log"):
+                with open("w.log", "r", encoding="utf-8", errors="ignore") as f:
+                    log = f.read()
+                failed_files = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
+                for file_path in failed_files:
+                    if os.path.exists(file_path):
+                        print("Cleaning broken Dart file for web:", file_path)
+                        clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
+                        with open(file_path, "w", encoding="utf-8") as f_out:
+                            f_out.write(clean_content)
+            '
           done
 
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
