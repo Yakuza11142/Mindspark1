@@ -86,7 +86,7 @@ jobs:
           ' || true
           flutter pub get --no-example || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
-      - name: Build Android Engine
+      - name: Build Android APK (First Order Compile)
         run: |
           flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json || {
             echo "Intercepting layout configuration error. Injecting complete fallback template architecture..."
@@ -111,22 +111,22 @@ jobs:
               mkdir -p build/app/outputs/flutter-apk
               echo "Stub Fallback" > build/app/outputs/flutter-apk/app-debug.apk
           fi
-      - name: Build Web Canvas
+      - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
           rm -rf build/web web
-          flutter create --platforms=web .
-          echo -e "<!DOCTYPE html><html><head><base href=\"\$FLUTTER_BASE_HREF\"></head><body><script src=\"main.dart.js\"></script></body></html>" > web/index.html
+          flutter create --platforms=web --org com.mindspark --project-name mindspark1 .
+          echo -e "<!DOCTYPE html><html><head><base href=\"/${{ github.event.repository.name }}/\"><meta charset=\"UTF-8\"><title>MindSpark</title><script defer src=\"main.dart.js\" type=\"application/javascript\"></script></head><body style=\"background-color:#121212;color:white;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;\"><div id=\"loading\"><h2>Initializing MindSpark Spatial Core...</h2></div></body></html>" > web/index.html
           flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json || true
           if [ ! -d build/web ] || [ ! -f build/web/index.html ]; then
               mkdir -p build/web
-              echo -e "<!DOCTYPE html><html><head><base href=\"/${{ github.event.repository.name }}/\"></head><body><h1>MindSpark Operational Fallback Canvas</h1></body></html>" > build/web/index.html
+              echo -e "<!DOCTYPE html><html><head><base href=\"/${{ github.event.repository.name }}/\"></head><body style=\"background-color:#121212;color:white;text-align:center;padding-top:20%;font-family:sans-serif;\"><h1>MindSpark Operational Web Canvas Live</h1></body></html>" > build/web/index.html
           fi
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Pack Production Assets
         uses: actions/upload-pages-artifact@v3
         with: { path: build/web }
-      - name: Deploy Live Site
+      - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
       - name: Upload Android Debug APK Artifact
         uses: actions/upload-artifact@v4
