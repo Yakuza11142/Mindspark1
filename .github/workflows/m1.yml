@@ -118,7 +118,7 @@ jobs:
               }
           }
           dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
               repositories {
                   google()
                   mavenCentral()
@@ -138,14 +138,12 @@ jobs:
                       content = f.read()
                   
                   if 'buildscript {' in content:
-                      content = re.sub(r'buildscript\s*\{[^}]*\}', '', content, flags=dotall if 'dotall' in globals() else re.DOTALL)
+                      content = re.sub(r'buildscript\s*\{[^}]*\}', '', content, flags=re.DOTALL)
                   
                   content = re.sub(r'jcenter\s*\(\s*\)', 'mavenCentral()', content)
                   
                   if 'repositories {' not in content:
                       content += '\nallprojects { repositories { google(); mavenCentral() } }\n'
-                  else:
-                      content = content.replace('repositories {', 'repositories {\n    google()\n    mavenCentral()\n')
 
                   if 'com.android.application' not in content and 'com.android.library' not in content:
                       if 'apply plugin:' in content or 'plugins {' in content:
