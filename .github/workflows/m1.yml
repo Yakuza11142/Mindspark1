@@ -170,9 +170,9 @@ jobs:
                               pass
                       
                       if not namespace_str:
-                          folder_name = os.path.basename(root).replace('-', '_')
-                          clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
-                          namespace_str = f'com.mindspark.generated.{clean_name}'
+                        folder_name = os.path.basename(root).replace('-', '_')
+                        clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
+                        namespace_str = f'com.mindspark.generated.{clean_name}'
                       
                       content = content.replace('android {', f'android {{\n    namespace \"{namespace_str}\"', 1)
                   
@@ -198,6 +198,26 @@ jobs:
           fi
 
           find /home/runner/.pub-cache/ -name "build.gradle" -type f -exec sed -i 's/version "2.0.20"/version "2.3.20"/g' {} + 2>/dev/null || true
+
+          # Ensure plugin management block is properly defined in settings.gradle for plugin resolution
+          cat << 'EOF' > android/settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "android"
+          include(':app')
+          EOF
 
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
