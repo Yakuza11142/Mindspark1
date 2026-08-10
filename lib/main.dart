@@ -1,58 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:math' as math;
 
 import 'spatial_stub.dart'
     if (dart.library.html) 'spatial_web.dart'
     if (dart.library.io) 'spatial_mobile.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Non-blocking initialization protection
-  try {
-    MobileAds.instance.initialize();
-  } catch (e) {
-    debugPrint("AdMob init warning: $e");
-  }
-
-  String supabaseUrl = '';
-  String supabaseKey = '';
-
-  supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  supabaseKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-
-  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
-    try {
-      await dotenv.load(fileName: ".env");
-      supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-      supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? dotenv.env['SUPABASE_KEY'] ?? '';
-    } catch (e) {
-      debugPrint("Env load warning: $e");
-    }
-  }
-
-  try {
-    if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty && !supabaseUrl.contains("your-supabase-project")) {
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
-    }
-  } catch (e) {
-    debugPrint("Supabase init warning: $e");
-  }
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AppAuthProvider()),
-        ChangeNotifierProvider(create: (_) => AITutorProvider()),
-        ChangeNotifierProvider(create: (_) => ArLabProvider()),
-      ],
-      child: const MindSparkApp(),
-    ),
-  );
+  runApp(const MindSparkApp());
 }
 
 class MindSparkApp extends StatelessWidget {
@@ -64,15 +19,10 @@ class MindSparkApp extends StatelessWidget {
       title: 'Mind Spark',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      // Directly load workspace to bypass any network video stream hanging issues
       home: const MainDevelopmentPage(),
     );
   }
 }
-
-class AppAuthProvider extends ChangeNotifier {}
-class AITutorProvider extends ChangeNotifier {}
-class ArLabProvider extends ChangeNotifier {}
 
 class MainDevelopmentPage extends StatefulWidget {
   const MainDevelopmentPage({super.key});
@@ -97,7 +47,7 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
     final DateTime now = DateTime.now();
     setState(() {
       formattedTime = now.toIso8601String();
-      calculatedSine = math.sin(45.0);
+      calculatedSine = math.sin(45.0 * (math.pi / 180.0));
       utilityResult = RealMathCalculator().executeValidComputation(45.0);
     });
   }
