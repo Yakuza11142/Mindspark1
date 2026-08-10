@@ -137,6 +137,7 @@ jobs:
           rm -rf ~/.gradle/caches/build-cache-1
 
           flutter create --platforms=android --org com.mindspark --project-name mindspark1 .
+          find android/ -name "*.kts" -delete 2>/dev/null || true
 
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.buildMode=debug" >> android/local.properties
@@ -144,6 +145,7 @@ jobs:
           echo "flutter.versionCode=1" >> android/local.properties
           echo "android.useAndroidX=true" > android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "android.newDsl=false" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
 
           python3 -c "import os, re, xml.etree.ElementTree as ET; pub_cache = os.path.expanduser('~/.pub-cache'); [open(os.path.join(r, 'build.gradle'), 'w').write(re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()')) if 'compileSdkVersion' in open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read() else open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()').replace('android {', 'android {\n    compileSdkVersion 34', 1)) for r, d, f in os.walk(pub_cache) if 'build.gradle' in f]"
@@ -173,7 +175,7 @@ jobs:
 
           for ATTEMPT in 1 2 3; do
             rm -f w.log
-            flutter build web --release --base-href "/" --dart-define-from-file=../secrets.json > w.log 2>&1 && W_OK=true || W_OK=false
+            flutter build web --release --no-wasm-dry-run --base-href "/" --dart-define-from-file=../secrets.json > w.log 2>&1 && W_OK=true || W_OK=false
             cat w.log
             [ "$W_OK" = "true" ] && break
             
