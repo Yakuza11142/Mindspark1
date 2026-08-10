@@ -4,156 +4,143 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.9
+flutter:
+sdk: flutter
+cupertino_icons: ^1.0.9
 
-  # ===========================================================================
-  # CLOUD BACKEND (Supabase Core - No Firebase)
-  # ===========================================================================
-  supabase_flutter: ^2.16.0
+# CLOUD BACKEND
 
-  # ===========================================================================
-  # APPLICATION STATE & COMPILATION UTILITIES
-  # ===========================================================================
-  provider: ^6.1.5+1
-  flutter_dotenv: ^6.0.1
-  intl: ^0.20.3
-  crypto: ^3.0.7
-  uuid: ^4.6.0
-  path: ^1.9.1
-  path_provider: ^2.1.6
-  package_info_plus: ^10.2.1
-  share_plus: ^13.3.0
+supabase_flutter: ^2.16.0
 
-  # ===========================================================================
-  # RELATIONAL LOCAL CACHING ENGINE (With Full Browser Support)
-  # ===========================================================================
-  hive_flutter: ^1.1.0
-  sqflite: ^2.4.3
-  sqflite_common_ffi_web: ^1.1.2
-  drift: ^2.34.3
+# APPLICATION STATE & UTILITIES
 
-  # ===========================================================================
-  # OPERATING SYSTEM CHANNELS & CORE INFRASTRUCTURE
-  # ===========================================================================
-  dio: ^5.11.0
-  http: ^1.6.0
-  connectivity_plus: ^7.3.1
-  permission_handler: ^13.0.0
-  shared_preferences: ^2.5.5
-  url_launcher: ^6.3.2
-  device_info_plus: ^13.2.0
-  battery_plus: ^7.1.1
-  vibration: ^3.2.0
-  screen_brightness: ^2.1.11
-  app_links: ^7.2.1
-  ntp: ^2.0.0
-  timezone: ^0.11.1
+provider: ^6.1.5+1
+flutter_dotenv: ^6.0.1
+intl: ^0.20.3
+crypto: ^3.0.7
+uuid: ^4.6.0
+path: ^1.9.1
+path_provider: ^2.1.6
+package_info_plus: ^10.2.1
+share_plus: ^13.3.0
 
-  # ===========================================================================
-  # PHYSICS SENSORS & RIGID GEOMETRIC MATH MATRIX
-  # ===========================================================================
-  sensors_plus: ^7.1.0
-  environment_sensors: ^0.3.0
-  vector_math: ^2.2.0
+# LOCAL CACHING / DATABASE
 
-  # ===========================================================================
-  # ON-DEVICE VISION INTELLIGENCE & LLM UTILITIES (With Web Bridges Included)
-  # ===========================================================================
-  google_generative_ai: ^0.4.7
-  groq_sdk: ^1.0.2
-  dart_openai: ^6.1.1
-  google_mlkit_commons: ^0.12.0
-  google_mlkit_face_detection: ^0.14.0
-  google_mlkit_language_id: ^0.14.0
-  google_mlkit_text_recognition: ^0.16.0
+hive_flutter: ^1.1.0
+sqflite: ^2.4.3
+sqflite_common_ffi_web: ^1.1.2
+drift: ^2.34.3
 
-  # ===========================================================================
-  # CAPTURE DEVICES, WEBRTC VIDEO STREAMS & MEDIA ENGINES
-  # ===========================================================================
-  camera: ^0.12.0+2
-  image_picker: ^1.2.3
-  video_player: ^2.13.0
-  flutter_image_compress: ^2.5.1
-  flutter_cache_manager: ^3.4.2
-  cached_network_image: ^3.4.1
-  flutter_webrtc: ^1.6.0
-  webview_flutter: ^4.14.1
-  flutter_tts: ^4.2.5
-  just_audio: ^0.10.6
-  audio_session: ^0.2.4
+# CORE INFRASTRUCTURE
 
-  # ===========================================================================
-  # APPS ADVERTISING MONETIZATION & DIGITAL REVENUE
-  # ===========================================================================
-  google_mobile_ads: ^9.0.0
-  in_app_purchase: ^3.3.0
-  in_app_review: ^2.0.12
+dio: ^5.11.0
+http: ^1.6.0
+connectivity_plus: ^7.3.1
+permission_handler: ^13.0.0
+shared_preferences: ^2.5.5
+url_launcher: ^6.3.2
+device_info_plus: ^13.2.0
+battery_plus: ^7.1.1
+vibration: ^3.2.0
+screen_brightness: ^2.1.11
+app_links: ^7.2.1
+ntp: ^2.0.0
+timezone: ^0.11.1
 
-  # ===========================================================================
-  # 3D MODEL VIEWERS & EMBEDDED ADVANCED MATHEMATICS
-  # ===========================================================================
-  ar_flutter_plugin_plus: ^1.1.3
-  model_viewer_plus: ^1.10.0
-  flutter_tex: ^5.2.7
-  flutter_math_fork: ^0.7.4
+# SENSORS / MATH
 
-  # ===========================================================================
-  # INTERACTIVE PREMIUM USER INTERFACE LAYOUT WRAPPERS
-  # ===========================================================================
-  flutter_animate: ^4.5.2
-  shimmer: ^3.0.0
-  confetti: ^0.8.0
-  flutter_fortune_wheel: ^1.3.2
-  dash_chat_2: ^0.0.21
-  sks_ticket_view: ^1.0.0
-  pdf: ^3.13.0
-  qr_flutter: ^4.1.0
-  flutter_highlight: ^0.7.0
+sensors_plus: ^7.1.0
+environment_sensors: ^0.3.0
+vector_math: ^2.2.0
 
-  # ===========================================================================
-  # RUNTIME APP ATTESTATION & CIPHER ENCRYPTION SHIELDS
-  # ===========================================================================
-  freerasp: ^8.0.0
-  flutter_secure_storage: ^10.3.1
-  flutter_windowmanager: ^0.2.0
-  ios_insecure_screen_detector: ^0.0.2
-  local_auth: ^3.0.2
-  pointycastle: ^4.0.0
+# AI / ML
+
+google_generative_ai: ^0.4.7
+groq_sdk: ^1.0.2
+dart_openai: ^6.1.1
+google_mlkit_commons: ^0.12.0
+google_mlkit_face_detection: ^0.14.0
+google_mlkit_language_id: ^0.14.0
+google_mlkit_text_recognition: ^0.16.0
+
+# CAMERA / VIDEO / AUDIO
+
+camera: ^0.12.0+2
+image_picker: ^1.2.3
+video_player: ^2.13.0
+flutter_image_compress: ^2.5.1
+flutter_cache_manager: ^3.4.2
+cached_network_image: ^3.4.1
+flutter_webrtc: ^1.6.0
+webview_flutter: ^4.14.1
+flutter_tts: ^4.2.5
+just_audio: ^0.10.6
+audio_session: ^0.2.4
+
+# MONETIZATION
+
+google_mobile_ads: ^9.0.0
+in_app_purchase: ^3.3.0
+in_app_review: ^2.0.12
+
+# 3D / AR / MATH
+
+ar_flutter_plugin_plus: ^1.1.3
+model_viewer_plus: ^1.10.0
+flutter_tex: ^5.2.7
+flutter_math_fork: ^0.7.4
+
+# UI
+
+flutter_animate: ^4.5.2
+shimmer: ^3.0.0
+confetti: ^0.8.0
+flutter_fortune_wheel: ^1.3.2
+dash_chat_2: ^0.0.21
+sks_ticket_view: ^1.0.0
+pdf: ^3.13.0
+qr_flutter: ^4.1.0
+flutter_highlight: ^0.7.0
+
+# SECURITY
+
+freerasp: ^8.0.0
+flutter_secure_storage: ^10.3.1
+flutter_windowmanager: ^0.2.0
+ios_insecure_screen_detector: ^0.0.2
+local_auth: ^3.0.2
+pointycastle: ^4.0.0
 
 dev_dependencies:
-  # FIXED: Removed 'flutter_test' from dependencies and kept it safely here
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
-  # FIXED: Set realistic compilation ranges to match Flutter 3.44 dependency requirements
-  build_runner: ^2.4.9
-  source_gen: ^1.5.0
-  flutter_launcher_icons: ^0.14.4
+flutter_test:
+sdk: flutter
+flutter_lints: ^5.0.0
+build_runner: ^2.4.9
+source_gen: ^1.5.0
+flutter_launcher_icons: ^0.14.4
 
 dependency_overrides:
-  meta: ^1.15.0
+meta: ^1.15.0
 
 flutter:
-  uses-material-design: true
-  assets:
-    - assets/
-    - assets/shaders/
-    - .env
-    # FIXED: Declared your introductory media file explicitly within the root asset dictionary layout
-    - assets/intro.mp4
+uses-material-design: true
 
-  shaders:
-    - assets/shaders/hologram_glow.frag
+assets:
+- assets/
+- assets/shaders/
+- assets/intro.mp4
+- .env
+
+shaders:
+- assets/shaders/hologram_glow.frag
 
 flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: false
-  image_path: "assets/icon_launcher.png"
-  web:
-    generate: true
-    image_path: "assets/icon_launcher.png"
+android: "launcher_icon"
+ios: false
+image_path: "assets/icon_launcher.png"
+web:
+generate: true
+image_path: "assets/icon_launcher.png"
