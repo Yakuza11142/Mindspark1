@@ -254,7 +254,6 @@ jobs:
               <div class="ms-spinner"></div>
             </div>
             <script>
-              // Safety timeout: Automatically force-remove loading overlay after 8 seconds if first frame event hangs
               var safetyTimeout = setTimeout(function() {
                 var indicator = document.getElementById('loading-indicator');
                 if (indicator) {
