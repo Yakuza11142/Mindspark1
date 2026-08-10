@@ -199,26 +199,6 @@ jobs:
 
           find /home/runner/.pub-cache/ -name "build.gradle" -type f -exec sed -i 's/version "2.0.20"/version "2.3.20"/g' {} + 2>/dev/null || true
 
-          # Ensure plugin management block is properly defined in settings.gradle for plugin resolution
-          cat << 'EOF' > android/settings.gradle
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "android"
-          include(':app')
-          EOF
-
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
@@ -227,7 +207,7 @@ jobs:
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
-      - name: Build Genuine Web Application with Direct Tracking Bootstrapper
+      - name: Build Genuine Web Application with Infinite Loading Safeguard
         run: |
           rm -rf build/web && ( [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web . )
           mkdir -p assets/shaders web; [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true; touch assets/icon_launcher.png
@@ -274,7 +254,17 @@ jobs:
               <div class="ms-spinner"></div>
             </div>
             <script>
+              // Safety timeout: Automatically force-remove loading overlay after 8 seconds if first frame event hangs
+              var safetyTimeout = setTimeout(function() {
+                var indicator = document.getElementById('loading-indicator');
+                if (indicator) {
+                  indicator.style.opacity = '0';
+                  setTimeout(function() { indicator.remove(); }, 300);
+                }
+              }, 8000);
+
               window.addEventListener('flutter-first-frame', function () {
+                clearTimeout(safetyTimeout);
                 var indicator = document.getElementById('loading-indicator');
                 if (indicator) {
                   indicator.style.opacity = '0';
