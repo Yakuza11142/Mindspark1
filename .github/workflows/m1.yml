@@ -199,6 +199,27 @@ jobs:
 
           find /home/runner/.pub-cache/ -name "build.gradle" -type f -exec sed -i 's/version "2.0.20"/version "2.3.20"/g' {} + 2>/dev/null || true
 
+          # Explicitly inject top-level build.gradle with correct plugin management repositories
+          cat << 'EOF' > android/build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.3.2'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20"
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
