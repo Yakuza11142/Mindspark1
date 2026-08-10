@@ -134,6 +134,29 @@ jobs:
 
           find android/ -name "*.kts" -delete 2>/dev/null || true
 
+          python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); 
+          for r, d, files in os.walk(pub_cache):
+              for f in files:
+                  fp = os.path.join(r, f)
+                  try:
+                      content = open(fp, 'r', encoding='utf-8', errors='ignore').read()
+                      updated = False
+                      if 'io.flutter.app.FlutterActivity' in content:
+                          content = content.replace('io.flutter.app.FlutterActivity', 'io.flutter.embedding.android.FlutterActivity')
+                          updated = True
+                      if 'registerWith' in content:
+                          content = re.sub(r'(public\s+static\s+void\s+registerWith\s*\(.*?\)\s*\{.*?\})', '', content, flags=re.DOTALL)
+                          updated = True
+                      if updated:
+                          open(fp, 'w', encoding='utf-8').write(content)
+                  except Exception:
+                      pass"
+
+          mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1/
+          echo 'package com.mindspark.mindspark1
+          import io.flutter.embedding.android.FlutterActivity
+          class MainActivity: FlutterActivity()' > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
+
           python3 -c "
           import xml.etree.ElementTree as ET, os
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
@@ -143,16 +166,13 @@ jobs:
               root = tree.getroot()
               app = root.find('application')
               if app is not None:
-                  found = False
-                  for meta in app.findall('meta-data'):
+                  for meta in list(app.findall('meta-data')):
                       if meta.attrib.get('{http://schemas.android.com/apk/res/android}name') == 'flutterEmbedding':
-                          meta.set('{http://schemas.android.com/apk/res/android}value', '2')
-                          found = True
-                  if not found:
-                      ET.SubElement(app, 'meta-data', {
-                          '{http://schemas.android.com/apk/res/android}name': 'flutterEmbedding',
-                          '{http://schemas.android.com/apk/res/android}value': '2'
-                      })
+                          app.remove(meta)
+                  ET.SubElement(app, 'meta-data', {
+                      '{http://schemas.android.com/apk/res/android}name': 'flutterEmbedding',
+                      '{http://schemas.android.com/apk/res/android}value': '2'
+                  })
                   tree.write(manifest_path, encoding='utf-8', xml_declaration=True)
           " || true
 
@@ -164,19 +184,6 @@ jobs:
           echo "android.enableJetifier=true" >> android/gradle.properties
           echo "android.newDsl=false" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
-
-          python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); 
-          for r, d, files in os.walk(pub_cache):
-              for f in files:
-                  if f.endswith('.java') or f.endswith('.kt'):
-                      fp = os.path.join(r, f)
-                      try:
-                          content = open(fp, 'r', encoding='utf-8', errors='ignore').read()
-                          content = content.replace('io.flutter.app.FlutterActivity', 'io.flutter.embedding.android.FlutterActivity')
-                          content = re.sub(r'public static void registerWith\s*\(.*?\)\s*\{.*?\}', '', content, flags=re.DOTALL)
-                          open(fp, 'w', encoding='utf-8').write(content)
-                      except Exception:
-                          pass"
 
           python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); [open(os.path.join(r, 'build.gradle'), 'w').write(re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()')) if 'compileSdkVersion' in open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read() else open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()').replace('android {', 'android {\n    compileSdkVersion 34', 1)) for r, d, f in os.walk(pub_cache) if 'build.gradle' in f]"
 
@@ -192,7 +199,7 @@ jobs:
           mkdir -p final_apk
           find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
-      - name: Build Genuine Web Application with Infinite Auto-Healer
+      - name: Build Genuine Web Application with Auto-Healer and Force-HTML Renderer
         run: |
           rm -rf build/web
           [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web .
@@ -200,7 +207,7 @@ jobs:
           [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
           touch assets/icon_launcher.png
           
-          echo '<!DOCTYPE html><html lang="en"><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script>window.flutterWebRenderer = "canvaskit";</script><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div><div id="error-box" style="color:#ff3366;margin-top:20px;font-family:monospace;font-size:12px;padding:0 20px;text-align:center;"></div></div><script>window.addEventListener("error",function(e){var t=document.getElementById("error-box");t&&(t.innerText="Runtime Error: "+e.message)});var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},4e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
+          echo '<!DOCTYPE html><html lang="en"><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script>window.flutterWebRenderer = "html";</script><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div><div id="error-box" style="color:#ff3366;margin-top:20px;font-family:monospace;font-size:12px;padding:0 20px;text-align:center;"></div></div><script>window.addEventListener("error",function(e){var t=document.getElementById("error-box");t&&(t.innerText="Runtime Error: "+e.message)});var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},2e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
 
           for ATTEMPT in {1..10}; do
             rm -f w.log
