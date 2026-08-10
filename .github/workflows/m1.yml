@@ -75,7 +75,7 @@ jobs:
           echo -e "package com.mindspark.mindspark1\nimport io.flutter.embedding.android.FlutterActivity\nclass MainActivity : FlutterActivity()" > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
-          find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
+          find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' 's/google()/google(); mavenCentral()/g' 's/configurations.all/configurations.configureEach/g' '/android.newDsl/d' 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 36/g' {} + 2>/dev/null || true
           python3 -c '
           import os, glob
           for g in glob.glob("android/**/*.gradle", recursive=True):
