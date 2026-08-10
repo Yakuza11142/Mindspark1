@@ -100,28 +100,41 @@ jobs:
           find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
           
-          python3 -c "
+          python3 << 'EOF'
           import json, os
           secrets = {
-              'SUPABASE_URL': '''${{ secrets.SUPABASE_URL }}''',
-              'SUPABASE_ANON_KEY': '''${{ secrets.SUPABASE_ANON_KEY }}''',
-              'GEMINI_API_KEY': '''${{ secrets.GEMINI_API_KEY }}''',
-              'OPENAI_KEY': '''${{ secrets.OPENAI_KEY }}''',
-              'GROQ_API_KEY': '''${{ secrets.GROQ_API_KEY }}''',
-              'VERTEX_API_KEY': '''${{ secrets.VERTEX_API_KEY }}''',
-              'HEYGEN_KEY': '''${{ secrets.HEYGEN_KEY }}''',
-              'RUNWAYML_API_SECRET': '''${{ secrets.RUNWAYML_API_SECRET }}''',
-              'TRIPO_API_KEY': '''${{ secrets.TRIPO_API_KEY }}''',
-              'PEXELS_API_KEY': '''${{ secrets.PEXELS_API_KEY }}''',
-              'MTN_API_KEY': '''${{ secrets.MTN_API_KEY }}'''.strip(),
-              'ELEVEN_LAB_API_KEY': '''${{ secrets.ELEVEN_LAB_API_KEY }}'''
+              'SUPABASE_URL': os.environ.get('SUPABASE_URL', ''),
+              'SUPABASE_ANON_KEY': os.environ.get('SUPABASE_ANON_KEY', ''),
+              'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''),
+              'OPENAI_KEY': os.environ.get('OPENAI_KEY', ''),
+              'GROQ_API_KEY': os.environ.get('GROQ_API_KEY', ''),
+              'VERTEX_API_KEY': os.environ.get('VERTEX_API_KEY', ''),
+              'HEYGEN_KEY': os.environ.get('HEYGEN_KEY', ''),
+              'RUNWAYML_API_SECRET': os.environ.get('RUNWAYML_API_SECRET', ''),
+              'TRIPO_API_KEY': os.environ.get('TRIPO_API_KEY', ''),
+              'PEXELS_API_KEY': os.environ.get('PEXELS_API_KEY', ''),
+              'MTN_API_KEY': os.environ.get('MTN_API_KEY', ''),
+              'ELEVEN_LAB_API_KEY': os.environ.get('ELEVEN_LAB_API_KEY', '')
           }
           with open('../secrets.json', 'w') as f:
               json.dump(secrets, f)
-          "
+          EOF
           
           flutter pub get --no-example
           dart format lib/ 2>/dev/null || true; dart fix --apply 2>/dev/null || true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
+          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
+          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
+          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
+          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
 
       - name: Build Genuine Android APK with Universal File Healer (Dart & Android)
         run: |
@@ -133,7 +146,7 @@ jobs:
           echo -e "flutter.sdk=$FLUTTER_ROOT\nflutter.buildMode=debug\nflutter.versionName=1.0.0\nflutter.versionCode=1" > android/local.properties
           echo -e "android.useAndroidX=true\nandroid.enableJetifier=true\norg.gradle.jvmargs=-Xmx4g\nandroid.experimental.lint.suppress.warnings=true\nandroid.nonTransitiveRClass=false\nandroid.overrideVersionCheck=true" > android/gradle.properties
 
-          python3 -c "
+          python3 << 'EOF'
           import os, re, xml.etree.ElementTree as ET
           pub_cache = os.path.expanduser('~/.pub-cache')
           for root, dirs, files in os.walk(pub_cache):
@@ -172,17 +185,17 @@ jobs:
                         clean_name = re.sub(r'[^a-zA-Z0-9_]', '', folder_name)
                         namespace_str = f'com.mindspark.generated.{clean_name}'
                       
-                      content = content.replace('android {', f'android {{\n    namespace \"{namespace_str}\"', 1)
+                      content = content.replace('android {', f'android {{\n    namespace "{namespace_str}"', 1)
                   
                   with open(gradle_path, 'w', encoding='utf-8') as f:
                       f.write(content)
-          "
+          EOF
 
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
             
-            python3 -c '
+            python3 << 'EOF'
 import re, os
 
 if os.path.exists("b.log"):
@@ -214,7 +227,7 @@ if os.path.exists("b.log"):
             
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(clean_content)
-'
+EOF
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
@@ -289,7 +302,7 @@ if os.path.exists("b.log"):
           for ATTEMPT in {1..3}; do
             rm -f w.log; flutter build web --release --base-href "/" --dart-define-from-file=../secrets.json > w.log 2>&1 && W_OK=true || W_OK=false
             cat w.log; [ "$W_OK" = "true" ] && break
-            python3 -c '
+            python3 << 'EOF'
 import re, os
 if os.path.exists("w.log"):
     with open("w.log", "r", encoding="utf-8", errors="ignore") as f:
@@ -301,7 +314,7 @@ if os.path.exists("w.log"):
             clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(clean_content)
-'
+EOF
           done
 
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
