@@ -134,23 +134,18 @@ jobs:
 
           find android/ -name "*.kts" -delete 2>/dev/null || true
 
-          python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); 
+          # Total Nuclear Cleanse: Strip out any file in .pub-cache containing registerWith or v1 activity references
+          python3 -c "import os; pub_cache = os.path.expanduser('~/.pub-cache'); 
           for r, d, files in os.walk(pub_cache):
               for f in files:
-                  fp = os.path.join(r, f)
-                  try:
-                      content = open(fp, 'r', encoding='utf-8', errors='ignore').read()
-                      updated = False
-                      if 'io.flutter.app.FlutterActivity' in content:
-                          content = content.replace('io.flutter.app.FlutterActivity', 'io.flutter.embedding.android.FlutterActivity')
-                          updated = True
-                      if 'registerWith' in content:
-                          content = re.sub(r'(public\s+static\s+void\s+registerWith\s*\(.*?\)\s*\{.*?\})', '', content, flags=re.DOTALL)
-                          updated = True
-                      if updated:
-                          open(fp, 'w', encoding='utf-8').write(content)
-                  except Exception:
-                      pass"
+                  if f.endswith('.java') or f.endswith('.kt') or f.endswith('.groovy'):
+                      fp = os.path.join(r, f)
+                      try:
+                          text = open(fp, 'r', encoding='utf-8', errors='ignore').read()
+                          if 'registerWith' in text or 'io.flutter.app.FlutterActivity' in text:
+                              os.remove(fp)
+                      except Exception:
+                          pass"
 
           mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1/
           echo 'package com.mindspark.mindspark1
@@ -199,7 +194,7 @@ jobs:
           mkdir -p final_apk
           find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
-      - name: Build Genuine Web Application with Auto-Healer and Force-HTML Renderer
+      - name: Build Genuine Web Application with Dynamic Base-Href
         run: |
           rm -rf build/web
           [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web .
@@ -207,11 +202,11 @@ jobs:
           [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
           touch assets/icon_launcher.png
           
-          echo '<!DOCTYPE html><html lang="en"><head><base href="$FLUTTER_BASE_HREF"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script>window.flutterWebRenderer = "html";</script><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div><div id="error-box" style="color:#ff3366;margin-top:20px;font-family:monospace;font-size:12px;padding:0 20px;text-align:center;"></div></div><script>window.addEventListener("error",function(e){var t=document.getElementById("error-box");t&&(t.innerText="Runtime Error: "+e.message)});var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},2e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
+          echo '<!DOCTYPE html><html lang="en"><head><base href="/${{ github.event.repository.name }}/"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script>window.flutterWebRenderer = "html";</script><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div><div id="error-box" style="color:#ff3366;margin-top:20px;font-family:monospace;font-size:12px;padding:0 20px;text-align:center;"></div></div><script>window.addEventListener("error",function(e){var t=document.getElementById("error-box");t&&(t.innerText="Runtime Error: "+e.message)});var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},2e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
 
           for ATTEMPT in {1..10}; do
             rm -f w.log
-            flutter build web --release --no-wasm-dry-run --base-href "/" > w.log 2>&1 && W_OK=true || W_OK=false
+            flutter build web --release --no-wasm-dry-run --base-href "/${{ github.event.repository.name }}/" > w.log 2>&1 && W_OK=true || W_OK=false
             cat w.log
             [ "$W_OK" = "true" ] && break
             
