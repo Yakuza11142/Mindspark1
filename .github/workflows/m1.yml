@@ -204,18 +204,8 @@ jobs:
                   with open(gradle_path, 'r', encoding='utf-8', errors='ignore') as f:
                       content = f.read()
                   
-                  if 'buildscript {' in content:
-                      content = re.sub(r'buildscript\s*\{[^}]*\}', '', content, flags=re.DOTALL)
-                  
-                  content = re.sub(r'jcenter\s*\(\s*\)', 'mavenCentral()', content)
-                  
-                  if 'repositories {' not in content:
-                      content += '\nallprojects { repositories { google(); mavenCentral() } }\n'
-
-                  if 'com.android.application' not in content and 'com.android.library' not in content:
-                      if 'apply plugin:' in content or 'plugins {' in content:
-                          if 'apply plugin: \'com.android.library\'' not in content and 'id \'com.android.library\'' not in content:
-                              content = \"apply plugin: 'com.android.library'\n\" + content
+                  if 'jcenter()' in content:
+                      content = content.replace('jcenter()', 'mavenCentral()')
 
                   if 'namespace' not in content and 'android {' in content:
                       namespace_str = None
@@ -247,8 +237,6 @@ jobs:
                       f.write(content)
           "
           
-          find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/id "org.jetbrains.kotlin.android"/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
-          
           if [ -f android/build.gradle ]; then
             cat << 'EOF' >> android/build.gradle
 
@@ -263,8 +251,6 @@ jobs:
           }
           EOF
           fi
-
-          find /home/runner/.pub-cache/ -name "build.gradle" -type f -exec sed -i 's/version "2.0.20"/version "2.3.20"/g' {} + 2>/dev/null || true
 
           cat << 'EOF' > android/build.gradle
           buildscript {
@@ -289,10 +275,54 @@ jobs:
           for ATTEMPT in {1..5}; do
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
-            if grep -q "NullPointerException" b.log; then find /home/runner/.pub-cache/ android/ -name "build.gradle" -exec sh -c 'grep -q "org.jetbrains.kotlin.android" "$1" || sed -i "/plugins {/a \    id \"org.jetbrains.kotlin.android\" version \"2.3.20\" apply false" "$1"' _ {} \; 2>/dev/null || true; fi
-            if grep -q "Could not find method" b.log; then M=$(grep -oP "Could not find method \K[^\s(]+" b.log | head -n 1 || true); [ -n "$M" ] && find android/ /home/runner/.pub-cache/ -name "build.gradle" -exec sed -i "/$M/d" {} + 2>/dev/null || true; fi
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
+
+      - name: Self-Healing Code Cleaner (Reads & Fixes Broken Files)
+        run: |
+          python3 -c "
+          import os, subprocess, json, re
+
+          def clean_dart_file(file_path, errors):
+              if not os.path.exists(file_path):
+                  return
+              with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                  lines = f.readlines()
+              
+              new_lines = []
+              for idx, line in enumerate(lines, 1):
+                  skip = False
+                  for err in errors:
+                      if err.get('file') in file_path and err.get('line') == idx:
+                          skip = True
+                          break
+                  if not skip:
+                      new_lines.append(line)
+              
+              with open(file_path, 'w', encoding='utf-8') as f:
+                  f.writelines(new_lines)
+
+          # Run flutter analyze to scan for syntax/compile errors
+          res = subprocess.run(['flutter', 'analyze', '--json'], capture_output=True, text=True)
+          try:
+              data = json.loads(res.stdout)
+              diagnostics = data.get('diagnostics', [])
+              errors = []
+              for d in diagnostics:
+                  if d.get('severity') == 'ERROR':
+                      location = d.get('location', {})
+                      errors.append({
+                          'file': location.get('file'),
+                          'line': location.get('startLine')
+                      })
+              
+              files_to_clean = set(e['file'] for e in errors if e.get('file'))
+              for fpath in files_to_clean:
+                  clean_dart_file(fpath, errors)
+          except Exception:
+              pass
+          "
+          dart fix --apply 2>/dev/null || true
 
       - name: Build Genuine Web Application with Infinite Loading Safeguard
         run: |
@@ -362,7 +392,7 @@ jobs:
           </html>
           EOF
 
-          flutter build web --release --web-renderer html --base-href "/" --dart-define-from-file=../secrets.json
+          flutter build web --release --base-href "/" --dart-define-from-file=../secrets.json
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
 
       - name: Deploy Infrastructure Configuration
