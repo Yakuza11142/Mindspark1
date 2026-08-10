@@ -1,234 +1,74 @@
 name: Production CI
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main, master ]
+workflow_dispatch:
+push:
+branches:
+- main
+- master
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+contents: read
+pages: write
+id-token: write
 
 concurrency:
-  group: production-ci
-  cancel-in-progress: true
+group: production-ci
+cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+build:
+runs-on: ubuntu-24.04
 
-    env:
-      ORG_GRADLE_PROJECT_jvmargs: "-Xmx4g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+```
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
-    steps:
-      - uses: actions/checkout@v4
+  - name: Setup Java 17
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+  - name: Setup Flutter
+    uses: subosito/flutter-action@v2
+    with:
+      channel: stable
+      cache: true
 
-      - name: Cache Gradle Packages and Wrapper
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+  - name: Setup Android SDK
+    uses: android-actions/setup-android@v3
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.11.1"
-          validate-wrappers: false
+  - name: Get packages
+    run: flutter pub get
 
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: false
+  - name: Format code
+    run: dart format lib/ || true
 
-      - name: Setup Android SDK and Accept Licenses
-        uses: android-actions/setup-android@v3
+  - name: Apply safe Dart fixes
+    run: dart fix --apply || true
 
-      - name: Sandbox Template Factory Execution
-        run: |
-          mkdir -p ../vault/
-          [ -d "lib" ] && cp -r lib ../vault/ || mkdir -p ../vault/lib
-          [ -d "assets" ] && cp -r assets ../vault/ || mkdir -p ../vault/assets
-          [ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web
-          [ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true
-          
-          rm -rf android ios windows macos linux * .[^.]*
-          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
-          
-          rm -rf lib assets web pubspec.yaml
-          cp -r ../vault/lib ./lib
-          cp -r ../vault/assets ./assets
-          cp -r ../vault/web ./web
-          [ -f "../vault/pubspec.yaml" ] && cp ../vault/pubspec.yaml ./pubspec.yaml || true
+  - name: Build APK
+    run: flutter build apk --debug
 
-          echo 'name: mindspark1' > pubspec.yaml
-          echo 'publish_to: "none"' >> pubspec.yaml
-          echo 'version: 1.0.0+1' >> pubspec.yaml
-          echo 'environment:' >> pubspec.yaml
-          echo '  sdk: ">=3.12.0 <4.0.0"' >> pubspec.yaml
-          echo 'dependencies:' >> pubspec.yaml
-          echo '  flutter:' >> pubspec.yaml
-          echo '    sdk: flutter' >> pubspec.yaml
-          echo '  intl: any' >> pubspec.yaml
-          echo '  meta: any' >> pubspec.yaml
-          echo '  collection: any' >> pubspec.yaml
-          echo '  crypto: any' >> pubspec.yaml
-          echo '  path: any' >> pubspec.yaml
-          echo '  permission_handler: any' >> pubspec.yaml
-          echo '  ar_flutter_plugin_plus: any' >> pubspec.yaml
-          echo '  web: any' >> pubspec.yaml
-          echo '  provider: any' >> pubspec.yaml
-          echo '  flutter_dotenv: any' >> pubspec.yaml
-          echo '  supabase_flutter: any' >> pubspec.yaml
-          echo '  google_mobile_ads: any' >> pubspec.yaml
-          echo '  video_player: any' >> pubspec.yaml
-          echo '  url_launcher: any' >> pubspec.yaml
-          echo '  flutter_tex: any' >> pubspec.yaml
-          echo '  flutter_jailbreak_detection: any' >> pubspec.yaml
-          echo '  flutter_secure_storage: any' >> pubspec.yaml
-          echo 'dev_dependencies:' >> pubspec.yaml
-          echo '  flutter_lints: any' >> pubspec.yaml
-          echo 'flutter:' >> pubspec.yaml
-          echo '  uses-material-design: true' >> pubspec.yaml
-          echo '  assets:' >> pubspec.yaml
-          echo '    - assets/.env' >> pubspec.yaml
-          echo '    - assets/icon_launcher.png' >> pubspec.yaml
-          echo '  shaders:' >> pubspec.yaml
-          echo '    - assets/shaders/hologram_glow.frag' >> pubspec.yaml
-          
-          find . -type f -exec sed -i '/pqc/d' {} + || true
-          find lib/ -type f -name "*.dart" -exec sed -i -e "/dash_chat_2/d" -e "/arcore_flutter_plus/d" -e "/carrier_info/d" -e "s/package:mindspark\//package:mindspark1\//g" -e "s/package:mind_spark\//package:mindspark1\//g" {} + 2>/dev/null || true
-          echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
-          
-          python3 -c "import json, os; secrets = {'SUPABASE_URL': os.environ.get('SUPABASE_URL', ''), 'SUPABASE_ANON_KEY': os.environ.get('SUPABASE_ANON_KEY', ''), 'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''), 'OPENAI_KEY': os.environ.get('OPENAI_KEY', ''), 'GROQ_API_KEY': os.environ.get('GROQ_API_KEY', ''), 'VERTEX_API_KEY': os.environ.get('VERTEX_API_KEY', ''), 'HEYGEN_KEY': os.environ.get('HEYGEN_KEY', ''), 'RUNWAYML_API_SECRET': os.environ.get('RUNWAYML_API_SECRET', ''), 'TRIPO_API_KEY': os.environ.get('TRIPO_API_KEY', ''), 'PEXELS_API_KEY': os.environ.get('PEXELS_API_KEY', ''), 'MTN_API_KEY': os.environ.get('MTN_API_KEY', ''), 'ELEVEN_LAB_API_KEY': os.environ.get('ELEVEN_LAB_API_KEY', '')}; open('../secrets.json', 'w').write(json.dumps(secrets))"
-          
-          flutter pub get --no-example || true
-          dart format lib/ 2>/dev/null || true
-          dart fix --apply 2>/dev/null || true
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
-          HEYGEN_KEY: ${{ secrets.HEYGEN_KEY }}
-          RUNWAYML_API_SECRET: ${{ secrets.RUNWAYML_API_SECRET }}
-          TRIPO_API_KEY: ${{ secrets.TRIPO_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-          MTN_API_KEY: ${{ secrets.MTN_API_KEY }}
-          ELEVEN_LAB_API_KEY: ${{ secrets.ELEVEN_LAB_API_KEY }}
+  - name: Build Web
+    run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
-      - name: Build Genuine Android APK with v2 Embedding Force-Enforcement
-        run: |
-          rm -rf .gradle/caches/*.lock
-          rm -rf ~/.gradle/caches/build-cache-1
+  - name: Configure Pages
+    uses: actions/configure-pages@v5
 
-          find android/ -name "*.kts" -delete 2>/dev/null || true
+  - name: Upload Web
+    uses: actions/upload-pages-artifact@v3
+    with:
+      path: build/web
 
-          # Total Nuclear Cleanse: Strip out any file in .pub-cache containing registerWith or v1 activity references
-          python3 -c "import os; pub_cache = os.path.expanduser('~/.pub-cache'); 
-          for r, d, files in os.walk(pub_cache):
-              for f in files:
-                  if f.endswith('.java') or f.endswith('.kt') or f.endswith('.groovy'):
-                      fp = os.path.join(r, f)
-                      try:
-                          text = open(fp, 'r', encoding='utf-8', errors='ignore').read()
-                          if 'registerWith' in text or 'io.flutter.app.FlutterActivity' in text:
-                              os.remove(fp)
-                      except Exception:
-                          pass"
+  - name: Deploy Web
+    uses: actions/deploy-pages@v4
 
-          mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1/
-          echo 'package com.mindspark.mindspark1
-          import io.flutter.embedding.android.FlutterActivity
-          class MainActivity: FlutterActivity()' > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
-
-          python3 -c "
-          import xml.etree.ElementTree as ET, os
-          manifest_path = 'android/app/src/main/AndroidManifest.xml'
-          if os.path.exists(manifest_path):
-              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
-              tree = ET.parse(manifest_path)
-              root = tree.getroot()
-              app = root.find('application')
-              if app is not None:
-                  for meta in list(app.findall('meta-data')):
-                      if meta.attrib.get('{http://schemas.android.com/apk/res/android}name') == 'flutterEmbedding':
-                          app.remove(meta)
-                  ET.SubElement(app, 'meta-data', {
-                      '{http://schemas.android.com/apk/res/android}name': 'flutterEmbedding',
-                      '{http://schemas.android.com/apk/res/android}value': '2'
-                  })
-                  tree.write(manifest_path, encoding='utf-8', xml_declaration=True)
-          " || true
-
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "flutter.buildMode=debug" >> android/local.properties
-          echo "flutter.versionName=1.0.0" >> android/local.properties
-          echo "flutter.versionCode=1" >> android/local.properties
-          echo "android.useAndroidX=true" > android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
-          echo "android.newDsl=false" >> android/gradle.properties
-          echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
-
-          python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); [open(os.path.join(r, 'build.gradle'), 'w').write(re.sub(r'compileSdkVersion\s+[0-9]+', 'compileSdkVersion 34', open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()')) if 'compileSdkVersion' in open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read() else open(os.path.join(r, 'build.gradle'), 'r', encoding='utf-8', errors='ignore').read().replace('jcenter()', 'mavenCentral()').replace('android {', 'android {\n    compileSdkVersion 34', 1)) for r, d, f in os.walk(pub_cache) if 'build.gradle' in f]"
-
-          for ATTEMPT in {1..10}; do
-            rm -f b.log
-            flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
-            cat b.log
-            [ "$OK" = "true" ] && break
-
-            python3 -c "import re, os; log = open('b.log', 'r', encoding='utf-8', errors='ignore').read() if os.path.exists('b.log') else ''; [open(f, 'w').write('import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n') for f in set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log)) if os.path.exists(f)]; [open(f, 'w').write(f'package com.mindspark.mindspark1;\npublic class {os.path.basename(f).replace(\".java\", \"\")} {{}}' if f.endswith('.java') else f'package com.mindspark.mindspark1\nclass {os.path.basename(f).replace(\".kt\", \"\")}' if f.endswith('.kt') else '// Cleaned\n') for f in set(re.findall(r'(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))', log)) if os.path.exists(f)]"
-          done
-
-          mkdir -p final_apk
-          find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
-
-      - name: Build Genuine Web Application with Dynamic Base-Href
-        run: |
-          rm -rf build/web
-          [ -d "../vault/web" ] && cp -r ../vault/web ./web || flutter create --platforms=web .
-          mkdir -p assets/shaders web
-          [ ! -f "assets/.env" ] && echo "BUILD=production" > assets/.env || true
-          touch assets/icon_launcher.png
-          
-          echo '<!DOCTYPE html><html lang="en"><head><base href="/${{ github.event.repository.name }}/"><meta charset="UTF-8"><meta content="IE=Edge" http-equiv="X-UA-Compatible"><meta name="description" content="Production Engine."><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes"><title>Application Engine</title><style>*{box-sizing:border-box}html,body{background-color:#080a0f;margin:0;padding:0;width:100%;height:100%;overflow:hidden}.ms-loading-container{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background-color:#080a0f;position:absolute;top:0;left:0;z-index:99999;transition:opacity .3s ease-out}.ms-spinner{width:48px;height:48px;border:3px solid rgba(0,243,255,.15);border-radius:50%;border-top-color:#00f3ff;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style><script>window.flutterWebRenderer = "html";</script><script src="flutter_bootstrap.js" async></script></head><body><div id="loading-indicator" class="ms-loading-container"><div class="ms-spinner"></div><div id="error-box" style="color:#ff3366;margin-top:20px;font-family:monospace;font-size:12px;padding:0 20px;text-align:center;"></div></div><script>window.addEventListener("error",function(e){var t=document.getElementById("error-box");t&&(t.innerText="Runtime Error: "+e.message)});var safetyTimeout=setTimeout(function(){var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))},2e3);window.addEventListener("flutter-first-frame",function(){clearTimeout(safetyTimeout);var e=document.getElementById("loading-indicator");e&&(e.style.opacity="0",setTimeout(function(){e.remove()},300))});</script></body></html>' > web/index.html
-
-          for ATTEMPT in {1..10}; do
-            rm -f w.log
-            flutter build web --release --no-wasm-dry-run --base-href "/${{ github.event.repository.name }}/" > w.log 2>&1 && W_OK=true || W_OK=false
-            cat w.log
-            [ "$W_OK" = "true" ] && break
-            
-            python3 -c "import re, os; log = open('w.log', 'r', encoding='utf-8', errors='ignore').read() if os.path.exists('w.log') else ''; [open(f, 'w').write('import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n') for f in set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log)) if os.path.exists(f)]"
-          done
-
-          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
-
-      - name: Deploy Infrastructure Configuration
-        uses: actions/configure-pages@v5
-
-      - name: Pack Web Distribution Package
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./build/web
-
-      - name: Live Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Upload Native Android APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-android-apk
-          path: final_apk/app-debug.apk
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: mindspark-apk
+      path: build/app/outputs/flutter-apk/app-debug.apk
+```
