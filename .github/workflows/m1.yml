@@ -1,11 +1,11 @@
-name: Production CI
+name: MindSpark Production CI
 
 on:
-workflow_dispatch:
 push:
 branches:
 - main
 - master
+workflow_dispatch:
 
 permissions:
 contents: read
@@ -13,23 +13,42 @@ pages: write
 id-token: write
 
 concurrency:
-group: production-ci
+group: mindspark-production
 cancel-in-progress: true
 
 jobs:
 build:
+name: Build MindSpark Android + Web
 runs-on: ubuntu-24.04
 
 ```
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+  JAVA_TOOL_OPTIONS: "-Xmx4g"
+
 steps:
-  - name: Checkout
+
+  # ============================================================
+  # CHECKOUT
+  # ============================================================
+
+  - name: Checkout MindSpark
     uses: actions/checkout@v4
+
+  # ============================================================
+  # JAVA 17
+  # ============================================================
 
   - name: Setup Java 17
     uses: actions/setup-java@v4
     with:
       distribution: temurin
       java-version: "17"
+      cache: gradle
+
+  # ============================================================
+  # FLUTTER
+  # ============================================================
 
   - name: Setup Flutter
     uses: subosito/flutter-action@v2
@@ -37,38 +56,155 @@ steps:
       channel: stable
       cache: true
 
+  - name: Flutter Version
+    run: |
+      flutter --version
+      dart --version
+
+  # ============================================================
+  # ANDROID SDK
+  # ============================================================
+
   - name: Setup Android SDK
     uses: android-actions/setup-android@v3
 
-  - name: Get packages
+  - name: Accept Android Licenses
+    run: yes | sdkmanager --licenses || true
+
+  # ============================================================
+  # PRESERVE PROJECT
+  # ============================================================
+
+  - name: Verify Project
+    run: |
+      test -f pubspec.yaml
+      test -d lib
+      test -d android
+      echo "MindSpark project structure verified."
+
+  # ============================================================
+  # DEPENDENCIES
+  # ============================================================
+
+  - name: Flutter Pub Get
     run: flutter pub get
 
-  - name: Format code
-    run: dart format lib/ || true
+  # ============================================================
+  # AUTOMATIC LIB/ REPAIR
+  # ============================================================
 
-  - name: Apply safe Dart fixes
-    run: dart fix --apply || true
+  - name: Dart Format lib
+    run: |
+      dart format lib/
 
-  - name: Build APK
-    run: flutter build apk --debug
+  - name: Dart Fix lib
+    run: |
+      dart fix --apply || true
+
+  # Run formatting again after dart fix.
+  - name: Final Dart Format lib
+    run: |
+      dart format lib/
+
+  # ============================================================
+  # ANDROID CONFIGURATION
+  # ============================================================
+
+  - name: Configure Android Build
+    shell: bash
+    run: |
+      set -e
+
+      mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1
+
+      cat > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt <<'EOF'
+      package com.mindspark.mindspark1
+
+      import io.flutter.embedding.android.FlutterActivity
+
+      class MainActivity : FlutterActivity()
+      EOF
+
+      if [ -f android/gradle.properties ]; then
+        grep -q "^org.gradle.jvmargs=" android/gradle.properties || \
+          echo "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8" >> android/gradle.properties
+
+        grep -q "^android.useAndroidX=" android/gradle.properties || \
+          echo "android.useAndroidX=true" >> android/gradle.properties
+
+        grep -q "^android.enableJetifier=" android/gradle.properties || \
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+        grep -q "^android.newDsl=" android/gradle.properties || \
+          echo "android.newDsl=false" >> android/gradle.properties
+
+        grep -q "^android.builtInKotlin=" android/gradle.properties || \
+          echo "android.builtInKotlin=false" >> android/gradle.properties
+      else
+        cat > android/gradle.properties <<'EOF'
+      org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+      android.useAndroidX=true
+      android.enableJetifier=true
+      android.newDsl=false
+      android.builtInKotlin=false
+      EOF
+      fi
+
+      echo "Android configuration complete."
+
+  # ============================================================
+  # ANDROID BUILD
+  # ============================================================
+
+  - name: Build Android APK
+    run: |
+      flutter clean
+      flutter pub get
+      flutter build apk --debug --android-skip-build-dependency-validation
+
+  # ============================================================
+  # WEB BUILD
+  # ============================================================
+
+  - name: Configure Web Base Href
+    shell: bash
+    run: |
+      mkdir -p web
+
+      if [ -f web/index.html ]; then
+        sed -i "s|<base href=\"[^\"]*\">|<base href=\"/${{ github.event.repository.name }}/\">|g" web/index.html
+      fi
 
   - name: Build Web
-    run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+    run: |
+      flutter build web \
+        --release \
+        --base-href "/${{ github.event.repository.name }}/"
 
-  - name: Configure Pages
+  # ============================================================
+  # GITHUB PAGES
+  # ============================================================
+
+  - name: Configure GitHub Pages
     uses: actions/configure-pages@v5
 
-  - name: Upload Web
+  - name: Upload Web Artifact
     uses: actions/upload-pages-artifact@v3
     with:
       path: build/web
 
-  - name: Deploy Web
+  - name: Deploy GitHub Pages
     uses: actions/deploy-pages@v4
 
-  - name: Upload APK
+  # ============================================================
+  # APK ARTIFACT
+  # ============================================================
+
+  - name: Upload MindSpark APK
     uses: actions/upload-artifact@v4
     with:
-      name: mindspark-apk
+      name: mindspark-android-apk
       path: build/app/outputs/flutter-apk/app-debug.apk
+      if-no-files-found: error
+      retention-days: 14
 ```
