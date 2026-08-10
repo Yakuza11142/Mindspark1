@@ -60,7 +60,6 @@ jobs:
           [ -d "web" ] && cp -r web ../vault/ || mkdir -p ../vault/web
           [ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true
           
-          # Completely clean and recreate scaffolding to purge bad embedding states
           rm -rf android ios windows macos linux * .[^.]*
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
           
@@ -135,17 +134,15 @@ jobs:
 
           find android/ -name "*.kts" -delete 2>/dev/null || true
 
-          # Ensure AndroidManifest contains exact v2 embedding declaration
           python3 -c "
-          import xml.etree.ElementTree as ET
+          import xml.etree.ElementTree as ET, os
           manifest_path = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(manifest_path):
-              parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
-              tree = ET.parse(manifest_path, parser=parser)
+              ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+              tree = ET.parse(manifest_path)
               root = tree.getroot()
               app = root.find('application')
               if app is not None:
-                  # Check/add flutterEmbedding meta-data
                   found = False
                   for meta in app.findall('meta-data'):
                       if meta.attrib.get('{http://schemas.android.com/apk/res/android}name') == 'flutterEmbedding':
@@ -159,7 +156,6 @@ jobs:
                   tree.write(manifest_path, encoding='utf-8', xml_declaration=True)
           " || true
 
-          # Setup local properties & gradle properties
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "flutter.buildMode=debug" >> android/local.properties
           echo "flutter.versionName=1.0.0" >> android/local.properties
@@ -169,7 +165,6 @@ jobs:
           echo "android.newDsl=false" >> android/gradle.properties
           echo "org.gradle.jvmargs=-Xmx4g" >> android/gradle.properties
 
-          # Purge legacy v1 registerWith methods or obsolete imports from pub-cache
           python3 -c "import os, re; pub_cache = os.path.expanduser('~/.pub-cache'); 
           for r, d, files in os.walk(pub_cache):
               for f in files:
