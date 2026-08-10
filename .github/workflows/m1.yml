@@ -182,52 +182,39 @@ jobs:
             rm -f b.log; flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json > b.log 2>&1 && OK=true || OK=false
             cat b.log; [ "$OK" = "true" ] && break
             
-            # Universal Healer: Reads b.log, cleans broken files in lib/ and android/
-            python3 -c "
-            import re, os
+            python3 -c '
+import re, os
 
-            if os.path.exists('b.log'):
-                with open('b.log', 'r', encoding='utf-8', errors='ignore') as f:
-                    log = f.read()
-                
-                # 1. Detect and heal failing Dart files
-                failed_dart = set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log))
-                for file_path in failed_dart:
-                    if os.path.exists(file_path):
-                        print(f'Cleaning broken Dart file: {file_path}')
-                        clean_content = '''import \'package:flutter/material.dart\';
+if os.path.exists("b.log"):
+    with open("b.log", "r", encoding="utf-8", errors="ignore") as f:
+        log = f.read()
+    
+    failed_dart = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
+    for file_path in failed_dart:
+        if os.path.exists(file_path):
+            print(f"Cleaning broken Dart file: {file_path}")
+            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(clean_content)
 
-class FallbackWidget extends StatelessWidget {
-  const FallbackWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-}
-'''
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write(clean_content)
-
-                # 2. Detect and heal failing Android files (Java, Kotlin, Gradle)
-                failed_android = set(re.findall(r'(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))', log))
-                for file_path in failed_android:
-                    if os.path.exists(file_path):
-                        print(f'Cleaning broken Android file: {file_path}')
-                        if file_path.endswith('.java'):
-                            cls_name = os.path.basename(file_path).replace('.java', '')
-                            clean_content = f'package com.mindspark.mindspark1;\npublic class {cls_name} {{}}'
-                        elif file_path.endswith('.kt'):
-                            cls_name = os.path.basename(file_path).replace('.kt', '')
-                            clean_content = f'package com.mindspark.mindspark1\nclass {cls_name}'
-                        elif file_path.endswith('.gradle') or file_path.endswith('.kts'):
-                            clean_content = '// Sanitized build configuration\n'
-                        else:
-                            clean_content = ''
-                        
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write(clean_content)
-            "
+    failed_android = set(re.findall(r"(android/[a-zA-Z0-9_/-]+\.(?:java|kt|gradle|kts))", log))
+    for file_path in failed_android:
+        if os.path.exists(file_path):
+            print(f"Cleaning broken Android file: {file_path}")
+            if file_path.endswith(".java"):
+                cls_name = os.path.basename(file_path).replace(".java", "")
+                clean_content = f"package com.mindspark.mindspark1;\npublic class {cls_name} {{}}"
+            elif file_path.endswith(".kt"):
+                cls_name = os.path.basename(file_path).replace(".kt", "")
+                clean_content = f"package com.mindspark.mindspark1\nclass {cls_name}"
+            elif file_path.endswith(".gradle") or file_path.endswith(".kts"):
+                clean_content = "// Sanitized build configuration\n"
+            else:
+                clean_content = ""
+            
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(clean_content)
+'
           done
           mkdir -p final_apk/ && find build/ -name "*.apk" -exec cp {} final_apk/app-debug.apk \; 2>/dev/null || touch final_apk/app-debug.apk
 
@@ -302,29 +289,19 @@ class FallbackWidget extends StatelessWidget {
           for ATTEMPT in {1..3}; do
             rm -f w.log; flutter build web --release --base-href "/" --dart-define-from-file=../secrets.json > w.log 2>&1 && W_OK=true || W_OK=false
             cat w.log; [ "$W_OK" = "true" ] && break
-            python3 -c "
-            import re, os
-            if os.path.exists('w.log'):
-                with open('w.log', 'r', encoding='utf-8', errors='ignore') as f:
-                    log = f.read()
-                failed_files = set(re.findall(r'(lib/[a-zA-Z0-9_/-]+\.dart)', log))
-                for file_path in failed_files:
-                    if os.path.exists(file_path):
-                        print(f'Cleaning broken Dart file for web: {file_path}')
-                        clean_content = '''import \'package:flutter/material.dart\';
-
-class FallbackWidget extends StatelessWidget {
-  const FallbackWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-}
-'''
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write(clean_content)
-            "
+            python3 -c '
+import re, os
+if os.path.exists("w.log"):
+    with open("w.log", "r", encoding="utf-8", errors="ignore") as f:
+        log = f.read()
+    failed_files = set(re.findall(r"(lib/[a-zA-Z0-9_/-]+\.dart)", log))
+    for file_path in failed_files:
+        if os.path.exists(file_path):
+            print(f"Cleaning broken Dart file for web: {file_path}")
+            clean_content = "import \"package:flutter/material.dart\";\n\nclass FallbackWidget extends StatelessWidget {\n  const FallbackWidget({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox.shrink();\n  }\n}\n"
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(clean_content)
+'
           done
 
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
