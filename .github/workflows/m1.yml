@@ -1,24 +1,45 @@
-Name: MindSpark Production CI
+name: MindSpark Production CI
+
 on:
-  push: { branches: [main, master, dev, "**"] }
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - "**"
   workflow_dispatch:
-permissions: { contents: write, pages: write, id-token: write }
-concurrency: { group: mindspark-production, cancel-in-progress: false }
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mindspark-production
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build MindSpark Android and Web
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env: { GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8", JAVA_TOOL_OPTIONS: "-Xmx4g" }
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+      JAVA_TOOL_OPTIONS: "-Xmx4g"
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
       - name: Setup Java Runtime
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: "17", cache: gradle }
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+        with:
+          channel: stable
+          cache: true
       - name: Setup Android Infrastructure
         uses: android-actions/setup-android@v3
       - name: Accept Developer Licenses
@@ -85,7 +106,19 @@ jobs:
               open(g, "w").write(c)
           ' || true
           flutter pub get --no-example || true
-        env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
+        env:
+          SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
+          SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          OPENAI_KEY: "${{ secrets.OPENAI_KEY }}"
+          GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}"
+          VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}"
+          HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}"
+          RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}"
+          TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}"
+          PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
+          MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
+          ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
       - name: Build Android APK (First Order Compile)
         run: |
           flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json || {
@@ -146,9 +179,12 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Pack Production Assets
         uses: actions/upload-pages-artifact@v3
-        with: { path: build/web }
+        with:
+          path: build/web
       - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
       - name: Upload Android Debug APK Artifact
         uses: actions/upload-artifact@v4
-        with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
+        with:
+          name: mindspark-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
