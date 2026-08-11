@@ -116,13 +116,32 @@ jobs:
           rm -rf build/web web
           flutter create --platforms=web --org com.mindspark --project-name mindspark1 .
           sed -i 's|<base href="/">|<base href="/${{ github.event.repository.name }}/">|g' web/index.html || true
-          flutter build web --release --dart-define-from-file=../secrets.json || {
-            echo "Web compiler exception caught. Running structural canvas override..."
-            rm -rf web && flutter create --platforms=web .
-            sed -i 's|<base href="/">|<base href="/${{ github.event.repository.name }}/">|g' web/index.html || true
-            flutter build web --release --dart-define-from-file=../secrets.json
-          }
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=\$(date +%s)/g" build/web/index.html 2>/dev/null || true
+          flutter build web --release --dart-define-from-file=../secrets.json
+          cat << 'EOF' > build/web/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <base href="/${{ github.event.repository.name }}/">
+            <meta charset="UTF-8">
+            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+            <title>MindSpark</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { background-color: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; }
+            </style>
+          </head>
+          <body>
+            <script>
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for(let registration of registrations) { registration.unregister(); }
+                });
+              }
+            </script>
+            <script src="main.dart.js?v=${{ github.run_id }}" type="application/javascript"></script>
+          </body>
+          </html>
+          EOF
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Pack Production Assets
@@ -132,4 +151,4 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Upload Android Debug APK Artifact
         uses: actions/upload-artifact@v4
-        with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
+with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
