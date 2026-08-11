@@ -115,12 +115,14 @@ jobs:
         run: |
           rm -rf build/web web
           flutter create --platforms=web --org com.mindspark --project-name mindspark1 .
-          echo -e "<!DOCTYPE html><html><head><base href=\"/${{ github.event.repository.name }}/\"><meta charset=\"UTF-8\"><title>MindSpark</title><script defer src=\"main.dart.js\" type=\"application/javascript\"></script></head><body style=\"background-color:#121212;color:white;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;\"><div id=\"loading\"><h2>Initializing MindSpark Spatial Core...</h2></div></body></html>" > web/index.html
-          flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define-from-file=../secrets.json || true
-          if [ ! -d build/web ] || [ ! -f build/web/index.html ]; then
-              mkdir -p build/web
-              echo -e "<!DOCTYPE html><html><head><base href=\"/${{ github.event.repository.name }}/\"></head><body style=\"background-color:#121212;color:white;text-align:center;padding-top:20%;font-family:sans-serif;\"><h1>MindSpark Operational Web Canvas Live</h1></body></html>" > build/web/index.html
-          fi
+          sed -i 's|<base href="/">|<base href="/${{ github.event.repository.name }}/">|g' web/index.html || true
+          flutter build web --release --dart-define-from-file=../secrets.json || {
+            echo "Web compiler exception caught. Running structural canvas override..."
+            rm -rf web && flutter create --platforms=web .
+            sed -i 's|<base href="/">|<base href="/${{ github.event.repository.name }}/">|g' web/index.html || true
+            flutter build web --release --dart-define-from-file=../secrets.json
+          }
+          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=\$(date +%s)/g" build/web/index.html 2>/dev/null || true
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Pack Production Assets
