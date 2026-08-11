@@ -1,4 +1,4 @@
-name: MindSpark Production CI
+Name: MindSpark Production CI
 on:
   push: { branches: [main, master, dev, "**"] }
   workflow_dispatch:
@@ -151,4 +151,4 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Upload Android Debug APK Artifact
         uses: actions/upload-artifact@v4
-with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
+        with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
