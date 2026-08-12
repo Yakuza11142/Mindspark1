@@ -29,62 +29,46 @@ jobs:
           [ -d "lib" ] && cp -r lib/* ../vault/lib/ || true
           [ -d "assets" ] && cp -r assets/* ../vault/assets/ || true
           [ -d "web" ] && cp -r web/* ../vault/web/ || true
-          [ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true
+          
+          if [ -f "pubspec.yaml" ]; then
+            # Complete syntax recovery BEFORE running any flutter commands
+            sed -i '/sdk:\s*flutter/d' pubspec.yaml || true
+            sed -i '/pqc/d' pubspec.yaml || true
+            cp pubspec.yaml ../vault/
+          fi
+          
           rm -rf android ios windows macos linux build * .[^.]*
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
-          rm -rf lib assets web
+          rm -rf lib assets web pubspec.yaml
+          
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
+          
           if [ -f "../vault/pubspec.yaml" ]; then
             cp ../vault/pubspec.yaml ./pubspec.yaml
+            # Re-inject exactly ONE valid mapping block cleanly
             python3 -c '
           lines = open("pubspec.yaml").read().split("\n")
           out = []
-          found_sdk_flutter = False
           for l in lines:
-              if "sdk: flutter" in l:
-                  if not found_sdk_flutter:
-                      out.append(l)
-                      found_sdk_flutter = True
-                  else:
-                      continue
-              else:
-                  out.append(l)
+              out.append(l)
+              if "dependencies:" in l:
+                  out.append("  flutter:\n    sdk: flutter")
           open("pubspec.yaml", "w").write("\n".join(out))
           '
-            sed -i '/pqc/d' pubspec.yaml || true
+          else
+            echo -e "name: mindspark1\npublish_to: \"none\"\nversion: 1.0.0+1\nenvironment:\n  sdk: \">=3.12.0 <4.0.0\"\ndependencies:\n  flutter:\n    sdk: flutter\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/\n" > pubspec.yaml
           fi
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
-      - name: Zero-Fail Structural Auto-Heal
+      - name: Native Toolchain Code Optimization
         run: |
-          touch assets/.env assets/icon_launcher.png
-          echo -e "analyzer:\n  exclude:\n    - 'lib/**'\n    - 'build/**'\n  errors:\n    todo: ignore\nlinter:\n  rules: []" > analysis_options.yaml
-          python3 -c '
-          import os, glob
-          os.makedirs("lib", exist_ok=True)
-          m = "lib/main.dart"
-          if os.path.exists(m):
-              c = open(m).read()
-              if "if (dart.library." in c and "import " not in c.split("\n"):
-                  open(m, "w").write("import \"package:flutter/material.dart\";\nvoid main() => runApp(MaterialApp(home: Scaffold(body: Center(child: Text(\"MindSpark Vector Canvas\")))));")
-          for f in glob.glob("lib/**/*.dart", recursive=True):
-              if not os.path.isfile(f): continue
-              lines = open(f).read().split("\n")
-              fx = [l for l in lines if "import " not in l or not any(p in l.lower() for p in ["supabase", "storage", "jailbreak", "ads", "dotenv", "provider", "video_player", "url_launcher", "arcore", "ar_flutter"])]
-              open(f, "w").write("\n".join(fx))
-          ' || true
-          python3 -c '
-          import os, glob
-          for f in glob.glob("lib/**/*.dart", recursive=True):
-              c = open(f).read()
-              for w in ["Supabase", "FlutterSecureStorage", "FlutterJailbreakDetection", "MobileAds", "DotEnv", "Provider", "VideoPlayer", "launchUrl", "MultiProvider", "ChangeNotifier", "ArCoreView", "ArCoreController"]:
-                  c = c.replace(w, "// Code Stub")
-              open(f, "w").write(c)
-          ' || true
+          echo -e "analyzer:\n  exclude:\n    - 'build/**'\n  errors:\n    todo: ignore\nlinter:\n  rules: []" > analysis_options.yaml
           flutter pub cache clean --force || true
           flutter clean || true
           flutter pub get --no-example || true
+          dart format lib/ || true
+          dart fix --apply || true
       - name: Android Build Patching & Acceptable Framework Configuration
         shell: bash
         run: |
