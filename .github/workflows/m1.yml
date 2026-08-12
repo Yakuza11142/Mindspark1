@@ -30,20 +30,16 @@ jobs:
           [ -d "assets" ] && cp -r assets/* ../vault/assets/ || true
           [ -d "web" ] && cp -r web/* ../vault/web/ || true
           
-          # CRUCIAL: Completely delete pubspec.yaml here so 'flutter create' sees a clean folder
           rm -f pubspec.yaml pubspec.lock pubspec_overrides.yaml
           rm -rf android ios windows macos linux build
           
-          # Run create in a pristine workspace to prevent Exit Code 255
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
           
-          # Restore your untouched engine files
           rm -rf lib assets web
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           
-          # Rebuild a perfectly valid pubspec.yaml with all your actual dependencies
           cat << 'EOF' > pubspec.yaml
           name: mindspark1
           description: MindSpark Scalable 3D Vector Hologram Engine
@@ -66,6 +62,7 @@ jobs:
               - assets/
           EOF
           
+          sed -i '/pqc/d' pubspec.yaml || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
       - name: Native Toolchain Code Optimization
         run: |
@@ -86,7 +83,7 @@ jobs:
           find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
           python3 -c '
           import os, glob
-          for f in glob.glob("android/**/*.gradle", recursive=True):
+          for g in glob.glob("android/**/*.gradle", recursive=True):
               c = open(g).read()
               if "android {" in c and "namespace" not in c:
                   c = c.replace("android {", "android {\n    namespace \"com.mindspark.mindspark1\"")
