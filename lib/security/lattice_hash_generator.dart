@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:pqc/pqc.dart';
+import 'package:pqccrypto/pqccrypto.dart';
 
 class LatticeKeyPairContainer {
   final Uint8List publicKey;
