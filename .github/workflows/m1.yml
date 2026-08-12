@@ -29,34 +29,57 @@ jobs:
           [ -d "lib" ] && cp -r lib/* ../vault/lib/ || true
           [ -d "assets" ] && cp -r assets/* ../vault/assets/ || true
           [ -d "web" ] && cp -r web/* ../vault/web/ || true
-          
           if [ -f "pubspec.yaml" ]; then
-            # Complete syntax recovery BEFORE running any flutter commands
-            sed -i '/sdk:\s*flutter/d' pubspec.yaml || true
             sed -i '/pqc/d' pubspec.yaml || true
+            python3 -c '
+          lines = open("pubspec.yaml").read().split("\n")
+          cleaned, flutter_contents = [], []
+          found_flutter_root, in_second_flutter_block = False, False
+          for l in lines:
+              strip_l = l.strip()
+              if strip_l == "flutter:":
+                  if not found_flutter_root:
+                      cleaned.append(l)
+                      found_flutter_root = True
+                  else:
+                      in_second_flutter_block = True
+                      continue
+              elif in_second_flutter_block and (strip_l.endswith(":") or (not l.startswith(" ") and len(strip_l) > 0)):
+                  in_second_flutter_block = False
+                  cleaned.append(l)
+              elif in_second_flutter_block:
+                  flutter_contents.append(l)
+              else:
+                  cleaned.append(l)
+          final_out = []
+          for l in cleaned:
+              final_out.append(l)
+              if l.strip() == "flutter:":
+                  for f_line in flutter_contents:
+                      final_out.append(f_line)
+          final_lines = []
+          found_sdk_flutter = False
+          for l in final_out:
+              if "sdk: flutter" in l:
+                  if not found_sdk_flutter:
+                      final_lines.append(l)
+                      found_sdk_flutter = True
+                  else:
+                      continue
+              else:
+                  final_lines.append(l)
+          open("pubspec.yaml", "w").write("\n".join(final_lines))
+          '
             cp pubspec.yaml ../vault/
           fi
-          
           rm -rf android ios windows macos linux build * .[^.]*
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
           rm -rf lib assets web pubspec.yaml
-          
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
-          
           if [ -f "../vault/pubspec.yaml" ]; then
             cp ../vault/pubspec.yaml ./pubspec.yaml
-            # Re-inject exactly ONE valid mapping block cleanly
-            python3 -c '
-          lines = open("pubspec.yaml").read().split("\n")
-          out = []
-          for l in lines:
-              out.append(l)
-              if "dependencies:" in l:
-                  out.append("  flutter:\n    sdk: flutter")
-          open("pubspec.yaml", "w").write("\n".join(out))
-          '
           else
             echo -e "name: mindspark1\npublish_to: \"none\"\nversion: 1.0.0+1\nenvironment:\n  sdk: \">=3.12.0 <4.0.0\"\ndependencies:\n  flutter:\n    sdk: flutter\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/\n" > pubspec.yaml
           fi
