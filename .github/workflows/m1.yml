@@ -32,15 +32,28 @@ jobs:
           [ -f "pubspec.yaml" ] && cp pubspec.yaml ../vault/ || true
           rm -rf android ios windows macos linux build * .[^.]*
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
-          rm -rf lib assets web pubspec.yaml
+          rm -rf lib assets web
           cp -r ../vault/lib ./lib
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           if [ -f "../vault/pubspec.yaml" ]; then
             cp ../vault/pubspec.yaml ./pubspec.yaml
+            python3 -c '
+          lines = open("pubspec.yaml").read().split("\n")
+          out = []
+          found_sdk_flutter = False
+          for l in lines:
+              if "sdk: flutter" in l:
+                  if not found_sdk_flutter:
+                      out.append(l)
+                      found_sdk_flutter = True
+                  else:
+                      continue
+              else:
+                  out.append(l)
+          open("pubspec.yaml", "w").write("\n".join(out))
+          '
             sed -i '/pqc/d' pubspec.yaml || true
-          else
-            echo -e "name: mindspark1\npublish_to: \"none\"\nversion: 1.0.0+1\nenvironment:\n  sdk: \">=3.12.0 <4.0.0\"\ndependencies:\n  flutter:\n    sdk: flutter\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/\n" > pubspec.yaml
           fi
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
       - name: Zero-Fail Structural Auto-Heal
