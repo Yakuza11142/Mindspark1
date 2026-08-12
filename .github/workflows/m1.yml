@@ -38,8 +38,9 @@ jobs:
           cp -r ../vault/web ./web
           if [ -f "../vault/pubspec.yaml" ]; then
             cp ../vault/pubspec.yaml ./pubspec.yaml
-            sed -i '/pqc:/d' pubspec.yaml || true
-            sed -i '/pqc\s*$/d' pubspec.yaml || true
+            sed -i '/pqc/d' pubspec.yaml || true
+          else
+            echo -e "name: mindspark1\npublish_to: \"none\"\nversion: 1.0.0+1\nenvironment:\n  sdk: \">=3.12.0 <4.0.0\"\ndependencies:\n  flutter:\n    sdk: flutter\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/\n" > pubspec.yaml
           fi
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
       - name: Zero-Fail Structural Auto-Heal
