@@ -5,10 +5,7 @@ import 'spatial_stub.dart'
     if (dart.library.html) 'spatial_web.dart'
     if (dart.library.io) 'spatial_mobile.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MindSparkApp());
-}
+void main() => runApp(const MindSparkApp());
 
 class MindSparkApp extends StatelessWidget {
   const MindSparkApp({super.key});
@@ -40,10 +37,14 @@ class _MainDevelopmentPageState extends State<MainDevelopmentPage> {
   @override
   void initState() {
     super.initState();
-    _runCalculations();
+    // Safely waits for the framework to mount before calculating coordinates
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runCalculations();
+    });
   }
 
   void _runCalculations() {
+    if (!mounted) return;
     final DateTime now = DateTime.now();
     setState(() {
       formattedTime = now.toIso8601String();
