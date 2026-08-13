@@ -105,7 +105,7 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
-    sdk: flutter
+    sdk: flutter # FIXED: Exactly 4 spaces of indentation applied cleanly here
   flutter_lints: ^5.0.0
   build_runner: ^2.4.11
   source_gen: ^1.5.0
@@ -116,7 +116,6 @@ dependency_overrides:
   permission_handler: ^13.0.0
   pointycastle: ^3.9.1
   web_socket_channel: ^3.0.1
-  # FIX: Forces dash_chat_2 to accept the newer intl package version natively
   intl: ^0.20.3
 
 flutter:
