@@ -82,11 +82,11 @@ jobs:
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Force patch Gradle syntax inside your local project build scripts
+          # Patch project gradle build scripts
           find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
           
-          # CRUCIAL: Reach directly into the hidden pub.dev package cache and fix arcore syntax before compilation
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/configurations.all/configurations.configureEach/g' {} + 2>/dev/null || true
+          # FORCE DELETE: Target line 77 container errors in arcore cache completely by deleting the broken block line
+          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e '/configurations.all/d' -e '/configureEach/d' {} + 2>/dev/null || true
           
           python3 -c '
           import os, glob
