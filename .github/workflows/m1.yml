@@ -42,18 +42,18 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
+      # FIX: Creates platforms securely using your checked-in pubspec configuration file natively
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           
-          mv pubspec.yaml ../pubspec.yaml.true.bak || true
+          # Wipe existing native environments but keep your source pubspec untouched
           rm -rf android web
           
-          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
+          # Call create cleanly (Flutter reads your real pubspec file without throwing sdk errors)
+          flutter create --platforms=android,web .
           
-          rm -f pubspec.yaml
-          mv ../pubspec.yaml.true.bak pubspec.yaml
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
 
       - name: Configure Production Environment Variables
