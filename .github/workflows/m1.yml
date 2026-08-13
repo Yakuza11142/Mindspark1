@@ -42,18 +42,22 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
-      # FIXED: Strips away native directories but leaves your checked-in pubspec.yaml completely untouched
+      # FIX: Isolates flutter create by hiding your pubspec completely to prevent parsing crashes
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           
-          # Delete only the generated platform folders, preserving your source pubspec.yaml
+          # Move your clean source file completely out of the workspace directory
+          mv pubspec.yaml ../pubspec.yaml.true.bak || true
           rm -rf android web
           
-          # Natively create missing infrastructure using your existing pubspec definition
+          # Force create pristine platform configurations using pure Flutter defaults
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
+          # Completely shred the template pubspec and force overwrite with your actual file
+          rm -f pubspec.yaml
+          mv ../pubspec.yaml.true.bak pubspec.yaml
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
 
       - name: Configure Production Environment Variables
@@ -73,7 +77,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # Enforces cache eviction to eliminate the bad flutter_test package pointers safely
+      # Completely flushes the runner dependency mapping engine
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
