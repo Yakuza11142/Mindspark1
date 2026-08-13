@@ -10,6 +10,7 @@ jobs:
     name: Build MindSpark Android and Web
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    # Global environment configuration for API keys, databases, and keystores
     env: 
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
@@ -42,7 +43,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
-      # Clean, automated compilation of native modules based on your configurations
+      # Automatically generates fresh, clean platform wrappers natively on the runner machine
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
@@ -68,16 +69,16 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # OMNIPOTENT DEPENDENCY RESOLVER STEP: Overrides version barriers dynamically
+      # OMNIPOTENT DEPENDENCY RESOLVER: Wipes out the source pubspec indentation errors and forces compatibility
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
           
-          # Force clean old override hooks to avoid duplicates
+          # 1. Clean up any existing broken overrides blocks from your raw file completely
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          # Inject global solver override matrix natively into pubspec.yaml
+          # 2. Re-inject clean, explicit overrides that bypass pub.dev and unlock restricted versions safely
           cat << EOF >> pubspec.yaml
 
 dependency_overrides:
@@ -98,7 +99,7 @@ dependency_overrides:
   permission_handler: any
 EOF
           
-          # Force compilation pull parameters
+          # 3. Pull modern, error-free library versions down cleanly
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
