@@ -42,20 +42,16 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
-      # FIX: Isolates flutter create by hiding your pubspec completely to prevent parsing crashes
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           
-          # Move your clean source file completely out of the workspace directory
           mv pubspec.yaml ../pubspec.yaml.true.bak || true
           rm -rf android web
           
-          # Force create pristine platform configurations using pure Flutter defaults
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
-          # Completely shred the template pubspec and force overwrite with your actual file
           rm -f pubspec.yaml
           mv ../pubspec.yaml.true.bak pubspec.yaml
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
@@ -77,11 +73,16 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # Completely flushes the runner dependency mapping engine
+      # FIX: Injected an automated pubspec.yaml hook to force local SDK resolution loops safely
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
+          
+          # Force fix testing toolchain scopes directly into pubspec settings natively
+          sed -i '/dependency_overrides:/,/^[^ ]/ {/flutter_test:/d; /sdk: flutter/d}' pubspec.yaml || true
+          sed -i '/dependency_overrides:/a\  flutter_test:\n    sdk: flutter\n  integration_test:\n    sdk: flutter' pubspec.yaml || true
+          
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
