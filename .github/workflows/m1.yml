@@ -42,18 +42,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
-      # FIX: Creates platforms securely using your checked-in pubspec configuration file natively
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
-          
-          # Wipe existing native environments but keep your source pubspec untouched
           rm -rf android web
-          
-          # Call create cleanly (Flutter reads your real pubspec file without throwing sdk errors)
           flutter create --platforms=android,web .
-          
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
 
       - name: Configure Production Environment Variables
@@ -73,10 +67,18 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
+      # FIX: Force inject local absolute file overrides to bypass corrupt pub.dev cache lookups entirely
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
+          
+          # Clean out old strings
+          sed -i '/dependency_overrides:/,/^[^ ]/ {/flutter_test:/d; /sdk: flutter/d; /path:/d}' pubspec.yaml || true
+          
+          # Force resolution to point straight to the system core SDK path directory on this virtual machine
+          sed -i '/dependency_overrides:/a\  flutter_test:\n    path: '"$FLUTTER_ROOT"'/packages/flutter_test\n  sky_engine:\n    path: '"$FLUTTER_ROOT"'/bin/cache/pkg/sky_engine' pubspec.yaml
+          
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
