@@ -40,29 +40,20 @@ jobs:
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+        with: { channel: stable, cache: false }
 
-      - name: Cache Flutter Pub Packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool/
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: ${{ runner.os }}-flutter-
-
+      # FIXED: Strips away native directories but leaves your checked-in pubspec.yaml completely untouched
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           
-          mv pubspec.yaml ../pubspec.yaml.bak || true
+          # Delete only the generated platform folders, preserving your source pubspec.yaml
           rm -rf android web
           
+          # Natively create missing infrastructure using your existing pubspec definition
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
-          rm -f pubspec.yaml
-          mv ../pubspec.yaml.bak pubspec.yaml || true
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
 
       - name: Configure Production Environment Variables
@@ -82,10 +73,11 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # FIX: Added aggressive lock cleaning commands to bust old cached dependency states
+      # Enforces cache eviction to eliminate the bad flutter_test package pointers safely
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          rm -rf pubspec.lock .dart_tool/
+          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
+          flutter pub cache clean --force || true
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
