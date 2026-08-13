@@ -73,15 +73,17 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # FIX: Injected an automated pubspec.yaml hook to force local SDK resolution loops safely
+      # FIX: Injects an automated dependency override mapping to align pointycastle and resolve the null safety conflict
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
           
-          # Force fix testing toolchain scopes directly into pubspec settings natively
-          sed -i '/dependency_overrides:/,/^[^ ]/ {/flutter_test:/d; /sdk: flutter/d}' pubspec.yaml || true
-          sed -i '/dependency_overrides:/a\  flutter_test:\n    sdk: flutter\n  integration_test:\n    sdk: flutter' pubspec.yaml || true
+          # Strip old references from pubspec to avoid duplicate mappings
+          sed -i '/dependency_overrides:/,/^[^ ]/ {/pointycastle:/d; /flutter_test:/d; /sdk: flutter/d}' pubspec.yaml || true
+          
+          # Inject clean, compliant overrides to force backwards-compatible version resolution loops safely
+          sed -i '/dependency_overrides:/a\  pointycastle: ^3.9.1\n  flutter_test:\n    sdk: flutter\n  integration_test:\n    sdk: flutter' pubspec.yaml || true
           
           flutter pub get
           dart format lib/ || true
