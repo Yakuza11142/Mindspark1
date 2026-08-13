@@ -42,6 +42,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
+      # Clean, automated compilation of native modules based on your configurations
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
@@ -67,18 +68,37 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # FIX: Force inject local absolute file overrides to bypass corrupt pub.dev cache lookups entirely
+      # OMNIPOTENT DEPENDENCY RESOLVER STEP: Overrides version barriers dynamically
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
           
-          # Clean out old strings
-          sed -i '/dependency_overrides:/,/^[^ ]/ {/flutter_test:/d; /sdk: flutter/d; /path:/d}' pubspec.yaml || true
+          # Force clean old override hooks to avoid duplicates
+          sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          # Force resolution to point straight to the system core SDK path directory on this virtual machine
-          sed -i '/dependency_overrides:/a\  flutter_test:\n    path: '"$FLUTTER_ROOT"'/packages/flutter_test\n  sky_engine:\n    path: '"$FLUTTER_ROOT"'/bin/cache/pkg/sky_engine' pubspec.yaml
+          # Inject global solver override matrix natively into pubspec.yaml
+          cat << EOF >> pubspec.yaml
+
+dependency_overrides:
+  flutter_test:
+    path: "$FLUTTER_ROOT/packages/flutter_test"
+  integration_test:
+    path: "$FLUTTER_ROOT/packages/integration_test"
+  sky_engine:
+    path: "$FLUTTER_ROOT/bin/cache/pkg/sky_engine"
+  meta: any
+  analyzer: any
+  intl: any
+  pointycastle: any
+  web_socket_channel: any
+  crypto: any
+  uuid: any
+  path: any
+  permission_handler: any
+EOF
           
+          # Force compilation pull parameters
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
