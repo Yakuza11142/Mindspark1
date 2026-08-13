@@ -116,6 +116,8 @@ dependency_overrides:
   permission_handler: ^13.0.0
   pointycastle: ^3.9.1
   web_socket_channel: ^3.0.1
+  # FIX: Forces dash_chat_2 to accept the newer intl package version natively
+  intl: ^0.20.3
 
 flutter:
   uses-material-design: true
