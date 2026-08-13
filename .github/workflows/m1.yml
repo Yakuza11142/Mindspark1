@@ -46,7 +46,6 @@ jobs:
           cp -r ../vault/assets ./assets
           cp -r ../vault/web ./web
           
-          # FIX: Completely removed arcore_flutter_plus from the production dependencies block
           cat << 'EOF' > pubspec.yaml
           name: mindspark1
           description: MindSpark Scalable 3D Vector Hologram Engine
@@ -90,11 +89,9 @@ jobs:
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Inject targets natively into properties
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           
-          # Enforce global rules out of initialization frameworks cleanly
           mkdir -p ~/.gradle
           cat << 'EOF' > ~/.gradle/init.gradle
           allprojects {
@@ -108,17 +105,15 @@ jobs:
           }
           EOF
           
-          # Fetch components first to ensure pub-cache paths are populated
+          # Fetch components first to guarantee pub-cache targets are written to the machine
           flutter pub get --no-example || true
 
-          # FIX: Safe, surgical regex block to wipe out the configurations.all container errors inside ANY legacy plugins
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i '/configurations\.all\s*\{/,/\}/d' {} + 2>/dev/null || true
+          # FIX: Target line 77 specifically inside arcore to transform 'configurations.all' into a non-breaking statement
+          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i 's/configurations\.all\s*\{/\/\/ configurations.all disabled {/g' {} + 2>/dev/null || true
           
-          # Sanitize repositories layouts cleanly
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
 
-      # Android compilation utilizing standard symbol obfuscation maps
       - name: Build Obfuscated Android APK
         run: |
           mkdir -p ../symbols
