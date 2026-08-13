@@ -62,7 +62,6 @@ jobs:
             google_mobile_ads: any
             flutter_jailbreak_detection: any
             flutter_secure_storage: any
-            # CHANGED: Replaced arcore_flutter_plus with the modern plugin alternative
             ar_flutter_plugin_plus: any
           flutter:
             uses-material-design: true
@@ -90,37 +89,28 @@ jobs:
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Inject targets cleanly into properties (Flutter handles the injection on KTS files automatically)
+          # FIX: Native SDK constraints mapping passed directly through local.properties values
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           
-          # Rebuild clean root project setup block
-          cat << 'EOF' > android/build.gradle
+          # FIX: Create an independent, global init.gradle script to enforce configurations safely outside the evaluation ring
+          mkdir -p ~/.gradle
+          cat << 'EOF' > ~/.gradle/init.gradle
           allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
+              beforeEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      // Fix missing namespaces inside older plugins cleanly before validation
+                      if (project.android.namespace == null) {
+                          project.android.namespace = "com.mindspark.mindspark1"
+                      }
+                  }
               }
-          }
-          tasks.register("clean", Delete) {
-              delete rootProject.buildDir
           }
           EOF
           
-          # Standardize repositories layout inside any fallback legacy package structures
-          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
-
-          # Apply namespaces safely across dependencies to comply with modern Gradle engines
-          python3 -c '
-          import os, glob
-          for g in glob.glob("android/**/*.gradle", recursive=True):
-              try:
-                  c = open(g).read()
-                  if "android {" in c and "namespace" not in c:
-                      c = c.replace("android {", "android {\n    namespace \"com.mindspark.mindspark1\"")
-                      open(g, "w").write(c)
-              except: pass
-          ' || true
+          # Force clean legacy repository types out of downstream pub-cache references safely
+          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
+          
           flutter pub get --no-example || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
 
