@@ -23,23 +23,20 @@ uniform vec4 uEntity3;
 uniform vec4 uEntity4; 
 uniform vec4 uEntity5; 
 
-// FIXED: Explicitly specify location binding for the fragment color output register
 layout(location = 0) out vec4 o_FragColor;
 
-// =========================================================================
-// PIPELINE OPTIMIZATION: TEMPORALLY STABLE PSEUDO-RANDOM NOISE GENERATOR
-// =========================================================================
+// TEMPORALLY STABLE NOISE GENERATOR
 float generateHoloNoise(vec2 co) {
     float dotProduct = dot(co, vec2(12.9898, 78.233));
     return fract(sin(mod(dotProduct, 3.141592653589793)) * 43758.5453);
 }
 
-// =========================================================================
-// SUB-ROUTINE: EVALUATE INDEPENDENT ARTIFACT NODE TRACKS (BRANCHLESS)
-// =========================================================================
-vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
+// BRANCHLESS CHILD ENTITY EVALUATION
+vec4 processChildEntity(vec2 universalUV, vec4 entityTrack, float globalScale) {
     vec2 entityCoordinates = vec2(entityTrack.x, entityTrack.y);
-    float enforcedScale = entityTrack.z;
+    
+    // Scale-adaptive entity distance check
+    float enforcedScale = entityTrack.z * globalScale;
     float entityLife = entityTrack.w;
 
     float operationalMask = step(0.001, entityLife) * step(entityLife, 1.0);
@@ -53,111 +50,105 @@ vec4 processChildEntity(vec2 universalUV, vec4 entityTrack) {
     return vec4(accentColor * alphaOutput, alphaOutput);
 }
 
-// =========================================================================
-// SYSTEM MAIN EXECUTABLE ENVIRONMENT (LOCKED TO 6FT PROPORTIONS)
-// =========================================================================
 void main() {
-    // Standardize fragment mapping metrics using Flutter's native coordinate tracker
+    // Screen UV Space
     vec2 universalUV = FlutterFragCoord().xy / uViewportDimensions.xy;
 
-    // Unpack system configuration structures
+    // Unpack parameters
     vec2 hologramOrigin  = uHologramStats.xy;
     float coreGlow       = uHologramStats.z;
-    float hologramScale  = uHologramStats.w;
+    
+    // Dynamic Logarithmic Scaling Factor passed from Dart
+    float hologramScale  = max(uHologramStats.w, 0.000001);
 
     float scanSpeed      = uHoloSystemFX.x;
     float scanIntensity  = uHoloSystemFX.y;
     float jumpIntensity  = uHoloSystemFX.z;
     float noiseDensity   = uHoloSystemFX.w;
 
-    // Apply dynamic modulo bounding constraints to incoming timeline deltas
     float boundedTime = mod(uTimelineDelta, 100.0);
     float randomNoise = generateHoloNoise(universalUV + vec2(boundedTime));
 
-    // Branchless glitch layer calculation matrix
+    // Glitch Offset
     float glitchMask = step(0.90, jumpIntensity);
     float waveRip = sin(universalUV.y * 30.0 + boundedTime * 50.0) * noiseDensity * jumpIntensity * 5.0;
     float xOffset = ((randomNoise - 0.5) * (noiseDensity * 12.0 * jumpIntensity) + waveRip) * glitchMask;
     universalUV.x += xOffset;
 
-    // Map local space vectors for the primary parent avatar structure
+    // =========================================================================
+    // INFINITE SCALE COORDINATE TRANSFORMATION
+    // =========================================================================
+    // Dynamic UV scaling relative to centroid origin
     vec2 localSpaceUV = (universalUV - hologramOrigin) * hologramScale;
-    vec2 bodyUV = localSpaceUV + vec2(0.0, 0.5); // Align anatomy height mapping arrays
+    vec2 bodyUV = localSpaceUV + vec2(0.0, 0.5); 
 
+    // ANATOMY MAPPING (Scale Independent)
     float anatomyMask = 0.0;
     float skeletalGlow = 0.0;
 
-    // REGION 1: HEAD & FACE [Height Span: 5.14ft to 6.00ft]
+    // Head
     float isHead = step(0.85, bodyUV.y) * step(bodyUV.y, 1.0);
     vec2 headUV = bodyUV - vec2(0.0, 0.925);
     float headMask = smoothstep(0.14, 0.0, length(headUV * vec2(1.0, 1.25)));
     vec2 leftEye = headUV - vec2(-0.045, 0.02);
     vec2 rightEye = headUV - vec2(0.045, 0.02);
     float eyes = smoothstep(0.015, 0.0, length(leftEye)) + smoothstep(0.015, 0.0, length(rightEye));
-    float mouth = smoothstep(0.008, 0.0, abs(headUV.y + 0.03 + (headUV.x * headUV.x * 2.5))) * smoothstep(0.05, 0.0, abs(headUV.x));
-    float headGlow = (eyes * 0.8) + (mouth * 0.9);
+    float headGlow = eyes * 0.8;
 
-    // REGION 2: NECK [Height Span: 4.80ft to 5.14ft]
+    // Neck
     float isNeck = step(0.80, bodyUV.y) * step(bodyUV.y, 0.85);
     float neckMask = smoothstep(0.05, 0.0, abs(bodyUV.x));
 
-    // REGION 3: TORSO & SHOULDERS [Height Span: 2.70ft to 4.80ft]
+    // Torso
     float isTorso = step(0.45, bodyUV.y) * step(bodyUV.y, 0.80);
     float torsoHeightFactor = (bodyUV.y - 0.45) / 0.35;
     float dynamicShoulderWidth = mix(0.12, 0.22, smoothstep(0.0, 0.8, torsoHeightFactor));
-    float waistTaper = mix(0.0, 0.04, sin(torsoHeightFactor * 3.14159));
-    float calculatedTorsoWidth = dynamicShoulderWidth - waistTaper;
-    float torsoMask = smoothstep(calculatedTorsoWidth, 0.0, abs(bodyUV.x));
+    float torsoMask = smoothstep(dynamicShoulderWidth, 0.0, abs(bodyUV.x));
     float torsoGlow = smoothstep(0.02, 0.0, abs(bodyUV.x)) * 0.4;
 
-    // REGION 4: LOWER LEGS [Height Span: 0.30ft to 2.70ft]
+    // Legs
     float isLegs = step(0.05, bodyUV.y) * step(bodyUV.y, 0.45);
-    float legSpacing = 0.07;
-    float activeLegAxis = min(abs(bodyUV.x - legSpacing), abs(bodyUV.x + legSpacing));
-    float legHeightFactor = (bodyUV.y - 0.05) / 0.40;
-    float dynamicLegThick = mix(0.04, 0.055, sin(legHeightFactor * 3.14159 + 0.5));
-    float legsMask = smoothstep(dynamicLegThick, 0.0, activeLegAxis);
-    float legsGlow = smoothstep(0.008, 0.0, activeLegAxis) * 0.3;
+    float activeLegAxis = min(abs(bodyUV.x - 0.07), abs(bodyUV.x + 0.07));
+    float legsMask = smoothstep(0.05, 0.0, activeLegAxis);
 
-    // REGION 5: STABILITY BASE / FEET [Height Span: 0.00ft to 0.30ft]
+    // Feet
     float isFeet = step(0.0, bodyUV.y) * step(bodyUV.y, 0.05);
-    float footSpread = mix(0.12, 0.06, bodyUV.y / 0.05);
-    float feetMask = smoothstep(footSpread, 0.0, abs(bodyUV.x));
+    float feetMask = smoothstep(0.1, 0.0, abs(bodyUV.x));
 
-    // Compile absolute anatomy channels branchlessly for optimized GPU profiling
     anatomyMask = (isHead * headMask) + (isNeck * neckMask) + (isTorso * torsoMask) + (isLegs * legsMask) + (isFeet * feetMask);
-    skeletalGlow = (isHead * headGlow) + (isTorso * torsoGlow) + (isLegs * legsGlow);
+    skeletalGlow = (isHead * headGlow) + (isTorso * torsoGlow);
 
     float isInsideBody = step(0.001, anatomyMask);
-    float scanlines = sin(bodyUV.y * 120.0) * 0.15 + 0.85;
+
+    // =========================================================================
+    // DYNAMIC SCALE-ADAPTIVE SCANLINES
+    // =========================================================================
+    // Modulates frequency based on hologramScale so pattern stays crisp at infinite zoom
+    float dynamicFrequency = mix(120.0, 120.0 * log2(hologramScale + 1.0), step(1.0, hologramScale));
+    float scanlines = sin(bodyUV.y * dynamicFrequency) * 0.15 + 0.85;
+
     float initialVolume = isInsideBody * (anatomyMask * 0.5 * scanlines);
     float totalHologramDensity = clamp(initialVolume + skeletalGlow + (coreGlow * isInsideBody), 0.0, 1.0);
 
-    // Traveling electronic laser scan bar tracking
+    // Dynamic laser scan bar
     float scanBarY = fract(boundedTime * scanSpeed);
     float scanBarLine = smoothstep(0.02, 0.0, abs(universalUV.y - scanBarY));
     totalHologramDensity += scanBarLine * scanIntensity * isInsideBody;
 
-    // Dematerialization alpha drop if teleporting
-    totalHologramDensity *= mix(1.0, 0.15, jumpIntensity);
-
-    vec3 hologramBaseColor = vec3(0.0, 0.85, 1.0); // Cybernetic Neon Cyan
+    vec3 hologramBaseColor = vec3(0.0, 0.85, 1.0); // Cybernetic Cyan
     vec4 finalParentFrame = vec4(hologramBaseColor * totalHologramDensity, totalHologramDensity);
 
-    // =========================================================================
-    // LAYER B: EXPLICIT UNROLLED BLENDING (Ensures Cross-Platform Security)
-    // =========================================================================
+    // Child entity layer accumulation
     vec4 childAccumulator = vec4(0.0);
-    childAccumulator += processChildEntity(universalUV, uEntity0);
-    childAccumulator += processChildEntity(universalUV, uEntity1);
-    childAccumulator += processChildEntity(universalUV, uEntity2);
-    childAccumulator += processChildEntity(universalUV, uEntity3);
-    childAccumulator += processChildEntity(universalUV, uEntity4);
-    childAccumulator += processChildEntity(universalUV, uEntity5);
+    childAccumulator += processChildEntity(universalUV, uEntity0, hologramScale);
+    childAccumulator += processChildEntity(universalUV, uEntity1, hologramScale);
+    childAccumulator += processChildEntity(universalUV, uEntity2, hologramScale);
+    childAccumulator += processChildEntity(universalUV, uEntity3, hologramScale);
+    childAccumulator += processChildEntity(universalUV, uEntity4, hologramScale);
+    childAccumulator += processChildEntity(universalUV, uEntity5, hologramScale);
 
     vec3 blendedRGB = finalParentFrame.rgb + childAccumulator.rgb * (1.0 - finalParentFrame.a);
     float blendedAlpha = clamp(finalParentFrame.a + childAccumulator.a * (1.0 - finalParentFrame.a), 0.0, 0.95);
 
-    // FIXED: Route variables directly into the explicitly declared output register location
     o_FragColor = vec4(blendedRGB, blendedAlpha);
 }
