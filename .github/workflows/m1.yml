@@ -10,7 +10,29 @@ jobs:
     name: Build MindSpark Android and Web
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env: { GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8", JAVA_TOOL_OPTIONS: "-Xmx4g" }
+    # GLOBAL CONFIGURATION: All operational and cryptographic keys declared uniformly
+    env: 
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
+      JAVA_TOOL_OPTIONS: "-Xmx4g"
+      # API & Database Secrets
+      SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
+      SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+      OPENAI_KEY: "${{ secrets.OPENAI_KEY }}"
+      GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}"
+      VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}"
+      HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}"
+      RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}"
+      TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}"
+      PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
+      MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
+      ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
+      # Cryptographic Keystore Secrets
+      KEYSTORE_BASE64: "${{ secrets.KEYSTORE_BASE64 }}"
+      KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
+      KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
+      KEY_PASSWORD: "${{ secrets.KEY_PASSWORD }}"
+
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -87,19 +109,21 @@ jobs:
           echo -e "package com.mindspark.mindspark1\nimport io.flutter.embedding.android.FlutterActivity\nclass MainActivity : FlutterActivity()" > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
           
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
+          
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          # Map key properties matching variable layout profiles dynamically
+          if [ -n "$KEYSTORE_BASE64" ]; then
             echo "storeFile=../../release.keystore" >> android/key.properties
-            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
-            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+            print("Successfully configured release properties target mapping.")
           fi
 
-          # FIX: Isolated global init.gradle initialization block inside safe multi-line quotes
           mkdir -p ~/.gradle
           echo "allprojects {" > ~/.gradle/init.gradle
           echo "    beforeEvaluate { project ->" >> ~/.gradle/init.gradle
@@ -133,13 +157,11 @@ jobs:
                               open(g, "w").write(content)
               except: pass
           ' || true
-        env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
 
+      # Decodes the key format into binary directly on the workspace directory root
       - name: Unpack Secure Production Keystore
         if: env.KEYSTORE_BASE64 != ''
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
       - name: Build Obfuscated Android APK
         run: |
