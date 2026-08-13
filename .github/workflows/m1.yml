@@ -89,6 +89,7 @@ jobs:
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nandroid.newDsl=false" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
+          # FIX: Overriding compileSdk safely using root-level configuration resolution patterns
           cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -97,9 +98,9 @@ jobs:
               }
           }
           subprojects {
-              project.beforeEvaluate { proj ->
-                  if (proj.hasProperty('android')) {
-                      proj.android {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
                           compileSdk = 37
                           buildToolsVersion = "35.0.0"
                       }
@@ -125,7 +126,6 @@ jobs:
           flutter pub get --no-example || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
 
-      # CHANGED: Upgraded to release mode with explicit Dart symbol obfuscation
       - name: Build Obfuscated Android APK
         run: |
           mkdir -p ../symbols
@@ -135,7 +135,6 @@ jobs:
             --android-skip-build-dependency-validation \
             --dart-define-from-file=../secrets.json
 
-      # CHANGED: Added compilation parameters to obfuscate Dart pathways compiled to JS
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
           rm -rf build/web web
@@ -156,12 +155,10 @@ jobs:
       - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      # CHANGED: Changed pathway pointer target to app-release.apk
       - name: Upload Android Release APK Artifact
         uses: actions/upload-artifact@v4
         with: { name: mindspark-release-apk, path: build/app/outputs/flutter-apk/app-release.apk }
 
-      # NEW: Saves symbols securely so you can read your stack traces later
       - name: Upload Obfuscation Symbols
         uses: actions/upload-artifact@v4
         with: { name: mindspark-obfuscation-symbols, path: ../symbols/ }
