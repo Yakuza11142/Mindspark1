@@ -89,20 +89,35 @@ jobs:
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # FIX: Inject properties globally into local.properties for non-breaking, automated resolution
+          # Inject targets natively without altering raw code pathways
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           
-          # Clean faulty configuration structures within target plugins
-          find /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*/ -name "build.gradle" -exec sed -i '/configurations.all/,/}/d' {} + 2>/dev/null || true
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i '/def flutterRoot/,/}/d' {} + 2>/dev/null || true
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i '/variant.outputs.each/d' {} + 2>/dev/null || true
+          # FIX: Replaced destructive sed cache hacks with a non-breaking native root build configuration file
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              // Force resolve all matching transitive plugins to target compile SDK elements uniformly 
+              configurations.all {
+                  resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                      if (details.requested.group == 'com.android.support' && !details.requested.name.contains('multidex')) {
+                          details.useVersion '28.0.0'
+                      }
+                  }
+              }
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
           
-          # FIX: Cleaned regex scope patterns to safely target legacy build profiles without colliding with KTS syntax files
-          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s\+[0-9]\+/\1 37/g' {} + 2>/dev/null || true
-          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/buildToolsVersion\s\+["'\''][^"'\'']*["'\'']/buildToolsVersion "35.0.0"/g' {} + 2>/dev/null || true
+          # Safe repositories alignment fallback across legacy files without stripping text blocks
+          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
 
-          # Apply namespaces safely across Groovy target pathways
+          # Apply namespaces safely across dependencies
           python3 -c '
           import os, glob
           for g in glob.glob("android/**/*.gradle", recursive=True):
