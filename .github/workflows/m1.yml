@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 permissions: { contents: write, pages: write, id-token: write }
 concurrency: { group: mindspark-production, cancel-in-progress: false }
+
 jobs:
   build:
     name: Build MindSpark Android and Web
@@ -13,16 +14,21 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
+
       - name: Setup Java Runtime
         uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17", cache: gradle }
+
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
+
       - name: Setup Android Infrastructure
         uses: android-actions/setup-android@v3
+
       - name: Accept Developer Licenses
         run: yes | sdkmanager --licenses || true; sdkmanager --update || true
+
       - name: Factory Sandbox Setup
         run: |
           mkdir -p ../vault/lib ../vault/assets ../vault/web
@@ -33,7 +39,7 @@ jobs:
           rm -f pubspec.yaml pubspec.lock pubspec_overrides.yaml
           rm -rf android ios windows macos linux build
           
-          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web --android-language java .
+          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
           rm -rf lib assets web
           cp -r ../vault/lib ./lib
@@ -65,14 +71,14 @@ jobs:
           
           sed -i '/pqc/d' pubspec.yaml || true
           echo "dependency_overrides: {flutter_test: {sdk: flutter},flutter_driver: {sdk: flutter},integration_test: {sdk: flutter},sky_engine: {sdk: flutter}}" > pubspec_overrides.yaml
+
       - name: Native Toolchain Code Optimization
         run: |
           echo -e "analyzer:\n  exclude:\n    - 'build/**'\n  errors:\n    todo: ignore\nlinter:\n  rules: []" > analysis_options.yaml
-          flutter pub cache clean --force || true
-          flutter clean || true
           flutter pub get --no-example || true
           dart format lib/ || true
           dart fix --apply || true
+
       - name: Android Build Patching & Acceptable Framework Configuration
         shell: bash
         run: |
@@ -80,11 +86,9 @@ jobs:
           mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1
           echo -e "package com.mindspark.mindspark1\nimport io.flutter.embedding.android.FlutterActivity\nclass MainActivity : FlutterActivity()" > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
           
-          # Force opt-out of newDsl and freeze memory properties to comply with AGP 9+ limits
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nandroid.newDsl=false" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Reconstruct root configuration script to overwrite arcore dependency containers cleanly
           cat << 'EOF' > android/build.gradle
           allprojects {
               repositories {
@@ -93,10 +97,9 @@ jobs:
               }
           }
           subprojects {
-              project.evaluationDependsOn(':app')
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      android {
+              project.beforeEvaluate { proj ->
+                  if (proj.hasProperty('android')) {
+                      proj.android {
                           compileSdk = 37
                           buildToolsVersion = "35.0.0"
                       }
@@ -108,9 +111,7 @@ jobs:
           }
           EOF
           
-          # Completely clean the broken configuration container line from arcore build file to fix syntax errors
           find /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*/ -name "build.gradle" -exec sed -i '/configurations.all/,/}/d' {} + 2>/dev/null || true
-          
           find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
           
           python3 -c '
@@ -123,23 +124,44 @@ jobs:
           ' || true
           flutter pub get --no-example || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
-      - name: Build Android APK
+
+      # CHANGED: Upgraded to release mode with explicit Dart symbol obfuscation
+      - name: Build Obfuscated Android APK
         run: |
-          flutter build apk --debug --android-skip-build-dependency-validation --dart-define-from-file=../secrets.json
+          mkdir -p ../symbols
+          flutter build apk --release \
+            --obfuscate \
+            --split-debug-info=../symbols \
+            --android-skip-build-dependency-validation \
+            --dart-define-from-file=../secrets.json
+
+      # CHANGED: Added compilation parameters to obfuscate Dart pathways compiled to JS
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
           rm -rf build/web web
           flutter create --platforms=web --org com.mindspark --project-name mindspark1 .
           sed -i 's|<base href="/">|<base href="/${{ github.event.repository.name }}/">|g' web/index.html || true
-          flutter build web --release --dart-define-from-file=../secrets.json
+          flutter build web --release \
+            --extra-front-end-options=--obfuscate \
+            --dart-define-from-file=../secrets.json
           sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=\$(date +%s)/g" build/web/index.html 2>/dev/null || true
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Pack Production Assets
         uses: actions/upload-pages-artifact@v3
         with: { path: build/web }
+
       - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
-      - name: Upload Android Debug APK Artifact
+
+      # CHANGED: Changed pathway pointer target to app-release.apk
+      - name: Upload Android Release APK Artifact
         uses: actions/upload-artifact@v4
-        with: { name: mindspark-debug-apk, path: build/app/outputs/flutter-apk/app-debug.apk }
+        with: { name: mindspark-release-apk, path: build/app/outputs/flutter-apk/app-release.apk }
+
+      # NEW: Saves symbols securely so you can read your stack traces later
+      - name: Upload Obfuscation Symbols
+        uses: actions/upload-artifact@v4
+        with: { name: mindspark-obfuscation-symbols, path: ../symbols/ }
