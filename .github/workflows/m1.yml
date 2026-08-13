@@ -1,122 +1,134 @@
-name: MindSpark Production CI
-on:
-  push: { branches: [main, master, dev, "**"] }
-  workflow_dispatch:
-permissions: { contents: write, pages: write, id-token: write }
-concurrency: { group: mindspark-production, cancel-in-progress: false }
+name: mindspark1
+description: "AI TUTOR & AR LAB"
+publish_to: "none"
+version: 1.0.0+1
 
-jobs:
-  build:
-    name: Build MindSpark Android and Web
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
-    env: 
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
-      JAVA_TOOL_OPTIONS: "-Xmx4g"
-      SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
-      SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
-      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
-      OPENAI_KEY: "${{ secrets.OPENAI_KEY }}"
-      GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}"
-      VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}"
-      HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}"
-      RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}"
-      TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}"
-      PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
-      MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
-      ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
-      KEYSTORE_BASE64: "${{ secrets.KEYSTORE_BASE64 }}"
-      KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
-      KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
-      KEY_PASSWORD: "${{ secrets.KEY_PASSWORD }}"
+environment:
+  sdk: ">=3.5.0 <4.0.0"
 
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v4
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.9
 
-      - name: Setup Java Runtime
-        uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: "17", cache: gradle }
+  # CLOUD BACKEND
+  supabase_flutter: ^2.16.0
 
-      - name: Setup Flutter Environment
-        uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: true }
+  # APPLICATION STATE & UTILITIES
+  provider: ^6.1.5+1
+  flutter_dotenv: ^6.0.1
+  intl: ^0.20.3
+  crypto: ^3.0.7
+  uuid: ^4.6.0
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  package_info_plus: ^10.2.1
+  share_plus: ^13.3.0
 
-      - name: Cache Flutter Pub Packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            .dart_tool/
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: ${{ runner.os }}-flutter-
+  # LOCAL CACHING / DATABASE
+  hive_flutter: ^1.1.0
+  sqflite: ^2.4.3
+  sqflite_common_ffi_web: ^1.1.2
+  drift: ^2.34.3
 
-      - name: Regenerate Clean Native Platforms
-        run: |
-          mkdir -p ../web_backup
-          [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
-          
-          mv pubspec.yaml ../pubspec.yaml.bak || true
-          rm -rf android web
-          
-          flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
-          
-          rm -f pubspec.yaml
-          mv ../pubspec.yaml.bak pubspec.yaml || true
-          [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
+  # CORE INFRASTRUCTURE
+  dio: ^5.11.0
+  http: ^1.6.0
+  connectivity_plus: ^7.3.1
+  permission_handler: ^13.0.0
+  shared_preferences: ^2.5.5
+  url_launcher: ^6.3.2
+  device_info_plus: ^13.2.0
+  battery_plus: ^7.1.1
+  vibration: ^3.2.0
+  screen_brightness: ^2.1.11
+  app_links: ^7.2.1
+  ntp: ^2.0.0
+  timezone: ^0.11.1
 
-      - name: Configure Production Environment Variables
-        run: |
-          python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('secrets.json','w').write(json.dumps(secrets))"
-          echo "flutter.compileSdkVersion=37" >> android/local.properties
-          echo "flutter.targetSdkVersion=37" >> android/local.properties
-          
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "storeFile=../release.keystore" >> android/key.properties
-            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          fi
+  # SENSORS / MATH
+  sensors_plus: ^7.1.0
+  environment_sensors: ^0.3.0
+  vector_math: ^2.2.0
 
-      - name: Unpack Secure Production Keystore
-        if: env.KEYSTORE_BASE64 != ''
-        run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+  # AI / ML
+  google_generative_ai: ^0.4.7
+  groq_sdk: ^1.0.2
+  dart_openai: ^6.1.1
+  google_mlkit_commons: ^0.12.0
+  google_mlkit_face_detection: ^0.14.0
+  google_mlkit_language_id: ^0.14.0
+  google_mlkit_text_recognition: ^0.16.0
 
-      - name: Install Application Dependencies & Optimize Syntax
-        run: |
-          flutter pub get
-          dart format lib/ || true
-          dart fix --apply || true
+  # CAMERA / VIDEO / AUDIO
+  camera: ^0.12.0+2
+  image_picker: ^1.2.3
+  video_player: ^2.13.0
+  flutter_image_compress: ^2.5.1
+  flutter_cache_manager: ^3.4.2
+  cached_network_image: ^3.4.1
+  flutter_webrtc: ^1.6.0
+  webview_flutter: ^4.14.1
+  flutter_tts: ^4.2.5
+  just_audio: ^0.10.6
+  audio_session: ^0.2.4
 
-      - name: Build Obfuscated Signed Android APK
-        run: |
-          mkdir -p ../symbols
-          flutter build apk --release \
-            --obfuscate \
-            --split-debug-info=../symbols \
-            --dart-define-from-file=secrets.json
+  # MONETIZATION
+  google_mobile_ads: ^9.0.0
+  in_app_purchase: ^3.3.0
+  in_app_review: ^2.0.12
 
-      - name: Build Genuine Web Application & Auto-Heal Layout Architecture
-        run: |
-          flutter build web --release \
-            --extra-front-end-options=--obfuscate \
-            --dart-define-from-file=secrets.json
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=\$(date +%s)/g" build/web/index.html 2>/dev/null || true
+  # 3D / AR / MATH
+  ar_flutter_plugin_plus: ^1.1.3
+  model_viewer_plus: ^1.10.0
+  flutter_tex: ^5.2.7
+  flutter_math_fork: ^0.7.4
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+  # UI
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  confetti: ^0.8.0
+  flutter_fortune_wheel: ^1.3.2
+  dash_chat_2: ^0.0.21
+  sks_ticket_view: ^1.0.0
+  pdf: ^3.13.0
+  qr_flutter: ^4.1.0
+  flutter_highlight: ^0.7.0
 
-      - name: Pack Production Assets
-        uses: actions/upload-pages-artifact@v3
-        with: { path: build/web }
+  # SECURITY
+  freerasp: ^8.0.0
+  flutter_secure_storage: ^10.3.1
+  flutter_windowmanager: ^0.2.0
+  ios_insecure_screen_detector: ^0.0.2
+  local_auth: ^3.0.2
+  pointycastle: ^4.0.0
 
-      - name: Deploy Web App to GitHub Pages
-        uses: actions/deploy-pages@v4
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.9
+  source_gen: ^1.5.0
+  flutter_launcher_icons: ^0.14.4
 
-      - name: Upload Android Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with: { name: mindspark-release-apk, path: build/app/outputs/flutter-apk/app-release.apk }
+dependency_overrides:
+  meta: ^1.15.0
+  permission_handler: ^13.0.0
 
-      - name: Upload Obfuscation Symbols
-        uses: actions/upload-artifact@v4
-        with: { name: mindspark-obfuscation-symbols, path: ../symbols/ }
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/shaders/
+    - assets/intro.mp4
+    - .env
+  shaders:
+    - assets/shaders/hologram_glow.frag
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icon_launcher.png"
+  web:
+    generate: true
+    image_path: "assets/icon_launcher.png"
