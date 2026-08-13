@@ -105,11 +105,14 @@ jobs:
           }
           EOF
           
-          # Fetch components first to guarantee pub-cache targets are written to the machine
+          # Populate caches to make sure all transitive plugin files are pulled down
           flutter pub get --no-example || true
 
-          # FIX: Target line 77 specifically inside arcore to transform 'configurations.all' into a non-breaking statement
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i 's/configurations\.all\s*\{/\/\/ configurations.all disabled {/g' {} + 2>/dev/null || true
+          # FIX: Force complete deletion of the dead arcore plugin folder to prevent evaluation scans
+          rm -rf /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*
+
+          # FIX: Windows Line Endings (\r\n) safe pattern matching loop across remaining libraries
+          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i 's/configurations\.all\s*\r*\{/\/\/ configurations.all disabled {/g' {} + 2>/dev/null || true
           
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
