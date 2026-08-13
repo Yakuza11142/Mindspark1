@@ -79,14 +79,39 @@ jobs:
           rm -rf android/app/src/main/kotlin/com/mindspark/mindspark1/*
           mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1
           echo -e "package com.mindspark.mindspark1\nimport io.flutter.embedding.android.FlutterActivity\nclass MainActivity : FlutterActivity()" > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
-          echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
+          
+          # Force opt-out of newDsl and freeze memory properties to comply with AGP 9+ limits
+          echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nandroid.newDsl=false" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Patch project gradle build scripts
-          find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/configurations.all/configurations.configureEach/g' -e '/android.newDsl/d' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
+          # Reconstruct root configuration script to overwrite arcore dependency containers cleanly
+          cat << 'EOF' > android/build.gradle
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          subprojects {
+              project.evaluationDependsOn(':app')
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      android {
+                          compileSdk = 37
+                          buildToolsVersion = "35.0.0"
+                      }
+                  }
+              }
+          }
+          tasks.register("clean", Delete) {
+              delete rootProject.buildDir
+          }
+          EOF
           
-          # FORCE DELETE: Target line 77 container errors in arcore cache completely by deleting the broken block line
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e '/configurations.all/d' -e '/configureEach/d' {} + 2>/dev/null || true
+          # Completely clean the broken configuration container line from arcore build file to fix syntax errors
+          find /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*/ -name "build.gradle" -exec sed -i '/configurations.all/,/}/d' {} + 2>/dev/null || true
+          
+          find android/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s+[0-9]*+.*$/\1 37/g' {} + 2>/dev/null || true
           
           python3 -c '
           import os, glob
