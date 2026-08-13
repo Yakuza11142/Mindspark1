@@ -51,13 +51,18 @@ jobs:
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-flutter-
 
-      # Backup your custom web/index.html securely before clearing folders
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
+          
+          mv pubspec.yaml ../pubspec.yaml.bak || true
           rm -rf android web
+          
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
+          
+          rm -f pubspec.yaml
+          mv ../pubspec.yaml.bak pubspec.yaml || true
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
 
       - name: Configure Production Environment Variables
@@ -91,7 +96,6 @@ jobs:
             --split-debug-info=../symbols \
             --dart-define-from-file=secrets.json
 
-      # FIX: Removed the static sed replace to allow your custom index.html JS logic to execute natively
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
           flutter build web --release \
