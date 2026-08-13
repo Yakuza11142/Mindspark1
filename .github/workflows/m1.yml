@@ -39,7 +39,6 @@ jobs:
           rm -f pubspec.yaml pubspec.lock pubspec_overrides.yaml
           rm -rf android ios windows macos linux build
           
-          # Create a genuine app framework using native project structures
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
           rm -rf lib assets web
@@ -87,23 +86,26 @@ jobs:
           mkdir -p android/app/src/main/kotlin/com/mindspark/mindspark1
           echo -e "package com.mindspark.mindspark1\nimport io.flutter.embedding.android.FlutterActivity\nclass MainActivity : FlutterActivity()" > android/app/src/main/kotlin/com/mindspark/mindspark1/MainActivity.kt
           
-          # FIX: Re-enable newDsl and force compliance with Flutter 3.47+ / AGP 9 standard interfaces
           echo -e "org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true" > android/gradle.properties
           python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('../secrets.json','w').write(json.dumps(secrets))"
           
-          # Clean configurations inside problematic plugins
+          # FIX: Inject properties globally into local.properties for non-breaking, automated resolution
+          echo "flutter.compileSdkVersion=37" >> android/local.properties
+          echo "flutter.targetSdkVersion=37" >> android/local.properties
+          
+          # Clean faulty configuration structures within target plugins
           find /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*/ -name "build.gradle" -exec sed -i '/configurations.all/,/}/d' {} + 2>/dev/null || true
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i '/def flutterRoot/,/}/d' {} + 2>/dev/null || true
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i '/variant.outputs.each/d' {} + 2>/dev/null || true
           
-          # FIX: Safe target property injection loop using regex over both native files and cache folders
-          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -o -name "build.gradle.kts" -exec sed -i -e 's/compileSdk\s*=\s*[0-9]*/compileSdk = 37/g' -e 's/targetSdk\s*=\s*[0-9]*/targetSdk = 37/g' -e 's/compileSdkVersion\s*[0-9]*/compileSdkVersion 37/g' -e 's/targetSdkVersion\s*[0-9]*/targetSdkVersion 37/g' {} + 2>/dev/null || true
-          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -o -name "build.gradle.kts" -exec sed -i -e 's/buildToolsVersion\s*=\s*["'\''][^"'\'']*["'\'']/buildToolsVersion = "35.0.0"/g' -e 's/buildToolsVersion\s\+["'\''][^"'\'']*["'\'']/buildToolsVersion "35.0.0"/g' {} + 2>/dev/null || true
+          # FIX: Cleaned regex scope patterns to safely target legacy build profiles without colliding with KTS syntax files
+          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' -e 's/(compileSdk|targetSdk|compileSdkVersion|targetSdkVersion)\s\+[0-9]\+/\1 37/g' {} + 2>/dev/null || true
+          find android/ /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/buildToolsVersion\s\+["'\''][^"'\'']*["'\'']/buildToolsVersion "35.0.0"/g' {} + 2>/dev/null || true
 
-          # Inject namespaces uniformly without overriding whole application files
+          # Apply namespaces safely across Groovy target pathways
           python3 -c '
           import os, glob
-          for g in glob.glob("android/**/*.gradle*", recursive=True):
+          for g in glob.glob("android/**/*.gradle", recursive=True):
               try:
                   c = open(g).read()
                   if "android {" in c and "namespace" not in c:
