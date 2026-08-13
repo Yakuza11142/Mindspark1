@@ -92,50 +92,54 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           
-          mkdir -p ~/.gradle
-          cat << 'EOF' > ~/.gradle/init.gradle
-          allprojects {
-              beforeEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      if (project.android.namespace == null) {
-                          project.android.namespace = "com.mindspark.mindspark1"
-                      }
-                  }
-              }
-          }
-          EOF
-          
-          # Force populate all transient targets into local storage fields
-          flutter pub get --no-example || true
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "storeFile=../../release.keystore" >> android/key.properties
+            echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          fi
 
-          # Purge unused dead elements safely
+          # FIX: Isolated global init.gradle initialization block inside safe multi-line quotes
+          mkdir -p ~/.gradle
+          echo "allprojects {" > ~/.gradle/init.gradle
+          echo "    beforeEvaluate { project ->" >> ~/.gradle/init.gradle
+          echo "        if (project.hasProperty('android')) {" >> ~/.gradle/init.gradle
+          echo "            if (project.android.namespace == null) {" >> ~/.gradle/init.gradle
+          echo "                project.android.namespace = 'com.mindspark.mindspark1'" >> ~/.gradle/init.gradle
+          echo "            }" >> ~/.gradle/init.gradle
+          echo "        }" >> ~/.gradle/init.gradle
+          echo "    }" >> ~/.gradle/init.gradle
+          echo "}" >> ~/.gradle/init.gradle
+          
+          flutter pub get --no-example || true
           rm -rf /home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*
 
-          # Fix Windows line ending configurations safely across build paths
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i 's/configurations\.all\s*\r*\{/\/\/ configurations.all disabled {/g' {} + 2>/dev/null || true
           find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i -e 's/jcenter()/mavenCentral()/g' -e 's/google()/google(); mavenCentral()/g' {} + 2>/dev/null || true
 
-          # FIX: Highly robust automated Python parser script to heal ALL missing namespaces out of pub-cache dependencies
           python3 -c '
           import os, glob, re
           for g in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/**/build.gradle", recursive=True):
               try:
                   content = open(g).read()
                   if "android {" in content and "namespace" not in content:
-                      # Find matching manifest file to extract original layout package ID
                       manifest_path = os.path.join(os.path.dirname(g), "src", "main", "AndroidManifest.xml")
                       if os.path.exists(manifest_path):
                           manifest_content = open(manifest_path).read()
                           pkg_match = re.search(r"package\s*=\s*[\"']([^\"']+)[\"']", manifest_content)
                           if pkg_match:
                               pkg_name = pkg_match.group(1)
-                              # Seamlessly map namespace property target elements inside the android block container
                               content = content.replace("android {", f"android {{\n    namespace \"{pkg_name}\"")
                               open(g, "w").write(content)
-                              print(f"Fixed missing namespace mapping for package: {pkg_name}")
-              except Exception as e: pass
+              except: pass
           ' || true
         env: { SUPABASE_URL: "${{ secrets.SUPABASE_URL }}", SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}", GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}", OPENAI_KEY: "${{ secrets.OPENAI_KEY }}", GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}", VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}", HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}", RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}", TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}", PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}", MTN_API_KEY: "${{ secrets.MTN_API_KEY }}", ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}" }
+
+      - name: Unpack Secure Production Keystore
+        if: env.KEYSTORE_BASE64 != ''
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build Obfuscated Android APK
         run: |
