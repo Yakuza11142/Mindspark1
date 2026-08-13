@@ -10,7 +10,6 @@ jobs:
     name: Build MindSpark Android and Web
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    # Global environment configuration for API keys, databases, and keystores
     env: 
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
@@ -43,7 +42,6 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
 
-      # Caches dependencies to speed up future runs
       - name: Cache Flutter Pub Packages
         uses: actions/cache@v4
         with:
@@ -53,19 +51,16 @@ jobs:
           key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
           restore-keys: ${{ runner.os }}-flutter-
 
-      # Safely regenerates pure, native folders on every push
       - name: Regenerate Clean Native Platforms
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           
-          # Move your original custom pubspec file aside safely
           mv pubspec.yaml ../pubspec.yaml.bak || true
           rm -rf android web
           
           flutter create --org com.mindspark --project-name mindspark1 --platforms=android,web .
           
-          # Restore the clean file configurations back to your working workspace
           rm -f pubspec.yaml
           mv ../pubspec.yaml.bak pubspec.yaml || true
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
@@ -87,9 +82,10 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # Installs your app packages, formats code layouts, and cleans syntax dependencies
+      # FIX: Added aggressive lock cleaning commands to bust old cached dependency states
       - name: Install Application Dependencies & Optimize Syntax
         run: |
+          rm -rf pubspec.lock .dart_tool/
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
