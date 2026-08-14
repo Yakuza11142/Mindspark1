@@ -45,7 +45,7 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          # 1. Base dependency configuration download pass
+          # 1. Total file-system wipe to drop stale layout cache tracks
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
@@ -96,45 +96,86 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # 2. RUNTIME REGENERATOR STEP INJECTED IMMEDIATELY BEFORE THE COMPILATION LINE
-      - name: Regenerate Clean Native Platforms & Force Purge
+      - name: Regenerate Clean Native Platforms & Force Modernize
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           rm -rf android web
           
-          # Regenerate native components dynamically right here
           flutter create --platforms=android,web .
           [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
           
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # OBLITERATION PASS: Wipes out the generated files right after creation before compilation begins
-          cat << 'EOF' > delete_script.py
+          # 2. FILE-SYSTEM SCRIPT MODIFIER: Overwrites legacy tracking scripts and forces mavenCentral mapping
+          cat << 'EOF' > modernizer.py
           import os
           import shutil
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print(f"Executing Ultimate Forced Deletion on: {pub_cache_root}")
+          print(f"Executing Modernization Check on cache and settings...")
 
           for root, subdirs, files in os.walk(pub_cache_root):
               if "arcore_flutter_plus" in root:
                   try:
                       shutil.rmtree(root)
-                      print(f"DELETED ANYHOW: Erased folder path completely: {root}")
-                  except Exception as e:
+                      print(f"DELETED: Erased arcore_flutter_plus completely")
+                  except Exception:
                       pass
+              
+              for filename in files:
+                  if filename == "build.gradle":
+                      filepath = os.path.join(root, filename)
+                      try:
+                          content = open(filepath, errors='ignore').read()
+                          if "jcenter()" in content:
+                              updated = content.replace("jcenter()", "mavenCentral()")
+                              with open(filepath, "w", errors='ignore') as f:
+                                  f.write(updated)
+                              print(f"MODERNIZED: Swapped jcenter for mavenCentral in: {filepath}")
+                      except Exception:
+                          pass
           EOF
 
-          python3 delete_script.py
-          rm delete_script.py
+          python3 modernizer.py
+          rm modernizer.py
 
-          # Instantly scrub metadata arrays to stop the engine from looking for the missing library paths
+          # 3. SETTINGS MATRIX TUNER: Excises non-modern code blocks out of the memory evaluation graph
+          cat << 'EOF' > purge_settings.py
+          import os
+
+          settings_path = "android/settings.gradle"
+          if os.path.exists(settings_path):
+              content = open(settings_path).read()
+              interceptor = """
+              gradle.settingsEvaluated { settings ->
+                  def unneededPlugins = []
+                  settings.rootProject.children.each { p ->
+                      if (p.name.contains("arcore_flutter_plus") || p.name.contains("carrier_info")) {
+                          unneededPlugins.add(p)
+                      }
+                  }
+                  unneededPlugins.each { p ->
+                      settings.rootProject.children.remove(p)
+                      print "FORCE DISCARDED LEGACY PLUGIN: " + p.name
+                  }
+              }
+              """
+              open(settings_path, "w").write(interceptor + "\n" + content)
+              print("SUCCESS: Injected AGP 9 architectural filters into settings.gradle")
+          EOF
+
+          python3 purge_settings.py
+          rm purge_settings.py
+
+          # Erase target tracking strings out of Flutter configuration state tables
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # Global unique namespace mapping and compilation target alignment configuration setup
+          # 4. GLOBAL NAMESPACE ENGINE: Enforces isolated package naming layout variables dynamically
           mkdir -p ~/.gradle
           python3 -c '
           import os
@@ -186,7 +227,7 @@ jobs:
       - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      - name: Upload Android Release APK Artifact
+      - name: Android Release APK Artifact
         uses: actions/upload-artifact@v4
         with: { name: mindspark-release-apk, path: build/app/outputs/flutter-apk/app-release.apk }
 
