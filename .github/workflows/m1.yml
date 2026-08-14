@@ -67,6 +67,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
+      # FIX: Removed the arcore path override to completely fix the name matching solver crash
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
@@ -79,8 +80,6 @@ jobs:
           f_root = os.environ.get("FLUTTER_ROOT", "")
           overrides = f"""
           dependency_overrides:
-            arcore_flutter_plus:
-              path: "{f_root}/packages/flutter_test"
             flutter_test:
               path: "{f_root}/packages/flutter_test"
             integration_test:
@@ -103,31 +102,40 @@ jobs:
           
           flutter pub get
 
-          # FIX: Completely delete the build.gradle text content of arcore_flutter_plus anywhere in the cache
+          # FIX: Surgical deep-cleaning script that rewrites the arcore file after pub get maps the system cache tree
           python3 -c '
           import os, glob
           for path in glob.glob("/home/runner/.pub-cache/hosted/**/build.gradle", recursive=True):
               try:
-                  if "arcore_flutter_plus" in path:
-                      with open(path, "w") as f:
-                          f.write("// Deleted entirely\\nandroid { namespace \"com.mindspark.mindspark1\"; compileSdk 37 }\\n")
-                      print(f"Completely zeroed out the file at: {path}")
+                  if os.path.exists(path) and "arcore_flutter_plus" in path:
+                      content = open(path).read()
+                      if "configurations.all" in content:
+                          lines = content.splitlines()
+                          cleaned = []
+                          skip = False
+                          for line in lines:
+                              if "configurations.all" in line:
+                                  skip = True
+                                  continue
+                              if skip and "}" in line:
+                                  skip = False
+                                  continue
+                              if not skip:
+                                  cleaned.append(line)
+                          open(path, "w").write("\n".join(cleaned) + "\n")
+                          print(f"Force-wiped configurations block out of: {path}")
               except Exception as e: pass
           ' || true
 
           dart format lib/ || true
           dart fix --apply || true
 
-          # Global interceptor script to handle missing plugin namespaces cleanly
           mkdir -p ~/.gradle
           python3 -c '
           import os
           init_script = """
           allprojects {
               beforeEvaluate { project ->
-                  if (project.name == "arcore_flutter_plus" || project.path.contains("arcore_flutter_plus")) {
-                      project.buildable = false
-                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           project.android.namespace = "com.mindspark.mindspark1"
