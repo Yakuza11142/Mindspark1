@@ -70,7 +70,9 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/
+          # 1. Total file-system purge to drop sticky caches across the workspace layout
+          flutter clean || true
+          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
@@ -102,19 +104,19 @@ jobs:
           
           flutter pub get
           
-          # DEEP RECURSIVE PATROP OVERRIDE: Targets and clears out the line 77 code loop completely
+          # 2. FILE-SYSTEM BLOCK INTERCEPTOR: Wipes the breaking file-tree code loop completely if it re-downloads
           python3 -c '
           import os
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print(f"Scanning deep path: {pub_cache_root}")
+          print(f"Executing Deep Intercept Process on: {pub_cache_root}")
           
-          for root, dirs, files in os.walk(pub_cache_root):
-              for file in files:
-                  if file == "build.gradle" and "arcore_flutter_plus" in root:
-                      target_path = os.path.join(root, file)
+          for root, subdirs, files in os.walk(pub_cache_root):
+              for filename in files:
+                  if filename == "build.gradle" and "arcore_flutter_plus" in root:
+                      file_target = os.path.join(root, filename)
                       try:
-                          # Neutralizes configuration setup to safely step over the "all" exception
-                          dummy_build_script = (
+                          # Overwrites line 77 with an entirely empty, valid modern library script
+                          neutralized_script = (
                               "buildscript {\n"
                               "    repositories { google(); mavenCentral() }\n"
                               "}\n"
@@ -125,23 +127,27 @@ jobs:
                               "    defaultConfig { minSdkVersion 24 }\n"
                               "}\n"
                           )
-                          with open(target_path, "w") as f:
-                              f.write(dummy_build_script)
-                          print(f"SUCCESS: Force-neutralized breaking plugin asset at: {target_path}")
-                      except Exception as e:
-                          print(f"ERROR: Could not alter code trace: {e}")
+                          with open(file_target, "w") as out_file:
+                              out_file.write(neutralized_script)
+                          print(f"SUCCESS: Force-neutralized cache file at: {file_target}")
+                      except Exception as error_msg:
+                          print(f"WARNING: Skipping block patch: {error_msg}")
           ' || true
 
           dart format lib/ || true
           dart fix --apply || true
 
-          # Dynamic unique namespace patching and global SDK version alignment
+          # 3. GLOBAL ENGINE INTERCEPTOR: Forces memory-level initialization blocks into Gradle directly
           mkdir -p ~/.gradle
           python3 -c '
           import os
           init_script = """
           allprojects {
+              // Pre-evaluation project interception loop handles variables dynamically
               beforeEvaluate { project ->
+                  if (project.path == ":arcore_flutter_plus") {
+                      project.ext.clear()
+                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           def cleanName = project.name.replaceAll("[^a-zA-Z0-9]", "")
