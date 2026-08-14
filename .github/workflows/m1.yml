@@ -45,11 +45,12 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
+          # 1. Total file-system wipe to drop stale layout cache tracks
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
-          # Inject modern alternative packages dynamically into the pubspec config file
+          # 2. DYNAMIC INJECTOR ENGINE: Safely injects 100% modern replacements into the dependency graph
           python3 -c '
           with open("pubspec.yaml", "r") as f:
               content = f.read()
@@ -62,6 +63,7 @@ jobs:
               print("SUCCESS: Injected modern alternative dependencies into pubspec.yaml")
           ' || true
 
+          # 3. OVERRIDE ENFORCEMENT: Strips old parameters and locks stable core paths
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -89,6 +91,7 @@ jobs:
               f.write(overrides)
           '
           
+          # 4. FETCH AND SYNTAX HEAL: Fetches the workspace maps and reformats layout structures
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
