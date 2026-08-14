@@ -75,7 +75,6 @@ jobs:
           # Clean up any existing dependency_overrides block securely
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          # Python script handles variable injections safely, avoiding bash escaping and forward slash loops
           python3 -c '
           import os
           f_root = os.environ.get("FLUTTER_ROOT", "")
@@ -102,26 +101,38 @@ jobs:
           '
           
           flutter pub get
-          
-          # FIX: Surgical comment-out patch on the arcore cache file directly to stop the container evaluation crash completely
-          find /home/runner/.pub-cache/hosted/pub.dev/ -name "build.gradle" -exec sed -i 's/configurations\.all/ \/\/ configurations.all /g' {} + 2>/dev/null || true
+
+          # FIX: Surgical Python script to rewrite the arcore build file and explicitly purge configurations.all block cleanly
+          python3 -c '
+          import os, glob
+          for path in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/arcore_flutter_plus-*/android/build.gradle"):
+              if os.path.exists(path):
+                  lines = open(path).readlines()
+                  out = []
+                  skip = False
+                  for line in lines:
+                      if "configurations.all" in line:
+                          skip = True
+                          continue
+                      if skip and "}" in line:
+                          skip = False
+                          continue
+                      if not skip:
+                          out.append(line)
+                  open(path, "w").writelines(out)
+                  print("Surgically removed configurations block from arcore_flutter_plus")
+          ' || true
 
           dart format lib/ || true
           dart fix --apply || true
 
-          # FIX: Corrected project.logged to native project.logger to fix initialization configuration block exception
+          # Global interceptor script to handle missing plugin namespaces cleanly
           mkdir -p ~/.gradle
           python3 -c '
           import os
           init_script = """
           allprojects {
               beforeEvaluate { project ->
-                  if (project.path == ":arcore_flutter_plus") {
-                      project.logger.info("Skipping broken configurations block natively")
-                      if (!project.configurations.hasProperty("all")) {
-                          project.ext.all = { closure -> }
-                      }
-                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           project.android.namespace = "com.mindspark.mindspark1"
