@@ -70,10 +70,8 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          # HARD PURGE: Evict any residual lockfiles or cache leaks referencing the old plugin
-          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
-          sed -i '/arcore_flutter_plus/d' pubspec.yaml 2>/dev/null || true
-          sed -i '/ar_flutter_plugin_2/d' pubspec.yaml 2>/dev/null || true
+          # Clear out lingering workspace build tracks
+          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/
           flutter pub cache clean --force || true
           
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
@@ -104,21 +102,10 @@ jobs:
           '
           
           flutter pub get
-          
-          # NUCLEAR MITIGATION HOOK: If arcore still leaks in transitively, rewrite its gradle file to null
-          python3 -c '
-          import os, glob
-          for path in glob.glob("/home/runner/.pub-cache/**/build.gradle", recursive=True):
-              if "arcore_flutter_plus" in path:
-                  with open(path, "w") as f:
-                      f.write("plugins { id \"com.android.library\" }\nandroid { namespace \"com.mindspark.fallback.arcore\" \n compileSdkVersion 37 }\n")
-                  print(f"Forced neutrality on lingering package build layout: {path}")
-          ' || true
-
           dart format lib/ || true
           dart fix --apply || true
 
-          # Dynamic unique namespace patching and global SDK version alignment
+          # FORCE BLOCK IMPL: Modifies init.gradle to dynamically drop arcore_flutter_plus from compilation
           mkdir -p ~/.gradle
           python3 -c '
           import os
@@ -141,9 +128,31 @@ jobs:
                   }
               }
           }
+          // Absolute Isolation: Overrides dependency engine matching parameters globally
+          settingsEvaluated { settings ->
+              settings.pluginManagement {
+                  resolutionStrategy {
+                      eachPlugin {
+                          if (requested.id.id.contains("arcore")) {
+                              useModule("com.android.support:support-annotations:28.0.0")
+                          }
+                      }
+                  }
+              }
+          }
           """
           open(os.path.expanduser("~/.gradle/init.gradle"), "w").write(init_script)
           '
+
+          # EMERGENCY FALLBACK: Overwrite the file on disk right before compilation if it somehow downloads
+          python3 -c '
+          import os, glob
+          for path in glob.glob("/home/runner/.pub-cache/**/build.gradle", recursive=True):
+              if "arcore_flutter_plus" in path:
+                  with open(path, "w") as f:
+                      f.write("plugins { id \"com.android.library\" }\nandroid { namespace \"com.mindspark.fallback.arcore\" \n compileSdkVersion 37 }\n")
+                  print(f"Surgically neutralized cache file leak: {path}")
+          ' || true
 
       - name: Build Obfuscated Signed Android APK
         run: |
