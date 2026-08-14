@@ -101,26 +101,6 @@ jobs:
           '
           
           flutter pub get
-
-          # FIX: Deep-recursive patch covering all potential nested pub-cache sub-directories
-          python3 -c '
-          import os, glob
-          cache_dir = os.path.expanduser("~/.pub-cache")
-          search_pattern = os.path.join(cache_dir, "**", "*.gradle")
-          
-          for path in glob.glob(search_pattern, recursive=True):
-              if "arcore_flutter_plus" in path and os.path.exists(path):
-                  try:
-                      content = open(path).read()
-                      if "configurations.all" in content:
-                          fixed = content.replace("configurations.all", "configurations.configureEach")
-                          with open(path, "w") as f:
-                              f.write(fixed)
-                          print(f"SUCCESS: Surgically modernized build file: {path}")
-                  except Exception as e:
-                      print(f"WARNING: Could not update {path}: {e}")
-          ' || true
-
           dart format lib/ || true
           dart fix --apply || true
 
