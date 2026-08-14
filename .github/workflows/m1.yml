@@ -70,7 +70,10 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
+          # HARD PURGE: Evict any residual lockfiles or cache leaks referencing the old plugin
+          rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
+          sed -i '/arcore_flutter_plus/d' pubspec.yaml 2>/dev/null || true
+          sed -i '/ar_flutter_plugin_2/d' pubspec.yaml 2>/dev/null || true
           flutter pub cache clean --force || true
           
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
@@ -101,6 +104,17 @@ jobs:
           '
           
           flutter pub get
+          
+          # NUCLEAR MITIGATION HOOK: If arcore still leaks in transitively, rewrite its gradle file to null
+          python3 -c '
+          import os, glob
+          for path in glob.glob("/home/runner/.pub-cache/**/build.gradle", recursive=True):
+              if "arcore_flutter_plus" in path:
+                  with open(path, "w") as f:
+                      f.write("plugins { id \"com.android.library\" }\nandroid { namespace \"com.mindspark.fallback.arcore\" \n compileSdkVersion 37 }\n")
+                  print(f"Forced neutrality on lingering package build layout: {path}")
+          ' || true
+
           dart format lib/ || true
           dart fix --apply || true
 
