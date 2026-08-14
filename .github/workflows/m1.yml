@@ -69,38 +69,40 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # OMNIPOTENT DEPENDENCY RESOLVER: Cleaned token syntax parsing error entirely
+      # OMNIPOTENT DEPENDENCY RESOLVER: Rewritten entirely in Python to eliminate string substitution crashes
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
           
-          # Clean up any existing broken overrides blocks from your raw file completely
+          # Clean up any existing dependency_overrides block securely
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          # FIX: Wrapped 'EOF' in single quotes to stop Bash from throwing parenthesis token execution crashes
-          cat << 'EOF' >> pubspec.yaml
-
-dependency_overrides:
-  flutter_test:
-    path: "$FLUTTER_ROOT/packages/flutter_test"
-  integration_test:
-    path: "$FLUTTER_ROOT/packages/integration_test"
-  sky_engine:
-    path: "$FLUTTER_ROOT/bin/cache/pkg/sky_engine"
-  meta: any
-  analyzer: any
-  intl: any
-  pointycastle: any
-  web_socket_channel: any
-  crypto: any
-  uuid: any
-  path: any
-  permission_handler: any
-EOF
-          
-          # Evaluate environmental path references into text targets before running solver
-          sed -i "s|\$FLUTTER_ROOT|$FLUTTER_ROOT|g" pubspec.yaml
+          # FIX: Python script handles variable injections safely, avoiding bash escaping and forward slash shell loops completely
+          python3 -c '
+          import os
+          f_root = os.environ.get("FLUTTER_ROOT", "")
+          overrides = f"""
+          dependency_overrides:
+            flutter_test:
+              path: "{f_root}/packages/flutter_test"
+            integration_test:
+              path: "{f_root}/packages/integration_test"
+            sky_engine:
+              path: "{f_root}/bin/cache/pkg/sky_engine"
+            meta: any
+            analyzer: any
+            intl: any
+            pointycastle: any
+            web_socket_channel: any
+            crypto: any
+            uuid: any
+            path: any
+            permission_handler: any
+          """
+          with open("pubspec.yaml", "a") as f:
+              f.write(overrides)
+          '
           
           flutter pub get
           dart format lib/ || true
