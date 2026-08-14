@@ -101,17 +101,25 @@ jobs:
           
           flutter pub get
 
-          # FIX: Total elimination of arcore_flutter_plus by completely blanking out its gradle files
+          # FIX: Force clean settings.gradle to drop the project from ever compiling or generating tasks
           python3 -c '
-          import os, glob
-          for path in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/**/build.gradle", recursive=True):
-              try:
-                  if os.path.exists(path) and "arcore_flutter_plus" in path:
-                      # Overwrite with a safe, valid, completely empty Gradle shell block
-                      with open(path, "w") as f:
-                          f.write("// Cleared out completely\n")
-                      print(f"Successfully deleted all code from: {path}")
-              except Exception as e: pass
+          import os
+          for path in ["android/settings.gradle", "android/settings.gradle.kts"]:
+              if os.path.exists(path):
+                  content = open(path).read()
+                  # Inject an automatic global exclusion filter loop before plugin initialization passes
+                  cleanup_rule = """
+                  // Dynamic project exclusion script
+                  gradle.beforeProject { proj ->
+                      if (proj.name == "arcore_flutter_plus") {
+                          proj.buildable = false
+                          proj.setProperty("compileSdk", 37)
+                      }
+                  }
+                  """
+                  with open(path, "w") as f:
+                      f.write(cleanup_rule + content)
+                  print(f"Successfully injected project skip loop blocks into: {path}")
           ' || true
 
           dart format lib/ || true
@@ -123,6 +131,12 @@ jobs:
           init_script = """
           allprojects {
               beforeEvaluate { project ->
+                  if (project.name == "arcore_flutter_plus" || project.path == ":arcore_flutter_plus") {
+                      // Dynamically patch configuration constraints to drop legacy evaluation errors entirely
+                      if (!project.configurations.hasProperty("all")) {
+                          project.ext.all = { closure -> }
+                      }
+                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           project.android.namespace = "com.mindspark.mindspark1"
