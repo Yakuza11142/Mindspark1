@@ -43,33 +43,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with: { channel: stable, cache: false }
 
-      - name: Regenerate Clean Native Platforms
-        run: |
-          mkdir -p ../web_backup
-          [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
-          rm -rf android web
-          flutter create --platforms=android,web .
-          [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
-
-      - name: Configure Production Environment Variables
-        run: |
-          python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('secrets.json','w').write(json.dumps(secrets))"
-          echo "flutter.compileSdkVersion=37" >> android/local.properties
-          echo "flutter.targetSdkVersion=37" >> android/local.properties
-          
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "storeFile=../release.keystore" >> android/key.properties
-            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          fi
-
-      - name: Unpack Secure Production Keystore
-        if: env.KEYSTORE_BASE64 != ''
-        run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
-
       - name: Install Application Dependencies & Optimize Syntax
         run: |
+          # 1. Base dependency configuration download pass
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
@@ -102,14 +78,45 @@ jobs:
           '
           
           flutter pub get
+          dart format lib/ || true
+          dart fix --apply || true
 
-          # FORCE ERADICATION INTERCEPTOR: Traverses the drive and entirely deletes the directory
+      - name: Configure Production Environment Variables
+        run: |
+          python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('secrets.json','w').write(json.dumps(secrets))"
+          
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "storeFile=../release.keystore" >> android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          fi
+
+      - name: Unpack Secure Production Keystore
+        if: env.KEYSTORE_BASE64 != ''
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+
+      # 2. RUNTIME REGENERATOR STEP INJECTED IMMEDIATELY BEFORE THE COMPILATION LINE
+      - name: Regenerate Clean Native Platforms & Force Purge
+        run: |
+          mkdir -p ../web_backup
+          [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
+          rm -rf android web
+          
+          # Regenerate native components dynamically right here
+          flutter create --platforms=android,web .
+          [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
+          
+          echo "flutter.compileSdkVersion=37" >> android/local.properties
+          echo "flutter.targetSdkVersion=37" >> android/local.properties
+
+          # OBLITERATION PASS: Wipes out the generated files right after creation before compilation begins
           cat << 'EOF' > delete_script.py
           import os
           import shutil
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print(f"Executing Forced Deletion Protocol on: {pub_cache_root}")
+          print(f"Executing Ultimate Forced Deletion on: {pub_cache_root}")
 
           for root, subdirs, files in os.walk(pub_cache_root):
               if "arcore_flutter_plus" in root:
@@ -123,15 +130,11 @@ jobs:
           python3 delete_script.py
           rm delete_script.py
 
-          # FORCE WIPE FROM FLUTTER ENGINE METADATA ARRAYS
+          # Instantly scrub metadata arrays to stop the engine from looking for the missing library paths
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
-          sed -i '/arcore_flutter_plus/d' android/settings.gradle 2>/dev/null || true
 
-          dart format lib/ || true
-          dart fix --apply || true
-
-          # Global unique namespace mapping and compilation target alignment
+          # Global unique namespace mapping and compilation target alignment configuration setup
           mkdir -p ~/.gradle
           python3 -c '
           import os
