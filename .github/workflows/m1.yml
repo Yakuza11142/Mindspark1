@@ -70,7 +70,6 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          # 1. Clear out lingering workspace build directories
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
@@ -104,49 +103,49 @@ jobs:
           
           flutter pub get
           
-          # 2. FIXED FILE-SYSTEM BLOCK INTERCEPTOR: Clean outer triple quotes solve string literals syntax crashes
-          python3 -c """
+          # Standalone python file-system interceptor loop
+          cat << 'EOF' > patch_script.py
           import os
-          pub_cache_root = os.path.expanduser('~/.pub-cache')
-          print(f'Executing Deep Intercept Process on: {pub_cache_root}')
-          
+
+          pub_cache_root = os.path.expanduser("~/.pub-cache")
+          print(f"Executing Deep Intercept Process on: {pub_cache_root}")
+
+          neutralized_script = """buildscript {
+              repositories { google(); mavenCentral() }
+          }
+          apply plugin: 'com.android.library'
+          android {
+              compileSdkVersion 37
+              namespace 'com.mindspark.fallback.arcore'
+              defaultConfig { minSdkVersion 24 }
+          }
+          """
+
           for root, subdirs, files in os.walk(pub_cache_root):
               for filename in files:
-                  if filename == 'build.gradle' and 'arcore_flutter_plus' in root:
+                  if filename == "build.gradle" and "arcore_flutter_plus" in root:
                       file_target = os.path.join(root, filename)
                       try:
-                          # Overwrites code layers with a perfectly structured, clean modern script
-                          neutralized_script = (
-                              'buildscript {\\n'
-                              '    repositories { google(); mavenCentral() }\\n'
-                              '}\\n'
-                              'apply plugin: \\'com.android.library\\'\\n'
-                              'android {\\n'
-                              '    compileSdkVersion 37\\n'
-                              '    namespace \\'com.mindspark.fallback.arcore\\'\\n'
-                              '    defaultConfig { minSdkVersion 24 }\\n'
-                              '}\\n'
-                          )
-                          with open(file_target, 'w') as out_file:
+                          with open(file_target, "w") as out_file:
                               out_file.write(neutralized_script)
-                          print(f'SUCCESS: Force-neutralized cache file at: {file_target}')
+                          print(f"SUCCESS: Force-neutralized cache file at: {file_target}")
                       except Exception as error_msg:
-                          print(f'WARNING: Skipping block patch: {error_msg}')
-          """ || true
+                          print(f"WARNING: Skipping block patch: {error_msg}")
+          EOF
+
+          python3 patch_script.py
+          rm patch_script.py
 
           dart format lib/ || true
           dart fix --apply || true
 
-          # 3. GLOBAL ENGINE INTERCEPTOR: Forces memory-level initialization blocks into Gradle directly
+          # FIXED: Cleaned out the project.ext.clear() method error loop
           mkdir -p ~/.gradle
           python3 -c '
           import os
           init_script = """
           allprojects {
               beforeEvaluate { project ->
-                  if (project.path == ":arcore_flutter_plus") {
-                      project.ext.clear()
-                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           def cleanName = project.name.replaceAll("[^a-zA-Z0-9]", "")
