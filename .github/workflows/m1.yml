@@ -69,17 +69,17 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
 
-      # OMNIPOTENT DEPENDENCY RESOLVER: Wipes out the source pubspec indentation errors and forces compatibility
+      # OMNIPOTENT DEPENDENCY RESOLVER: Cleaned token syntax parsing error entirely
       - name: Install Application Dependencies & Optimize Syntax
         run: |
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/
           flutter pub cache clean --force || true
           
-          # 1. Clean up any existing broken overrides blocks from your raw file completely
+          # Clean up any existing broken overrides blocks from your raw file completely
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          # 2. Re-inject clean, explicit overrides that bypass pub.dev and unlock restricted versions safely
-          cat << EOF >> pubspec.yaml
+          # FIX: Wrapped 'EOF' in single quotes to stop Bash from throwing parenthesis token execution crashes
+          cat << 'EOF' >> pubspec.yaml
 
 dependency_overrides:
   flutter_test:
@@ -99,7 +99,9 @@ dependency_overrides:
   permission_handler: any
 EOF
           
-          # 3. Pull modern, error-free library versions down cleanly
+          # Evaluate environmental path references into text targets before running solver
+          sed -i "s|\$FLUTTER_ROOT|$FLUTTER_ROOT|g" pubspec.yaml
+          
           flutter pub get
           dart format lib/ || true
           dart fix --apply || true
