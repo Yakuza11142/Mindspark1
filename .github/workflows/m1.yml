@@ -101,10 +101,23 @@ jobs:
           '
           
           flutter pub get
+
+          # SURGICAL REPLACEMENT HOOK: Upgrades configurations logic across the cached plugin dependency tree
+          python3 -c '
+          import os, glob
+          for path in glob.glob("/home/runner/.pub-cache/hosted/**/build.gradle", recursive=True):
+              if "arcore_flutter_plus" in path and os.path.exists(path):
+                  content = open(path).read()
+                  if "configurations.all" in content:
+                      fixed = content.replace("configurations.all", "configurations.configureEach")
+                      open(path, "w").write(fixed)
+                      print(f"Surgically patched configurations block in: {path}")
+          ' || true
+
           dart format lib/ || true
           dart fix --apply || true
 
-          # Dynamic unique namespace patching and global SDK version enforcement
+          # Dynamic unique namespace patching and global SDK version alignment
           mkdir -p ~/.gradle
           python3 -c '
           import os
