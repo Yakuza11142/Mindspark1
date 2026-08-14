@@ -101,26 +101,16 @@ jobs:
           
           flutter pub get
 
-          # FIX: Comprehensive global deep-search script to force clear the arcore configurations block safely across any cache directories
+          # FIX: Total elimination of arcore_flutter_plus by completely blanking out its gradle files
           python3 -c '
           import os, glob
           for path in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/**/build.gradle", recursive=True):
               try:
                   if os.path.exists(path) and "arcore_flutter_plus" in path:
-                      lines = open(path).readlines()
-                      out = []
-                      skip = False
-                      for line in lines:
-                          if "configurations.all" in line:
-                              skip = True
-                              continue
-                          if skip and "}" in line:
-                              skip = False
-                              continue
-                          if not skip:
-                              out.append(line)
-                      open(path, "w").writelines(out)
-                      print(f"Surgically neutralized configurations block within path: {path}")
+                      # Overwrite with a safe, valid, completely empty Gradle shell block
+                      with open(path, "w") as f:
+                          f.write("// Cleared out completely\n")
+                      print(f"Successfully deleted all code from: {path}")
               except Exception as e: pass
           ' || true
 
