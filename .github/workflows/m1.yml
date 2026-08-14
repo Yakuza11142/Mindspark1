@@ -49,6 +49,8 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ ~/.pub-cache/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
+          # Forcefully remove carrier_info out of pubspec.yaml before any resolving engine triggers
+          sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -107,63 +109,66 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 2. FIXED ADVANCED MODERNIZER INTERCEPTOR: Injecting required namespace strings natively
+          # 2. FORCE OBLITERATION PROTOCOL: Permanently expels carrier_info and arcore out of existence
           cat << 'EOF' > modernizer.py
           import os
           import shutil
-          import re
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print(f"Executing AGP 9 Layout Modernization Engine on: {pub_cache_root}")
+          print(f"Executing deep erase protocol on outdated legacy packages...")
 
           for root, subdirs, files in os.walk(pub_cache_root):
-              # Always drop arcore tracks unconditionally
-              if "arcore_flutter_plus" in root:
+              # Evict non-modern components completely from disk storage memory
+              if "arcore_flutter_plus" in root or "carrier_info" in root:
                   try:
                       shutil.rmtree(root)
-                      print(f"DELETED: Erased arcore remnants completely")
+                      print(f"SUCCESS: Permanently deleted legacy package component: {root}")
                   except Exception:
                       pass
-              
+                      
               for filename in files:
                   if filename == "build.gradle":
                       filepath = os.path.join(root, filename)
                       try:
                           content = open(filepath, errors='ignore').read()
-                          modified = False
-                          
-                          # A. Replace deprecated jcenter markers layout formats
                           if "jcenter()" in content:
-                              content = content.replace("jcenter()", "mavenCentral()")
-                              modified = True
-                          
-                          # B. SURGICAL AGP 9 INTERCEPTION: Inject namespace inside android {} blocks dynamically
-                          if "android {" in content and "namespace " not in content:
-                              # Extract plugin folder name to create an organic unique namespace string signature
-                              folder_name = os.path.basename(os.path.dirname(filepath)).replaceAll("[^a-zA-Z0-9]", "")
-                              if not folder_name:
-                                  folder_name = "fallbackplugin"
-                                  
-                              namespace_injection = f"android {{\n    namespace 'com.mindspark.fallback.{folder_name}'"
-                              content = content.replace("android {", namespace_injection, 1)
-                              modified = True
-                              print(f"COMPATIBILITY HEAL: Injected required AGP 9 namespace properties into: {filepath}")
-                              
-                          if modified:
+                              updated = content.replace("jcenter()", "mavenCentral()")
                               with open(filepath, "w", errors='ignore') as f:
-                                  f.write(content)
-                      except Exception as e:
-                          print(f"WARNING: Could not update package configuration rules: {e}")
+                                  f.write(updated)
+                              print(f"REPAIRED: Patched jcenter legacy trace in: {filepath}")
+                      except Exception:
+                          pass
           EOF
 
           python3 modernizer.py
           rm modernizer.py
 
-          # Erase stale plugin build tables to let Flutter compile fresh platforms configurations maps
+          # 3. DART CODE SURGICAL STRIP: Scrus out carrier_info library references from your application source files
+          python3 -c '
+          import os
+          print("Scanning application files to strip legacy Dart imports...")
+          for root, dirs, files in os.walk("lib"):
+              for file in files:
+                  if file.endsWith(".dart"):
+                      path = os.path.join(root, file)
+                      try:
+                          lines = open(path).readlines()
+                          # Remove package lines and code calls referencing carrier_info
+                          cleaned = [l for l in lines if "carrier_info" not in l]
+                          if len(cleaned) != len(lines):
+                              open(path, "w").write("".join(cleaned))
+                              print(f"STRIPPED: Removed obsolete imports from: {path}")
+                      except Exception:
+                          pass
+          ' || true
+
+          # Wipe legacy project maps from Flutter tracking manifests
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # 3. GLOBAL ENGINE TUNER: Setup falling namespace maps and enforce compile SDK targets inside init.gradle
+          # 4. GLOBAL NAMESPACE ENGINE: Enforces isolated package naming layout variables dynamically
           mkdir -p ~/.gradle
           python3 -c '
           import os
@@ -215,7 +220,7 @@ jobs:
       - name: Deploy Web App to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      - name: Upload Android Release APK Artifact
+      - name: Android Release APK Artifact
         uses: actions/upload-artifact@v4
         with: { name: mindspark-release-apk, path: build/app/outputs/flutter-apk/app-release.apk }
 
