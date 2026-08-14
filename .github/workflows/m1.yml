@@ -101,15 +101,14 @@ jobs:
           
           flutter pub get
 
-          # FIX: Surgical deep-cleaning Python text string tool that completely removes the broken configurations container block
+          # FIX: Force clean the cached arcore file across EVERY fallback pub directory pattern unconditionally
           python3 -c '
           import os, glob
-          for path in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/**/build.gradle", recursive=True):
+          for path in glob.glob("/home/runner/.pub-cache/hosted/**/build.gradle", recursive=True):
               try:
                   if os.path.exists(path) and "arcore_flutter_plus" in path:
                       content = open(path).read()
                       if "configurations.all" in content:
-                          # Split lines cleanly to safely exclude the legacy dependency blocks completely
                           lines = content.splitlines()
                           cleaned = []
                           skip = False
@@ -123,8 +122,24 @@ jobs:
                               if not skip:
                                   cleaned.append(line)
                           open(path, "w").write("\n".join(cleaned) + "\n")
-                          print(f"Surgically scrubbed configurations block out of: {path}")
+                          print(f"Force-scrubbed configurations container from path: {path}")
               except Exception as e: pass
+          ' || true
+
+          # FIX: Inject a global Gradle configuration exclusion rule straight into the app container layer
+          python3 -c '
+          import os
+          path = "android/app/build.gradle.kts"
+          if os.path.exists(path):
+              content = open(path).read()
+              exclusion_rule = """
+              configurations.all {
+                  exclude(group = "com.github.algorand", module = "arcore_flutter_plus")
+                  exclude(module = "arcore_flutter_plus")
+              }
+              """
+              with open(path, "w") as f:
+                  f.write(content + "\n" + exclusion_rule)
           ' || true
 
           dart format lib/ || true
