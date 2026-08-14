@@ -101,25 +101,30 @@ jobs:
           
           flutter pub get
 
-          # FIX: Force clean settings.gradle to drop the project from ever compiling or generating tasks
+          # FIX: Surgical deep-cleaning Python text string tool that completely removes the broken configurations container block
           python3 -c '
-          import os
-          for path in ["android/settings.gradle", "android/settings.gradle.kts"]:
-              if os.path.exists(path):
-                  content = open(path).read()
-                  # Inject an automatic global exclusion filter loop before plugin initialization passes
-                  cleanup_rule = """
-                  // Dynamic project exclusion script
-                  gradle.beforeProject { proj ->
-                      if (proj.name == "arcore_flutter_plus") {
-                          proj.buildable = false
-                          proj.setProperty("compileSdk", 37)
-                      }
-                  }
-                  """
-                  with open(path, "w") as f:
-                      f.write(cleanup_rule + content)
-                  print(f"Successfully injected project skip loop blocks into: {path}")
+          import os, glob
+          for path in glob.glob("/home/runner/.pub-cache/hosted/pub.dev/**/build.gradle", recursive=True):
+              try:
+                  if os.path.exists(path) and "arcore_flutter_plus" in path:
+                      content = open(path).read()
+                      if "configurations.all" in content:
+                          # Split lines cleanly to safely exclude the legacy dependency blocks completely
+                          lines = content.splitlines()
+                          cleaned = []
+                          skip = False
+                          for line in lines:
+                              if "configurations.all" in line:
+                                  skip = True
+                                  continue
+                              if skip and "}" in line:
+                                  skip = False
+                                  continue
+                              if not skip:
+                                  cleaned.append(line)
+                          open(path, "w").write("\n".join(cleaned) + "\n")
+                          print(f"Surgically scrubbed configurations block out of: {path}")
+              except Exception as e: pass
           ' || true
 
           dart format lib/ || true
@@ -131,12 +136,6 @@ jobs:
           init_script = """
           allprojects {
               beforeEvaluate { project ->
-                  if (project.name == "arcore_flutter_plus" || project.path == ":arcore_flutter_plus") {
-                      // Dynamically patch configuration constraints to drop legacy evaluation errors entirely
-                      if (!project.configurations.hasProperty("all")) {
-                          project.ext.all = { closure -> }
-                      }
-                  }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           project.android.namespace = "com.mindspark.mindspark1"
