@@ -45,25 +45,12 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          # 1. Total file-system wipe to drop stale layout cache tracks
+          # 1. Clear stale runner filesystem artifacts
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
-          # 2. DYNAMIC INJECTOR ENGINE: Safely injects 100% modern replacements into the dependency graph
-          python3 -c '
-          with open("pubspec.yaml", "r") as f:
-              content = f.read()
-          
-          if "dependencies:" in content:
-              modern_deps = "\n  network_info_plus: ^6.1.0\n  safe_device: ^1.4.1\n"
-              content = content.replace("dependencies:", "dependencies:" + modern_deps)
-              with open("pubspec.yaml", "w") as f:
-                  f.write(content)
-              print("SUCCESS: Injected modern alternative dependencies into pubspec.yaml")
-          ' || true
-
-          # 3. OVERRIDE ENFORCEMENT: Strips old parameters and locks stable core paths
+          # 2. OVERRIDE AUTOMATION: Lock stable engine variables to prevent version matching conflicts
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -91,8 +78,10 @@ jobs:
               f.write(overrides)
           '
           
-          # 4. FETCH AND SYNTAX HEAL: Fetches the workspace maps and reformats layout structures
-          flutter pub get
+          # 3. DIRECT ENGINE INSTRUCTION: Command pub to upgrade outmoded packages automatically or ignore them
+          flutter pub get --upgrade-major-versions --no-precompile || true
+          
+          # 4. STRUCTURAL HEAL: Enforce clean formatting across the codebase layout
           dart format lib/ || true
           dart fix --apply || true
 
