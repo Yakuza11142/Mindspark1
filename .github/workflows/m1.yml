@@ -101,25 +101,10 @@ jobs:
           '
           
           flutter pub get
-          
-          # DIAGNOSTIC: Print dependency tree to find exactly who is pulling in arcore
-          echo "=== DEPENDENCY GRAPH ANALYSIS ==="
-          flutter pub deps | grep arcore || true
-          
-          # FIX: Force-neutralize the build file completely so Gradle treats it as an empty project
-          python3 -c '
-          import os, glob
-          for path in glob.glob("/home/runner/.pub-cache/hosted/**/build.gradle", recursive=True):
-              if "arcore_flutter_plus" in path:
-                  with open(path, "w") as f:
-                      f.write("def dummy = true\n")
-                  print(f"Surgically deactivated build.gradle for unneeded plugin: {path}")
-          ' || true
-
           dart format lib/ || true
           dart fix --apply || true
 
-          # Dynamic namespace patching and global SDK enforcement injection
+          # Dynamic unique namespace patching and global SDK version enforcement
           mkdir -p ~/.gradle
           python3 -c '
           import os
