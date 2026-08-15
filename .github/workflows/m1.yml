@@ -112,7 +112,6 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # SOURCE CONTROL RESIDUE CLEANER: Drops references to deleted packages inside Dart files
           python3 -c '
           import os
           banned_keywords = [
@@ -147,11 +146,9 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # DIRECT PROPERTIES SETTING: Forces stable DSL parameters locally
           echo "android.experimental.newDsl=false" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
 
-          # SURGICAL GRADLE PROPERTIES MODIFIER: Forcefully rewrites build.gradle.kts to inject desugaring and enforce unique namespaces
           cat << 'EOF' > patch_gradle.py
           import os
 
@@ -178,7 +175,6 @@ jobs:
           python3 patch_gradle.py
           rm patch_gradle.py
 
-          # LOCAL SETTINGS HANDLER & ERROR-TO-WARNING CONVERTER ENGINE
           cat << 'EOF' > patch_settings.py
           import os
           settings_path = "android/settings.gradle"
@@ -218,8 +214,8 @@ jobs:
             --obfuscate \
             --split-debug-info=../symbols \
             --dart-define-from-file=secrets.json \
-            lib/main.dart \
-            -- --no-daemon -Pandroid.experimental.newDsl=false
+            -Pandroid.experimental.newDsl=false \
+            target=lib/main.dart
 
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
@@ -227,7 +223,7 @@ jobs:
             --extra-front-end-options=--obfuscate \
             --dart-define-from-file=secrets.json
             
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=\$(date +%s)/g" build/web/index.html 2>/dev/null || true
+          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
