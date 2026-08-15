@@ -245,7 +245,21 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Build Flutter web with canvas/html compatibility mode and root base href
+          # Inject the required base href placeholder into web/index.html
+          python3 -c '
+          import os
+          path = "web/index.html"
+          if os.path.exists(path):
+              content = open(path).read()
+              if "<base href=" not in content:
+                  content = content.replace("<head>", "<head>\n  <base href=\"$FLUTTER_BASE_HREF\">")
+              else:
+                  import re
+                  content = re.sub(r"<base href=[\"\'][^\"\']*[\"\']>", "<base href=\"$FLUTTER_BASE_HREF\">", content)
+              open(path, "w").write(content)
+          '
+
+          # Build Flutter web with explicit root base-href
           flutter build web --release \
             --base-href="/" \
             --dart-define-from-file=secrets.json \
@@ -255,7 +269,7 @@ jobs:
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
           touch build/web/.nojekyll
 
-          # Force fresh asset fetching in index.html
+          # Clean service worker references from generated build
           python3 -c '
           import os
           path = "build/web/index.html"
