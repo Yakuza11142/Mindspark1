@@ -66,6 +66,7 @@ jobs:
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
+          sed -i '/ios_insecure_screen_detector:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -124,6 +125,7 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
+          # 1. FORCE OBLITERATION PROTOCOL: Tracks and completely vaporizes old folders on the hard drive
           cat << 'EOF' > modernizer.py
           import os
           import shutil
@@ -131,7 +133,7 @@ jobs:
           pub_cache_root = os.path.expanduser("~/.pub-cache")
           print("Executing hard purge loop on non-modern legacy target folders...")
 
-          targets_to_delete = ["arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", "flutter_windowmanager"]
+          targets_to_delete = ["arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", "flutter_windowmanager", "ios_insecure_screen_detector"]
 
           for root, subdirs, files in os.walk(pub_cache_root):
               if any(target in root for target in targets_to_delete):
@@ -158,10 +160,11 @@ jobs:
           python3 modernizer.py
           rm modernizer.py
 
+          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out every single line referencing deleted packages
           python3 -c '
           import os
           print("Surgically scrubbing source paths of legacy imports...")
-          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager"]
+          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", "IosInsecureScreenDetector"]
           
           for root, dirs, files in os.walk("lib"):
               for file in files:
@@ -177,6 +180,7 @@ jobs:
                           pass
           ' || true
 
+          # Wipe internal dependency configurations clean right before compilation starts
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
           sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
@@ -185,7 +189,10 @@ jobs:
           sed -i '/flutter_jailbreak_detection/d' .flutter-plugins-dependencies 2>/dev/null || true
           sed -i '/flutter_windowmanager/d' .flutter-plugins 2>/dev/null || true
           sed -i '/flutter_windowmanager/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/ios_insecure_screen_detector/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/ios_insecure_screen_detector/d' .flutter-plugins-dependencies 2>/dev/null || true
 
+          # 3. GLOBAL NAMESPACE ENGINE: Resolves missing namespace exceptions dynamically via fallback markers
           mkdir -p ~/.gradle
           python3 -c '
           import os
@@ -235,7 +242,10 @@ jobs:
         with:
           path: build/web
 
-      - name: Upload Android Release APK Artifact
+      - name: Deploy Web App to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+      - name: Android Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mindspark-release-apk
@@ -246,15 +256,3 @@ jobs:
         with:
           name: mindspark-obfuscation-symbols
           path: ../symbols/
-
-  deploy-web:
-    name: Deploy Web App to GitHub Pages
-    needs: build
-    runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy Web App to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
