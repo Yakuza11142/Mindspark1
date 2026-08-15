@@ -47,7 +47,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Install Application Dependencies & Clean Pubspec
+      - name: Clean Dependencies & Relax Pubspec Overrides
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -106,7 +106,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
-      - name: Regenerate Native Configuration & Disable R8 Minification
+      - name: Regenerate Platforms & Inject Universal Error-Bypass Script
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
@@ -118,11 +118,11 @@ jobs:
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
+          sed -i '/android.enableR8/d' android/gradle.properties 2>/dev/null || true
           echo "android.experimental.newDsl=false" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
-          echo "android.enableR8=false" >> android/gradle.properties
 
           cat << 'EOF' > fix_build.py
           import os
@@ -169,6 +169,7 @@ jobs:
           python3 fix_build.py
           rm fix_build.py
 
+          # Global Interceptor: Forces Gradle tasks to continue on error & suppresses warnings
           cat << 'EOF' > patch_settings.py
           import os
 
@@ -210,6 +211,7 @@ jobs:
                   } catch (Exception e) {}
               }
 
+              # Disables tasks that intercept and break release builds
               project.tasks.matching {
                   it.name.contains("AarMetadata") || it.name.contains("Desugar") || it.name.contains("Lint") || it.name.contains("R8") || it.name.contains("minify")
               }.all { t ->
@@ -230,19 +232,19 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           
-          flutter build apk --release --no-shrink \
-            --no-sound-null-safety \
+          # Ignores task warnings/interrupts and executes fallback entry build if needed
+          flutter build apk --release \
             --dart-define-from-file=secrets.json \
-            lib/main.dart || flutter build apk --release --no-shrink --dart-define-from-file=secrets.json lib/main.dart
+            lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
       - name: Build Genuine Web Application
         run: |
           flutter config --enable-web || true
 
+          # Cleanly compiles Web platform while bypassing non-fatal script interrupts
           flutter build web --release \
-            --no-sound-null-safety \
             --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || flutter build web --release --dart-define-from-file=secrets.json --target=lib/main.dart
+            --target=lib/main.dart || flutter build web --release --dart-define-from-file=secrets.json
 
           sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
 
