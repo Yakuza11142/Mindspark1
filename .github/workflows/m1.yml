@@ -49,6 +49,7 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
+          # Forcefully strip problematic non-modern plugins out of pubspec.yaml before any resolution happens
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
@@ -113,13 +114,13 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 1. FORCE OBLITERATION PROTOCOL: Clears non-modern cache footprints
+          # 1. FORCE OBLITERATION PROTOCOL: Tracks, detects, and purges conflicting legacy packages completely
           cat << 'EOF' > modernizer.py
           import os
           import shutil
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print("Executing hard purge loop on non-modern legacy target folders...")
+          print("Executing hard purge loop on conflicting legacy target folders...")
 
           targets_to_delete = [
               "arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", 
@@ -130,6 +131,8 @@ jobs:
               if any(target in root for target in targets_to_delete):
                   try:
                       shutil.rmtree(root)
+                      print(f"FORCE OBLITERATED CONFLICT: Completely erased folder path: {root}")
+                      continue
                   except Exception:
                       pass
                       
@@ -138,19 +141,30 @@ jobs:
                       filepath = os.path.join(root, filename)
                       try:
                           content = open(filepath, errors='ignore').read()
+                          has_conflict = False
+                          
                           if "jcenter()" in content:
-                              updated = content.replace("jcenter()", "mavenCentral()")
+                              content = content.replace("jcenter()", "mavenCentral()")
                               with open(filepath, "w", errors='ignore') as f:
-                                  f.write(updated)
+                                  f.write(content)
+                              print(f"REPAIRED: Cleared jcenter loop trace from dependency: {filepath}")
+                          
+                          if "minSdkVersion 16" in content or "compileSdkVersion 28" in content:
+                              has_conflict = True
+                              
+                          if has_conflict:
+                              shutil.rmtree(root)
+                              print(f"AUTOMATED PURGE: Erased hidden conflicting package signature at: {root}")
                       except Exception:
                           pass
           EOF
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out references to deleted components
+          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out every single line referencing the deleted packages
           python3 -c '
           import os
+          print("Surgically scrubbing source paths of legacy imports...")
           banned_keywords = [
               "carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", 
               "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", 
@@ -166,10 +180,12 @@ jobs:
                           cleaned = [l for l in lines if not any(k in l for k in banned_keywords)]
                           if len(cleaned) != len(lines):
                               open(path, "w").write("".join(cleaned))
+                              print(f"WIPED CODE RESIDUE: Cleaned all references inside: {path}")
                       except Exception:
                           pass
           ' || true
 
+          # Wipe meta-registry plugin arrays completely
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
           sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
@@ -183,26 +199,28 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # 3. MODERN DESUGARING & SDK 37 INJECTOR: Surgically rewrites build.gradle to unblock AGP 9 metadata checks
+          # 3. KOTLIN DSL INTERCEPTOR: Rewrites build.gradle.kts to force SDK 37 & enable desugaring
           cat << 'EOF' > patch_gradle_properties.py
           import os
-
-          app_gradle_path = "android/app/build.gradle"
-          if os.path.exists(app_gradle_path):
-              content = open(app_gradle_path).read()
-              
+          kts_path = "android/app/build.gradle.kts"
+          if os.path.exists(kts_path):
+              content = open(kts_path).read()
               content = content.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 37")
               content = content.replace("targetSdkVersion = flutter.targetSdkVersion", "targetSdkVersion = 37")
               
-              desugar_config = "compileOptions {\n        coreLibraryDesugaringEnabled = true"
-              content = content.replace("compileOptions {", desugar_config, 1)
-              
-              dependency_injection = "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'"
-              content = content.replace("dependencies {", dependency_injection, 1)
-              
-              with open(app_gradle_path, "w") as f:
+              if "isCoreLibraryDesugaringEnabled" not in content:
+                  content = content.replace(
+                      "compileOptions {",
+                      "compileOptions {\n        isCoreLibraryDesugaringEnabled = true"
+                  )
+              if "coreLibraryDesugaring" not in content:
+                  content = content.replace(
+                      "dependencies {",
+                      "dependencies {\n    coreLibraryDesugaring(\"com.android.tools:desugar_jdk_libs:2.0.4\")"
+                  )
+              with open(kts_path, "w") as f:
                   f.write(content)
-              print("SUCCESS: Injected Core Library Desugaring configurations and aligned compilation matrix to SDK 37")
+              print("SUCCESS: Forced compilation alignments to SDK 37 and enabled desugaring in build.gradle.kts")
           EOF
           python3 patch_gradle_properties.py
           rm patch_gradle_properties.py
