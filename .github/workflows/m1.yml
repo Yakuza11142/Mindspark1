@@ -106,7 +106,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
-      - name: Regenerate Platforms & Configure ProGuard ML Kit Bypass
+      - name: Regenerate Platforms & Configure Native Rules
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
@@ -124,7 +124,6 @@ jobs:
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
 
-          # Create global ProGuard rules file to suppress all missing ML Kit/plugin class warnings
           cat << 'EOF' > android/app/proguard-rules.pro
           -dontwarn **
           -ignorewarnings
@@ -242,15 +241,29 @@ jobs:
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
-      - name: Build Genuine Web Application
+      - name: Build Web Application & Fix GitHub Pages Asset Loading
         run: |
           flutter config --enable-web || true
 
+          # Build Flutter web with canvas/html compatibility mode and root base href
           flutter build web --release \
+            --base-href="/" \
             --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || flutter build web --release --dart-define-from-file=secrets.json
+            --target=lib/main.dart || flutter build web --release --base-href="/" --dart-define-from-file=secrets.json
 
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
+          # Disable Service Worker caching loops and bypass Jekyll processing on GitHub Pages
+          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
+          touch build/web/.nojekyll
+
+          # Force fresh asset fetching in index.html
+          python3 -c '
+          import os
+          path = "build/web/index.html"
+          if os.path.exists(path):
+              content = open(path).read()
+              content = content.replace("flutter_service_worker.js", "")
+              open(path, "w").write(content)
+          '
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
