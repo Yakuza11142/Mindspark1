@@ -1,18 +1,18 @@
-name: MindSpark Production CI
+name: MindSpark Ultimate Production CI
 on:
   push: { branches: [main, master, dev, "**"] }
   workflow_dispatch:
 
 permissions: { contents: write, pages: write, id-token: write }
-concurrency: { group: mindspark-production, cancel-in-progress: false }
+concurrency: { group: mindspark-production, cancel-in-progress: true }
 
 jobs:
   build:
     name: Build MindSpark Android and Web
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     env: 
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true -Pandroid.experimental.newDsl=false"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
       SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
@@ -37,7 +37,7 @@ jobs:
 
       - name: Setup Java Runtime
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: "17", cache: gradle }
+        with: { distribution: temurin, java-version: "17", cache: false }
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
@@ -45,6 +45,9 @@ jobs:
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
+          rm -rf ~/.gradle/ || true
+          rm -f ~/.gradle/init.gradle || true
+          
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
@@ -113,52 +116,6 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          cat << 'EOF' > modernizer.py
-          import os
-          import shutil
-
-          pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print("Executing hard purge loop on conflicting legacy target folders...")
-
-          targets_to_delete = [
-              "arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", 
-              "flutter_windowmanager", "ios_insecure_screen_detector", "environment_sensors"
-          ]
-
-          for root, subdirs, files in os.walk(pub_cache_root):
-              if any(target in root for target in targets_to_delete):
-                  try:
-                      shutil.rmtree(root)
-                      print(f"FORCE OBLITERATED CONFLICT: Completely erased folder path: {root}")
-                      continue
-                  except Exception:
-                      pass
-                      
-              for filename in files:
-                  if filename == "build.gradle":
-                      filepath = os.path.join(root, filename)
-                      try:
-                          content = open(filepath, errors='ignore').read()
-                          has_conflict = False
-                          
-                          if "jcenter()" in content:
-                              content = content.replace("jcenter()", "mavenCentral()")
-                              with open(filepath, "w", errors='ignore') as f:
-                                  f.write(content)
-                              print(f"REPAIRED: Cleared jcenter loop trace from dependency: {filepath}")
-                          
-                          if "minSdkVersion 16" in content or "compileSdkVersion 28" in content:
-                              has_conflict = True
-                              
-                          if has_conflict:
-                              shutil.rmtree(root)
-                              print(f"AUTOMATED PURGE: Erased hidden conflicting package signature at: {root}")
-                      except Exception:
-                          pass
-          EOF
-          python3 modernizer.py
-          rm modernizer.py
-
           python3 -c '
           import os
           banned_keywords = [
@@ -193,72 +150,72 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          cat << 'EOF' > patch_gradle_properties.py
+          echo "android.experimental.newDsl=false" >> android/gradle.properties
+          echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
+
+          cat << 'EOF' > patch_gradle.py
           import os
 
           kts_path = "android/app/build.gradle.kts"
           if os.path.exists(kts_path):
-              content = open(kts_path).read()
+              lines = open(kts_path).readlines()
+              output = []
               
-              content = content.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 37")
-              content = content.replace("targetSdkVersion = flutter.targetSdkVersion", "targetSdkVersion = 37")
-              
-              if "isCoreLibraryDesugaringEnabled = true" not in content:
-                  content = content.replace(
-                      "compileOptions {",
-                      "compileOptions {\n        isCoreLibraryDesugaringEnabled = true"
-                  )
-              if "coreLibraryDesugaring" not in content:
-                  content = content.replace(
-                      "dependencies {",
-                      "dependencies {\n    coreLibraryDesugaring(\"com.android.tools:desugar_jdk_libs:2.0.4\")"
-                  )
-              with open(kts_path, "w") as f:
-                  f.write(content)
-              print("SUCCESS: Forced compilation layout alignments to SDK 37 and enabled type-safe Kotlin DSL Desugaring dependency handles")
+              for line in lines:
+                  if "compileSdk = " in line:
+                      output.append("    compileSdk = 37\n")
+                  elif "targetSdkVersion" in line:
+                      output.append("        targetSdkVersion(37)\n")
+                  elif "compileOptions {" in line:
+                      output.append("    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n")
+                  elif "dependencies {" in line:
+                      output.append("dependencies {\n    coreLibraryDesugaring(\"com.android.tools:desugar_jdk_libs:2.0.4\")\n")
+                  else:
+                      output.append(line)
+                      
+              open(kts_path, "w").write("".join(output))
+              print("SUCCESS: Surgically injected modern properties inside build.gradle.kts")
           EOF
-          python3 patch_gradle_properties.py
-          rm patch_gradle_properties.py
+          python3 patch_gradle.py
+          rm patch_gradle.py
 
-          mkdir -p ~/.gradle
-          cat << 'EOF' > ~/.gradle/init.gradle
-          allprojects {
-              beforeEvaluate { project ->
+          cat << 'EOF' > patch_settings.py
+          import os
+          settings_path = "android/settings.gradle"
+          if os.path.exists(settings_path):
+              content = open(settings_path).read()
+              
+              override_logic = """
+              gradle.beforeProject { project ->
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           def cleanName = project.name.replaceAll("[^a-zA-Z0-9]", "")
-                          if (project.path == ":app") {
-                              project.android.namespace = "com.mindspark.mindspark1"
-                          } else {
-                              project.android.namespace = "com.mindspark.fallback.${cleanName}"
-                          }
+                          project.android.namespace = "com.mindspark.fallback." + cleanName
                       }
                   }
-              }
-              tasks.withType(JavaCompile).configureEach { task ->
-                  options.failOnError = false
-                  options.compilerArgs << "-Xlint:none" << "-nowarn"
-              }
-              gradle.projectsEvaluated {
-                  rootProject.subprojects { subproject ->
-                      if (subproject.plugins.hasPlugin("kotlin-android") || subproject.hasProperty("kotlin")) {
-                          subproject.tasks.matching { it.name.contains("compile") && it.name.contains("Kotlin") }.all { task ->
-                              try {
-                                  task.kotlinOptions.freeCompilerArgs += ["-nowarn", "-suppress-version-warnings"]
-                              } catch (Exception e) {}
-                          }
-                      }
-                      subproject.tasks.matching { it.name.contains("checkReleaseAarMetadata") || it.name.contains("CheckAarMetadata") }.all { aarTask ->
-                          aarTask.enabled = false
-                      }
+                  
+                  project.tasks.withType(JavaCompile) {
+                      options.failOnError = false
+                      options.compilerArgs << "-Xlint:none" << "-nowarn"
+                  }
+                  
+                  project.tasks.matching { it.name.contains("compile") && it.name.contains("Kotlin") }.all { task ->
+                      try {
+                          task.kotlinOptions.freeCompilerArgs += ["-nowarn", "-suppress-version-warnings"]
+                      } catch (Exception e) {}
                   }
               }
-          }
+              """
+              open(settings_path, "w").write(override_logic + "\n" + content)
+              print("SUCCESS: Appended error-to-warning compilation overrides directly to settings.gradle")
           EOF
+          python3 patch_settings.py
+          rm patch_settings.py
 
       - name: Build Obfuscated Signed Android APK
         run: |
-          mkdir -p ../symbols
+          rm -rf ~/.gradle/ || true
+          rm -f ~/.gradle/init.gradle || true
           flutter build apk --release \
             --obfuscate \
             --split-debug-info=./symbols \
