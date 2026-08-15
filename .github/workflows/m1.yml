@@ -64,7 +64,7 @@ jobs:
           sed -i '/environment_sensors:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
-          python3 -c '
+          cat << 'EOF' > patch_pubspec.py
           import os
           f_root = os.environ.get("FLUTTER_ROOT", "")
           overrides = f"""
@@ -87,13 +87,23 @@ jobs:
           """
           with open("pubspec.yaml", "a") as f:
               f.write(overrides)
-          '
+          EOF
+          python3 patch_pubspec.py
+          rm patch_pubspec.py
           
           flutter pub get || true
 
       - name: Configure Production Environment Variables
         run: |
-          python3 -c "import json,os;secrets={k:os.environ.get(k,'').strip() for k in ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']};open('secrets.json','w').write(json.dumps(secrets))"
+          cat << 'EOF' > make_secrets.py
+          import json, os
+          keys = ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']
+          secrets = {k: os.environ.get(k, '').strip() for k in keys}
+          with open('secrets.json', 'w') as f:
+              f.write(json.dumps(secrets))
+          EOF
+          python3 make_secrets.py
+          rm make_secrets.py
           
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "storeFile=../release.keystore" >> android/key.properties
@@ -245,39 +255,38 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Inject the required base href placeholder into web/index.html
-          python3 -c '
-          import os
+          cat << 'EOF' > prepare_web_index.py
+          import os, re
           path = "web/index.html"
           if os.path.exists(path):
               content = open(path).read()
               if "<base href=" not in content:
                   content = content.replace("<head>", "<head>\n  <base href=\"$FLUTTER_BASE_HREF\">")
               else:
-                  import re
-                  content = re.sub(r"<base href=[\"\'][^\"\']*[\"\']>", "<base href=\"$FLUTTER_BASE_HREF\">", content)
+                  content = re.sub(r'<base href=["\'][^"\']*["\']>', '<base href="$FLUTTER_BASE_HREF">', content)
               open(path, "w").write(content)
-          '
+          EOF
+          python3 prepare_web_index.py
+          rm prepare_web_index.py
 
-          # Build Flutter web with explicit root base-href
           flutter build web --release \
             --base-href="/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart || flutter build web --release --base-href="/" --dart-define-from-file=secrets.json
 
-          # Disable Service Worker caching loops and bypass Jekyll processing on GitHub Pages
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
           touch build/web/.nojekyll
 
-          # Clean service worker references from generated build
-          python3 -c '
+          cat << 'EOF' > clean_web_index.py
           import os
           path = "build/web/index.html"
           if os.path.exists(path):
               content = open(path).read()
               content = content.replace("flutter_service_worker.js", "")
               open(path, "w").write(content)
-          '
+          EOF
+          python3 clean_web_index.py
+          rm clean_web_index.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
