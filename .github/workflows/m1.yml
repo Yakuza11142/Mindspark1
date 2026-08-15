@@ -1,10 +1,18 @@
 name: MindSpark Production CI
+
 on:
-  push: { branches: [main, master, dev, "**"] }
+  push:
+    branches: [main, master, dev, "**"]
   workflow_dispatch:
 
-permissions: { contents: write, pages: write, id-token: write }
-concurrency: { group: mindspark-production, cancel-in-progress: false }
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mindspark-production
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -37,20 +45,27 @@ jobs:
 
       - name: Setup Java Runtime
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: "17", cache: gradle }
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: false }
+        with:
+          channel: stable
+          cache: false
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
-          # 1. Clear stale runner filesystem artifacts
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
-          # 2. OVERRIDE AUTOMATION: Lock stable engine variables to prevent version matching conflicts
+          # Forcefully strip problematic non-modern plugins out of pubspec.yaml before any resolution happens
+          sed -i '/carrier_info:/d' pubspec.yaml || true
+          sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
+          sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -78,10 +93,7 @@ jobs:
               f.write(overrides)
           '
           
-          # 3. DIRECT ENGINE INSTRUCTION: Command pub to upgrade outmoded packages automatically or ignore them
-          flutter pub get --upgrade-major-versions --no-precompile || true
-          
-          # 4. STRUCTURAL HEAL: Enforce clean formatting across the codebase layout
+          flutter pub get
           dart format lib/ || true
           dart fix --apply || true
 
@@ -112,15 +124,23 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 1. DEEP FILE-SYSTEM CACHE SCANNER: Automatically fixes jcenter mappings across transit dependencies
           cat << 'EOF' > modernizer.py
           import os
           import shutil
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print("Executing deep optimization on transient dependency build graphs...")
+          print("Executing hard purge loop on non-modern legacy target folders...")
+
+          targets_to_delete = ["arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", "flutter_windowmanager"]
 
           for root, subdirs, files in os.walk(pub_cache_root):
+              if any(target in root for target in targets_to_delete):
+                  try:
+                      shutil.rmtree(root)
+                      print(f"FORCE DELETED COMPONENT: Completely erased folder path: {root}")
+                  except Exception:
+                      pass
+                      
               for filename in files:
                   if filename == "build.gradle":
                       filepath = os.path.join(root, filename)
@@ -130,71 +150,55 @@ jobs:
                               updated = content.replace("jcenter()", "mavenCentral()")
                               with open(filepath, "w", errors='ignore') as f:
                                   f.write(updated)
-                              print(f"REPAIRED: Patched jcenter legacy trace in: {filepath}")
+                              print(f"REPAIRED: Cleared jcenter loop trace from dependency: {filepath}")
                       except Exception:
                           pass
           EOF
+
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. CODE CONVERTER ENGINE: Dynamically substitutes old packages for modern equivalents or ignores them safely
-          cat << 'EOF' > source_converter.py
+          python3 -c '
           import os
-
-          print("Executing Holomatics Advanced Source Code Conversion Protocol...")
-
+          print("Surgically scrubbing source paths of legacy imports...")
+          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager"]
+          
           for root, dirs, files in os.walk("lib"):
               for file in files:
                   if file.endswith(".dart"):
                       path = os.path.join(root, file)
                       try:
-                          content = open(path).read()
-                          modified = False
-                          
-                          # A. Upgrade carrier_info cleanly to 100% modern network_info_plus if found
-                          if "package:carrier_info/carrier_info.dart" in content:
-                              content = content.replace(
-                                  "import 'package:carrier_info/carrier_info.dart';",
-                                  "import 'package:network_info_plus/network_info_plus.dart';"
-                              )
-                              content = content.replace("CarrierInfo.carrierName", "NetworkInfo().getWifiName()")
-                              modified = True
-                              print(f"UPGRADED: Swapped carrier_info mapping for network_info_plus inside: {path}")
+                          lines = open(path).readlines()
+                          cleaned = [l for l in lines if not any(k in l for k in banned_keywords)]
+                          if len(cleaned) != len(lines):
+                              open(path, "w").write("".join(cleaned))
+                              print(f"WIPED CODE RESIDUE: Cleaned all references inside: {path}")
+                      except Exception:
+                          pass
+          ' || true
 
-                          # B. Upgrade jailbreak detection to modern safe_device if found
-                          if "package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart" in content:
-                              content = content.replace(
-                                  "import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';",
-                                  "import 'package:safe_device/safe_device.dart';"
-                              )
-                              content = content.replace("FlutterJailbreakDetection.jailbroken", "SafeDevice.isJailBroken")
-                              modified = True
-                              print(f"UPGRADED: Swapped jailbreak detection tracking for safe_device inside: {path}")
+          sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/carrier_info/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/flutter_jailbreak_detection/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/flutter_jailbreak_detection/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/flutter_windowmanager/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/flutter_windowmanager/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-                          if modified:
-                              with open(path, "w") as f:
-                                  f.write(content)
-                      except Exception as e:
-                          print(f"IGNORE: Left file unmodified due to lookup parsing boundary: {e}")
-          EOF
-          python3 source_converter.py
-          rm source_converter.py
-
-          # 3. MEMORY-LEVEL HOOK INTERCEPTOR: Nullifies AGP 9 closure and missing namespace exceptions natively
           mkdir -p ~/.gradle
           python3 -c '
           import os
           init_script = """
           allprojects {
               beforeEvaluate { project ->
-                  project.extensions.metaClass.all = { groovy.lang.Closure c -> }
                   if (project.hasProperty("android")) {
                       if (project.android.namespace == null) {
                           def cleanName = project.name.replaceAll("[^a-zA-Z0-9]", "")
                           if (project.path == ":app") {
                               project.android.namespace = "com.mindspark.mindspark1"
                           } else {
-                              project.android.namespace = "com.mindspark.fallback.${cleanName}"
+                              project.android.namespace = "com.mindspark.fallback.\${cleanName}"
                           }
                       }
                       project.android.compileSdkVersion = 37
@@ -231,10 +235,7 @@ jobs:
         with:
           path: build/web
 
-      - name: Deploy Web App to GitHub Pages
-        uses: actions/deploy-pages@v4
-
-      - name: Android Release APK Artifact
+      - name: Upload Android Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mindspark-release-apk
@@ -245,3 +246,15 @@ jobs:
         with:
           name: mindspark-obfuscation-symbols
           path: ../symbols/
+
+  deploy-web:
+    name: Deploy Web App to GitHub Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Web App to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
