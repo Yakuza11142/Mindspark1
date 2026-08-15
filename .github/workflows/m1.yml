@@ -67,6 +67,7 @@ jobs:
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
           sed -i '/ios_insecure_screen_detector:/d' pubspec.yaml || true
+          sed -i '/arcore_flutter_plus:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -164,7 +165,7 @@ jobs:
           python3 -c '
           import os
           print("Surgically scrubbing source paths of legacy imports...")
-          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", "IosInsecureScreenDetector"]
+          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", "IosInsecureScreenDetector", "arcore_flutter_plus", "ArCoreAndroidView"]
           
           for root, dirs, files in os.walk("lib"):
               for file in files:
