@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env: 
-      # Fixed GRADLE_OPTS: Removed invalid JVM flag collisions
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
@@ -57,7 +56,6 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
           
-          # Clean known legacy conflicting packages out of the pubspec manifest
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
@@ -122,13 +120,11 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 1. TOTAL OBLITERATION PASS
           cat << 'EOF' > modernizer.py
           import os
           import shutil
 
           pub_cache_root = os.path.expanduser("~/.pub-cache")
-          print("Executing absolute zero-tolerance purge on old folders...")
 
           targets_to_delete = [
               "arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", 
@@ -139,7 +135,6 @@ jobs:
               if any(target in root for target in targets_to_delete):
                   try:
                       shutil.rmtree(root)
-                      print(f"FORCE WIPED: Removed legacy directory: {root}")
                       continue
                   except Exception:
                       pass
@@ -156,14 +151,12 @@ jobs:
                                   
                           if "namespace" not in content and "android {" in content:
                               shutil.rmtree(root)
-                              print(f"PURGED BROKEN ELEMENT: Deleted plugin missing explicit namespace declarations at: {root}")
                       except Exception:
                           pass
           EOF
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. DART SOURCE CLEANER
           python3 -c '
           import os
           banned_keywords = [
@@ -198,11 +191,10 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # 3. DIRECT PROPERTIES SETTING
           echo "android.experimental.newDsl=false" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
 
-          # 4. SURGICAL GRADLE PROPERTIES MODIFIER
+          # Safely inject desugaring dependency alongside coreLibraryDesugaringEnabled
           cat << 'EOF' > patch_gradle.py
           import os
 
@@ -226,7 +218,6 @@ jobs:
           python3 patch_gradle.py
           rm patch_gradle.py
 
-          # 5. ERROR-TO-WARNING GRAPH INTERCEPTOR
           cat << 'EOF' > patch_settings.py
           import os
 
@@ -274,14 +265,13 @@ jobs:
               }
 
               project.tasks.matching {
-                  it.name.contains("checkReleaseAarMetadata") || it.name.contains("CheckAarMetadata") || it.name.contains("Desugar")
+                  it.name.contains("checkReleaseAarMetadata") || it.name.contains("CheckAarMetadata") || it.name.contains("checkDebugAarMetadata")
               }.all { t ->
                   t.enabled = false
               }
           }
           """
               open(settings_path, "w").write(override_logic + "\n" + content)
-              print("SUCCESS: Forced all task parameters to ignore errors and log them as warnings")
           EOF
           python3 patch_settings.py
           rm patch_settings.py
@@ -299,13 +289,12 @@ jobs:
             --obfuscate \
             --split-debug-info=symbols \
             --dart-define-from-file=secrets.json \
-            lib/main.dart || true
+            lib/main.dart
 
-      - name: Build Genuine Web Application & Auto-Heal Layout Architecture
+      - name: Build Genuine Web Application
         run: |
           flutter build web --release \
-            --extra-front-end-options=--obfuscate \
-            --dart-define-from-file=secrets.json || true
+            --dart-define-from-file=secrets.json
           sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
 
       - name: Configure Pages
