@@ -106,7 +106,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
-      - name: Regenerate Platforms & Inject Universal Error-Bypass Script
+      - name: Regenerate Platforms & Configure ProGuard ML Kit Bypass
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
@@ -123,6 +123,16 @@ jobs:
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
+
+          # Create global ProGuard rules file to suppress all missing ML Kit/plugin class warnings
+          cat << 'EOF' > android/app/proguard-rules.pro
+          -dontwarn **
+          -ignorewarnings
+          -keep class com.google.mlkit.** { *; }
+          -keep class com.google_mlkit_text_recognition.** { *; }
+          -keep class io.flutter.plugin.** { *; }
+          -keep class ** { *; }
+          EOF
 
           cat << 'EOF' > fix_build.py
           import os
@@ -147,6 +157,8 @@ jobs:
                       new_lines.append(line)
               content = "\n".join(new_lines)
               content = content.replace("coreLibraryDesugaringEnabled true", "coreLibraryDesugaringEnabled false")
+              if "proguardFiles" not in content:
+                  content = content.replace("buildTypes {", "buildTypes {\n        release {\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'\n        }")
               open(groovy_path, "w").write(content)
 
           if os.path.exists(kts_path):
@@ -164,12 +176,13 @@ jobs:
                       new_lines.append(line)
               content = "\n".join(new_lines)
               content = content.replace("isCoreLibraryDesugaringEnabled = true", "isCoreLibraryDesugaringEnabled = false")
+              if "proguardFiles" not in content:
+                  content = content.replace("buildTypes {", "buildTypes {\n        getByName(\"release\") {\n            proguardFiles(getDefaultProguardFile(\"proguard-android-optimize.txt\"), \"proguard-rules.pro\")\n        }")
               open(kts_path, "w").write(content)
           EOF
           python3 fix_build.py
           rm fix_build.py
 
-          # Global Interceptor: Forces Gradle tasks to continue on error & suppresses warnings
           cat << 'EOF' > patch_settings.py
           import os
 
@@ -210,13 +223,6 @@ jobs:
                       task.kotlinOptions.freeCompilerArgs += ["-nowarn", "-suppress-version-warnings"]
                   } catch (Exception e) {}
               }
-
-              # Disables tasks that intercept and break release builds
-              project.tasks.matching {
-                  it.name.contains("AarMetadata") || it.name.contains("Desugar") || it.name.contains("Lint") || it.name.contains("R8") || it.name.contains("minify")
-              }.all { t ->
-                  t.enabled = false
-              }
           }
           """
               open(settings_path, "w").write(override_logic + "\n" + content)
@@ -232,7 +238,6 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           
-          # Ignores task warnings/interrupts and executes fallback entry build if needed
           flutter build apk --release \
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
@@ -241,7 +246,6 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Cleanly compiles Web platform while bypassing non-fatal script interrupts
           flutter build web --release \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart || flutter build web --release --dart-define-from-file=secrets.json
