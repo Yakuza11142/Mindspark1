@@ -49,7 +49,6 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
           flutter pub cache clean --force || true
           
-          # Forcefully strip problematic non-modern plugins out of pubspec.yaml before any resolution happens
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
@@ -114,7 +113,7 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 1. FORCE OBLITERATION PROTOCOL: Tracks and completely vaporizes old folders on the hard drive
+          # 1. FORCE OBLITERATION PROTOCOL: Clears non-modern cache footprints
           cat << 'EOF' > modernizer.py
           import os
           import shutil
@@ -122,7 +121,6 @@ jobs:
           pub_cache_root = os.path.expanduser("~/.pub-cache")
           print("Executing hard purge loop on non-modern legacy target folders...")
 
-          # Non-negotiable list of folders to delete completely
           targets_to_delete = [
               "arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", 
               "flutter_windowmanager", "ios_insecure_screen_detector", "environment_sensors"
@@ -132,7 +130,6 @@ jobs:
               if any(target in root for target in targets_to_delete):
                   try:
                       shutil.rmtree(root)
-                      print(f"FORCE DELETED COMPONENT: Completely erased folder path: {root}")
                   except Exception:
                       pass
                       
@@ -145,41 +142,34 @@ jobs:
                               updated = content.replace("jcenter()", "mavenCentral()")
                               with open(filepath, "w", errors='ignore') as f:
                                   f.write(updated)
-                              print(f"REPAIRED: Cleared jcenter loop trace from dependency: {filepath}")
                       except Exception:
                           pass
           EOF
-
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out every single line referencing the deleted packages
+          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out references to deleted components
           python3 -c '
           import os
-          print("Surgically scrubbing source paths of legacy imports...")
           banned_keywords = [
               "carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", 
               "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", 
               "IosInsecureScreenDetector", "arcore_flutter_plus", "ArCoreAndroidView",
               "environment_sensors", "EnvironmentSensors"
           ]
-          
           for root, dirs, files in os.walk("lib"):
               for file in files:
                   if file.endswith(".dart"):
                       path = os.path.join(root, file)
                       try:
                           lines = open(path).readlines()
-                          # Drops any line calling, importing, or initializing the deleted modules
                           cleaned = [l for l in lines if not any(k in l for k in banned_keywords)]
                           if len(cleaned) != len(lines):
                               open(path, "w").write("".join(cleaned))
-                              print(f"WIPED CODE RESIDUE: Cleaned all references inside: {path}")
                       except Exception:
                           pass
           ' || true
 
-          # Wipe internal dependency configurations clean right before compilation starts
           sed -i '/arcore_flutter_plus/d' .flutter-plugins 2>/dev/null || true
           sed -i '/arcore_flutter_plus/d' .flutter-plugins-dependencies 2>/dev/null || true
           sed -i '/carrier_info/d' .flutter-plugins 2>/dev/null || true
@@ -193,7 +183,31 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # 3. GLOBAL NAMESPACE ENGINE: Resolves missing namespace exceptions dynamically via fallback markers
+          # 3. MODERN DESUGARING & SDK 37 INJECTOR: Surgically rewrites build.gradle to unblock AGP 9 metadata checks
+          cat << 'EOF' > patch_gradle_properties.py
+          import os
+
+          app_gradle_path = "android/app/build.gradle"
+          if os.path.exists(app_gradle_path):
+              content = open(app_gradle_path).read()
+              
+              content = content.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 37")
+              content = content.replace("targetSdkVersion = flutter.targetSdkVersion", "targetSdkVersion = 37")
+              
+              desugar_config = "compileOptions {\n        coreLibraryDesugaringEnabled = true"
+              content = content.replace("compileOptions {", desugar_config, 1)
+              
+              dependency_injection = "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'"
+              content = content.replace("dependencies {", dependency_injection, 1)
+              
+              with open(app_gradle_path, "w") as f:
+                  f.write(content)
+              print("SUCCESS: Injected Core Library Desugaring configurations and aligned compilation matrix to SDK 37")
+          EOF
+          python3 patch_gradle_properties.py
+          rm patch_gradle_properties.py
+
+          # 4. GLOBAL NAMESPACE ENGINE: Resolves missing namespace exceptions dynamically via fallback markers
           mkdir -p ~/.gradle
           python3 -c '
           import os
@@ -206,7 +220,7 @@ jobs:
                           if (project.path == ":app") {
                               project.android.namespace = "com.mindspark.mindspark1"
                           } else {
-                              project.android.namespace = "com.mindspark.fallback.\${cleanName}"
+                              project.android.namespace = "com.mindspark.fallback.${cleanName}"
                           }
                       }
                       project.android.compileSdkVersion = 37
