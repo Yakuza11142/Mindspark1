@@ -1,18 +1,10 @@
 name: MindSpark Production CI
-
 on:
-  push:
-    branches: [main, master, dev, "**"]
+  push: { branches: [main, master, dev, "**"] }
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: mindspark-production
-  cancel-in-progress: false
+permissions: { contents: write, pages: write, id-token: write }
+concurrency: { group: mindspark-production, cancel-in-progress: false }
 
 jobs:
   build:
@@ -45,16 +37,11 @@ jobs:
 
       - name: Setup Java Runtime
         uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
+        with: { distribution: temurin, java-version: "17", cache: gradle }
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: false
+        with: { channel: stable, cache: false }
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
@@ -68,6 +55,7 @@ jobs:
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
           sed -i '/ios_insecure_screen_detector:/d' pubspec.yaml || true
           sed -i '/arcore_flutter_plus:/d' pubspec.yaml || true
+          sed -i '/environment_sensors:/d' pubspec.yaml || true
           sed -i '/dependency_overrides:/,$d' pubspec.yaml || true
           
           python3 -c '
@@ -134,7 +122,11 @@ jobs:
           pub_cache_root = os.path.expanduser("~/.pub-cache")
           print("Executing hard purge loop on non-modern legacy target folders...")
 
-          targets_to_delete = ["arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", "flutter_windowmanager", "ios_insecure_screen_detector"]
+          # Non-negotiable list of folders to delete completely
+          targets_to_delete = [
+              "arcore_flutter_plus", "carrier_info", "flutter_jailbreak_detection", 
+              "flutter_windowmanager", "ios_insecure_screen_detector", "environment_sensors"
+          ]
 
           for root, subdirs, files in os.walk(pub_cache_root):
               if any(target in root for target in targets_to_delete):
@@ -161,11 +153,16 @@ jobs:
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out every single line referencing deleted packages
+          # 2. DART COMPILER SAFEGUARD: Automatically scrubs out every single line referencing the deleted packages
           python3 -c '
           import os
           print("Surgically scrubbing source paths of legacy imports...")
-          banned_keywords = ["carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", "IosInsecureScreenDetector", "arcore_flutter_plus", "ArCoreAndroidView"]
+          banned_keywords = [
+              "carrier_info", "flutter_jailbreak_detection", "FlutterJailbreakDetection", 
+              "flutter_windowmanager", "FlutterWindowManager", "ios_insecure_screen_detector", 
+              "IosInsecureScreenDetector", "arcore_flutter_plus", "ArCoreAndroidView",
+              "environment_sensors", "EnvironmentSensors"
+          ]
           
           for root, dirs, files in os.walk("lib"):
               for file in files:
@@ -173,6 +170,7 @@ jobs:
                       path = os.path.join(root, file)
                       try:
                           lines = open(path).readlines()
+                          # Drops any line calling, importing, or initializing the deleted modules
                           cleaned = [l for l in lines if not any(k in l for k in banned_keywords)]
                           if len(cleaned) != len(lines):
                               open(path, "w").write("".join(cleaned))
@@ -192,6 +190,8 @@ jobs:
           sed -i '/flutter_windowmanager/d' .flutter-plugins-dependencies 2>/dev/null || true
           sed -i '/ios_insecure_screen_detector/d' .flutter-plugins 2>/dev/null || true
           sed -i '/ios_insecure_screen_detector/d' .flutter-plugins-dependencies 2>/dev/null || true
+          sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
+          sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
           # 3. GLOBAL NAMESPACE ENGINE: Resolves missing namespace exceptions dynamically via fallback markers
           mkdir -p ~/.gradle
