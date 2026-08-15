@@ -214,8 +214,8 @@ jobs:
             --obfuscate \
             --split-debug-info=../symbols \
             --dart-define-from-file=secrets.json \
-            -Pandroid.experimental.newDsl=false \
-            target=lib/main.dart
+            --target=lib/main.dart \
+            -- --no-daemon -Pandroid.experimental.newDsl=false
 
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
@@ -223,7 +223,8 @@ jobs:
             --extra-front-end-options=--obfuscate \
             --dart-define-from-file=secrets.json
             
-          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$(date +%s)/g" build/web/index.html 2>/dev/null || true
+          TIMESTAMP=$(date +%s)
+          sed -i "s/flutter_service_worker.js/flutter_service_worker.js?v=$TIMESTAMP/g" build/web/index.html 2>/dev/null || true
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
