@@ -1,4 +1,3 @@
-
 name: MindSpark Ultimate Production CI
 on:
   push:
