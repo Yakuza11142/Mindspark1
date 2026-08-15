@@ -1,5 +1,3 @@
-// lib/spatial_mobile.dart
-import 'package:arcore_flutter_plus/arcore_flutter_plus.dart'; // 📱 Android Only
 import 'spatial_stub.dart';
 
 class MobileSpatialEngine implements SpatialEngine {
