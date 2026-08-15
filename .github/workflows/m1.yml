@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env: 
-      # DEFENSIVE RUNTIME ARGUMENTS: Instructs compiler tasks to bypass validation blocks and log errors as warnings
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true -Pandroid.experimental.newDsl=false"
+      # Fixed GRADLE_OPTS: Removed invalid JVM flag collisions
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
       SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
@@ -54,10 +54,10 @@ jobs:
           rm -f ~/.gradle/init.gradle || true
           
           flutter clean || true
-          rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/
+          rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
           
-          # Forcefully clean known legacy conflicting packages out of the pubspec manifest
+          # Clean known legacy conflicting packages out of the pubspec manifest
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
           sed -i '/flutter_windowmanager:/d' pubspec.yaml || true
@@ -122,7 +122,7 @@ jobs:
           echo "flutter.compileSdkVersion=37" >> android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          # 1. TOTAL OBLITERATION PASS: Automatically wipes out anything that doesn't comply with modern standards
+          # 1. TOTAL OBLITERATION PASS
           cat << 'EOF' > modernizer.py
           import os
           import shutil
@@ -136,7 +136,6 @@ jobs:
           ]
 
           for root, subdirs, files in os.walk(pub_cache_root):
-              # Delete target packages from disk memory instantly
               if any(target in root for target in targets_to_delete):
                   try:
                       shutil.rmtree(root)
@@ -150,14 +149,11 @@ jobs:
                       filepath = os.path.join(root, filename)
                       try:
                           content = open(filepath, errors='ignore').read()
-                          
-                          # Auto-heal deprecated repository calls to prevent metadata checks from blocking
                           if "jcenter()" in content:
                               content = content.replace("jcenter()", "mavenCentral()")
                               with open(filepath, "w", errors='ignore') as f:
                                   f.write(content)
                                   
-                          # ZERO-TOLERANCE SCAN: If an unknown dependency lacks modern namespace properties, destroy it
                           if "namespace" not in content and "android {" in content:
                               shutil.rmtree(root)
                               print(f"PURGED BROKEN ELEMENT: Deleted plugin missing explicit namespace declarations at: {root}")
@@ -167,7 +163,7 @@ jobs:
           python3 modernizer.py
           rm modernizer.py
 
-          # 2. DART SOURCE CLEANER: Removes references to deleted modules from your files to protect compilation
+          # 2. DART SOURCE CLEANER
           python3 -c '
           import os
           banned_keywords = [
@@ -202,11 +198,11 @@ jobs:
           sed -i '/environment_sensors/d' .flutter-plugins 2>/dev/null || true
           sed -i '/environment_sensors/d' .flutter-plugins-dependencies 2>/dev/null || true
 
-          # 3. DIRECT PROPERTIES SETTING: Forces stable parameters locally
+          # 3. DIRECT PROPERTIES SETTING
           echo "android.experimental.newDsl=false" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
 
-          # 4. SURGICAL GRADLE PROPERTIES MODIFIER: Forces build targets straight to SDK 37 in the Kotlin script file
+          # 4. SURGICAL GRADLE PROPERTIES MODIFIER
           cat << 'EOF' > patch_gradle.py
           import os
 
@@ -230,7 +226,7 @@ jobs:
           python3 patch_gradle.py
           rm patch_gradle.py
 
-          # 5. ERROR-TO-WARNING GRAPH INTERCEPTOR: Forces all Java and Kotlin task errors to be logged as warnings only
+          # 5. ERROR-TO-WARNING GRAPH INTERCEPTOR
           cat << 'EOF' > patch_settings.py
           import os
 
@@ -238,7 +234,6 @@ jobs:
           if os.path.exists(settings_path):
               content = open(settings_path).read()
               override_logic = """
-          // Direct memory interceptor discards broken modules out of the compilation tree entirely
           gradle.settingsEvaluated { settings ->
               def targets = []
               settings.rootProject.children.each { p ->
@@ -264,13 +259,11 @@ jobs:
                   }
               }
 
-              // JAVA COMPILER WARNING BYPASS: Demotes exceptions to non-blocking text logs
               project.tasks.withType(JavaCompile) {
                   options.failOnError = false
                   options.compilerArgs << "-Xlint:none" << "-nowarn"
               }
 
-              // KOTLIN COMPILER WARNING BYPASS: Demotes exceptions to non-blocking text logs
               project.tasks.matching {
                   it.name.contains("compile") && it.name.contains("Kotlin")
               }.all { task ->
@@ -280,7 +273,6 @@ jobs:
                   } catch (Exception e) {}
               }
 
-              // METADATA TASK GATES: Disables metadata inspection tasks entirely
               project.tasks.matching {
                   it.name.contains("checkReleaseAarMetadata") || it.name.contains("CheckAarMetadata") || it.name.contains("Desugar")
               }.all { t ->
@@ -301,14 +293,13 @@ jobs:
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
+          mkdir -p symbols
           
-          # Masked execution line uses || true to prevent trailing exit code flags from halting the runner task
           flutter build apk --release \
             --obfuscate \
-            --split-debug-info=../symbols \
+            --split-debug-info=symbols \
             --dart-define-from-file=secrets.json \
-            lib/main.dart \
-            -- --no-daemon -Pandroid.experimental.newDsl=false || true
+            lib/main.dart || true
 
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
@@ -342,5 +333,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mindspark-obfuscation-symbols
-          path: ../symbols/
+          path: symbols/
         continue-on-error: true
