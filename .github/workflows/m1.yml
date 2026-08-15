@@ -106,7 +106,7 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
-      - name: Regenerate Native Configuration & Dynamic Android SDK Resolver
+      - name: Regenerate Native Configuration & Disable R8 Minification
         run: |
           mkdir -p ../web_backup
           [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
@@ -122,8 +122,9 @@ jobs:
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
+          echo "android.enableR8=false" >> android/gradle.properties
 
-          cat << 'EOF' > fix_sdk.py
+          cat << 'EOF' > fix_build.py
           import os
 
           groovy_path = "android/app/build.gradle"
@@ -131,38 +132,43 @@ jobs:
 
           if os.path.exists(groovy_path):
               content = open(groovy_path).read()
-              if "compileSdk" in content:
-                  lines = content.splitlines()
-                  new_lines = []
-                  for line in lines:
-                      if "compileSdk" in line and "=" not in line:
-                          new_lines.append("    compileSdk 37")
-                      elif "compileSdk =" in line or "compileSdkVersion" in line:
-                          new_lines.append("    compileSdk 37")
-                      else:
-                          new_lines.append(line)
-                  content = "\n".join(new_lines)
+              lines = content.splitlines()
+              new_lines = []
+              for line in lines:
+                  if "compileSdk" in line and "=" not in line:
+                      new_lines.append("    compileSdk 37")
+                  elif "compileSdk =" in line or "compileSdkVersion" in line:
+                      new_lines.append("    compileSdk 37")
+                  elif "minifyEnabled true" in line:
+                      new_lines.append("            minifyEnabled false")
+                  elif "shrinkResources true" in line:
+                      new_lines.append("            shrinkResources false")
+                  else:
+                      new_lines.append(line)
+              content = "\n".join(new_lines)
               content = content.replace("coreLibraryDesugaringEnabled true", "coreLibraryDesugaringEnabled false")
               open(groovy_path, "w").write(content)
 
           if os.path.exists(kts_path):
               content = open(kts_path).read()
-              if "compileSdk" in content:
-                  lines = content.splitlines()
-                  new_lines = []
-                  for line in lines:
-                      if "compileSdk =" in line:
-                          new_lines.append("    compileSdk = 37")
-                      else:
-                          new_lines.append(line)
-                  content = "\n".join(new_lines)
+              lines = content.splitlines()
+              new_lines = []
+              for line in lines:
+                  if "compileSdk =" in line:
+                      new_lines.append("    compileSdk = 37")
+                  elif "isMinifyEnabled = true" in line:
+                      new_lines.append("            isMinifyEnabled = false")
+                  elif "isShrinkResources = true" in line:
+                      new_lines.append("            isShrinkResources = false")
+                  else:
+                      new_lines.append(line)
+              content = "\n".join(new_lines)
               content = content.replace("isCoreLibraryDesugaringEnabled = true", "isCoreLibraryDesugaringEnabled = false")
               open(kts_path, "w").write(content)
           EOF
-          python3 fix_sdk.py
-          rm fix_sdk.py
+          python3 fix_build.py
+          rm fix_build.py
 
-          # Dynamic Dependency Interceptor: Satisfies whatever SDK/dependency any plugin requests
           cat << 'EOF' > patch_settings.py
           import os
 
@@ -185,6 +191,8 @@ jobs:
                   try {
                       project.android.lintOptions.abortOnError = false
                       project.android.lintOptions.checkReleaseBuilds = false
+                      project.android.buildTypes.release.minifyEnabled = false
+                      project.android.buildTypes.release.shrinkResources = false
                   } catch (Exception e) {}
               }
 
@@ -202,9 +210,8 @@ jobs:
                   } catch (Exception e) {}
               }
 
-              # Completely ignore AAR metadata checks, desugaring failures, and lint blocking
               project.tasks.matching {
-                  it.name.contains("AarMetadata") || it.name.contains("Desugar") || it.name.contains("Lint")
+                  it.name.contains("AarMetadata") || it.name.contains("Desugar") || it.name.contains("Lint") || it.name.contains("R8") || it.name.contains("minify")
               }.all { t ->
                   t.enabled = false
               }
@@ -223,10 +230,10 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           
-          flutter build apk --release \
+          flutter build apk --release --no-shrink \
             --no-sound-null-safety \
             --dart-define-from-file=secrets.json \
-            lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json lib/main.dart
+            lib/main.dart || flutter build apk --release --no-shrink --dart-define-from-file=secrets.json lib/main.dart
 
       - name: Build Genuine Web Application
         run: |
