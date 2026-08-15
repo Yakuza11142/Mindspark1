@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env: 
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true -Pandroid.experimental.newDsl=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=all -Dandroid.suppressUnsupportedCompileSdk=true"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
       SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
@@ -37,7 +37,7 @@ jobs:
 
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
-        with: { channel: stable, cache: false }
+        with: { channel: stable }
 
       - name: Install Application Dependencies & Optimize Syntax
         run: |
@@ -180,7 +180,6 @@ jobs:
           settings_path = "android/settings.gradle"
           if os.path.exists(settings_path):
               content = open(settings_path).read()
-              
               override_logic = """
               gradle.beforeProject { project ->
                   if (project.hasProperty("android")) {
@@ -189,12 +188,10 @@ jobs:
                           project.android.namespace = "com.mindspark.fallback." + cleanName
                       }
                   }
-                  
                   project.tasks.withType(JavaCompile) {
                       options.failOnError = false
                       options.compilerArgs << "-Xlint:none" << "-nowarn"
                   }
-                  
                   project.tasks.matching { it.name.contains("compile") && it.name.contains("Kotlin") }.all { task ->
                       try {
                           task.kotlinOptions.freeCompilerArgs += ["-nowarn", "-suppress-version-warnings"]
@@ -212,10 +209,12 @@ jobs:
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
+          
           flutter build apk --release \
             --obfuscate \
-            --split-debug-info=./symbols \
-            --dart-define-from-file=secrets.json
+            --split-debug-info=../symbols \
+            --dart-define-from-file=secrets.json \
+            -- --no-daemon -Pandroid.experimental.newDsl=false
 
       - name: Build Genuine Web Application & Auto-Heal Layout Architecture
         run: |
