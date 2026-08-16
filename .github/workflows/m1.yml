@@ -118,12 +118,8 @@ jobs:
 
       - name: Regenerate Platforms & Configure Native Rules
         run: |
-          mkdir -p ../web_backup
-          [ -f "web/index.html" ] && cp web/index.html ../web_backup/index.html || true
           rm -rf android web
-          
           flutter create --platforms=android,web . || true
-          [ -f "../web_backup/index.html" ] && cp ../web_backup/index.html web/index.html || true
           
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
@@ -251,59 +247,38 @@ jobs:
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
-      - name: Build Web Application with Error Handler Injection
+      - name: Build Web Application
         run: |
           flutter config --enable-web || true
 
-          # Build release web app
+          # Create web/index.html with the required base href placeholder
+          mkdir -p web
+          cat << 'EOF' > web/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <base href="$FLUTTER_BASE_HREF">
+            <meta charset="UTF-8">
+            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MindSpark</title>
+          </head>
+          <body>
+            <script src="flutter.js" defer></script>
+          </body>
+          </html>
+          EOF
+
+          # Build web app with base-href matching your repository path
           flutter build web --release \
             --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || flutter build web --release --base-href="/repository/" --dart-define-from-file=secrets.json
+            --target=lib/main.dart
 
+          # Prevent service worker caching issues and GitHub Pages Jekyll processing
           rm -f build/web/flutter_service_worker.js 2>/devnull || true
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
-
-          # Patch build/web/index.html with error catching overlay
-          cat << 'EOF' > patch_web_index.py
-          import os
-          index_path = "build/web/index.html"
-          if os.path.exists(index_path):
-              content = open(index_path).read()
-              
-              # Add global Javascript error capturer to display readable errors instead of blank screen
-              error_script = """
-              <script>
-                window.addEventListener('error', function(e) {
-                  console.error('Flutter Web Initialization Error:', e);
-                  var errDiv = document.getElementById('flutter_error_display');
-                  if (!errDiv) {
-                    errDiv = document.createElement('div');
-                    errDiv.id = 'flutter_error_display';
-                    errDiv.style.position = 'fixed';
-                    errDiv.style.top = '0';
-                    errDiv.style.left = '0';
-                    errDiv.style.width = '100vw';
-                    errDiv.style.height = '100vh';
-                    errDiv.style.backgroundColor = '#121212';
-                    errDiv.style.color = '#ff5555';
-                    errDiv.style.padding = '20px';
-                    errDiv.style.zIndex = '999999';
-                    errDiv.style.fontFamily = 'monospace';
-                    errDiv.style.overflow = 'auto';
-                    document.body.appendChild(errDiv);
-                  }
-                  errDiv.innerHTML = '<h2>Application Startup Exception</h2><pre>' + (e.message || e) + '</pre><p>Check Chrome DevTools Console for details.</p>';
-                });
-              </script>
-              """
-              if "</head>" in content:
-                  content = content.replace("</head>", error_script + "\n</head>")
-              open(index_path, "w").write(content)
-          EOF
-          python3 patch_web_index.py
-          rm patch_web_index.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
