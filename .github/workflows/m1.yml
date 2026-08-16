@@ -251,78 +251,59 @@ jobs:
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
-      - name: Build Web Application & Inject Bulletproof Loader
+      - name: Build Web Application with Error Handler Injection
         run: |
           flutter config --enable-web || true
 
-          # Inject valid base tag in web source before building
-          cat << 'EOF' > prepare_web_index.py
-          import os, re
-          path = "web/index.html"
-          if os.path.exists(path):
-              content = open(path).read()
-              if "<base href=" not in content:
-                  content = content.replace("<head>", "<head>\n  <base href=\"$FLUTTER_BASE_HREF\">")
-              else:
-                  content = re.sub(r'<base href=["\'][^"\']*["\']>', '<base href="$FLUTTER_BASE_HREF">', content)
-              open(path, "w").write(content)
-          EOF
-          python3 prepare_web_index.py
-          rm prepare_web_index.py
-
-          # Compile web app
+          # Build release web app
           flutter build web --release \
             --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart || flutter build web --release --base-href="/repository/" --dart-define-from-file=secrets.json
 
-          # Remove Service Worker cache lock & bypass Jekyll
-          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
+          rm -f build/web/flutter_service_worker.js 2>/devnull || true
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
 
-          # Overwrite index.html with direct JS bootstrapper to bypass WASM/CanvasKit initialization freezes
-          cat << 'EOF' > force_bootstrapper.py
+          # Patch build/web/index.html with error catching overlay
+          cat << 'EOF' > patch_web_index.py
           import os
           index_path = "build/web/index.html"
-          html_template = """<!DOCTYPE html>
-          <html>
-          <head>
-            <base href="/repository/">
-            <meta charset="UTF-8">
-            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>MindSpark</title>
-            <style>
-              body {
-                background-color: #0b0f19;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                overflow: hidden;
-              }
-            </style>
-          </head>
-          <body>
-            <script>
-              window.addEventListener('load', function () {
-                var script = document.createElement('script');
-                script.src = 'main.dart.js';
-                script.type = 'application/javascript';
-                document.body.appendChild(script);
-              });
-            </script>
-          </body>
-          </html>
-          """
-          with open(index_path, "w") as f:
-              f.write(html_template)
+          if os.path.exists(index_path):
+              content = open(index_path).read()
+              
+              # Add global Javascript error capturer to display readable errors instead of blank screen
+              error_script = """
+              <script>
+                window.addEventListener('error', function(e) {
+                  console.error('Flutter Web Initialization Error:', e);
+                  var errDiv = document.getElementById('flutter_error_display');
+                  if (!errDiv) {
+                    errDiv = document.createElement('div');
+                    errDiv.id = 'flutter_error_display';
+                    errDiv.style.position = 'fixed';
+                    errDiv.style.top = '0';
+                    errDiv.style.left = '0';
+                    errDiv.style.width = '100vw';
+                    errDiv.style.height = '100vh';
+                    errDiv.style.backgroundColor = '#121212';
+                    errDiv.style.color = '#ff5555';
+                    errDiv.style.padding = '20px';
+                    errDiv.style.zIndex = '999999';
+                    errDiv.style.fontFamily = 'monospace';
+                    errDiv.style.overflow = 'auto';
+                    document.body.appendChild(errDiv);
+                  }
+                  errDiv.innerHTML = '<h2>Application Startup Exception</h2><pre>' + (e.message || e) + '</pre><p>Check Chrome DevTools Console for details.</p>';
+                });
+              </script>
+              """
+              if "</head>" in content:
+                  content = content.replace("</head>", error_script + "\n</head>")
+              open(index_path, "w").write(content)
           EOF
-          python3 force_bootstrapper.py
-          rm force_bootstrapper.py
+          python3 patch_web_index.py
+          rm patch_web_index.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
