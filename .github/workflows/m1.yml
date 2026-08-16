@@ -269,14 +269,12 @@ jobs:
           python3 prepare_web_index.py
           rm prepare_web_index.py
 
-          # Set base-href to match repository subpath
           flutter build web --release \
-            --web-renderer html \
             --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || flutter build web --release --web-renderer html --base-href="/repository/" --dart-define-from-file=secrets.json
+            --target=lib/main.dart || flutter build web --release --base-href="/repository/" --dart-define-from-file=secrets.json
 
-          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
+          rm -f build/web/flutter_service_worker.js 2>/devnull || true
           touch build/web/.nojekyll
 
           cat << 'EOF' > fix_web_bootstrap.py
