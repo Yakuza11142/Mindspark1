@@ -251,7 +251,7 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Create web/index.html with the required base href placeholder
+          # Create source index.html
           mkdir -p web
           cat << 'EOF' > web/index.html
           <!DOCTYPE html>
@@ -259,8 +259,6 @@ jobs:
           <head>
             <base href="$FLUTTER_BASE_HREF">
             <meta charset="UTF-8">
-            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>MindSpark</title>
           </head>
           <body>
@@ -269,16 +267,50 @@ jobs:
           </html>
           EOF
 
-          # Build web app with base-href matching your repository path
+          # Compile release web build
           flutter build web --release \
             --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart
 
-          # Prevent service worker caching issues and GitHub Pages Jekyll processing
+          # Clean service worker & configure GitHub Pages settings
           rm -f build/web/flutter_service_worker.js 2>/devnull || true
           touch build/web/.nojekyll
-          cp build/web/index.html build/web/404.html
+
+          # Inject direct bootstrapper into build/web/index.html
+          cat << 'EOF' > web_bootstrapper.py
+          import os
+          index_path = "build/web/index.html"
+          custom_html = """<!DOCTYPE html>
+          <html>
+          <head>
+            <base href="/repository/">
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MindSpark Workspace</title>
+            <style>
+              body {
+                background-color: #121212;
+                color: #ffffff;
+                margin: 0;
+                padding: 0;
+                font-family: sans-serif;
+              }
+            </style>
+          </head>
+          <body>
+            <script src="main.dart.js" type="application/javascript"></script>
+          </body>
+          </html>
+          """
+          with open(index_path, "w") as f:
+              f.write(custom_html)
+          
+          with open("build/web/404.html", "w") as f:
+              f.write(custom_html)
+          EOF
+          python3 web_bootstrapper.py
+          rm web_bootstrapper.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
