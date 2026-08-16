@@ -128,7 +128,7 @@ jobs:
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
-          sed -i '/android.enableR8/d' android/gradle.properties 2>/dev/null || true
+          sed -i '/android.enableR8/d' android/gradle.properties 2>/devnull || true
           echo "android.experimental.newDsl=false" >> android/gradle.properties
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
@@ -251,7 +251,7 @@ jobs:
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
-      - name: Build Web Application & Fix GitHub Pages Asset Loading
+      - name: Build Web Application & Fix Subpath Base Href
         run: |
           flutter config --enable-web || true
 
@@ -269,24 +269,41 @@ jobs:
           python3 prepare_web_index.py
           rm prepare_web_index.py
 
+          # Set base-href to match repository subpath
           flutter build web --release \
-            --base-href="/" \
+            --web-renderer html \
+            --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || flutter build web --release --base-href="/" --dart-define-from-file=secrets.json
+            --target=lib/main.dart || flutter build web --release --web-renderer html --base-href="/repository/" --dart-define-from-file=secrets.json
 
           rm -f build/web/flutter_service_worker.js 2>/dev/null || true
           touch build/web/.nojekyll
 
-          cat << 'EOF' > clean_web_index.py
+          cat << 'EOF' > fix_web_bootstrap.py
           import os
           path = "build/web/index.html"
           if os.path.exists(path):
               content = open(path).read()
               content = content.replace("flutter_service_worker.js", "")
+              
+              direct_loader = """
+              <script>
+                window.addEventListener('load', function(ev) {
+                  if (typeof _flutter === 'undefined') {
+                    var script = document.createElement('script');
+                    script.src = 'main.dart.js';
+                    script.type = 'application/javascript';
+                    document.body.appendChild(script);
+                  }
+                });
+              </script>
+              """
+              if "</head>" in content:
+                  content = content.replace("</head>", direct_loader + "\n</head>")
               open(path, "w").write(content)
           EOF
-          python3 clean_web_index.py
-          rm clean_web_index.py
+          python3 fix_web_bootstrap.py
+          rm fix_web_bootstrap.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
