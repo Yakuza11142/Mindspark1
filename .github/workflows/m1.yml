@@ -251,10 +251,11 @@ jobs:
             --dart-define-from-file=secrets.json \
             lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
 
-      - name: Build Web Application & Fix Subpath Base Href
+      - name: Build Web Application & Inject Bulletproof Loader
         run: |
           flutter config --enable-web || true
 
+          # Inject valid base tag in web source before building
           cat << 'EOF' > prepare_web_index.py
           import os, re
           path = "web/index.html"
@@ -269,39 +270,59 @@ jobs:
           python3 prepare_web_index.py
           rm prepare_web_index.py
 
+          # Compile web app
           flutter build web --release \
             --base-href="/repository/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart || flutter build web --release --base-href="/repository/" --dart-define-from-file=secrets.json
 
-          rm -f build/web/flutter_service_worker.js 2>/devnull || true
+          # Remove Service Worker cache lock & bypass Jekyll
+          rm -f build/web/flutter_service_worker.js 2>/dev/null || true
           touch build/web/.nojekyll
+          cp build/web/index.html build/web/404.html
 
-          cat << 'EOF' > fix_web_bootstrap.py
+          # Overwrite index.html with direct JS bootstrapper to bypass WASM/CanvasKit initialization freezes
+          cat << 'EOF' > force_bootstrapper.py
           import os
-          path = "build/web/index.html"
-          if os.path.exists(path):
-              content = open(path).read()
-              content = content.replace("flutter_service_worker.js", "")
-              
-              direct_loader = """
-              <script>
-                window.addEventListener('load', function(ev) {
-                  if (typeof _flutter === 'undefined') {
-                    var script = document.createElement('script');
-                    script.src = 'main.dart.js';
-                    script.type = 'application/javascript';
-                    document.body.appendChild(script);
-                  }
-                });
-              </script>
-              """
-              if "</head>" in content:
-                  content = content.replace("</head>", direct_loader + "\n</head>")
-              open(path, "w").write(content)
+          index_path = "build/web/index.html"
+          html_template = """<!DOCTYPE html>
+          <html>
+          <head>
+            <base href="/repository/">
+            <meta charset="UTF-8">
+            <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MindSpark</title>
+            <style>
+              body {
+                background-color: #0b0f19;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                overflow: hidden;
+              }
+            </style>
+          </head>
+          <body>
+            <script>
+              window.addEventListener('load', function () {
+                var script = document.createElement('script');
+                script.src = 'main.dart.js';
+                script.type = 'application/javascript';
+                document.body.appendChild(script);
+              });
+            </script>
+          </body>
+          </html>
+          """
+          with open(index_path, "w") as f:
+              f.write(html_template)
           EOF
-          python3 fix_web_bootstrap.py
-          rm fix_web_bootstrap.py
+          python3 force_bootstrapper.py
+          rm force_bootstrapper.py
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
