@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -244,14 +244,15 @@ jobs:
           rm -f ~/.gradle/init.gradle || true
           
           flutter build apk --release \
+            --target=lib/main.dart \
             --dart-define-from-file=secrets.json \
-            lib/main.dart || flutter build apk --release --dart-define-from-file=secrets.json
+            lib/main.dart || flutter build apk --release --target=lib/main.dart --dart-define-from-file=secrets.json
 
       - name: Build Web Application
         run: |
           flutter config --enable-web || true
 
-          # Build release web app using standard Flutter Web engine
+          # Build release web app targeting lib/main.dart directly
           flutter build web --release \
             --base-href="/Mindspark1/" \
             --dart-define-from-file=secrets.json \
