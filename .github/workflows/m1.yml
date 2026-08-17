@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -267,9 +267,9 @@ jobs:
           </html>
           EOF
 
-          # Compile release web build
+          # Compile release web build for Mindspark1 repository path
           flutter build web --release \
-            --base-href="/repository/" \
+            --base-href="/Mindspark1/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart
 
@@ -284,7 +284,7 @@ jobs:
           custom_html = """<!DOCTYPE html>
           <html>
           <head>
-            <base href="/repository/">
+            <base href="/Mindspark1/">
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>MindSpark Workspace</title>
@@ -314,21 +314,26 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        continue-on-error: true
 
       - name: Pack Production Assets
         uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
-        continue-on-error: true
-
-      - name: Deploy Web App to GitHub Pages
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
 
       - name: Upload Universal Fat Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mindspark-universal-fat-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-        continue-on-error: true
+
+  deploy:
+    name: Deploy Web App to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
