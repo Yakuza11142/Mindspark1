@@ -49,9 +49,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Dynamically captures labels from local localizations or systemic fallback models
     final localizations = MaterialLocalizations.of(context);
-    
+
     labelHome = "Home"; 
     labelSubjects = "Subjects"; 
     labelVideos = "Videos"; 
@@ -65,7 +64,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final mediaQuery = MediaQuery.of(context);
     final theme = Theme.of(context);
 
-    // Dynamic Sizing Metrics derived entirely from system tokens
     final double bottomDockHeight = mediaQuery.size.height * 0.10; 
     final double navItemWidthWidth = mediaQuery.size.width * 0.18;
     final double paddingHorizontalValue = mediaQuery.size.width * 0.02;
@@ -78,9 +76,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const AdBannerWidget(),
-          
+
           Container(
-            color: theme.colorScheme.surfaceContainerLow, // Removed hardcoded hex 0xFF0F172A
+            color: theme.colorScheme.surfaceContainerLow,
             height: bottomDockHeight,
             child: SafeArea(
               top: false,
@@ -120,6 +118,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final double overlayOpacityFactor = 0.15;
     final double spacingGapFactor = 0.005;
 
+    final IconData rawIcon = isSelected ? selectedIcon : icon;
+    final IconData fixedIcon = IconData(
+      rawIcon.codePoint,
+      fontFamily: 'MaterialIcons',
+      matchTextDirection: rawIcon.matchTextDirection,
+    );
+
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
       borderRadius: BorderRadius.circular(relativeBorderRadius),
@@ -140,7 +145,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 borderRadius: BorderRadius.circular(relativeBorderRadius),
               ),
               child: Icon(
-                isSelected ? selectedIcon : icon,
+                fixedIcon,
                 color: isSelected ? activeThemeColor : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                 size: theme.iconTheme.size ?? 24,
               ),
