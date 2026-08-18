@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-
-// Replace this with the actual path to your real home/dashboard screen
-import 'package:mindspark1/screens/home_screen.dart'; 
-
-import 'spatial_stub.dart'
-    if (dart.library.html) 'spatial_web.dart'
-    if (dart.library.io) 'spatial_mobile.dart';
+import 'package:mindspark1/screens/main_layout_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,11 +12,10 @@ class MindSparkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mind Spark',
+      title: 'MindSpark',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      // Replace HomeScreen() with the exact name of your main dashboard widget
-      home: const HomeScreen(), 
+      home: const MainLayoutScreen(),
     );
   }
 }
