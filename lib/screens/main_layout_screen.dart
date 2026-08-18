@@ -1,6 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+// Import your actual feature screen files here:
+import 'home_screen.dart';
+import 'subjects_screen.dart';
+import 'videos_screen.dart';
+import 'spark_ai_screen.dart';
+import 'rank_screen.dart';
+import 'profile_screen.dart';
+
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
@@ -19,14 +27,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   int _currentIndex = indexHome;
 
-  // Tab views (replace these Placeholder views with your actual screen widgets as needed)
+  // Connected production screen views
   final List<Widget> _screens = const [
-    _PlaceholderTab(title: 'Home Feed & Dashboard', icon: CupertinoIcons.house_fill),
-    _PlaceholderTab(title: 'Subjects & Modules', icon: CupertinoIcons.book_fill),
-    _PlaceholderTab(title: 'Interactive Videos', icon: CupertinoIcons.play_circle_fill),
-    _PlaceholderTab(title: 'Spark AI Assistant', icon: CupertinoIcons.sparkles),
-    _PlaceholderTab(title: 'Leaderboard & Rank', icon: CupertinoIcons.star_fill),
-    _PlaceholderTab(title: 'Profile & Settings', icon: CupertinoIcons.person_fill),
+    HomeScreen(),
+    SubjectsScreen(),
+    VideosScreen(),
+    SparkAiScreen(),
+    RankScreen(),
+    ProfileScreen(),
   ];
 
   Widget _buildNavItem(
@@ -148,30 +156,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderTab extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const _PlaceholderTab({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
       ),
     );
   }
