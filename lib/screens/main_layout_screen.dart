@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Extracted Navigation Data Configuration Class to split UI from structure
 class AppNavigationConfig {
   static const int indexHome = 0;
   static const int indexSubjects = 1;
@@ -10,7 +9,6 @@ class AppNavigationConfig {
   static const int indexMe = 5;
 }
 
-// Extracted Sub-Widget declarations mapping completely layout structures
 class HomeTab extends StatelessWidget { const HomeTab({super.key}); @override Widget build(BuildContext context) => const SizedBox(); }
 class SubjectLibraryScreen extends StatelessWidget { const SubjectLibraryScreen({super.key}); @override Widget build(BuildContext context) => const SizedBox(); }
 class VideoHubScreen extends StatelessWidget { const VideoHubScreen({super.key}); @override Widget build(BuildContext context) => const SizedBox(); }
@@ -29,7 +27,6 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   int _currentIndex = AppNavigationConfig.indexHome;
 
-  // Runtime text label references resolved contextually
   late String labelHome;
   late String labelSubjects;
   late String labelVideos;
@@ -115,15 +112,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   ) {
     final theme = Theme.of(context);
     final isSelected = _currentIndex == index;
-    final double overlayOpacityFactor = 0.15;
-    final double spacingGapFactor = 0.005;
-
-    final IconData rawIcon = isSelected ? selectedIcon : icon;
-    final IconData fixedIcon = IconData(
-      rawIcon.codePoint,
-      fontFamily: 'MaterialIcons',
-      matchTextDirection: rawIcon.matchTextDirection,
-    );
+    const double overlayOpacityFactor = 0.15;
+    const double spacingGapFactor = 0.005;
 
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
@@ -145,7 +135,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 borderRadius: BorderRadius.circular(relativeBorderRadius),
               ),
               child: Icon(
-                fixedIcon,
+                isSelected ? selectedIcon : icon,
                 color: isSelected ? activeThemeColor : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                 size: theme.iconTheme.size ?? 24,
               ),
