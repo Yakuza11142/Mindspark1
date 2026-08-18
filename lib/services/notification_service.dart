@@ -1,53 +1,39 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+
+import 'package:flutter/foundation.dart';
 
 class NotificationService {
+  // Singleton instance
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
-
+  /// Placeholder initialization
   Future<void> init() async {
-    tz.initializeTimeZones();
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: android);
-    await _plugin.initialize(settings);
+    debugPrint('[NotificationService] Initialized (Placeholder Mode)');
   }
 
-  Future<void> scheduleDailyReminder() async {
-    await _plugin.zonedSchedule(
-      0,
-      'Time to Spark! ⚡',
-      'Don\'t lose your streak! Learn something new today.',
-      _nextInstanceOfSixPM(),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_channel',
-          'Daily Reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
-    );
+  /// Placeholder trigger for local notifications
+  Future<void> showNotification(int id, String title, String body) async {
+    debugPrint('[NotificationService] Notification Triggered:');
+    debugPrint('  -> ID: $id');
+    debugPrint('  -> Title: $title');
+    debugPrint('  -> Body: $body');
   }
 
-  tz.TZDateTime _nextInstanceOfSixPM() {
-    final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, 18); // 6 PM
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-    return scheduledDate;
+  /// Placeholder for scheduled notifications
+  Future<void> scheduleDailyNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+  }) async {
+    debugPrint('[NotificationService] Scheduled Daily Notification:');
+    debugPrint('  -> ID: $id | Time: $hour:$minute | Title: $title');
   }
 
-  Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+  /// Placeholder to cancel notifications
+  Future<void> cancelNotification(int id) async {
+    debugPrint('[NotificationService] Cancelled Notification ID: $id');
   }
 }
