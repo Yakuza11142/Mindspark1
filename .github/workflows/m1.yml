@@ -186,8 +186,8 @@ jobs:
 
       - name: Regenerate Platforms & Configure Native Rules
         run: |
-          rm -rf android web
-          flutter create --platforms=android,web . || true
+          rm -rf android
+          flutter create --platforms=android . || true
           
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
