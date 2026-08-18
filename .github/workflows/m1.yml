@@ -93,6 +93,19 @@ jobs:
           
           flutter pub get || true
 
+      - name: Inject Missing Dependencies & Dart Fix
+        run: |
+          flutter pub add flutter_local_notifications:^17.0.0 || true
+          mkdir -p lib/config
+          cat << 'EOF' > lib/config/secrets.dart
+          class Secrets {
+            static const String productId = 'mindspark_subscription';
+          }
+          EOF
+          dart fix --apply || true
+          dart format . || true
+          flutter pub get || true
+
       - name: Configure Production Environment Variables
         run: |
           cat << 'EOF' > make_secrets.py
@@ -348,7 +361,7 @@ jobs:
       - name: Upload Universal Fat Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mindspark-universal-fat-release-apk
+          name: mindspark-universalfat-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
   deploy:
