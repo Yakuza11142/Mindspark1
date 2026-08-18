@@ -1,32 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-    // Force direct absolute subdirectory tracking calculation for GitHub Pages
-    (function () {
-      var path = window.location.pathname;
-      if (!path.endsWith('/')) {
-        path = path.substring(0, path.lastIndexOf('/') + 1);
-      }
-      var baseTag = document.createElement('base');
-      baseTag.href = path;
-      document.head.appendChild(baseTag);
-    }());
-  </script>
-
+  <base href="/Mindspark1/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Mind Spark Production Engine.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <title>Application Engine</title>
-  
+  <title>Mind Spark</title>
+
   <style>
     * { box-sizing: border-box; }
     html, body {
       background-color: #080A0F;
       margin: 0; padding: 0;
-      width: 100%; height: 100%;
+      width: 100vw; height: 100vh;
       overflow: hidden;
     }
     .ms-loading-container {
@@ -34,10 +22,10 @@
       display: flex; justify-content: center; align-items: center;
       background-color: #080A0F;
       position: absolute; top: 0; left: 0; z-index: 99999;
-      transition: opacity 0.3s ease-out;
+      transition: opacity 0.4s ease-out;
     }
     .ms-spinner {
-      width: 48px; height: 48px;
+      width: 50px; height: 50px;
       border: 3px solid rgba(0, 243, 255, 0.15);
       border-radius: 50%;
       border-top-color: #00F3FF;
@@ -45,6 +33,9 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
+
+  <!-- Official Flutter Web Bootstrapper -->
+  <script src="flutter_bootstrap.js" async></script>
 </head>
 <body>
 
@@ -52,35 +43,14 @@
     <div class="ms-spinner"></div>
   </div>
 
-  <!-- Unified Web Bootstrapper -->
   <script>
-    window.addEventListener('load', function() {
-      var script = document.createElement('script');
-      script.src = "flutter_bootstrap.js";
-      script.async = true;
-      
-      // Setup the engine initialization callback tracking
-      window._flutter = {
-        loader: {
-          didCreateEngineInitializer: function(engineInitializer) {
-            engineInitializer.initializeEngine({
-              useColorWithAlpha: true
-            }).then(function(appRunner) {
-              appRunner.runApp();
-              
-              // Fade out and remove spinner from DOM once initialization settles
-              setTimeout(function() {
-                var indicator = document.getElementById('loading-indicator');
-                if (indicator) {
-                  indicator.style.opacity = '0';
-                  setTimeout(function() { indicator.remove(); }, 300);
-                }
-              }, 500);
-            });
-          }
-        }
-      };
-      document.body.appendChild(script);
+    // Listen for Flutter's first visual frame event to hide the loader smoothly
+    window.addEventListener('flutter-first-frame', function () {
+      var indicator = document.getElementById('loading-indicator');
+      if (indicator) {
+        indicator.style.opacity = '0';
+        setTimeout(function() { indicator.remove(); }, 400);
+      }
     });
   </script>
 </body>
