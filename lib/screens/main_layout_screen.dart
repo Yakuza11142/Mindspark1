@@ -1,9 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-// Adjust this import path if your AppNavigationConfig is located elsewhere
-import '../config/app_navigation_config.dart';
-
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
@@ -12,7 +9,15 @@ class MainLayoutScreen extends StatefulWidget {
 }
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  int _currentIndex = AppNavigationConfig.indexHome;
+  // Navigation tab indices defined directly inside the file
+  static const int indexHome = 0;
+  static const int indexSubjects = 1;
+  static const int indexVideos = 2;
+  static const int indexSparkAi = 3;
+  static const int indexRank = 4;
+  static const int indexMe = 5;
+
+  int _currentIndex = indexHome;
 
   Widget _buildNavItem(
     int index,
@@ -83,7 +88,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(
-                AppNavigationConfig.indexHome,
+                indexHome,
                 CupertinoIcons.house,
                 CupertinoIcons.house_fill,
                 theme.colorScheme.primary,
@@ -92,7 +97,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
-                AppNavigationConfig.indexSubjects,
+                indexSubjects,
                 CupertinoIcons.book,
                 CupertinoIcons.book_fill,
                 theme.colorScheme.secondary,
@@ -101,7 +106,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
-                AppNavigationConfig.indexVideos,
+                indexVideos,
                 CupertinoIcons.play_circle,
                 CupertinoIcons.play_circle_fill,
                 theme.colorScheme.error,
@@ -110,7 +115,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
-                AppNavigationConfig.indexSparkAi,
+                indexSparkAi,
                 CupertinoIcons.sparkles,
                 CupertinoIcons.sparkles,
                 theme.colorScheme.tertiary,
@@ -119,16 +124,16 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
-                AppNavigationConfig.indexRank,
-                CupertinoIcons.trophy,
-                CupertinoIcons.trophy,
+                indexRank,
+                CupertinoIcons.star,
+                CupertinoIcons.star_fill,
                 theme.colorScheme.inverseSurface,
                 labelRank,
                 navItemWidthWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
-                AppNavigationConfig.indexMe,
+                indexMe,
                 CupertinoIcons.person,
                 CupertinoIcons.person_fill,
                 theme.colorScheme.onSurface,
