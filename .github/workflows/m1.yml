@@ -121,29 +121,41 @@ jobs:
           cat << 'EOF' > sanitize_lib.py
           import os, re
 
-          main_path = "lib/main.dart"
-          mkdir_needed = not os.path.exists("lib")
-          if mkdir_needed:
+          # Protected files that must NEVER be overwritten by the fallback script
+          protected_files = [
+              "lib/main.dart",
+              "lib/main_navigation.dart",
+              "lib/main_production.dart"
+          ]
+
+          if not os.path.exists("lib"):
               os.makedirs("lib")
 
-          # Check if lib/main.dart exists and contains valid imports
+          main_path = "lib/main.dart"
           valid_entry = False
+
           if os.path.exists(main_path):
               content = open(main_path).read()
-              # Extract custom relative package imports
-              imports = re.findall(r"import\s+['\"]package:[^/]+/(.+)['\"];", content)
+              
+              package_imports = re.findall(r"import\s+['\"]package:[^/]+/(.+)['\"];", content)
+              relative_imports = re.findall(r"import\s+['\"](\.\.?/[^'\"]+)['\"];", content)
               
               invalid_found = False
-              for imp in imports:
+              for imp in package_imports:
                   if not os.path.exists(os.path.join("lib", imp)):
+                      invalid_found = True
+                      break
+                      
+              for imp in relative_imports:
+                  if not os.path.exists(os.path.normpath(os.path.join("lib", imp))):
                       invalid_found = True
                       break
               
               if not invalid_found and "void main" in content:
                   valid_entry = True
 
-          # If main.dart is missing or has broken file references, overwrite with fallback widget
-          if not valid_entry:
+          # Only apply fallback if main.dart is missing/broken AND not protected
+          if not valid_entry and main_path not in protected_files:
               fallback_code = """import 'package:flutter/material.dart';
 
           void main() => runApp(const MindSparkApp());
@@ -299,7 +311,6 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           
-          # Target lib/main.dart safely; fallback executes if lib files are invalid or missing
           if [ -f "lib/main.dart" ]; then
             flutter build apk --release \
               --target=lib/main.dart \
@@ -312,7 +323,6 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Build release web app targeting lib/main.dart if valid
           if [ -f "lib/main.dart" ]; then
             flutter build web --release \
               --base-href="/Mindspark1/" \
@@ -324,10 +334,7 @@ jobs:
               --dart-define-from-file=secrets.json
           fi
 
-          # Prevent GitHub Pages from ignoring files starting with underscores
           touch build/web/.nojekyll
-
-          # Copy index.html to 404.html to support single-page application routing
           cp build/web/index.html build/web/404.html
 
       - name: Configure Pages
