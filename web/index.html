@@ -9,6 +9,10 @@
 
   <title>Mind Spark</title>
 
+  <!-- Material Icons Font CDN -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
+
   <style>
     * { box-sizing: border-box; }
     html, body {
@@ -44,7 +48,6 @@
   </div>
 
   <script>
-    // Listen for Flutter's first visual frame event to hide the loader smoothly
     window.addEventListener('flutter-first-frame', function () {
       var indicator = document.getElementById('loading-indicator');
       if (indicator) {
