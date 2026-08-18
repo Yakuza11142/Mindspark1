@@ -9,7 +9,7 @@ class MainLayoutScreen extends StatefulWidget {
 }
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  // Navigation tab indices defined directly inside the file
+  // Navigation tab indices
   static const int indexHome = 0;
   static const int indexSubjects = 1;
   static const int indexVideos = 2;
@@ -18,6 +18,16 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   static const int indexMe = 5;
 
   int _currentIndex = indexHome;
+
+  // Tab views (replace these Placeholder views with your actual screen widgets as needed)
+  final List<Widget> _screens = const [
+    _PlaceholderTab(title: 'Home Feed & Dashboard', icon: CupertinoIcons.house_fill),
+    _PlaceholderTab(title: 'Subjects & Modules', icon: CupertinoIcons.book_fill),
+    _PlaceholderTab(title: 'Interactive Videos', icon: CupertinoIcons.play_circle_fill),
+    _PlaceholderTab(title: 'Spark AI Assistant', icon: CupertinoIcons.sparkles),
+    _PlaceholderTab(title: 'Leaderboard & Rank', icon: CupertinoIcons.star_fill),
+    _PlaceholderTab(title: 'Profile & Settings', icon: CupertinoIcons.person_fill),
+  ];
 
   Widget _buildNavItem(
     int index,
@@ -66,19 +76,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const double navItemWidthWidth = 60.0;
+    const double navItemWidth = 60.0;
     const double indicatorBorderRadiusFactor = 12.0;
 
-    const String labelHome = "Home";
-    const String labelSubjects = "Subjects";
-    const String labelVideos = "Videos";
-    const String labelSparkAi = "Spark AI";
-    const String labelRank = "Rank";
-    const String labelMe = "Me";
-
     return Scaffold(
-      body: Center(
-        child: Text("Active Tab Index: $_currentIndex"),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
@@ -92,8 +96,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.house,
                 CupertinoIcons.house_fill,
                 theme.colorScheme.primary,
-                labelHome,
-                navItemWidthWidth,
+                "Home",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
@@ -101,8 +105,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.book,
                 CupertinoIcons.book_fill,
                 theme.colorScheme.secondary,
-                labelSubjects,
-                navItemWidthWidth,
+                "Subjects",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
@@ -110,8 +114,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.play_circle,
                 CupertinoIcons.play_circle_fill,
                 theme.colorScheme.error,
-                labelVideos,
-                navItemWidthWidth,
+                "Videos",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
@@ -119,8 +123,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.sparkles,
                 CupertinoIcons.sparkles,
                 theme.colorScheme.tertiary,
-                labelSparkAi,
-                navItemWidthWidth,
+                "Spark AI",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
@@ -128,8 +132,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.star,
                 CupertinoIcons.star_fill,
                 theme.colorScheme.inverseSurface,
-                labelRank,
-                navItemWidthWidth,
+                "Rank",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
               _buildNavItem(
@@ -137,13 +141,37 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                 CupertinoIcons.person,
                 CupertinoIcons.person_fill,
                 theme.colorScheme.onSurface,
-                labelMe,
-                navItemWidthWidth,
+                "Me",
+                navItemWidth,
                 indicatorBorderRadiusFactor,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PlaceholderTab extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _PlaceholderTab({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
