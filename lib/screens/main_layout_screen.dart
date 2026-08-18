@@ -1,14 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-// Import your actual feature screen files here:
-import 'home_screen.dart';
-import 'subjects_screen.dart';
-import 'videos_screen.dart';
-import 'spark_ai_screen.dart';
-import 'rank_screen.dart';
-import 'profile_screen.dart';
-
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
@@ -17,7 +9,6 @@ class MainLayoutScreen extends StatefulWidget {
 }
 
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
-  // Navigation tab indices
   static const int indexHome = 0;
   static const int indexSubjects = 1;
   static const int indexVideos = 2;
@@ -27,14 +18,13 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   int _currentIndex = indexHome;
 
-  // Connected production screen views
   final List<Widget> _screens = const [
-    HomeScreen(),
-    SubjectsScreen(),
-    VideosScreen(),
-    SparkAiScreen(),
-    RankScreen(),
-    ProfileScreen(),
+    _TabPlaceholder(title: 'Home Feed', icon: CupertinoIcons.house_fill),
+    _TabPlaceholder(title: 'Subjects', icon: CupertinoIcons.book_fill),
+    _TabPlaceholder(title: 'Videos', icon: CupertinoIcons.play_circle_fill),
+    _TabPlaceholder(title: 'Spark AI', icon: CupertinoIcons.sparkles),
+    _TabPlaceholder(title: 'Rank', icon: CupertinoIcons.star_fill),
+    _TabPlaceholder(title: 'Profile', icon: CupertinoIcons.person_fill),
   ];
 
   Widget _buildNavItem(
@@ -99,63 +89,36 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(
-                indexHome,
-                CupertinoIcons.house,
-                CupertinoIcons.house_fill,
-                theme.colorScheme.primary,
-                "Home",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
-              _buildNavItem(
-                indexSubjects,
-                CupertinoIcons.book,
-                CupertinoIcons.book_fill,
-                theme.colorScheme.secondary,
-                "Subjects",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
-              _buildNavItem(
-                indexVideos,
-                CupertinoIcons.play_circle,
-                CupertinoIcons.play_circle_fill,
-                theme.colorScheme.error,
-                "Videos",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
-              _buildNavItem(
-                indexSparkAi,
-                CupertinoIcons.sparkles,
-                CupertinoIcons.sparkles,
-                theme.colorScheme.tertiary,
-                "Spark AI",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
-              _buildNavItem(
-                indexRank,
-                CupertinoIcons.star,
-                CupertinoIcons.star_fill,
-                theme.colorScheme.inverseSurface,
-                "Rank",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
-              _buildNavItem(
-                indexMe,
-                CupertinoIcons.person,
-                CupertinoIcons.person_fill,
-                theme.colorScheme.onSurface,
-                "Me",
-                navItemWidth,
-                indicatorBorderRadiusFactor,
-              ),
+              _buildNavItem(indexHome, CupertinoIcons.house, CupertinoIcons.house_fill, theme.colorScheme.primary, "Home", navItemWidth, indicatorBorderRadiusFactor),
+              _buildNavItem(indexSubjects, CupertinoIcons.book, CupertinoIcons.book_fill, theme.colorScheme.secondary, "Subjects", navItemWidth, indicatorBorderRadiusFactor),
+              _buildNavItem(indexVideos, CupertinoIcons.play_circle, CupertinoIcons.play_circle_fill, theme.colorScheme.error, "Videos", navItemWidth, indicatorBorderRadiusFactor),
+              _buildNavItem(indexSparkAi, CupertinoIcons.sparkles, CupertinoIcons.sparkles, theme.colorScheme.tertiary, "Spark AI", navItemWidth, indicatorBorderRadiusFactor),
+              _buildNavItem(indexRank, CupertinoIcons.star, CupertinoIcons.star_fill, theme.colorScheme.inverseSurface, "Rank", navItemWidth, indicatorBorderRadiusFactor),
+              _buildNavItem(indexMe, CupertinoIcons.person, CupertinoIcons.person_fill, theme.colorScheme.onSurface, "Me", navItemWidth, indicatorBorderRadiusFactor),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TabPlaceholder extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _TabPlaceholder({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
