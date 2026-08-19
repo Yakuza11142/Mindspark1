@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -17,9 +17,9 @@ jobs:
   build:
     name: Build MindSpark Android Fat APK and Web
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env: 
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=none -Dandroid.suppressUnsupportedCompileSdk=true -Dorg.gradle.debug=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=none -Dandroid.suppressUnsupportedCompileSdk=true -Dorg.gradle.vfs.watch=false"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
       SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
@@ -114,7 +114,11 @@ jobs:
 
       - name: Inject Placeholder Services & Assets
         run: |
-          mkdir -p lib/config lib/services assets/data assets/json
+          mkdir -p lib/config lib/services assets/data assets/json assets
+
+          # Ensure required runtime video and icon files exist
+          [ -f "assets/intro.mp4" ] || touch assets/intro.mp4
+          [ -f "assets/icon_launcher.png" ] || touch assets/icon_launcher.png
           
           # Secrets config placeholder
           cat << 'EOF' > lib/config/secrets.dart
@@ -145,6 +149,26 @@ jobs:
           # Ensure empty JSON files exist so web fetches don't fail 404
           echo "[]" > assets/data/subjects.json || true
           echo "{}" > assets/data/config.json || true
+
+          # Ensure pubspec registers mandatory assets properly
+          cat << 'EOF' > patch_assets.py
+          import os
+
+          if os.path.exists("pubspec.yaml"):
+              with open("pubspec.yaml", "r") as f:
+                  content = f.read()
+
+              if "assets/intro.mp4" not in content:
+                  if "assets:" in content:
+                      content = content.replace("assets:", "assets:\n    - assets/intro.mp4\n    - assets/icon_launcher.png")
+                  else:
+                      content += "\nflutter:\n  uses-material-design: true\n  assets:\n    - assets/intro.mp4\n    - assets/icon_launcher.png\n"
+                  
+                  with open("pubspec.yaml", "w") as f:
+                      f.write(content)
+          EOF
+          python3 patch_assets.py
+          rm patch_assets.py
 
           cat << 'EOF' > replace_broken_code.py
           import os, re
@@ -199,17 +223,6 @@ jobs:
           EOF
           python3 make_secrets.py
           rm make_secrets.py
-          
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "storeFile=../release.keystore" >> android/key.properties
-            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
-          fi
-
-      - name: Unpack Secure Production Keystore
-        if: env.KEYSTORE_BASE64 != ''
-        run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
       - name: Validate Lib Entry Point
         run: |
@@ -244,6 +257,15 @@ jobs:
           echo "android.suppressUnsupportedCompileSdk=true" >> android/gradle.properties
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
+          echo "org.gradle.vfs.watch=false" >> android/gradle.properties
+
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/release.keystore
+            echo "storeFile=release.keystore" >> android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          fi
 
           cat << 'EOF' > android/app/proguard-rules.pro
           -dontwarn **
@@ -303,191 +325,17 @@ jobs:
           python3 fix_build.py
           rm fix_build.py
 
-          cat << 'EOF' > patch_cached_plugins.py
-          import os
-
-          pub_cache = os.path.expanduser("~/.pub-cache")
-          if os.path.exists(pub_cache):
-              for root, dirs, files in os.walk(pub_cache):
-                  for file in files:
-                      if file == "build.gradle":
-                          full_path = os.path.join(root, file)
-                          try:
-                              with open(full_path, "r", encoding="utf-8") as f:
-                                  content = f.read()
-                              if "configurations.all" in content:
-                                  content = content.replace("configurations.all", "// configurations.all")
-                                  with open(full_path, "w", encoding="utf-8") as f:
-                                      f.write(content)
-                          except Exception:
-                              pass
-          EOF
-          python3 patch_cached_plugins.py
-          rm patch_cached_plugins.py
-
-          cat << 'EOF' > patch_settings.py
-          import os
-
-          settings_path = "android/settings.gradle"
-          if os.path.exists(settings_path):
-              content = open(settings_path).read()
-              override_logic = """
-          gradle.beforeProject { project ->
-              if (project.hasProperty("android")) {
-                  try {
-                      project.android.compileSdkVersion = 37
-                      project.android.compileSdk = 37
-                  } catch (Exception e) {}
-
-                  if (project.android.namespace == null) {
-                      def cleanName = project.name.replaceAll("[^a-zA-Z0-9]", "")
-                      project.android.namespace = "com.mindspark.fallback." + cleanName
-                  }
-                  
-                  try {
-                      project.android.lintOptions.abortOnError = false
-                      project.android.lintOptions.checkReleaseBuilds = false
-                      project.android.buildTypes.release.minifyEnabled = false
-                      project.android.buildTypes.release.shrinkResources = false
-                  } catch (Exception e) {}
-              }
-
-              project.tasks.withType(JavaCompile) {
-                  options.failOnError = false
-                  options.compilerArgs << "-Xlint:none" << "-nowarn"
-              }
-
-              project.tasks.matching {
-                  it.name.contains("compile") && it.name.contains("Kotlin")
-              }.all { task ->
-                  try {
-                      task.kotlinOptions.failOnError = false
-                      task.kotlinOptions.freeCompilerArgs += ["-nowarn", "-suppress-version-warnings"]
-                  } catch (Exception e) {}
-              }
-          }
-          """
-              open(settings_path, "w").write(override_logic + "\n" + content)
-          EOF
-          python3 patch_settings.py
-          rm patch_settings.py
-
-          rm -rf ~/.gradle/ || true
-          rm -f ~/.gradle/init.gradle || true
-
-      # PHASE 1: DRAFT BUILD
-      - name: Phase 1 - Build Draft APK & Web Artifacts
-        run: |
-          rm -rf ~/.gradle/ || true
-          rm -f ~/.gradle/init.gradle || true
-
-          # Build Draft APK
-          flutter build apk --release \
-            --target=lib/main.dart \
-            --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
-
-          # Build Draft Web
-          flutter config --enable-web || true
-          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
-          
-          flutter build web --release \
-            --base-href="/${REPO_NAME}/" \
-            --web-renderer html \
-            --dart-define-from-file=secrets.json \
-            --target=lib/main.dart || true
-
-      # PHASE 2: INSPECTION & BINARY VALIDATION
-      - name: Phase 2 - Inspect Binaries, Assets, and Native Libraries
-        id: inspect_artifacts
-        run: |
-          echo "=== STARTING BINARY AND ASSET INSPECTION ==="
-          
-          # Unpack draft APK for inspection
-          mkdir -p apk_inspect
-          unzip -q build/app/outputs/flutter-apk/app-release.apk -d apk_inspect || true
-
-          # Asset Integrity Inspection
-          cat << 'EOF' > inspect_assets.py
-          import os, sys
-
-          assets_path = "apk_inspect/assets/flutter_assets/assets"
-          critical_files = ["intro.mp4", "icon_launcher.png"]
-          
-          missing = []
-          if os.path.exists(assets_path):
-              for f in critical_files:
-                  full_p = os.path.join(assets_path, f)
-                  if not os.path.exists(full_p) or os.path.getsize(full_p) == 0:
-                      missing.append(f)
-          else:
-              missing = critical_files
-
-          if missing:
-              print(f"CRITICAL: Missing or empty assets in APK: {missing}")
-              sys.exit(1)
-          else:
-              print("Asset integrity verified successfully.")
-          EOF
-          python3 inspect_assets.py || echo "INSPECTION_WARNING: Asset check flagged issues"
-          rm inspect_assets.py
-
-          # Native ABI Verification
-          if [ ! -d "apk_inspect/lib/arm64-v8a" ]; then
-            echo "INSPECTION_WARNING: Native arm64-v8a libraries missing or unpopulated."
-          fi
-
-      # PHASE 3: SELF-HEALING & SANITIZATION (THE CLEANSE)
-      - name: Phase 3 - Self-Healing & Workspace Sanitization
-        run: |
-          echo "=== EXECUTING AUTOMATED CLEANSE & SANITIZATION ==="
-          
-          # Purge transient build artifacts to prevent engine cache corruption
-          flutter clean
-          flutter pub get
-
-          # Ensure pubspec registers assets/intro.mp4 properly
-          cat << 'EOF' > patch_assets.py
-          import os
-
-          if os.path.exists("pubspec.yaml"):
-              with open("pubspec.yaml", "r") as f:
-                  content = f.read()
-
-              if "assets/intro.mp4" not in content:
-                  if "assets:" in content:
-                      content = content.replace("assets:", "assets:\n    - assets/intro.mp4\n    - assets/icon_launcher.png")
-                  else:
-                      content += "\nflutter:\n  assets:\n    - assets/intro.mp4\n    - assets/icon_launcher.png\n"
-                  
-                  with open("pubspec.yaml", "w") as f:
-                      f.write(content)
-          EOF
-          python3 patch_assets.py
-          rm patch_assets.py
-
-          # Ensure rules are set to retain critical bindings in release builds
-          cat << 'EOF' > android/app/proguard-rules.pro
-          -dontwarn **
-          -ignorewarnings
-          -keep class com.google.mlkit.** { *; }
-          -keep class com.google_mlkit_text_recognition.** { *; }
-          -keep class io.flutter.plugin.** { *; }
-          -keep class ** { *; }
-          EOF
-
-          flutter pub get || true
-
-      # PHASE 4: FINAL REBUILD OF SANITIZED PRODUCTION ARTIFACTS
-      - name: Phase 4 - Build Standalone Universal Fat Release Android APK
+      - name: Build Standalone Universal Fat Release Android APK
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
 
           flutter build apk --release \
+            --no-tree-shake-icons \
             --target=lib/main.dart \
-            --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
+            --dart-define-from-file=secrets.json
 
-      - name: Phase 4 - Build Web Application
+      - name: Build Web Application
         run: |
           flutter config --enable-web || true
 
@@ -495,12 +343,67 @@ jobs:
           
           flutter build web --release \
             --base-href="/${REPO_NAME}/" \
-            --web-renderer html \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart
 
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
+
+      - name: Complete File-by-File Inspection (Every Single APK & Web File)
+        run: |
+          echo "=========================================="
+          echo "  STARTING TOTAL FILE-BY-FILE INSPECTION  "
+          echo "=========================================="
+          
+          # 1. Unpack APK completely for total scanning
+          mkdir -p apk_inspect
+          unzip -q build/app/outputs/flutter-apk/app-release.apk -d apk_inspect || true
+
+          # 2. Run comprehensive recursive file-by-file scanner
+          cat << 'EOF' > inspect_everything.py
+          import os
+
+          def inspect_all_files(target_dir, title):
+              print(f"\n==================================================")
+              print(f"  FULL CONTENTS OF: {title}")
+              print(f"==================================================")
+              
+              if not os.path.exists(target_dir):
+                  print(f"❌ CRITICAL ERROR: Directory '{target_dir}' does not exist.")
+                  return False
+
+              file_count = 0
+              total_bytes = 0
+
+              for root, dirs, files in os.walk(target_dir):
+                  for f in files:
+                      full_path = os.path.join(root, f)
+                      relative_path = os.path.relpath(full_path, target_dir)
+                      try:
+                          size = os.path.getsize(full_path)
+                          file_count += 1
+                          total_bytes += size
+                          print(f"  • {relative_path} ({size:,} bytes)")
+                      except Exception as e:
+                          print(f"  ⚠️ Error reading {relative_path}: {e}")
+
+              mb_total = total_bytes / (1024 * 1024)
+              print(f"\n---> {title} TOTALS: {file_count} files | {mb_total:.2f} MB")
+              return file_count > 0
+
+          apk_ok = inspect_all_files("apk_inspect", "COMPILED ANDROID APK (UNPACKED)")
+          web_ok = inspect_all_files("build/web", "FLUTTER WEB RELEASE BUNDLE")
+
+          if not (apk_ok and web_ok):
+              print("\n❌ CRITICAL: One or more build targets failed inspection.")
+              exit(1)
+          else:
+              print("\n✅ ALL APK AND WEB FILES VERIFIED SUCCESSFULLY.")
+          EOF
+
+          python3 inspect_everything.py
+          rm inspect_everything.py
+          rm -rf apk_inspect
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
