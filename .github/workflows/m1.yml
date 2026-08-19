@@ -183,103 +183,13 @@ jobs:
           cat << 'EOF' > fix_compiler_errors.py
           import os
 
-          # Styled UI screens replacing blank placeholders
           missing_files = {
-              "lib/screens/home_screen.dart": """import 'package:flutter/material.dart';
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
-      body: const Center(child: Text('Welcome to MindSpark', style: TextStyle(fontSize: 18))),
-    );
-  }
-}""",
-              "lib/screens/subjects_screen.dart": """import 'package:flutter/material.dart';
-class SubjectsScreen extends StatelessWidget {
-  const SubjectsScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Subjects')),
-      body: const Center(child: Text('Explore Subjects', style: TextStyle(fontSize: 18))),
-    );
-  }
-}""",
-              "lib/screens/videos_screen.dart": """import 'package:flutter/material.dart';
-class VideosScreen extends StatelessWidget {
-  const VideosScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Videos')),
-      body: const Center(child: Text('Educational Videos', style: TextStyle(fontSize: 18))),
-    );
-  }
-}""",
-              "lib/screens/spark_ai_screen.dart": """import 'package:flutter/material.dart';
-class SparkAIScreen extends StatelessWidget {
-  const SparkAIScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Spark AI')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.auto_awesome, size: 64, color: Colors.deepPurpleAccent),
-            SizedBox(height: 16),
-            Text('Spark AI Assistant', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('Ask any question to start interactive learning.', textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-}""",
-              "lib/screens/rank_screen.dart": """import 'package:flutter/material.dart';
-class RankScreen extends StatelessWidget {
-  const RankScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Rank Leaderboard')),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: const [
-          ListTile(leading: CircleAvatar(child: Text('1')), title: Text('Top Student'), subtitle: Text('2500 XP')),
-          ListTile(leading: CircleAvatar(child: Text('2')), title: Text('You'), subtitle: Text('1250 XP')),
-        ],
-      ),
-    );
-  }
-}""",
-              "lib/screens/legal_screen.dart": """import 'package:flutter/material.dart';
-class LegalScreen extends StatelessWidget {
-  const LegalScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Legal & Privacy')),
-      body: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Text(
-            'MindSpark Privacy Policy & Terms of Service\\n\\n'
-            '1. We prioritize user privacy and data security.\\n'
-            '2. Account data can be wiped at any time directly from Settings.\\n'
-            '3. All AI features strictly follow standard educational guidelines.',
-            style: TextStyle(fontSize: 15, height: 1.5),
-          ),
-        ),
-      ),
-    );
-  }
-}""",
+              "lib/screens/home_screen.dart": "import 'package:flutter/material.dart';\nclass HomeScreen extends StatelessWidget {\n  const HomeScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Home')), body: const Center(child: Text('Welcome to MindSpark', style: TextStyle(fontSize: 18))));\n  }\n}",
+              "lib/screens/subjects_screen.dart": "import 'package:flutter/material.dart';\nclass SubjectsScreen extends StatelessWidget {\n  const SubjectsScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Subjects')), body: const Center(child: Text('Explore Subjects', style: TextStyle(fontSize: 18))));\n  }\n}",
+              "lib/screens/videos_screen.dart": "import 'package:flutter/material.dart';\nclass VideosScreen extends StatelessWidget {\n  const VideosScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Videos')), body: const Center(child: Text('Educational Videos', style: TextStyle(fontSize: 18))));\n  }\n}",
+              "lib/screens/spark_ai_screen.dart": "import 'package:flutter/material.dart';\nclass SparkAIScreen extends StatelessWidget {\n  const SparkAIScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Spark AI')), body: Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: const [Icon(Icons.auto_awesome, size: 64, color: Colors.deepPurpleAccent), SizedBox(height: 16), Text('Spark AI Assistant', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), SizedBox(height: 8), Text('Ask any question to start interactive learning.', textAlign: TextAlign.center)])));\n  }\n}",
+              "lib/screens/rank_screen.dart": "import 'package:flutter/material.dart';\nclass RankScreen extends StatelessWidget {\n  const RankScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Rank Leaderboard')), body: ListView(padding: const EdgeInsets.all(16.0), children: const [ListTile(leading: CircleAvatar(child: Text('1')), title: Text('Top Student'), subtitle: Text('2500 XP')), ListTile(leading: CircleAvatar(child: Text('2')), title: Text('You'), subtitle: Text('1250 XP'))]));\n  }\n}",
+              "lib/screens/legal_screen.dart": "import 'package:flutter/material.dart';\nclass LegalScreen extends StatelessWidget {\n  const LegalScreen({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: const Text('Legal & Privacy')), body: const Padding(padding: EdgeInsets.all(16.0), child: SingleChildScrollView(child: Text('MindSpark Privacy Policy & Terms of Service\\n\\n1. We prioritize user privacy and data security.\\n2. Account data can be wiped at any time directly from Settings.\\n3. All AI features strictly follow standard educational guidelines.', style: TextStyle(fontSize: 15, height: 1.5)))));\n  }\n}",
               "lib/services/legal_service.dart": "class LegalService { static void wipeUserData() {} }"
           }
 
@@ -297,7 +207,6 @@ class LegalScreen extends StatelessWidget {
                   with open(filepath, 'w', encoding='utf-8') as f:
                       f.write(content)
 
-          # Patch Profile and Settings
           patch_file("lib/screens/profile_screen.dart", [
               ("MaterialLocalizations.of(context).anonymousId", "'User'")
           ])
@@ -314,7 +223,6 @@ class LegalScreen extends StatelessWidget {
               ("Secrets.productId", "'PLN_qszq0d3pfxovvp2'")
           ])
 
-          # Global domain patch across all files in lib/
           repo_url = "https://yakuza11142.github.io/MindSpark1/"
           for root, dirs, files in os.walk("lib"):
               for file in files:
