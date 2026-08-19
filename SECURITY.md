@@ -10,7 +10,7 @@
 
 We take the security of MindSpark seriously. If you discover a security vulnerability, please do **NOT** open a public GitHub issue.
 
-Instead, please send an email directly to **mindsparkelite6@gmail.com** with details of the issue.
+Instead, please send an email directly to **mindsparkceo@gmail.com** with details of the issue.
 
 ### What to Include:
 * A clear description of the vulnerability.
