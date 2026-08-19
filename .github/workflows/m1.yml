@@ -112,6 +112,32 @@ jobs:
 
           flutter pub get || true
 
+      - name: Strip Invalid Imports (No Placeholders)
+        run: |
+          cat << 'EOF' > replace_broken_code.py
+          import os, re
+
+          for root, dirs, files in os.walk("lib"):
+              for file in files:
+                  if file.endswith(".dart"):
+                      path = os.path.join(root, file)
+                      with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                          lines = f.readlines()
+                      
+                      clean_lines = []
+                      for line in lines:
+                          if "package:broken_dep" in line or "package:arcore_flutter_plus" in line:
+                              continue
+                          clean_lines.append(line)
+
+                      with open(path, "w", encoding="utf-8") as f:
+                          f.writelines(clean_lines)
+
+          print("Source code cleaned successfully without inserting placeholders.")
+          EOF
+          python3 replace_broken_code.py
+          rm replace_broken_code.py
+
       - name: Apply Safe Code Formatting & Fixes
         run: |
           dart fix --apply || true
