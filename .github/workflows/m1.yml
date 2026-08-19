@@ -47,15 +47,70 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean Build Cache & Fetch Dependencies
+      - name: Clean & Auto-Purge Deprecated Packages
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
-          
+
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
-          flutter pub get
+
+          cat << 'EOF' > auto_purge.py
+          import os, re
+
+          deprecated_packages = [
+              "flutter_local_notifications",
+              "arcore_flutter_plus",
+              "carrier_info",
+              "flutter_jailbreak_detection",
+              "flutter_windowmanager",
+              "ios_insecure_screen_detector",
+              "environment_sensors"
+          ]
+
+          if os.path.exists("pubspec.yaml"):
+              with open("pubspec.yaml", "r") as f:
+                  lines = f.readlines()
+              
+              clean_lines = []
+              skip = False
+              for line in lines:
+                  if "dependency_overrides:" in line:
+                      skip = True
+                  if not skip:
+                      if not any(pkg in line for pkg in deprecated_packages):
+                          clean_lines.append(line)
+
+              with open("pubspec.yaml", "w") as f:
+                  f.writelines(clean_lines)
+
+          f_root = os.environ.get("FLUTTER_ROOT", "")
+          overrides = f"""
+          dependency_overrides:
+            flutter_test:
+              path: "{f_root}/packages/flutter_test"
+            integration_test:
+              path: "{f_root}/packages/integration_test"
+            sky_engine:
+              path: "{f_root}/bin/cache/pkg/sky_engine"
+            meta: any
+            analyzer: any
+            intl: any
+            pointycastle: any
+            web_socket_channel: any
+            crypto: any
+            uuid: any
+            path: any
+            permission_handler: any
+          """
+          with open("pubspec.yaml", "a") as f:
+              f.write(overrides)
+          EOF
+          python3 auto_purge.py
+          rm auto_purge.py
+
+          flutter pub get || true
 
       - name: Apply Safe Code Formatting & Fixes
         run: |
