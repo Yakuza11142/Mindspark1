@@ -169,7 +169,6 @@ jobs:
               "lib/screens/rank_screen.dart": "import 'package:flutter/material.dart';\nclass RankScreen extends StatelessWidget { const RankScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Rank'))); }",
               "lib/screens/legal_screen.dart": "import 'package:flutter/material.dart';\nclass LegalScreen extends StatelessWidget { const LegalScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Legal'))); }",
               "lib/services/legal_service.dart": "class LegalService { static void wipeUserData() {} }",
-              "lib/config/secrets.dart": "class Secrets { static const String productId = 'PLN_qszq0d3pfxovvp2'; }"
           }
 
           for path, code in missing_files.items():
