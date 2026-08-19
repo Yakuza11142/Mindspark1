@@ -168,7 +168,7 @@ jobs:
               "lib/screens/spark_ai_screen.dart": "import 'package:flutter/material.dart';\nclass SparkAIScreen extends StatelessWidget { const SparkAIScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Spark AI'))); }",
               "lib/screens/rank_screen.dart": "import 'package:flutter/material.dart';\nclass RankScreen extends StatelessWidget { const RankScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Rank'))); }",
               "lib/screens/legal_screen.dart": "import 'package:flutter/material.dart';\nclass LegalScreen extends StatelessWidget { const LegalScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Legal'))); }",
-              "lib/services/legal_service.dart": "class LegalService { static void wipeUserData() {} }",
+              "lib/services/legal_service.dart": "class LegalService { static void wipeUserData() {} }"
           }
 
           for path, code in missing_files.items():
@@ -193,6 +193,11 @@ jobs:
           patch_file("lib/screens/settings_screen.dart", [
               ("NotificationService().scheduleDailyReminder();", "// NotificationService().scheduleDailyReminder();"),
               ("NotificationService().cancelAll();", "// NotificationService().cancelAll();")
+          ])
+
+          patch_file("lib/services/payment_service.dart", [
+              ("import '../config/secrets.dart';", ""),
+              ("Secrets.productId", "'PLN_qszq0d3pfxovvp2'")
           ])
           EOF
 
