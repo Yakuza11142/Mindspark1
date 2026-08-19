@@ -1,4 +1,4 @@
-Name: MindSpark Ultimate Production CI
+name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
