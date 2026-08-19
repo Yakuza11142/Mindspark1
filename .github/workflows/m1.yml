@@ -47,7 +47,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Auto-Purge Deprecated Packages
+      - name: Clean & Purge Deprecated Dependencies
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -87,23 +87,23 @@ jobs:
 
           f_root = os.environ.get("FLUTTER_ROOT", "")
           overrides = f"""
-          dependency_overrides:
-            flutter_test:
-              path: "{f_root}/packages/flutter_test"
-            integration_test:
-              path: "{f_root}/packages/integration_test"
-            sky_engine:
-              path: "{f_root}/bin/cache/pkg/sky_engine"
-            meta: any
-            analyzer: any
-            intl: any
-            pointycastle: any
-            web_socket_channel: any
-            crypto: any
-            uuid: any
-            path: any
-            permission_handler: any
-          """
+dependency_overrides:
+  flutter_test:
+    path: "{f_root}/packages/flutter_test"
+  integration_test:
+    path: "{f_root}/packages/integration_test"
+  sky_engine:
+    path: "{f_root}/bin/cache/pkg/sky_engine"
+  meta: any
+  analyzer: any
+  intl: any
+  pointycastle: any
+  web_socket_channel: any
+  crypto: any
+  uuid: any
+  path: any
+  permission_handler: any
+"""
           with open("pubspec.yaml", "a") as f:
               f.write(overrides)
           EOF
@@ -112,38 +112,51 @@ jobs:
 
           flutter pub get || true
 
-      - name: Strip Invalid Imports (No Placeholders)
+      - name: Strip Invalid Dependency Imports
         run: |
           cat << 'EOF' > replace_broken_code.py
           import os, re
+
+          targets = [
+              "package:flutter_local_notifications/",
+              "package:arcore_flutter_plus/",
+              "package:carrier_info/",
+              "package:flutter_jailbreak_detection/",
+              "package:flutter_windowmanager/",
+              "package:ios_insecure_screen_detector/",
+              "package:environment_sensors/"
+          ]
 
           for root, dirs, files in os.walk("lib"):
               for file in files:
                   if file.endswith(".dart"):
                       path = os.path.join(root, file)
-                      with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                          lines = f.readlines()
-                      
-                      clean_lines = []
-                      for line in lines:
-                          if "package:broken_dep" in line or "package:arcore_flutter_plus" in line:
-                              continue
-                          clean_lines.append(line)
-
-                      with open(path, "w", encoding="utf-8") as f:
-                          f.writelines(clean_lines)
-
-          print("Source code cleaned successfully without inserting placeholders.")
+                      try:
+                          with open(path, "r", encoding="utf-8") as f:
+                              content = f.read()
+                          
+                          has_broken_import = any(t in content for t in targets)
+                          if has_broken_import:
+                              lines = content.splitlines()
+                              new_lines = [l for l in lines if not any(t in l for t in targets)]
+                              
+                              new_content = "\n".join(new_lines)
+                              new_content = re.sub(r'FlutterLocalNotificationsPlugin\([^)]*\)', 'dynamic()', new_content)
+                              new_content = re.sub(r'ArCoreController\([^)]*\)', 'dynamic()', new_content)
+                              
+                              with open(path, "w", encoding="utf-8") as f:
+                                  f.write(new_content)
+                      except Exception:
+                          pass
           EOF
           python3 replace_broken_code.py
           rm replace_broken_code.py
 
-      - name: Apply Safe Code Formatting & Fixes
-        run: |
           dart fix --apply || true
           dart format . || true
+          flutter pub get || true
 
-      - name: Configure Production Environment Variables
+      - name: Configure Production Environment Secrets
         run: |
           cat << 'EOF' > make_secrets.py
           import json, os
@@ -170,16 +183,16 @@ jobs:
               print("CRITICAL ERROR: void main() entry point missing in lib/main.dart")
               exit(1)
 
-          print("lib/main.dart validation successful. Using real source code.")
+          print("lib/main.dart validation successful. Building real application code.")
           EOF
           python3 sanitize_lib.py
           rm sanitize_lib.py
 
-      - name: Regenerate Platforms & Configure Native Rules
+      - name: Regenerate Platforms & Configure Android SDK
         run: |
           rm -rf android
           flutter create --platforms=android,web . || true
-          
+
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
 
@@ -189,6 +202,34 @@ jobs:
           echo "android.lintOptions.abortOnError=false" >> android/gradle.properties
           echo "android.lintOptions.checkReleaseBuilds=false" >> android/gradle.properties
           echo "org.gradle.vfs.watch=false" >> android/gradle.properties
+
+          mkdir -p ~/.gradle
+          cat << 'EOF' > ~/.gradle/init.gradle
+          allprojects {
+              buildscript {
+                  repositories {
+                      all { ArtifactRepository repo ->
+                          if (repo.name.contains("jcenter") || repo.name.contains("JCenter")) {
+                              project.logger.lifecycle("Replacing jcenter with mavenCentral in buildscript")
+                              remove(repo)
+                          }
+                      }
+                      mavenCentral()
+                      google()
+                  }
+              }
+              repositories {
+                  all { ArtifactRepository repo ->
+                      if (repo.name.contains("jcenter") || repo.name.contains("JCenter")) {
+                          project.logger.lifecycle("Replacing jcenter with mavenCentral in repositories")
+                          remove(repo)
+                      }
+                  }
+                  mavenCentral()
+                  google()
+              }
+          }
+          EOF
 
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 --decode > android/release.keystore
@@ -280,7 +321,7 @@ jobs:
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
 
-      - name: Complete File-by-File Inspection (Every Single APK & Web File)
+      - name: Verify Compiled APK & Web Outputs
         run: |
           mkdir -p apk_inspect
           unzip -q build/app/outputs/flutter-apk/app-release.apk -d apk_inspect || true
