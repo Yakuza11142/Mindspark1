@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -56,7 +56,6 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
           
-          # Remove broken native plugins and local notification package from pubspec
           sed -i '/flutter_local_notifications:/d' pubspec.yaml || true
           sed -i '/carrier_info:/d' pubspec.yaml || true
           sed -i '/flutter_jailbreak_detection:/d' pubspec.yaml || true
@@ -99,14 +98,12 @@ jobs:
         run: |
           mkdir -p lib/config lib/services
           
-          # Inject Secrets Config Placeholder
           cat << 'EOF' > lib/config/secrets.dart
           class Secrets {
             static const String productId = 'mindspark_subscription';
           }
           EOF
 
-          # Replace Notification Service with No-Dependency Placeholder
           cat << 'EOF' > lib/services/notification_service.dart
           import 'package:flutter/foundation.dart';
 
@@ -344,7 +341,7 @@ jobs:
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
-          
+
           if [ -f "lib/main.dart" ]; then
             flutter build apk --release \
               --target=lib/main.dart \
