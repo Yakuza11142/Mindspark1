@@ -1,6 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+// 1. IMPORT YOUR REAL SCREEN WIDGETS HERE
+// Adjust these import paths to match your actual file locations:
+import 'home_screen.dart';
+import 'subjects_screen.dart';
+import 'videos_screen.dart';
+import 'spark_ai_screen.dart';
+import 'rank_screen.dart';
+import 'profile_screen.dart';
+
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
 
@@ -18,13 +27,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
   int _currentIndex = indexHome;
 
+  // 2. REPLACE _TabPlaceholder WITH YOUR REAL SCREEN CLASSES
   final List<Widget> _screens = const [
-    _TabPlaceholder(title: 'Home Feed', icon: CupertinoIcons.house_fill),
-    _TabPlaceholder(title: 'Subjects', icon: CupertinoIcons.book_fill),
-    _TabPlaceholder(title: 'Videos', icon: CupertinoIcons.play_circle_fill),
-    _TabPlaceholder(title: 'Spark AI', icon: CupertinoIcons.sparkles),
-    _TabPlaceholder(title: 'Rank', icon: CupertinoIcons.star_fill),
-    _TabPlaceholder(title: 'Profile', icon: CupertinoIcons.person_fill),
+    HomeScreen(),
+    SubjectsScreen(),
+    VideosScreen(),
+    SparkAIScreen(),
+    RankScreen(),
+    ProfileScreen(),
   ];
 
   Widget _buildNavItem(
@@ -98,27 +108,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TabPlaceholder extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const _TabPlaceholder({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }
