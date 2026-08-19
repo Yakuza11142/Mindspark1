@@ -142,7 +142,7 @@ jobs:
           }
           EOF
 
-          # Ensure fallback empty JSON files exist so web fetches don't fail 404
+          # Ensure empty JSON files exist so web fetches don't fail 404
           echo "[]" > assets/data/subjects.json || true
           echo "{}" > assets/data/config.json || true
 
@@ -211,68 +211,22 @@ jobs:
         if: env.KEYSTORE_BASE64 != ''
         run: echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore || true
 
-      - name: Validate or Sanitize Lib Entry Point
+      - name: Validate Lib Entry Point
         run: |
           cat << 'EOF' > sanitize_lib.py
-          import os, re
-
-          protected_files = [
-              "lib/main.dart",
-              "lib/main_navigation.dart",
-              "lib/main_production.dart"
-          ]
-
-          if not os.path.exists("lib"):
-              os.makedirs("lib")
+          import os
 
           main_path = "lib/main.dart"
-          valid_entry = False
+          if not os.path.exists(main_path):
+              print("CRITICAL ERROR: lib/main.dart is missing from the repository.")
+              exit(1)
 
-          if os.path.exists(main_path):
-              content = open(main_path).read()
-              
-              package_imports = re.findall(r"import\s+['\"]package:[^/]+/(.+)['\"];", content)
-              relative_imports = re.findall(r"import\s+['\"](\.\.?/[^'\"]+)['\"];", content)
-              
-              invalid_found = False
-              for imp in package_imports:
-                  if not os.path.exists(os.path.join("lib", imp)):
-                      invalid_found = True
-                      break
-                      
-              for imp in relative_imports:
-                  if not os.path.exists(os.path.normpath(os.path.join("lib", imp))):
-                      invalid_found = True
-                      break
-              
-              if not invalid_found and "void main" in content:
-                  valid_entry = True
+          content = open(main_path).read()
+          if "void main" not in content:
+              print("CRITICAL ERROR: void main() entry point missing in lib/main.dart")
+              exit(1)
 
-          if not valid_entry and main_path not in protected_files:
-              fallback_code = """import 'package:flutter/material.dart';
-
-          void main() => runApp(const MindSparkApp());
-
-          class MindSparkApp extends StatelessWidget {
-            const MindSparkApp({super.key});
-
-            @override
-            Widget build(BuildContext context) {
-              return MaterialApp(
-                title: 'Mind Spark',
-                debugShowCheckedModeBanner: false,
-                theme: ThemeData.dark(),
-                home: Scaffold(
-                  appBar: AppBar(title: const Text('MindSpark Workspace')),
-                  body: const Center(
-                    child: Text('MindSpark Application Loaded Successfully'),
-                  ),
-                ),
-              );
-            }
-          }
-          """
-              open(main_path, "w").write(fallback_code)
+          print("lib/main.dart validation successful. Using user source code.")
           EOF
           python3 sanitize_lib.py
           rm sanitize_lib.py
@@ -428,30 +382,19 @@ jobs:
           rm -f ~/.gradle/init.gradle || true
 
           # Build Draft APK
-          if [ -f "lib/main.dart" ]; then
-            flutter build apk --release \
-              --target=lib/main.dart \
-              --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
-          else
-            flutter build apk --release --dart-define-from-file=secrets.json
-          fi
+          flutter build apk --release \
+            --target=lib/main.dart \
+            --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
 
           # Build Draft Web
           flutter config --enable-web || true
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           
-          if [ -f "lib/main.dart" ]; then
-            flutter build web --release \
-              --base-href="/${REPO_NAME}/" \
-              --web-renderer html \
-              --dart-define-from-file=secrets.json \
-              --target=lib/main.dart || true
-          else
-            flutter build web --release \
-              --base-href="/${REPO_NAME}/" \
-              --web-renderer html \
-              --dart-define-from-file=secrets.json || true
-          fi
+          flutter build web --release \
+            --base-href="/${REPO_NAME}/" \
+            --web-renderer html \
+            --dart-define-from-file=secrets.json \
+            --target=lib/main.dart || true
 
       # PHASE 2: INSPECTION & BINARY VALIDATION
       - name: Phase 2 - Inspect Binaries, Assets, and Native Libraries
@@ -502,7 +445,7 @@ jobs:
           flutter clean
           flutter pub get
 
-          # Auto-patch pubspec.yaml asset references if intro.mp4 was omitted
+          # Ensure pubspec registers assets/intro.mp4 properly
           cat << 'EOF' > patch_assets.py
           import os
 
@@ -522,7 +465,7 @@ jobs:
           python3 patch_assets.py
           rm patch_assets.py
 
-          # Enforce absolute safe ProGuard fallback rules
+          # Ensure rules are set to retain critical bindings in release builds
           cat << 'EOF' > android/app/proguard-rules.pro
           -dontwarn **
           -ignorewarnings
@@ -540,33 +483,21 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
 
-          if [ -f "lib/main.dart" ]; then
-            flutter build apk --release \
-              --target=lib/main.dart \
-              --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
-          else
-            flutter build apk --release --dart-define-from-file=secrets.json
-          fi
+          flutter build apk --release \
+            --target=lib/main.dart \
+            --dart-define-from-file=secrets.json || flutter build apk --release --dart-define-from-file=secrets.json
 
       - name: Phase 4 - Build Web Application
         run: |
           flutter config --enable-web || true
 
-          # Extract repository name dynamically or default relative base URL
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           
-          if [ -f "lib/main.dart" ]; then
-            flutter build web --release \
-              --base-href="/${REPO_NAME}/" \
-              --web-renderer html \
-              --dart-define-from-file=secrets.json \
-              --target=lib/main.dart
-          else
-            flutter build web --release \
-              --base-href="/${REPO_NAME}/" \
-              --web-renderer html \
-              --dart-define-from-file=secrets.json
-          fi
+          flutter build web --release \
+            --base-href="/${REPO_NAME}/" \
+            --web-renderer html \
+            --dart-define-from-file=secrets.json \
+            --target=lib/main.dart
 
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
