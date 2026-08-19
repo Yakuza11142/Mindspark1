@@ -87,23 +87,23 @@ jobs:
 
           f_root = os.environ.get("FLUTTER_ROOT", "")
           overrides = f"""
-dependency_overrides:
-  flutter_test:
-    path: "{f_root}/packages/flutter_test"
-  integration_test:
-    path: "{f_root}/packages/integration_test"
-  sky_engine:
-    path: "{f_root}/bin/cache/pkg/sky_engine"
-  meta: any
-  analyzer: any
-  intl: any
-  pointycastle: any
-  web_socket_channel: any
-  crypto: any
-  uuid: any
-  path: any
-  permission_handler: any
-"""
+          dependency_overrides:
+            flutter_test:
+              path: "{f_root}/packages/flutter_test"
+            integration_test:
+              path: "{f_root}/packages/integration_test"
+            sky_engine:
+              path: "{f_root}/bin/cache/pkg/sky_engine"
+            meta: any
+            analyzer: any
+            intl: any
+            pointycastle: any
+            web_socket_channel: any
+            crypto: any
+            uuid: any
+            path: any
+            permission_handler: any
+          """
           with open("pubspec.yaml", "a") as f:
               f.write(overrides)
           EOF
