@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -120,7 +120,7 @@ jobs:
           ]
           for root, dirs, files in os.walk("lib"):
               for file in files:
-                  if file.endswith(".dart"):
+                  if file.endswith(".dart") and file != "main.dart":
                       path = os.path.join(root, file)
                       try:
                           with open(path, "r", encoding="utf-8") as f:
@@ -152,7 +152,7 @@ jobs:
           import os
 
           def patch_file(filepath, replacements):
-              if os.path.exists(filepath):
+              if os.path.exists(filepath) and filepath != "lib/main.dart":
                   with open(filepath, 'r', encoding='utf-8') as f:
                       content = f.read()
                   for old, new in replacements:
@@ -187,7 +187,7 @@ jobs:
           python3 make_secrets.py
           rm make_secrets.py
 
-      - name: Validate Lib Entry Point
+      - name: Read-Only Validate Lib Entry Point
         run: |
           cat << 'EOF' > sanitize_lib.py
           import os
@@ -195,11 +195,12 @@ jobs:
           if not os.path.exists(main_path):
               print("CRITICAL ERROR: lib/main.dart is missing from the repository.")
               exit(1)
-          content = open(main_path).read()
+          with open(main_path, "r", encoding="utf-8") as f:
+              content = f.read()
           if "void main" not in content:
               print("CRITICAL ERROR: void main() entry point missing in lib/main.dart")
               exit(1)
-          print("lib/main.dart validation successful. Building real application code.")
+          print("lib/main.dart validation successful (Read-Only). Building real application code.")
           EOF
           python3 sanitize_lib.py
           rm sanitize_lib.py
