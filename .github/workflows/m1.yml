@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -427,11 +427,10 @@ jobs:
             --target=lib/main.dart \
             --dart-define-from-file=secrets.json
 
-            - name: Build Web Application
+      - name: Build Web Application
         run: |
           flutter config --enable-web || true
 
-          # Explicitly target your repository path or use root if using user pages
           flutter build web --release \
             --web-renderer html \
             --base-href="/MindSpark1/" \
