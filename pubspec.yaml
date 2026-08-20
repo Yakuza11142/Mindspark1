@@ -119,18 +119,13 @@ dependency_overrides:
 
 flutter:
   uses-material-design: true
-  
-  fonts:
-    - family: MaterialIcons
-      fonts:
-        - asset: fonts/MaterialIcons-Regular.otf
 
   assets:
     - assets/
     - assets/shaders/
     - assets/intro.mp4
     - .env
-    
+
   shaders:
     - assets/shaders/hologram_glow.frag
 
