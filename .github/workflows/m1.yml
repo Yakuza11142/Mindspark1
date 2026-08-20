@@ -57,7 +57,7 @@ jobs:
           flutter pub cache clean --force || true
 
           cat << 'EOF' > auto_purge.py
-          import os, re
+          import os
 
           deprecated_packages = [
               "flutter_local_notifications",
@@ -86,24 +86,8 @@ jobs:
                   f.writelines(clean_lines)
 
           f_root = os.environ.get("FLUTTER_ROOT", "")
-          overrides = f"""
-  dependency_overrides:
-    flutter_test:
-      path: "{f_root}/packages/flutter_test"
-    integration_test:
-      path: "{f_root}/packages/integration_test"
-    sky_engine:
-      path: "{f_root}/bin/cache/pkg/sky_engine"
-    meta: any
-    analyzer: any
-    intl: any
-    pointycastle: any
-    web_socket_channel: any
-    crypto: any
-    uuid: any
-    path: any
-    permission_handler: any
-  """
+          overrides = f"dependency_overrides:\n  flutter_test:\n    path: \"{f_root}/packages/flutter_test\"\n  integration_test:\n    path: \"{f_root}/packages/integration_test\"\n  sky_engine:\n    path: \"{f_root}/bin/cache/pkg/sky_engine\"\n  meta: any\n  analyzer: any\n  intl: any\n  pointycastle: any\n  web_socket_channel: any\n  crypto: any\n  uuid: any\n  path: any\n  permission_handler: any\n"
+          
           with open("pubspec.yaml", "a", encoding="utf-8") as f:
               f.write(overrides)
           EOF
