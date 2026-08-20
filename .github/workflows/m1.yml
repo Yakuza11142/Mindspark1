@@ -121,16 +121,36 @@ jobs:
 
           flutter pub get || true
 
-      - name: Fix Material Icons & Material Design Flags
+      - name: Fix Material Icons, Material Design Flags & Shaders
         run: |
-          cat << 'EOF' > fix_material_flags.py
+          cat << 'EOF' > fix_pubspec_assets.py
           import os
 
           pubspec_path = "pubspec.yaml"
           if os.path.exists(pubspec_path):
               with open(pubspec_path, "r", encoding="utf-8") as f:
-                  content = f.read()
+                  lines = f.readlines()
 
+              clean_lines = []
+              in_assets_section = False
+
+              for line in lines:
+                  if "uses-material-design:" not in line:
+                      if line.strip().startswith("assets:"):
+                          in_assets_section = True
+                          clean_lines.append(line)
+                          continue
+                      
+                      if in_assets_section and line.strip() and not line.startswith(" ") and not line.startswith("#"):
+                          in_assets_section = False
+
+                      # Remove shaders directory or .frag files from assets list
+                      if in_assets_section and ("shaders/" in line or ".frag" in line or ".glsl" in line):
+                          continue
+
+                      clean_lines.append(line)
+
+              content = "".join(clean_lines)
               if "uses-material-design: true" not in content:
                   if "flutter:" in content:
                       content = content.replace("flutter:", "flutter:\n  uses-material-design: true")
@@ -140,8 +160,8 @@ jobs:
               with open(pubspec_path, "w", encoding="utf-8") as f:
                   f.write(content)
           EOF
-          python3 fix_material_flags.py
-          rm fix_material_flags.py
+          python3 fix_pubspec_assets.py
+          rm fix_pubspec_assets.py
 
       - name: Strip Invalid Dependency Imports
         run: |
