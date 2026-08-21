@@ -23,16 +23,6 @@ jobs:
       JAVA_TOOL_OPTIONS: "-Xmx4g"
       SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
       SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
-      GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
-      OPENAI_KEY: "${{ secrets.OPENAI_KEY }}"
-      GROQ_API_KEY: "${{ secrets.GROQ_API_KEY }}"
-      VERTEX_API_KEY: "${{ secrets.VERTEX_API_KEY }}"
-      HEYGEN_KEY: "${{ secrets.HEYGEN_KEY }}"
-      RUNWAYML_API_SECRET: "${{ secrets.RUNWAYML_API_SECRET }}"
-      TRIPO_API_KEY: "${{ secrets.TRIPO_API_KEY }}"
-      PEXELS_API_KEY: "${{ secrets.PEXELS_API_KEY }}"
-      MTN_API_KEY: "${{ secrets.MTN_API_KEY }}"
-      ELEVEN_LAB_API_KEY: "${{ secrets.ELEVEN_LAB_API_KEY }}"
       KEYSTORE_BASE64: "${{ secrets.KEYSTORE_BASE64 }}"
       KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
       KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
@@ -47,104 +37,16 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Purge Deprecated Dependencies
+      - name: Clean & Prepare Dependencies
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
-          cat << 'EOF' > auto_purge.py
-          import os, re
-          deprecated_packages = [
-              "flutter_local_notifications",
-              "arcore_flutter_plus",
-              "carrier_info",
-              "flutter_jailbreak_detection",
-              "flutter_windowmanager",
-              "ios_insecure_screen_detector",
-              "environment_sensors"
-          ]
-          if os.path.exists("pubspec.yaml"):
-              with open("pubspec.yaml", "r") as f:
-                  lines = f.readlines()
-              
-              clean_lines = []
-              skip = False
-              for line in lines:
-                  if "dependency_overrides:" in line:
-                      skip = True
-                  if not skip:
-                      if not any(pkg in line for pkg in deprecated_packages):
-                          clean_lines.append(line)
-              with open("pubspec.yaml", "w") as f:
-                  f.writelines(clean_lines)
-          f_root = os.environ.get("FLUTTER_ROOT", "")
-          overrides = f"""
-          dependency_overrides:
-            flutter_test:
-              path: "{f_root}/packages/flutter_test"
-            integration_test:
-              path: "{f_root}/packages/integration_test"
-            sky_engine:
-              path: "{f_root}/bin/cache/pkg/sky_engine"
-            meta: any
-            analyzer: any
-            intl: any
-            pointycastle: any
-            web_socket_channel: any
-            crypto: any
-            uuid: any
-            path: any
-            permission_handler: any
-          """
-          with open("pubspec.yaml", "a") as f:
-              f.write(overrides)
-          EOF
-          python3 auto_purge.py
-          rm auto_purge.py
-          flutter pub get || true
-      - name: Strip Invalid Dependency Imports
-        run: |
-          cat << 'EOF' > replace_broken_code.py
-          import os, re
-          targets = [
-              "package:flutter_local_notifications/",
-              "package:arcore_flutter_plus/",
-              "package:carrier_info/",
-              "package:flutter_jailbreak_detection/",
-              "package:flutter_windowmanager/",
-              "package:ios_insecure_screen_detector/",
-              "package:environment_sensors/"
-          ]
-          for root, dirs, files in os.walk("lib"):
-              for file in files:
-                  if file.endswith(".dart"):
-                      path = os.path.join(root, file)
-                      try:
-                          with open(path, "r", encoding="utf-8") as f:
-                              content = f.read()
-                          
-                          has_broken_import = any(t in content for t in targets)
-                          if has_broken_import:
-                              lines = content.splitlines()
-                              new_lines = [l for l in lines if not any(t in l for t in targets)]
-                              
-                              new_content = "\n".join(new_lines)
-                              new_content = re.sub(r'FlutterLocalNotificationsPlugin\([^)]*\)', 'dynamic()', new_content)
-                              new_content = re.sub(r'ArCoreController\([^)]*\)', 'dynamic()', new_content)
-                              
-                              with open(path, "w", encoding="utf-8") as f:
-                                  f.write(new_content)
-                      except Exception:
-                          pass
-          EOF
-          python3 replace_broken_code.py
-          rm replace_broken_code.py
-          dart fix --apply || true
-          dart format . || true
-          flutter pub get || true
-      - name: Auto-Fix Missing Imports & Method Signatures
+          flutter pub get
+
+      - name: Auto-Fix Missing Entry Files
         run: |
           cat << 'EOF' > fix_compiler_errors.py
           import os
@@ -162,39 +64,22 @@ jobs:
                   os.makedirs(os.path.dirname(path), exist_ok=True)
                   with open(path, 'w', encoding='utf-8') as f:
                       f.write(code)
-          def patch_file(filepath, replacements):
-              if os.path.exists(filepath):
-                  with open(filepath, 'r', encoding='utf-8') as f:
-                      content = f.read()
-                  for old, new in replacements:
-                      content = content.replace(old, new)
-                  with open(filepath, 'w', encoding='utf-8') as f:
-                      f.write(content)
-          patch_file("lib/screens/profile_screen.dart", [
-              ("MaterialLocalizations.of(context).anonymousId", "'User'")
-          ])
-          patch_file("lib/screens/settings_screen.dart", [
-              ("NotificationService().scheduleDailyReminder();", "// NotificationService().scheduleDailyReminder();"),
-              ("NotificationService().cancelAll();", "// NotificationService().cancelAll();")
-          ])
-          patch_file("lib/services/payment_service.dart", [
-              ("import '../config/secrets.dart';", ""),
-              ("Secrets.productId", "'PLN_qszq0d3pfxovvp2'")
-          ])
           EOF
           python3 fix_compiler_errors.py
           rm fix_compiler_errors.py
+
       - name: Configure Production Environment Secrets
         run: |
           cat << 'EOF' > make_secrets.py
           import json, os
-          keys = ['SUPABASE_URL','SUPABASE_ANON_KEY','GEMINI_API_KEY','OPENAI_KEY','GROQ_API_KEY','VERTEX_API_KEY','HEYGEN_KEY','RUNWAYML_API_SECRET','TRIPO_API_KEY','PEXELS_API_KEY','MTN_API_KEY','ELEVEN_LAB_API_KEY']
+          keys = ['SUPABASE_URL','SUPABASE_ANON_KEY']
           secrets = {k: os.environ.get(k, '').strip() for k in keys}
           with open('secrets.json', 'w') as f:
               f.write(json.dumps(secrets))
           EOF
           python3 make_secrets.py
           rm make_secrets.py
+
       - name: Validate Lib Entry Point
         run: |
           cat << 'EOF' > sanitize_lib.py
@@ -211,6 +96,7 @@ jobs:
           EOF
           python3 sanitize_lib.py
           rm sanitize_lib.py
+
       - name: Regenerate Platforms & Configure Android SDK
         run: |
           rm -rf android
@@ -260,8 +146,6 @@ jobs:
           cat << 'EOF' > android/app/proguard-rules.pro
           -dontwarn **
           -ignorewarnings
-          -keep class com.google.mlkit.** { *; }
-          -keep class com.google_mlkit_text_recognition.** { *; }
           -keep class io.flutter.plugin.** { *; }
           -keep class ** { *; }
           EOF
@@ -310,6 +194,7 @@ jobs:
           EOF
           python3 fix_build.py
           rm fix_build.py
+
       - name: Build Standalone Universal Fat Release Android APK
         run: |
           rm -rf ~/.gradle/ || true
@@ -318,6 +203,7 @@ jobs:
             --no-tree-shake-icons \
             --target=lib/main.dart \
             --dart-define-from-file=secrets.json
+
       - name: Build Web Application
         run: |
           flutter config --enable-web || true
@@ -329,6 +215,7 @@ jobs:
             --target=lib/main.dart
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
+
       - name: Verify Compiled APK & Web Outputs
         run: |
           mkdir -p apk_inspect
@@ -370,6 +257,7 @@ jobs:
           python3 inspect_everything.py
           rm inspect_everything.py
           rm -rf apk_inspect
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
