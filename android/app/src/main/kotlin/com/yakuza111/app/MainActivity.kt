@@ -1,4 +1,4 @@
-package com.yakuza111.app
+package com.mindspark.app
 
 import android.content.Context
 import android.content.Intent
@@ -10,8 +10,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
-    private val HARDWARE_CHANNEL = "com.yakuza111.app/hardware"
-    private val KV_CHANNEL = "com.yakuza111.app/kv_store"
+    private val HARDWARE_CHANNEL = "com.mindspark.app/hardware"
+    private val KV_CHANNEL = "com.mindspark.app/kv_store"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
