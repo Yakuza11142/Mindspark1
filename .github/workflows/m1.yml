@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -37,7 +37,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Prepare Dependencies
+      - name: Clean Build Workspace
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -45,18 +45,58 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-          # Strip invalid dependency overrides if any exist in pubspec.yaml
-          python3 -c "
+      - name: Strip Imports & Usage of Deleted Dependencies
+        run: |
+          cat << 'EOF' > purge_deleted_deps.py
           import os, re
-          if os.path.exists('pubspec.yaml'):
-              with open('pubspec.yaml', 'r', encoding='utf-8') as f:
-                  content = f.read()
-              if 'dependency_overrides:' in content:
-                  content = re.sub(r'dependency_overrides:.*', '', content, flags=re.DOTALL)
-                  with open('pubspec.yaml', 'w', encoding='utf-8') as f:
-                      f.write(content)
-          "
 
+          # List of deleted packages to strip from Dart source files
+          deleted_packages = [
+              "flutter_local_notifications",
+              "arcore_flutter_plus",
+              "carrier_info",
+              "flutter_jailbreak_detection",
+              "flutter_windowmanager",
+              "ios_insecure_screen_detector",
+              "environment_sensors"
+          ]
+
+          # Ensure pubspec.yaml has no lingering dependency_overrides
+          if os.path.exists("pubspec.yaml"):
+              with open("pubspec.yaml", "r", encoding="utf-8") as f:
+                  content = f.read()
+              if "dependency_overrides:" in content:
+                  content = re.sub(r'dependency_overrides:.*', '', content, flags=re.DOTALL)
+                  with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                      f.write(content)
+
+          # Scan lib/ and remove any import statement or usage referencing the deleted packages
+          targets = [f"package:{pkg}/" for pkg in deleted_packages]
+          
+          if os.path.exists("lib"):
+              for root, dirs, files in os.walk("lib"):
+                  for file in files:
+                      if file.endswith(".dart"):
+                          path = os.path.join(root, file)
+                          try:
+                              with open(path, "r", encoding="utf-8") as f:
+                                  content = f.read()
+                              
+                              if any(t in content for t in targets):
+                                  lines = content.splitlines()
+                                  clean_lines = [l for l in lines if not any(t in l for t in targets)]
+                                  new_content = "\n".join(clean_lines)
+                                  
+                                  with open(path, "w", encoding="utf-8") as f:
+                                      f.write(new_content)
+                          except Exception as e:
+                              print(f"Error processing {path}: {e}")
+          EOF
+          python3 purge_deleted_deps.py
+          rm purge_deleted_deps.py
+
+      - name: Resolve Dependencies & Format Code
+        run: |
           flutter pub get
           dart fix --apply || true
           dart format . || true
