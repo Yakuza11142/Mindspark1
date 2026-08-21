@@ -53,7 +53,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Purge Deprecated Dependencies
+      - name: Clean & Sanitize Dependencies
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -62,7 +62,7 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-          cat << 'EOF' > auto_purge.py
+          cat << 'EOF' > sanitize_pubspec.py
           import os
 
           deprecated_packages = [
@@ -80,82 +80,55 @@ jobs:
                   lines = f.readlines()
               
               clean_lines = []
-              skip_override_block = False
-              
               for line in lines:
-                  if line.startswith("dependency_overrides:"):
-                      skip_override_block = True
+                  # Strip deprecated packages
+                  if any(pkg in line for pkg in deprecated_packages):
                       continue
-                  
-                  if skip_override_block:
-                      if line and not line.startswith(" ") and not line.startswith("#") and ":" in line:
-                          skip_override_block = False
-                      else:
-                          continue
+                  # Avoid duplicating dependency overrides block
+                  if "dependency_overrides:" in line:
+                      break
+                  clean_lines.append(line)
 
-                  if not any(pkg in line for pkg in deprecated_packages):
-                      clean_lines.append(line)
+              f_root = os.environ.get("FLUTTER_ROOT", "")
+              overrides = [
+                  "\ndependency_overrides:\n",
+                  "  flutter_test:\n",
+                  f"    path: \"{f_root}/packages/flutter_test\"\n",
+                  "  integration_test:\n",
+                  f"    path: \"{f_root}/packages/integration_test\"\n",
+                  "  sky_engine:\n",
+                  f"    path: \"{f_root}/bin/cache/pkg/sky_engine\"\n",
+                  "  meta: any\n",
+                  "  analyzer: any\n",
+                  "  intl: any\n",
+                  "  pointycastle: any\n",
+                  "  web_socket_channel: any\n",
+                  "  crypto: any\n",
+                  "  uuid: any\n",
+                  "  path: any\n",
+                  "  permission_handler: any\n"
+              ]
+
+              clean_lines.extend(overrides)
 
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
                   f.writelines(clean_lines)
-
-          f_root = os.environ.get("FLUTTER_ROOT", "")
-          overrides = (
-              "\ndependency_overrides:\n"
-              "  flutter_test:\n"
-              f"    path: \"{f_root}/packages/flutter_test\"\n"
-              "  integration_test:\n"
-              f"    path: \"{f_root}/packages/integration_test\"\n"
-              "  sky_engine:\n"
-              f"    path: \"{f_root}/bin/cache/pkg/sky_engine\"\n"
-              "  meta: any\n"
-              "  analyzer: any\n"
-              "  intl: any\n"
-              "  pointycastle: any\n"
-              "  web_socket_channel: any\n"
-              "  crypto: any\n"
-              "  uuid: any\n"
-              "  path: any\n"
-              "  permission_handler: any\n"
-          )
-
-          with open("pubspec.yaml", "a", encoding="utf-8") as f:
-              f.write(overrides)
           EOF
-          python3 auto_purge.py
-          rm auto_purge.py
+          python3 sanitize_pubspec.py
+          rm sanitize_pubspec.py
 
           flutter pub get || true
 
-      - name: Fix Material Icons, Material Design Flags & Shaders
+      - name: Ensure Material Design Flag in pubspec
         run: |
-          cat << 'EOF' > fix_pubspec_assets.py
+          cat << 'EOF' > fix_material.py
           import os
 
           pubspec_path = "pubspec.yaml"
           if os.path.exists(pubspec_path):
               with open(pubspec_path, "r", encoding="utf-8") as f:
-                  lines = f.readlines()
+                  content = f.read()
 
-              clean_lines = []
-              in_assets_section = False
-
-              for line in lines:
-                  if "uses-material-design:" not in line:
-                      if line.strip().startswith("assets:"):
-                          in_assets_section = True
-                          clean_lines.append(line)
-                          continue
-                      
-                      if in_assets_section and line.strip() and not line.startswith(" ") and not line.startswith("#"):
-                          in_assets_section = False
-
-                      if in_assets_section and ("shaders/" in line or ".frag" in line or ".glsl" in line):
-                          continue
-
-                      clean_lines.append(line)
-
-              content = "".join(clean_lines)
               if "uses-material-design: true" not in content:
                   if "flutter:" in content:
                       content = content.replace("flutter:", "flutter:\n  uses-material-design: true")
@@ -165,8 +138,8 @@ jobs:
               with open(pubspec_path, "w", encoding="utf-8") as f:
                   f.write(content)
           EOF
-          python3 fix_pubspec_assets.py
-          rm fix_pubspec_assets.py
+          python3 fix_material.py
+          rm fix_material.py
 
       - name: Strip Invalid Dependency Imports
         run: |
@@ -431,7 +404,6 @@ jobs:
         run: |
           flutter config --enable-web || true
 
-          # Explicitly target your repository path or use root if using user pages
           flutter build web --release \
             --web-renderer html \
             --base-href="/MindSpark1/" \
