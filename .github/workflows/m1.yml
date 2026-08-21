@@ -45,59 +45,6 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-      - name: Remove Old Dependencies and Clean Source Code
-        run: |
-          cat << 'EOF' > purge_old_deps.py
-          import os
-
-          # List of deleted packages to purge
-          old_packages = [
-              "flutter_local_notifications",
-              "arcore_flutter_plus",
-              "carrier_info",
-              "flutter_jailbreak_detection",
-              "flutter_windowmanager",
-              "ios_insecure_screen_detector",
-              "environment_sensors"
-          ]
-
-          # 1. Remove only the specific package lines from pubspec.yaml
-          if os.path.exists("pubspec.yaml"):
-              with open("pubspec.yaml", "r", encoding="utf-8") as f:
-                  lines = f.readlines()
-              
-              clean_pubspec_lines = [
-                  line for line in lines 
-                  if not any(pkg in line for pkg in old_packages)
-              ]
-              
-              with open("pubspec.yaml", "w", encoding="utf-8") as f:
-                  f.writelines(clean_pubspec_lines)
-
-          # 2. Strip imports and usage of these packages from all Dart source files in lib/
-          targets = [f"package:{pkg}/" for pkg in old_packages]
-          if os.path.exists("lib"):
-              for root, dirs, files in os.walk("lib"):
-                  for file in files:
-                      if file.endswith(".dart"):
-                          path = os.path.join(root, file)
-                          try:
-                              with open(path, "r", encoding="utf-8") as f:
-                                  content = f.read()
-                              
-                              if any(t in content for t in targets):
-                                  lines = content.splitlines()
-                                  clean_lines = [l for l in lines if not any(t in l for t in targets)]
-                                  new_content = "\n".join(clean_lines)
-                                  
-                                  with open(path, "w", encoding="utf-8") as f:
-                                      f.write(new_content)
-                          except Exception as e:
-                              print(f"Error processing {path}: {e}")
-          EOF
-          python3 purge_old_deps.py
-          rm purge_old_deps.py
-
       - name: Resolve Dependencies & Format Code
         run: |
           flutter pub get
