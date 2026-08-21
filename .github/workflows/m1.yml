@@ -57,7 +57,7 @@ jobs:
           flutter pub cache clean --force || true
 
           cat << 'EOF' > safe_purge.py
-          import os, subprocess, re, yaml
+          import os, subprocess, re
 
           def run_pub_get():
               res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
@@ -66,22 +66,46 @@ jobs:
           def remove_package_from_pubspec(pkg_name):
               if not os.path.exists("pubspec.yaml"):
                   return
+              
+              # Protected core SDK references that must never be stripped as standard packages
+              protected = {"flutter", "flutter_test", "flutter_localizations", "integration_test", "sky_engine"}
+              if pkg_name in protected:
+                  return
+
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
-                  data = yaml.safe_load(f)
-              
-              modified = False
-              for section in ["dependencies", "dev_dependencies", "dependency_overrides"]:
-                  if section in data and isinstance(data[section], dict):
-                      if pkg_name in data[section]:
-                          del data[section][pkg_name]
-                          modified = True
-              
-              if modified:
-                  with open("pubspec.yaml", "w", encoding="utf-8") as f:
-                      yaml.dump(data, f, sort_keys=False)
-                  print(f"--> Safely removed '{pkg_name}' from pubspec.yaml")
+                  lines = f.readlines()
+
+              new_lines = []
+              skip_block = False
+              current_indent = 0
+
+              for line in lines:
+                  # Detect if this line defines the target package at the dependency level (2 spaces indentation)
+                  match = re.match(r'^  (' + re.escape(pkg_name) + r'):', line)
+                  if match:
+                      skip_block = True
+                      current_indent = len(line) - len(line.lstrip())
+                      continue
+                  
+                  if skip_block:
+                      indent = len(line) - len(line.lstrip())
+                      # Stop skipping when we hit a line with equal or lesser indentation (excluding empty/comment lines)
+                      if line.strip() and not line.strip().startswith("#") and indent <= current_indent:
+                          skip_block = False
+                      else:
+                          continue
+
+                  new_lines.append(line)
+
+              with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                  f.writelines(new_lines)
+              print(f"--> Removed '{pkg_name}' cleanly from pubspec.yaml")
 
           def purge_source_code(pkg_name):
+              protected = {"flutter", "flutter_test", "flutter_localizations", "integration_test"}
+              if pkg_name in protected:
+                  return
+
               target_import = f"package:{pkg_name}/"
               for root, _, files in os.walk("lib"):
                   for file in files:
@@ -104,9 +128,13 @@ jobs:
                   print("✅ All package dependencies resolved successfully.")
                   break
 
-              # Match package names causing version solving errors
+              # Parse resolution failures and isolate external pub packages
               pkgs = set(re.findall(r'([a-zA-Z0-9_]+)\s*(?:\^|>|<|=|[0-9]|\b)', output))
-              ignore = {"because", "depends", "on", "version", "solving", "failed", "sdk", "flutter", "incompatible", "with", "forbidden", "environment", "pubspec"}
+              ignore = {
+                  "because", "depends", "on", "version", "solving", "failed", "sdk", 
+                  "flutter", "flutter_test", "flutter_localizations", "integration_test",
+                  "incompatible", "with", "forbidden", "environment", "pubspec"
+              }
               target_pkgs = pkgs - ignore
 
               if not target_pkgs:
