@@ -83,7 +83,8 @@ jobs:
       - name: Regenerate Platforms & Configure Android SDK
         run: |
           rm -rf android
-          flutter create --platforms=android,web . || true
+          flutter create --offline --platforms=android,web . || true
+          flutter pub get
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           sed -i '/android.enableR8/d' android/gradle.properties 2>/devnull || true
