@@ -431,6 +431,7 @@ jobs:
         run: |
           flutter config --enable-web || true
 
+          # Explicitly target your repository path or use root if using user pages
           flutter build web --release \
             --web-renderer html \
             --base-href="/MindSpark1/" \
