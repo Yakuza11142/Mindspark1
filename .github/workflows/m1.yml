@@ -44,31 +44,22 @@ jobs:
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
+
+          # Strip invalid dependency overrides if any exist in pubspec.yaml
+          python3 -c "
+          import os, re
+          if os.path.exists('pubspec.yaml'):
+              with open('pubspec.yaml', 'r', encoding='utf-8') as f:
+                  content = f.read()
+              if 'dependency_overrides:' in content:
+                  content = re.sub(r'dependency_overrides:.*', '', content, flags=re.DOTALL)
+                  with open('pubspec.yaml', 'w', encoding='utf-8') as f:
+                      f.write(content)
+          "
+
           flutter pub get
           dart fix --apply || true
           dart format . || true
-
-      - name: Auto-Fix Missing Entry Files
-        run: |
-          cat << 'EOF' > fix_compiler_errors.py
-          import os
-          missing_files = {
-              "lib/screens/home_screen.dart": "import 'package:flutter/material.dart';\nclass HomeScreen extends StatelessWidget { const HomeScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Home Feed'))); }",
-              "lib/screens/subjects_screen.dart": "import 'package:flutter/material.dart';\nclass SubjectsScreen extends StatelessWidget { const SubjectsScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Subjects'))); }",
-              "lib/screens/videos_screen.dart": "import 'package:flutter/material.dart';\nclass VideosScreen extends StatelessWidget { const VideosScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Videos'))); }",
-              "lib/screens/spark_ai_screen.dart": "import 'package:flutter/material.dart';\nclass SparkAIScreen extends StatelessWidget { const SparkAIScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Spark AI'))); }",
-              "lib/screens/rank_screen.dart": "import 'package:flutter/material.dart';\nclass RankScreen extends StatelessWidget { const RankScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Rank'))); }",
-              "lib/screens/legal_screen.dart": "import 'package:flutter/material.dart';\nclass LegalScreen extends StatelessWidget { const LegalScreen({super.key}); @override Widget build(BuildContext context) => const Scaffold(body: Center(child: Text('Legal'))); }",
-              "lib/services/legal_service.dart": "class LegalService { static void wipeUserData() {} }"
-          }
-          for path, code in missing_files.items():
-              if not os.path.exists(path):
-                  os.makedirs(os.path.dirname(path), exist_ok=True)
-                  with open(path, 'w', encoding='utf-8') as f:
-                      f.write(code)
-          EOF
-          python3 fix_compiler_errors.py
-          rm fix_compiler_errors.py
 
       - name: Configure Production Environment Secrets
         run: |
