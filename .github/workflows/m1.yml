@@ -53,7 +53,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Sanitize Dependencies
+      - name: Auto-Purge Conflicting Dependencies & Clean Imports
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -62,10 +62,13 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-          cat << 'EOF' > sanitize_pubspec.py
-          import os
+          cat << 'EOF' > purge_conflicts.py
+          import os, re, subprocess
 
-          deprecated_packages = [
+          # Targets to explicitly purge due to known incompatibilities or deprecations
+          explicit_targets = [
+              "google_mlkit_text_recognition",
+              "google_mlkit_commons",
               "flutter_local_notifications",
               "arcore_flutter_plus",
               "carrier_info",
@@ -75,46 +78,82 @@ jobs:
               "environment_sensors"
           ]
 
-          if os.path.exists("pubspec.yaml"):
+          def remove_deps_from_pubspec(deps_to_remove):
+              if not os.path.exists("pubspec.yaml"):
+                  return
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
                   lines = f.readlines()
               
               clean_lines = []
               for line in lines:
-                  if any(pkg in line for pkg in deprecated_packages):
+                  if any(re.search(rf'^\s*{re.escape(dep)}:', line) for dep in deps_to_remove):
+                      print(f"--> Purging dependency from pubspec.yaml: {line.strip()}")
                       continue
-                  if line.strip().startswith("dependency_overrides:"):
-                      break
                   clean_lines.append(line)
-
-              f_root = os.environ.get("FLUTTER_ROOT", "")
-              
-              if clean_lines and not clean_lines[-1].endswith("\n"):
-                  clean_lines.append("\n")
-
-              clean_lines.append("\ndependency_overrides:\n")
-              clean_lines.append("  flutter_test:\n")
-              clean_lines.append(f'    path: "{f_root}/packages/flutter_test"\n')
-              clean_lines.append("  integration_test:\n")
-              clean_lines.append(f'    path: "{f_root}/packages/integration_test"\n')
-              clean_lines.append("  sky_engine:\n")
-              clean_lines.append(f'    path: "{f_root}/bin/cache/pkg/sky_engine"\n')
-              clean_lines.append("  meta: any\n")
-              clean_lines.append("  analyzer: any\n")
-              clean_lines.append("  intl: any\n")
-              clean_lines.append("  pointycastle: any\n")
-              clean_lines.append("  web_socket_channel: any\n")
-              clean_lines.append("  crypto: any\n")
-              clean_lines.append("  uuid: any\n")
-              clean_lines.append("  path: any\n")
-              clean_lines.append("  permission_handler: any\n")
 
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
                   f.writelines(clean_lines)
-          EOF
-          python3 sanitize_pubspec.py
-          rm sanitize_pubspec.py
 
+          def strip_imports_from_lib(deps_to_remove):
+              for root, _, files in os.walk("lib"):
+                  for file in files:
+                      if file.endswith(".dart"):
+                          path = os.path.join(root, file)
+                          try:
+                              with open(path, "r", encoding="utf-8") as f:
+                                  content = f.read()
+                              
+                              lines = content.splitlines()
+                              new_lines = []
+                              modified = False
+                              for l in lines:
+                                  if any(f"package:{dep}/" in l for dep in deps_to_remove):
+                                      modified = True
+                                      print(f"--> Stripped import from {path}: {l.strip()}")
+                                      continue
+                                  new_lines.append(l)
+                              
+                              if modified:
+                                  new_content = "\n".join(new_lines)
+                                  new_content = re.sub(r'FlutterLocalNotificationsPlugin\([^)]*\)', 'dynamic()', new_content)
+                                  new_content = re.sub(r'ArCoreController\([^)]*\)', 'dynamic()', new_content)
+                                  with open(path, "w", encoding="utf-8") as f:
+                                      f.write(new_content)
+                          except Exception as e:
+                              pass
+
+          # 1. Strip pre-defined target dependencies and imports
+          remove_deps_from_pubspec(explicit_targets)
+          strip_imports_from_lib(explicit_targets)
+
+          # 2. Run pub get loop to dynamically catch any remaining conflicting dependencies
+          for iteration in range(5):
+              res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
+              if res.returncode == 0:
+                  print("✅ pubspec dependencies successfully resolved.")
+                  break
+              
+              # Parse output for conflicting dependency names
+              error_log = res.stderr + res.stdout
+              matches = re.findall(r'Because\s+([a_zA-Z0-9_]+)\s+depends', error_log)
+              matches += re.findall(r'so,\s+because\s+([a_zA-Z0-9_]+)\s+depends', error_log, re.IGNORECASE)
+              matches += re.findall(r'([a_zA-Z0-9_]+)\s+is\ doubtful', error_log)
+
+              found_deps = list(set([m for m in matches if m not in ['flutter', 'sdk', 'mindspark1']]))
+              if not found_deps:
+                  print("No specific package parsed from error, resolving with fallback overrides.")
+                  break
+
+              print(f"Iterative purge target found: {found_deps}")
+              remove_deps_from_pubspec(found_deps)
+              strip_imports_from_lib(found_deps)
+
+          EOF
+          python3 purge_conflicts.py
+          rm purge_conflicts.py
+
+          dart fix --apply || true
+          dart format . || true
           flutter pub get || true
 
       - name: Ensure Material Design Flag in pubspec
@@ -138,50 +177,6 @@ jobs:
           EOF
           python3 fix_material.py
           rm fix_material.py
-
-      - name: Strip Invalid Dependency Imports
-        run: |
-          cat << 'EOF' > replace_broken_code.py
-          import os, re
-
-          targets = [
-              "package:flutter_local_notifications/",
-              "package:arcore_flutter_plus/",
-              "package:carrier_info/",
-              "package:flutter_jailbreak_detection/",
-              "package:flutter_windowmanager/",
-              "package:ios_insecure_screen_detector/",
-              "package:environment_sensors/"
-          ]
-
-          for root, dirs, files in os.walk("lib"):
-              for file in files:
-                  if file.endswith(".dart"):
-                      path = os.path.join(root, file)
-                      try:
-                          with open(path, "r", encoding="utf-8") as f:
-                              content = f.read()
-                          
-                          has_broken_import = any(t in content for t in targets)
-                          if has_broken_import:
-                              lines = content.splitlines()
-                              new_lines = [l for l in lines if not any(t in l for t in targets)]
-                              
-                              new_content = "\n".join(new_lines)
-                              new_content = re.sub(r'FlutterLocalNotificationsPlugin\([^)]*\)', 'dynamic()', new_content)
-                              new_content = re.sub(r'ArCoreController\([^)]*\)', 'dynamic()', new_content)
-                              
-                              with open(path, "w", encoding="utf-8") as f:
-                                  f.write(new_content)
-                      except Exception:
-                          pass
-          EOF
-          python3 replace_broken_code.py
-          rm replace_broken_code.py
-
-          dart fix --apply || true
-          dart format . || true
-          flutter pub get || true
 
       - name: Auto-Fix Missing Imports, Screen UI & Domain Links
         run: |
