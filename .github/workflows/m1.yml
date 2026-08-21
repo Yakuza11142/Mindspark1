@@ -48,7 +48,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Purge Broken Dependencies & Source Code Automatically
+      - name: Purge Broken Dependencies & Source Code
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -59,62 +59,54 @@ jobs:
           cat << 'EOF' > purge_broken_deps.py
           import os, subprocess, re
 
-          def run_pub_get():
+          def get_pub_get_output():
               res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
               return res.returncode, res.stderr + "\n" + res.stdout
 
-          def strip_package_from_pubspec(pkg_name):
+          def strip_from_pubspec(pkg_name):
               if not os.path.exists("pubspec.yaml"):
                   return
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
                   lines = f.readlines()
-              
-              clean_lines = [l for l in lines if not re.search(r'^\s*' + re.escape(pkg_name) + r'\s*:', l)]
+              clean = [l for l in lines if not re.search(r'^\s*' + re.escape(pkg_name) + r'\s*:', l)]
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
-                  f.writelines(clean_lines)
-              print(f"--> Stripped '{pkg_name}' from pubspec.yaml")
+                  f.writelines(clean)
+              print(f"--> Removed '{pkg_name}' from pubspec.yaml")
 
-          def purge_package_code_from_lib(pkg_name):
+          def purge_source_code(pkg_name):
               target_import = f"package:{pkg_name}/"
-              for root, dirs, files in os.walk("lib"):
+              for root, _, files in os.walk("lib"):
                   for file in files:
                       if file.endswith(".dart"):
                           path = os.path.join(root, file)
                           try:
                               with open(path, "r", encoding="utf-8") as f:
-                                  content = f.read()
-                              if target_import in content:
-                                  lines = content.splitlines()
-                                  clean_lines = [l for l in lines if target_import not in l]
-                                  new_content = "\n".join(clean_lines)
+                                  lines = f.readlines()
+                              if any(target_import in line for line in lines):
+                                  clean = [l for l in lines if target_import not in l]
                                   with open(path, "w", encoding="utf-8") as f:
-                                      f.write(new_content)
-                                  print(f"--> Removed imports of '{pkg_name}' from {path}")
+                                      f.writelines(clean)
+                                  print(f"--> Deleted '{pkg_name}' imports from {path}")
                           except Exception:
                               pass
 
-          # Iteratively catch resolution failures and strip bad dependencies
-          max_attempts = 10
-          for attempt in range(max_attempts):
-              code, output = run_pub_get()
+          for attempt in range(15):
+              code, output = get_pub_get_output()
               if code == 0:
-                  print("✅ Dependencies resolved successfully.")
+                  print("✅ All package dependencies resolved successfully.")
                   break
-              
-              # Find colliding or broken package names from flutter pub get output
-              matches = re.findall(r'because [^\n]* depends on ([a-zA-Z0-9_]+)', output)
-              matches += re.findall(r'([a-zA-Z0-9_]+) [0-9\.\^<>=\s]+ is forbidden', output)
-              matches += re.findall(r'version solving failed[^\n]*([a-zA-Z0-9_]+)', output)
-              
-              found_pkgs = list(set(matches))
-              if not found_pkgs:
-                  # Hard target known conflicting packages if regex misses
-                  found_pkgs = ["google_mlkit_text_recognition", "google_mlkit_commons"]
 
-              print(f"⚠️ Resolution failed on attempt {attempt + 1}. Purging offending packages: {found_pkgs}")
-              for pkg in found_pkgs:
-                  strip_package_from_pubspec(pkg)
-                  purge_package_code_from_lib(pkg)
+              pkgs = set(re.findall(r'([a-zA-Z0-9_]+)\s*(?:\^|>|<|=|[0-9]|\b)', output))
+              ignore = {"because", "depends", "on", "version", "solving", "failed", "sdk", "flutter", "incompatible", "with", "forbidden"}
+              target_pkgs = pkgs - ignore
+
+              if not target_pkgs:
+                  break
+
+              print(f"⚠️ Iteration {attempt + 1}: Deleting broken dependencies {list(target_pkgs)}")
+              for pkg in target_pkgs:
+                  strip_from_pubspec(pkg)
+                  purge_source_code(pkg)
 
           EOF
           python3 purge_broken_deps.py
