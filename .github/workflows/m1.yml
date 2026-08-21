@@ -59,39 +59,57 @@ jobs:
           cat << 'EOF' > safe_purge.py
           import os, subprocess, re
 
+          PROTECTED_PACKAGES = {
+              "flutter",
+              "flutter_test",
+              "flutter_localizations",
+              "integration_test",
+              "sky_engine",
+              "cupertino_icons"
+          }
+
           def run_pub_get():
               res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
               return res.returncode, res.stderr + "\n" + res.stdout
 
-          def remove_package_from_pubspec(pkg_name):
+          def restore_sdk_deps():
               if not os.path.exists("pubspec.yaml"):
                   return
+              with open("pubspec.yaml", "r", encoding="utf-8") as f:
+                  content = f.read()
               
-              # Protected core SDK references that must never be stripped as standard packages
-              protected = {"flutter", "flutter_test", "flutter_localizations", "integration_test", "sky_engine"}
-              if pkg_name in protected:
+              # Fix corrupted flutter_test entries back to SDK
+              content = re.sub(
+                  r'flutter_test:\s*(any|^\s*$)',
+                  'flutter_test:\n    sdk: flutter',
+                  content,
+                  flags=re.MULTILINE
+              )
+              with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                  f.write(content)
+
+          def remove_package_from_pubspec(pkg_name):
+              if not os.path.exists("pubspec.yaml") or pkg_name in PROTECTED_PACKAGES:
                   return
 
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
                   lines = f.readlines()
 
               new_lines = []
-              skip_block = False
-              current_indent = 0
+              skipping = False
+              base_indent = 0
 
               for line in lines:
-                  # Detect if this line defines the target package at the dependency level (2 spaces indentation)
-                  match = re.match(r'^  (' + re.escape(pkg_name) + r'):', line)
-                  if match:
-                      skip_block = True
-                      current_indent = len(line) - len(line.lstrip())
+                  stripped = line.strip()
+                  if re.match(rf'^\s{{{2,4}}}{re.escape(pkg_name)}:\s*', line):
+                      skipping = True
+                      base_indent = len(line) - len(line.lstrip())
                       continue
-                  
-                  if skip_block:
-                      indent = len(line) - len(line.lstrip())
-                      # Stop skipping when we hit a line with equal or lesser indentation (excluding empty/comment lines)
-                      if line.strip() and not line.strip().startswith("#") and indent <= current_indent:
-                          skip_block = False
+
+                  if skipping:
+                      current_indent = len(line) - len(line.lstrip())
+                      if stripped and not stripped.startswith("#") and current_indent <= base_indent:
+                          skipping = False
                       else:
                           continue
 
@@ -99,11 +117,10 @@ jobs:
 
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
                   f.writelines(new_lines)
-              print(f"--> Removed '{pkg_name}' cleanly from pubspec.yaml")
+              print(f"--> Safely removed '{pkg_name}' from pubspec.yaml")
 
           def purge_source_code(pkg_name):
-              protected = {"flutter", "flutter_test", "flutter_localizations", "integration_test"}
-              if pkg_name in protected:
+              if pkg_name in PROTECTED_PACKAGES:
                   return
 
               target_import = f"package:{pkg_name}/"
@@ -114,7 +131,7 @@ jobs:
                           try:
                               with open(path, "r", encoding="utf-8") as f:
                                   lines = f.readlines()
-                              if any(target_import in line for line in lines):
+                              if any(target_import in l for l in lines):
                                   clean = [l for l in lines if target_import not in l]
                                   with open(path, "w", encoding="utf-8") as f:
                                       f.writelines(clean)
@@ -122,25 +139,28 @@ jobs:
                           except Exception:
                               pass
 
+          restore_sdk_deps()
+
           for attempt in range(15):
               code, output = run_pub_get()
               if code == 0:
                   print("✅ All package dependencies resolved successfully.")
                   break
 
-              # Parse resolution failures and isolate external pub packages
-              pkgs = set(re.findall(r'([a-zA-Z0-9_]+)\s*(?:\^|>|<|=|[0-9]|\b)', output))
-              ignore = {
+              found_pkgs = set(re.findall(r'([a-zA-Z0-9_]+)\s*(?:\^|>|<|=|[0-9]|\b)', output))
+              keywords = {
                   "because", "depends", "on", "version", "solving", "failed", "sdk", 
-                  "flutter", "flutter_test", "flutter_localizations", "integration_test",
-                  "incompatible", "with", "forbidden", "environment", "pubspec"
+                  "flutter", "incompatible", "with", "forbidden", "environment", "pubspec",
+                  "root", "package", "pub", "dev", "could", "not", "find"
               }
-              target_pkgs = pkgs - ignore
+              
+              target_pkgs = (found_pkgs - keywords) - PROTECTED_PACKAGES
 
               if not target_pkgs:
+                  restore_sdk_deps()
                   break
 
-              print(f"⚠️ Iteration {attempt + 1}: Removing broken dependencies {list(target_pkgs)}")
+              print(f"⚠️ Iteration {attempt + 1}: Stripping broken packages {list(target_pkgs)}")
               for pkg in target_pkgs:
                   remove_package_from_pubspec(pkg)
                   purge_source_code(pkg)
