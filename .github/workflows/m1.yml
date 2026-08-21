@@ -81,35 +81,36 @@ jobs:
               
               clean_lines = []
               for line in lines:
-                  # Strip deprecated packages
+                  # Filter out deprecated dependencies
                   if any(pkg in line for pkg in deprecated_packages):
                       continue
-                  # Avoid duplicating dependency overrides block
-                  if "dependency_overrides:" in line:
+                  # Truncate existing dependency_overrides section if found
+                  if line.strip().startswith("dependency_overrides:"):
                       break
                   clean_lines.append(line)
 
               f_root = os.environ.get("FLUTTER_ROOT", "")
-              overrides = [
-                  "\ndependency_overrides:\n",
-                  "  flutter_test:\n",
-                  f"    path: \"{f_root}/packages/flutter_test\"\n",
-                  "  integration_test:\n",
-                  f"    path: \"{f_root}/packages/integration_test\"\n",
-                  "  sky_engine:\n",
-                  f"    path: \"{f_root}/bin/cache/pkg/sky_engine\"\n",
-                  "  meta: any\n",
-                  "  analyzer: any\n",
-                  "  intl: any\n",
-                  "  pointycastle: any\n",
-                  "  web_socket_channel: any\n",
-                  "  crypto: any\n",
-                  "  uuid: any\n",
-                  "  path: any\n",
-                  "  permission_handler: any\n"
-              ]
+              
+              # Ensure clean termination before adding new section
+              if clean_lines and not clean_lines[-1].endswith("\n"):
+                  clean_lines[-1] += "\n"
 
-              clean_lines.extend(overrides)
+              clean_lines.append("\ndependency_overrides:\n")
+              clean_lines.append("  flutter_test:\n")
+              clean_lines.append(f"    path: \"{f_root}/packages/flutter_test\"\n")
+              clean_lines.append("  integration_test:\n")
+              clean_lines.append(f"    path: \"{f_root}/packages/integration_test\"\n")
+              clean_lines.append("  sky_engine:\n")
+              clean_lines.append(f"    path: \"{f_root}/bin/cache/pkg/sky_engine\"\n")
+              clean_lines.append("  meta: any\n")
+              clean_lines.append("  analyzer: any\n")
+              clean_lines.append("  intl: any\n")
+              clean_lines.append("  pointycastle: any\n")
+              clean_lines.append("  web_socket_channel: any\n")
+              clean_lines.append("  crypto: any\n")
+              clean_lines.append("  uuid: any\n")
+              clean_lines.append("  path: any\n")
+              clean_lines.append("  permission_handler: any\n")
 
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
                   f.writelines(clean_lines)
