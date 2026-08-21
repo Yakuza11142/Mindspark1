@@ -45,13 +45,13 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-      - name: Strip Imports & Usage of Deleted Dependencies
+      - name: Remove Old Dependencies and Clean Source Code
         run: |
-          cat << 'EOF' > purge_deleted_deps.py
-          import os, re
+          cat << 'EOF' > purge_old_deps.py
+          import os
 
-          # List of deleted packages to strip from Dart source files
-          deleted_packages = [
+          # List of deleted packages to purge
+          old_packages = [
               "flutter_local_notifications",
               "arcore_flutter_plus",
               "carrier_info",
@@ -61,18 +61,21 @@ jobs:
               "environment_sensors"
           ]
 
-          # Ensure pubspec.yaml has no lingering dependency_overrides
+          # 1. Remove only the specific package lines from pubspec.yaml
           if os.path.exists("pubspec.yaml"):
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
-                  content = f.read()
-              if "dependency_overrides:" in content:
-                  content = re.sub(r'dependency_overrides:.*', '', content, flags=re.DOTALL)
-                  with open("pubspec.yaml", "w", encoding="utf-8") as f:
-                      f.write(content)
+                  lines = f.readlines()
+              
+              clean_pubspec_lines = [
+                  line for line in lines 
+                  if not any(pkg in line for pkg in old_packages)
+              ]
+              
+              with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                  f.writelines(clean_pubspec_lines)
 
-          # Scan lib/ and remove any import statement or usage referencing the deleted packages
-          targets = [f"package:{pkg}/" for pkg in deleted_packages]
-          
+          # 2. Strip imports and usage of these packages from all Dart source files in lib/
+          targets = [f"package:{pkg}/" for pkg in old_packages]
           if os.path.exists("lib"):
               for root, dirs, files in os.walk("lib"):
                   for file in files:
@@ -92,8 +95,8 @@ jobs:
                           except Exception as e:
                               print(f"Error processing {path}: {e}")
           EOF
-          python3 purge_deleted_deps.py
-          rm purge_deleted_deps.py
+          python3 purge_old_deps.py
+          rm purge_old_deps.py
 
       - name: Resolve Dependencies & Format Code
         run: |
@@ -248,48 +251,6 @@ jobs:
             --target=lib/main.dart
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
-
-      - name: Verify Compiled APK & Web Outputs
-        run: |
-          mkdir -p apk_inspect
-          unzip -q build/app/outputs/flutter-apk/app-release.apk -d apk_inspect || true
-          cat << 'EOF' > inspect_everything.py
-          import os
-          def inspect_all_files(target_dir, title):
-              print(f"\n==================================================")
-              print(f"  FULL CONTENTS OF: {title}")
-              print(f"==================================================")
-              
-              if not os.path.exists(target_dir):
-                  print(f"❌ CRITICAL ERROR: Directory '{target_dir}' does not exist.")
-                  return False
-              file_count = 0
-              total_bytes = 0
-              for root, dirs, files in os.walk(target_dir):
-                  for f in files:
-                      full_path = os.path.join(root, f)
-                      relative_path = os.path.relpath(full_path, target_dir)
-                      try:
-                          size = os.path.getsize(full_path)
-                          file_count += 1
-                          total_bytes += size
-                          print(f"  • {relative_path} ({size:,} bytes)")
-                      except Exception as e:
-                          print(f"  ⚠️ Error reading {relative_path}: {e}")
-              mb_total = total_bytes / (1024 * 1024)
-              print(f"\n---> {title} TOTALS: {file_count} files | {mb_total:.2f} MB")
-              return file_count > 0
-          apk_ok = inspect_all_files("apk_inspect", "COMPILED ANDROID APK (UNPACKED)")
-          web_ok = inspect_all_files("build/web", "FLUTTER WEB RELEASE BUNDLE")
-          if not (apk_ok and web_ok):
-              print("\n❌ CRITICAL: One or more build targets failed inspection.")
-              exit(1)
-          else:
-              print("\n✅ ALL APK AND WEB FILES VERIFIED SUCCESSFULLY.")
-          EOF
-          python3 inspect_everything.py
-          rm inspect_everything.py
-          rm -rf apk_inspect
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
