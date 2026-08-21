@@ -45,6 +45,8 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
           flutter pub get
+          dart fix --apply || true
+          dart format . || true
 
       - name: Auto-Fix Missing Entry Files
         run: |
