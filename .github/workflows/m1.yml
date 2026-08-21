@@ -48,121 +48,77 @@ jobs:
         with:
           channel: stable
 
-      - name: Clean & Purge Deprecated Dependencies
+      - name: Purge Broken Dependencies & Source Code Automatically
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
-          cat << 'EOF' > auto_purge.py
-          import os
 
-          deprecated_packages = [
-              "flutter_local_notifications",
-              "arcore_flutter_plus",
-              "carrier_info",
-              "flutter_jailbreak_detection",
-              "flutter_windowmanager",
-              "ios_insecure_screen_detector",
-              "environment_sensors"
-          ]
+          cat << 'EOF' > purge_broken_deps.py
+          import os, subprocess, re
 
-          if os.path.exists("pubspec.yaml"):
+          def run_pub_get():
+              res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
+              return res.returncode, res.stderr + "\n" + res.stdout
+
+          def strip_package_from_pubspec(pkg_name):
+              if not os.path.exists("pubspec.yaml"):
+                  return
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
                   lines = f.readlines()
               
-              clean_lines = []
-              skip = False
-              for line in lines:
-                  if "dependency_overrides:" in line:
-                      skip = True
-                  if not skip:
-                      if not any(pkg in line for pkg in deprecated_packages):
-                          clean_lines.append(line)
+              clean_lines = [l for l in lines if not re.search(r'^\s*' + re.escape(pkg_name) + r'\s*:', l)]
               with open("pubspec.yaml", "w", encoding="utf-8") as f:
                   f.writelines(clean_lines)
+              print(f"--> Stripped '{pkg_name}' from pubspec.yaml")
 
-          f_root = os.environ.get("FLUTTER_ROOT", "")
-          overrides = f"""
-          dependency_overrides:
-            flutter_test:
-              path: "{f_root}/packages/flutter_test"
-            integration_test:
-              path: "{f_root}/packages/integration_test"
-            sky_engine:
-              path: "{f_root}/bin/cache/pkg/sky_engine"
-            meta: any
-            analyzer: any
-            intl: any
-            pointycastle: any
-            web_socket_channel: any
-            crypto: any
-            uuid: any
-            path: any
-            permission_handler: any
-          """
-          with open("pubspec.yaml", "a", encoding="utf-8") as f:
-              f.write(overrides)
+          def purge_package_code_from_lib(pkg_name):
+              target_import = f"package:{pkg_name}/"
+              for root, dirs, files in os.walk("lib"):
+                  for file in files:
+                      if file.endswith(".dart"):
+                          path = os.path.join(root, file)
+                          try:
+                              with open(path, "r", encoding="utf-8") as f:
+                                  content = f.read()
+                              if target_import in content:
+                                  lines = content.splitlines()
+                                  clean_lines = [l for l in lines if target_import not in l]
+                                  new_content = "\n".join(clean_lines)
+                                  with open(path, "w", encoding="utf-8") as f:
+                                      f.write(new_content)
+                                  print(f"--> Removed imports of '{pkg_name}' from {path}")
+                          except Exception:
+                              pass
+
+          # Iteratively catch resolution failures and strip bad dependencies
+          max_attempts = 10
+          for attempt in range(max_attempts):
+              code, output = run_pub_get()
+              if code == 0:
+                  print("✅ Dependencies resolved successfully.")
+                  break
+              
+              # Find colliding or broken package names from flutter pub get output
+              matches = re.findall(r'because [^\n]* depends on ([a-zA-Z0-9_]+)', output)
+              matches += re.findall(r'([a-zA-Z0-9_]+) [0-9\.\^<>=\s]+ is forbidden', output)
+              matches += re.findall(r'version solving failed[^\n]*([a-zA-Z0-9_]+)', output)
+              
+              found_pkgs = list(set(matches))
+              if not found_pkgs:
+                  # Hard target known conflicting packages if regex misses
+                  found_pkgs = ["google_mlkit_text_recognition", "google_mlkit_commons"]
+
+              print(f"⚠️ Resolution failed on attempt {attempt + 1}. Purging offending packages: {found_pkgs}")
+              for pkg in found_pkgs:
+                  strip_package_from_pubspec(pkg)
+                  purge_package_code_from_lib(pkg)
+
           EOF
-          python3 auto_purge.py
-          rm auto_purge.py
-          flutter pub get || true
-
-      - name: Purge Deprecated Imports & Source Code Blocks
-        run: |
-          cat << 'EOF' > purge_deprecated_code.py
-          import os, re
-
-          deprecated_packages = [
-              "flutter_local_notifications",
-              "arcore_flutter_plus",
-              "carrier_info",
-              "flutter_jailbreak_detection",
-              "flutter_windowmanager",
-              "ios_insecure_screen_detector",
-              "environment_sensors"
-          ]
-
-          # Targets to scrub from Dart source code
-          import_targets = [f"package:{pkg}/" for pkg in deprecated_packages]
-
-          code_patterns = [
-              r'FlutterLocalNotificationsPlugin\([^)]*\)',
-              r'ArCoreController\([^)]*\)',
-              r'CarrierInfo\.[a-zA-Z0-9_]+',
-              r'FlutterJailbreakDetection\.[a-zA-Z0-9_]+',
-              r'FlutterWindowManager\.[a-zA-Z0-9_]+',
-              r'IosInsecureScreenDetector\.[a-zA-Z0-9_]+',
-              r'EnvironmentSensors\.[a-zA-Z0-9_]+',
-              r'NotificationService\(\)\.[a-zA-Z0-9_]+\([^)]*\);?'
-          ]
-
-          for root, dirs, files in os.walk("lib"):
-              for file in files:
-                  if file.endswith(".dart"):
-                      path = os.path.join(root, file)
-                      try:
-                          with open(path, "r", encoding="utf-8") as f:
-                              content = f.read()
-                          
-                          # 1. Remove matching import lines
-                          lines = content.splitlines()
-                          clean_lines = [l for l in lines if not any(target in l for target in import_targets)]
-                          new_content = "\n".join(clean_lines)
-
-                          # 2. Strip explicit class calls & instantiations
-                          for pattern in code_patterns:
-                              new_content = re.sub(pattern, '/* removed deprecated dep call */', new_content)
-
-                          if new_content != content:
-                              with open(path, "w", encoding="utf-8") as f:
-                                  f.write(new_content)
-                      except Exception as e:
-                          print(f"Error processing {path}: {e}")
-          EOF
-          python3 purge_deprecated_code.py
-          rm purge_deprecated_code.py
+          python3 purge_broken_deps.py
+          rm purge_broken_deps.py
           dart fix --apply || true
           dart format . || true
           flutter pub get || true
@@ -247,7 +203,6 @@ jobs:
           -dontwarn **
           -ignorewarnings
           -keep class com.google.mlkit.** { *; }
-          -keep class com.google_mlkit_text_recognition.** { *; }
           -keep class io.flutter.plugin.** { *; }
           -keep class ** { *; }
           EOF
