@@ -48,7 +48,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Purge Broken Dependencies & Source Code
+      - name: Safely Purge Broken Dependencies & Source Code
         run: |
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
@@ -56,22 +56,30 @@ jobs:
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
           flutter pub cache clean --force || true
 
-          cat << 'EOF' > purge_broken_deps.py
-          import os, subprocess, re
+          cat << 'EOF' > safe_purge.py
+          import os, subprocess, re, yaml
 
-          def get_pub_get_output():
+          def run_pub_get():
               res = subprocess.run(["flutter", "pub", "get"], capture_output=True, text=True)
               return res.returncode, res.stderr + "\n" + res.stdout
 
-          def strip_from_pubspec(pkg_name):
+          def remove_package_from_pubspec(pkg_name):
               if not os.path.exists("pubspec.yaml"):
                   return
               with open("pubspec.yaml", "r", encoding="utf-8") as f:
-                  lines = f.readlines()
-              clean = [l for l in lines if not re.search(r'^\s*' + re.escape(pkg_name) + r'\s*:', l)]
-              with open("pubspec.yaml", "w", encoding="utf-8") as f:
-                  f.writelines(clean)
-              print(f"--> Removed '{pkg_name}' from pubspec.yaml")
+                  data = yaml.safe_load(f)
+              
+              modified = False
+              for section in ["dependencies", "dev_dependencies", "dependency_overrides"]:
+                  if section in data and isinstance(data[section], dict):
+                      if pkg_name in data[section]:
+                          del data[section][pkg_name]
+                          modified = True
+              
+              if modified:
+                  with open("pubspec.yaml", "w", encoding="utf-8") as f:
+                      yaml.dump(data, f, sort_keys=False)
+                  print(f"--> Safely removed '{pkg_name}' from pubspec.yaml")
 
           def purge_source_code(pkg_name):
               target_import = f"package:{pkg_name}/"
@@ -86,31 +94,32 @@ jobs:
                                   clean = [l for l in lines if target_import not in l]
                                   with open(path, "w", encoding="utf-8") as f:
                                       f.writelines(clean)
-                                  print(f"--> Deleted '{pkg_name}' imports from {path}")
+                                  print(f"--> Purged '{pkg_name}' imports from {path}")
                           except Exception:
                               pass
 
           for attempt in range(15):
-              code, output = get_pub_get_output()
+              code, output = run_pub_get()
               if code == 0:
                   print("✅ All package dependencies resolved successfully.")
                   break
 
+              # Match package names causing version solving errors
               pkgs = set(re.findall(r'([a-zA-Z0-9_]+)\s*(?:\^|>|<|=|[0-9]|\b)', output))
-              ignore = {"because", "depends", "on", "version", "solving", "failed", "sdk", "flutter", "incompatible", "with", "forbidden"}
+              ignore = {"because", "depends", "on", "version", "solving", "failed", "sdk", "flutter", "incompatible", "with", "forbidden", "environment", "pubspec"}
               target_pkgs = pkgs - ignore
 
               if not target_pkgs:
                   break
 
-              print(f"⚠️ Iteration {attempt + 1}: Deleting broken dependencies {list(target_pkgs)}")
+              print(f"⚠️ Iteration {attempt + 1}: Removing broken dependencies {list(target_pkgs)}")
               for pkg in target_pkgs:
-                  strip_from_pubspec(pkg)
+                  remove_package_from_pubspec(pkg)
                   purge_source_code(pkg)
 
           EOF
-          python3 purge_broken_deps.py
-          rm purge_broken_deps.py
+          python3 safe_purge.py
+          rm safe_purge.py
           dart fix --apply || true
           dart format . || true
           flutter pub get || true
