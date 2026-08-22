@@ -72,7 +72,6 @@ jobs:
       - name: Dynamically Remove Any Non-SDK Package Imports
         run: |
           echo "Dynamically stripping non-Flutter SDK imports from lib/..."
-          # Deletes any line starting with import 'package: EXCEPT package:flutter/ or package:flutter_test/
           find lib/ -type f -name "*.dart" -exec perl -pi -e 's/^import\s+[\x27"]package:(?!(flutter\/|flutter_test\/)).*?[\x27"];\s*$//g' {} +
           echo "Non-SDK package imports successfully removed."
 
@@ -85,6 +84,7 @@ jobs:
           rm -rf android
           
           mkdir -p _temp_android_gen
+          cp pubspec.yaml _temp_android_gen/
           cd _temp_android_gen
           flutter create --platforms=android --no-pub --org com.mindspark.app --project-name mindspark1 .
           cd ..
