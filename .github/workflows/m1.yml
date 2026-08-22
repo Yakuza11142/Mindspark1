@@ -70,7 +70,7 @@ jobs:
 
       # ============================================================
       # COMPLETELY DELETE AND RECREATE THE ANDROID DIRECTORY
-      # WITH GROOVY (.gradle) CONFIGURATIONS AND BOOTSTRAPPED GRADLE
+      # NATIVELY SUPPORTING FLUTTER KOTLIN DSL CONFIGURATION
       # ============================================================
       - name: Completely Recreate Android Directory
         run: |
@@ -85,11 +85,10 @@ jobs:
             exit 1
           fi
 
-          echo "Generating completely fresh Groovy Android project..."
+          echo "Generating completely fresh Android project..."
 
           flutter create \
             --platforms=android \
-            --android-language java \
             --project-name=mindspark1 \
             .
 
@@ -97,11 +96,6 @@ jobs:
             echo "ERROR: Flutter failed to create android directory."
             exit 1
           fi
-
-          # Convert Kotlin DSL (.kts) back to standard Groovy (.gradle)
-          [ -f "android/settings.gradle.kts" ] && mv android/settings.gradle.kts android/settings.gradle
-          [ -f "android/app/build.gradle.kts" ] && mv android/app/build.gradle.kts android/app/build.gradle
-          [ -f "android/build.gradle.kts" ] && mv android/build.gradle.kts android/build.gradle
 
           # Bootstrap the Gradle wrapper files
           echo "Bootstrapping Gradle wrapper..."
@@ -114,8 +108,10 @@ jobs:
           test -f android/gradlew
           test -f android/gradle/wrapper/gradle-wrapper.jar
           test -f android/gradle/wrapper/gradle-wrapper.properties
-          test -f android/settings.gradle
-          test -f android/app/build.gradle
+
+          # Verify build scripts (supports both .kts and Groovy)
+          test -f android/settings.gradle || test -f android/settings.gradle.kts
+          test -f android/app/build.gradle || test -f android/app/build.gradle.kts
 
           chmod +x android/gradlew
 
