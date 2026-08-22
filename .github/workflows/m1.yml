@@ -69,18 +69,12 @@ jobs:
           rm -rf .dart_tool/
           find . -type f \( -name "*.fallback" -o -name "*.bak" \) -delete
 
-      - name: Strip Third-Party Imports from Dart Files
+      - name: Dynamically Remove Any Non-SDK Package Imports
         run: |
-          echo "Removing third-party package imports across lib/..."
-          find lib/ -type f -name "*.dart" -exec sed -i \
-            -e '/import '\''package:cupertino_icons/d' \
-            -e '/import '\''package:supabase_flutter/d' \
-            -e '/import '\''package:image_picker/d' \
-            -e '/import '\''package:share_plus/d' \
-            -e '/import '\''package:in_app_purchase/d' \
-            -e '/import '\''package:shared_preferences/d' \
-            {} +
-          echo "Removed unused package imports."
+          echo "Dynamically stripping non-Flutter SDK imports from lib/..."
+          # Deletes any line starting with import 'package: EXCEPT package:flutter/ or package:flutter_test/
+          find lib/ -type f -name "*.dart" -exec perl -pi -e 's/^import\s+[\x27"]package:(?!(flutter\/|flutter_test\/)).*?[\x27"];\s*$//g' {} +
+          echo "Non-SDK package imports successfully removed."
 
       - name: Resolve Dependencies
         run: |
