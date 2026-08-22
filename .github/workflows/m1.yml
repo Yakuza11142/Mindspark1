@@ -64,7 +64,7 @@ jobs:
           raw = os.environ.get('RAW_SECRETS', '{}')
           try:
               data = json.loads(raw)
-          except Exception as e:
+          except Exception:
               data = {}
 
           exclude = {'KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD'}
@@ -249,6 +249,11 @@ jobs:
             --target=lib/main.dart
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
+
+      - name: Purge Generated Secrets JSON
+        if: always()
+        run: |
+          rm -f secrets.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
