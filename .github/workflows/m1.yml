@@ -69,24 +69,32 @@ jobs:
           rm -rf .dart_tool/
           find . -type f \( -name "*.fallback" -o -name "*.bak" \) -delete
 
+      - name: Strip Third-Party Imports from Dart Files
+        run: |
+          echo "Removing third-party package imports across lib/..."
+          find lib/ -type f -name "*.dart" -exec sed -i \
+            -e '/import '\''package:cupertino_icons/d' \
+            -e '/import '\''package:supabase_flutter/d' \
+            -e '/import '\''package:image_picker/d' \
+            -e '/import '\''package:share_plus/d' \
+            -e '/import '\''package:in_app_purchase/d' \
+            -e '/import '\''package:shared_preferences/d' \
+            {} +
+          echo "Removed unused package imports."
+
       - name: Resolve Dependencies
         run: |
           flutter pub get
 
-      # ============================================================
-      # ISOLATED ANDROID DIRECTORY RECREATION
-      # ============================================================
       - name: Generate Fresh Android Directory Only
         run: |
           rm -rf android
           
-          # Create temporary folder to avoid touching top-level pubspec.yaml
           mkdir -p _temp_android_gen
           cd _temp_android_gen
           flutter create --platforms=android --no-pub --org com.mindspark.app --project-name mindspark1 .
           cd ..
 
-          # Move only the freshly generated android directory to project root
           mv _temp_android_gen/android ./android
           rm -rf _temp_android_gen
 
@@ -106,23 +114,13 @@ jobs:
 
           echo "Flutter project validation successful."
 
-      - name: Generate Production Secrets
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          echo "{\"SUPABASE_URL\": \"${SUPABASE_URL}\", \"SUPABASE_ANON_KEY\": \"${SUPABASE_ANON_KEY}\"}" > secrets.json
-          echo "secrets.json file created successfully."
-
       - name: Prepare Release Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 --decode > android/release.keystore
-
             test -s android/release.keystore
-
             echo "Release keystore prepared successfully."
           else
             echo "KEYSTORE_BASE64 is not configured."
@@ -135,8 +133,7 @@ jobs:
             --release \
             --no-tree-shake-icons \
             --target=lib/main.dart \
-            -Pdisable-abi-filtering=true \
-            --dart-define-from-file=secrets.json
+            -Pdisable-abi-filtering=true
 
       - name: Build Flutter Web
         run: |
@@ -147,8 +144,7 @@ jobs:
           flutter build web \
             --release \
             --target=lib/main.dart \
-            --base-href="/${REPO_NAME}/" \
-            --dart-define-from-file=secrets.json
+            --base-href="/${REPO_NAME}/"
 
           test -f build/web/index.html
 
@@ -180,7 +176,6 @@ jobs:
       - name: Cleanup Generated Secrets
         if: always()
         run: |
-          rm -f secrets.json
           rm -f android/release.keystore
           rm -f android/key.properties
 
