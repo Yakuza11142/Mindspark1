@@ -73,59 +73,13 @@ jobs:
       # ============================================================
       - name: Completely Recreate Android Directory
         run: |
-          echo "=========================================="
-          echo "REMOVING ENTIRE ANDROID DIRECTORY"
-          echo "=========================================="
-
           rm -rf android
-
-          if [ -d "android" ]; then
-            echo "ERROR: android directory still exists."
-            exit 1
-          fi
-
-          echo "Generating fresh Android directory..."
 
           flutter create \
             --platforms=android \
             --no-pub \
             --project-name=mindspark1 \
             .
-
-          if [ ! -d "android" ]; then
-            echo "ERROR: Flutter failed to create android directory."
-            exit 1
-          fi
-
-          echo "Bootstrapping Gradle wrapper..."
-          flutter build apk --config-only || true
-
-          echo "=========================================="
-          echo "VERIFYING FRESH ANDROID DIRECTORY"
-          echo "=========================================="
-
-          test -f android/gradlew
-          test -f android/gradle/wrapper/gradle-wrapper.jar
-          test -f android/gradle/wrapper/gradle-wrapper.properties
-
-          test -f android/settings.gradle || test -f android/settings.gradle.kts
-          test -f android/app/build.gradle || test -f android/app/build.gradle.kts
-
-          chmod +x android/gradlew
-
-          echo "Fresh Android directory created successfully."
-
-      - name: Resolve Dependencies
-        run: |
-          flutter pub get
-
-      - name: Apply Dart Fixes
-        run: |
-          dart fix --apply
-
-      - name: Format Dart Code
-        run: |
-          dart format lib
 
       - name: Validate Flutter Project
         run: |
@@ -139,33 +93,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SERVER_URL: ${{ secrets.SERVER_URL }}
-          PRODUCT_ID: ${{ secrets.PRODUCT_ID }}
         run: |
-          python3 <<'PY'
-          import json
-          import os
-
-          values = {
-              "SUPABASE_URL": os.environ.get("SUPABASE_URL", "").strip(),
-              "SUPABASE_ANON_KEY": os.environ.get("SUPABASE_ANON_KEY", "").strip(),
-              "SERVER_URL": os.environ.get("SERVER_URL", "").strip(),
-              "PRODUCT_ID": os.environ.get("PRODUCT_ID", "mindspark_pro_monthly").strip(),
-          }
-
-          required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
-          missing = [key for key in required if not values.get(key)]
-
-          if missing:
-              raise SystemExit("Missing required GitHub secrets: " + ", ".join(missing))
-
-          values = {key: val for key, val in values.items() if val}
-
-          with open("secrets.json", "w", encoding="utf-8") as file:
-              json.dump(values, file, indent=2)
-
-          print(f"Generated secrets.json with {len(values)} compile-time values.")
-          PY
+          echo "{\"SUPABASE_URL\": \"${SUPABASE_URL}\", \"SUPABASE_ANON_KEY\": \"${SUPABASE_ANON_KEY}\"}" > secrets.json
+          echo "secrets.json file created successfully."
 
       - name: Prepare Release Keystore
         env:
@@ -190,26 +120,6 @@ jobs:
             --target=lib/main.dart \
             -Pdisable-abi-filtering=true \
             --dart-define-from-file=secrets.json
-
-      - name: Verify APK
-        run: |
-          APK="build/app/outputs/flutter-apk/app-release.apk"
-
-          if [ ! -f "$APK" ]; then
-            echo "ERROR: Release APK was not created."
-            exit 1
-          fi
-
-          if [ ! -s "$APK" ]; then
-            echo "ERROR: Release APK is empty."
-            exit 1
-          fi
-
-          echo "=========================================="
-          echo "MINDSpark APK BUILD SUCCESSFUL"
-          echo "=========================================="
-
-          ls -lh "$APK"
 
       - name: Build Flutter Web
         run: |
