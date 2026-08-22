@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import '../config/secrets.dart';
 
 class PaymentService {
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   Function(bool)? onProStatusChanged;
+
+  // Reads from compile-time secrets.json (--dart-define-from-file)
+  static const String _productId = String.fromEnvironment(
+    'PRODUCT_ID',
+    defaultValue: 'mindspark_pro_monthly',
+  );
 
   void init() {
     _subscription = _iap.purchaseStream.listen(
@@ -16,7 +21,7 @@ class PaymentService {
         _subscription?.cancel();
       },
       onError: (error) {
-        // Handle stream errors
+        // Handle stream error
       },
     );
   }
@@ -44,7 +49,7 @@ class PaymentService {
     if (!available) return;
 
     final ProductDetailsResponse response =
-        await _iap.queryProductDetails({Secrets.productId});
+        await _iap.queryProductDetails({_productId});
 
     if (response.notFoundIDs.isNotEmpty) {
       return;
@@ -53,7 +58,7 @@ class PaymentService {
     if (response.productDetails.isNotEmpty) {
       final PurchaseParam purchaseParam =
           PurchaseParam(productDetails: response.productDetails.first);
-      
+
       await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     }
   }
