@@ -72,16 +72,19 @@ jobs:
       # ============================================================
       # ISOLATED ANDROID DIRECTORY RECREATION
       # ============================================================
-      - name: Generate Fresh Android Directory
+      - name: Generate Fresh Android Directory Only
         run: |
           rm -rf android
+          
+          # Create temporary folder to avoid touching top-level pubspec.yaml
+          mkdir -p _temp_android_gen
+          cd _temp_android_gen
+          flutter create --platforms=android --no-pub --org com.mindspark.app --project-name mindspark1 .
+          cd ..
 
-          flutter create \
-            --platforms=android \
-            --no-pub \
-            --org com.mindspark.app \
-            --project-name mindspark1 \
-            .
+          # Move only the freshly generated android directory to project root
+          mv _temp_android_gen/android ./android
+          rm -rf _temp_android_gen
 
       - name: Resolve Dependencies
         run: |
