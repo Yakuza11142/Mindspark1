@@ -79,19 +79,6 @@ jobs:
         run: |
           flutter pub get
 
-      - name: Generate Fresh Android Directory Only
-        run: |
-          rm -rf android
-          
-          mkdir -p _temp_android_gen
-          cp pubspec.yaml _temp_android_gen/
-          cd _temp_android_gen
-          flutter create --platforms=android --no-pub --org com.mindspark.app --project-name mindspark1 .
-          cd ..
-
-          mv _temp_android_gen/android ./android
-          rm -rf _temp_android_gen
-
       - name: Apply Dart Fixes
         run: |
           dart fix --apply
