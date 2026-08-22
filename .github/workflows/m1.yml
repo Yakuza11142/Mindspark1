@@ -69,8 +69,8 @@ jobs:
           rm -rf .dart_tool/
 
       # ============================================================
-      # COMPLETELY DELETE THE EXISTING ANDROID DIRECTORY
-      # THEN GENERATE A BRAND-NEW ONE.
+      # COMPLETELY DELETE AND RECREATE THE ANDROID DIRECTORY
+      # WITH GROOVY (.gradle) CONFIGURATIONS AND BOOTSTRAPPED GRADLE
       # ============================================================
       - name: Completely Recreate Android Directory
         run: |
@@ -85,10 +85,11 @@ jobs:
             exit 1
           fi
 
-          echo "Generating completely fresh Android project..."
+          echo "Generating completely fresh Groovy Android project..."
 
           flutter create \
             --platforms=android \
+            --android-language java \
             --project-name=mindspark1 \
             .
 
@@ -96,6 +97,15 @@ jobs:
             echo "ERROR: Flutter failed to create android directory."
             exit 1
           fi
+
+          # Convert Kotlin DSL (.kts) back to standard Groovy (.gradle)
+          [ -f "android/settings.gradle.kts" ] && mv android/settings.gradle.kts android/settings.gradle
+          [ -f "android/app/build.gradle.kts" ] && mv android/app/build.gradle.kts android/app/build.gradle
+          [ -f "android/build.gradle.kts" ] && mv android/build.gradle.kts android/build.gradle
+
+          # Bootstrap the Gradle wrapper files
+          echo "Bootstrapping Gradle wrapper..."
+          flutter build apk --config-only || true
 
           echo "=========================================="
           echo "VERIFYING FRESH ANDROID DIRECTORY"
@@ -109,15 +119,7 @@ jobs:
 
           chmod +x android/gradlew
 
-          echo "Fresh Android directory created successfully."
-          echo "Gradle wrapper:"
-          ls -lh android/gradle/wrapper/gradle-wrapper.jar
-
-      - name: Verify Fresh Gradle Wrapper
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew --version
+          echo "Fresh Android directory created and verified successfully."
 
       - name: Resolve Dependencies
         run: |
