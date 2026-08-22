@@ -62,11 +62,12 @@ jobs:
           java -version
           flutter doctor -v
 
-      - name: Clean Flutter Workspace
+      - name: Clean Workspace & Remove Fallbacks
         run: |
           flutter clean || true
           rm -rf build/
           rm -rf .dart_tool/
+          find . -type f \( -name "*.fallback" -o -name "*.bak" \) -delete
 
       # ============================================================
       # RECREATE ONLY THE ANDROID DIRECTORY WITHOUT TOUCHING PUB
