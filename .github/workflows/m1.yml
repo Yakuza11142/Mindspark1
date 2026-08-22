@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: mindspark-production
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
