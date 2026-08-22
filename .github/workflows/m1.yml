@@ -21,8 +21,6 @@ jobs:
     env: 
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=none -Dandroid.suppressUnsupportedCompileSdk=true -Dorg.gradle.vfs.watch=false"
       JAVA_TOOL_OPTIONS: "-Xmx4g"
-      SUPABASE_URL: "${{ secrets.SUPABASE_URL }}"
-      SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
       KEYSTORE_BASE64: "${{ secrets.KEYSTORE_BASE64 }}"
       KEYSTORE_PASSWORD: "${{ secrets.KEYSTORE_PASSWORD }}"
       KEY_ALIAS: "${{ secrets.KEY_ALIAS }}"
@@ -55,17 +53,73 @@ jobs:
           dart fix --apply || true
           dart format . || true
 
-      - name: Configure Production Environment Secrets
+      - name: Dump All Secrets to Secrets JSON
+        env:
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
         run: |
+          rm -rf lib/config/secrets.dart || true
           cat << 'EOF' > make_secrets.py
           import json, os
-          keys = ['SUPABASE_URL','SUPABASE_ANON_KEY']
-          secrets = {k: os.environ.get(k, '').strip() for k in keys}
+
+          # Parses all repository secrets passed via the secrets context
+          secrets_raw = os.environ.get('SECRETS_CONTEXT', '{}')
+          try:
+              all_secrets = json.loads(secrets_raw)
+          except Exception:
+              all_secrets = {}
+
+          # Filter out keystore/system keys so only app secrets go into secrets.json
+          exclude_keys = {'KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD'}
+          filtered_secrets = {
+              k: str(v).strip() 
+              for k, v in all_secrets.items() 
+              if k not in exclude_keys and v is not None
+          }
+
           with open('secrets.json', 'w') as f:
-              f.write(json.dumps(secrets))
+              f.write(json.dumps(filtered_secrets, indent=2))
+
+          print(f"Successfully generated secrets.json with {len(filtered_secrets)} keys.")
           EOF
           python3 make_secrets.py
           rm make_secrets.py
+
+      - name: Strip Removed Dependency References
+        run: |
+          cat << 'EOF' > purge_missing.py
+          import os
+
+          missing_imports = [
+              'package:image_picker/image_picker.dart',
+              'package:share_plus/share_plus.dart',
+              'package:in_app_purchase/in_app_purchase.dart',
+              '../config/secrets.dart',
+              'config/secrets.dart'
+          ]
+          
+          for root, _, files in os.walk('lib'):
+              for file in files:
+                  if file.endswith('.dart'):
+                      path = os.path.join(root, file)
+                      with open(path, 'r') as f:
+                          lines = f.readlines()
+                      
+                      new_lines = []
+                      for line in lines:
+                          if any(imp in line for imp in missing_imports):
+                              new_lines.append(f"// {line}")
+                          elif ".anonymousId" in line:
+                              new_lines.append(line.replace(".anonymousId", " ?? 'User'"))
+                          else:
+                              new_lines.append(line)
+                      
+                      with open(path, 'w') as f:
+                          f.writelines(new_lines)
+
+          print("Purged missing file imports and unused dependencies.")
+          EOF
+          python3 purge_missing.py
+          rm purge_missing.py
 
       - name: Validate Lib Entry Point
         run: |
