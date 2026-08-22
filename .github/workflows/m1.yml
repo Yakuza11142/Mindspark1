@@ -69,6 +69,10 @@ jobs:
           rm -rf .dart_tool/
           find . -type f \( -name "*.fallback" -o -name "*.bak" \) -delete
 
+      - name: Resolve Dependencies
+        run: |
+          flutter pub get
+
       # ============================================================
       # ISOLATED ANDROID DIRECTORY RECREATION
       # ============================================================
@@ -85,10 +89,6 @@ jobs:
           # Move only the freshly generated android directory to project root
           mv _temp_android_gen/android ./android
           rm -rf _temp_android_gen
-
-      - name: Resolve Dependencies
-        run: |
-          flutter pub get
 
       - name: Apply Dart Fixes
         run: |
