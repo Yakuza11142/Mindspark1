@@ -70,16 +70,17 @@ jobs:
           find . -type f \( -name "*.fallback" -o -name "*.bak" \) -delete
 
       # ============================================================
-      # RECREATE ONLY THE ANDROID DIRECTORY WITHOUT TOUCHING PUB
+      # ISOLATED ANDROID DIRECTORY RECREATION
       # ============================================================
-      - name: Completely Recreate Android Directory
+      - name: Generate Fresh Android Directory
         run: |
           rm -rf android
 
           flutter create \
             --platforms=android \
             --no-pub \
-            --project-name=mindspark1 \
+            --org com.mindspark.app \
+            --project-name mindspark1 \
             .
 
       - name: Resolve Dependencies
