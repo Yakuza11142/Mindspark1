@@ -18,7 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const String _dbKeyXp = 'user_xp';
   static const String _dbKeyLeague = 'user_league';
 
-  // State parameters initialized cleanly via dynamic values instead of hardcoded strings
+  // State parameters initialized cleanly
   late String fallbackName;
   late String streakLabel;
   late String xpLabel;
@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int streak = 0;
   int totalXp = 0;
   String league = "";
-  
+
   late TextEditingController _nameController;
 
   @override
@@ -45,11 +45,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Resolves localization & label strings directly from contextual state tokens
-    fallbackName = MaterialLocalizations.of(context).anonymousId;
+    // Safely retrieve standard localizations and set default fallback
+    fallbackName = "User";
     dialogCancelText = MaterialLocalizations.of(context).cancelButtonLabel;
     dialogSaveText = MaterialLocalizations.of(context).saveButtonLabel;
-    
+
     dialogTitleText = "Change Name";
     streakLabel = "🔥 Streak";
     xpLabel = "⚡ Total XP";
@@ -72,12 +72,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       name = prefs.getString(_dbKeyName) ?? fallbackName;
       imagePath = prefs.getString(_dbKeyAvatar);
-      
+
       // Dynamic fallback metrics pulled out of preferences storage memory
       streak = prefs.getInt(_dbKeyStreak) ?? 5;
       totalXp = prefs.getInt(_dbKeyXp) ?? 1250;
       league = prefs.getString(_dbKeyLeague) ?? "Gold";
-      
+
       _nameController.text = name;
     });
   }
@@ -95,7 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   _editName() {
     _nameController.text = name;
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -117,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               final prefs = await SharedPreferences.getInstance();
               await prefs.setString(_dbKeyName, newName);
-              
+
               if (!mounted) return;
               setState(() => name = newName);
               Navigator.pop(ctx);
