@@ -60,3 +60,6 @@ It automatically takes care of:
 2. Generating a clean `AndroidManifest.xml` during runtime.
 3. Compiling an obfuscated release build (`app-release.apk`) to prevent reverse-engineering.
 4. Exporting build symbols and cryptographic hashes for verification.
+
+
+contact email: mindsparkceo@gmail.com
