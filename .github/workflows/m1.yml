@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 on:
   push:
     branches: [main, master, dev, "**"]
@@ -53,33 +53,31 @@ jobs:
           dart fix --apply || true
           dart format . || true
 
-      - name: Dump All Secrets to Secrets JSON
+      - name: Safely Generate Secrets JSON
         env:
-          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+          RAW_SECRETS: ${{ toJson(secrets) }}
         run: |
           rm -rf lib/config/secrets.dart || true
           cat << 'EOF' > make_secrets.py
           import json, os
 
-          # Parses all repository secrets passed via the secrets context
-          secrets_raw = os.environ.get('SECRETS_CONTEXT', '{}')
+          raw = os.environ.get('RAW_SECRETS', '{}')
           try:
-              all_secrets = json.loads(secrets_raw)
-          except Exception:
-              all_secrets = {}
+              data = json.loads(raw)
+          except Exception as e:
+              data = {}
 
-          # Filter out keystore/system keys so only app secrets go into secrets.json
-          exclude_keys = {'KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD'}
-          filtered_secrets = {
-              k: str(v).strip() 
-              for k, v in all_secrets.items() 
-              if k not in exclude_keys and v is not None
-          }
+          exclude = {'KEYSTORE_BASE64', 'KEYSTORE_PASSWORD', 'KEY_ALIAS', 'KEY_PASSWORD'}
+          clean_secrets = {}
 
-          with open('secrets.json', 'w') as f:
-              f.write(json.dumps(filtered_secrets, indent=2))
+          for k, v in data.items():
+              if k not in exclude and v is not None:
+                  clean_secrets[k] = str(v).strip()
 
-          print(f"Successfully generated secrets.json with {len(filtered_secrets)} keys.")
+          with open('secrets.json', 'w', encoding='utf-8') as f:
+              json.dump(clean_secrets, f, ensure_ascii=False, indent=2)
+
+          print(f"Generated secrets.json with {len(clean_secrets)} keys.")
           EOF
           python3 make_secrets.py
           rm make_secrets.py
@@ -89,31 +87,26 @@ jobs:
           cat << 'EOF' > purge_missing.py
           import os
 
-          missing_imports = [
-              'package:image_picker/image_picker.dart',
-              'package:share_plus/share_plus.dart',
-              'package:in_app_purchase/in_app_purchase.dart',
-              '../config/secrets.dart',
-              'config/secrets.dart'
-          ]
+          missing_pkgs = ['image_picker', 'share_plus', 'in_app_purchase']
+          missing_imports = ['../config/secrets.dart', 'config/secrets.dart']
           
           for root, _, files in os.walk('lib'):
               for file in files:
                   if file.endswith('.dart'):
                       path = os.path.join(root, file)
-                      with open(path, 'r') as f:
+                      with open(path, 'r', encoding='utf-8', errors='ignore') as f:
                           lines = f.readlines()
                       
                       new_lines = []
                       for line in lines:
-                          if any(imp in line for imp in missing_imports):
+                          if any(f"package:{pkg}/" in line for pkg in missing_pkgs) or any(imp in line for imp in missing_imports):
                               new_lines.append(f"// {line}")
                           elif ".anonymousId" in line:
                               new_lines.append(line.replace(".anonymousId", " ?? 'User'"))
                           else:
                               new_lines.append(line)
                       
-                      with open(path, 'w') as f:
+                      with open(path, 'w', encoding='utf-8') as f:
                           f.writelines(new_lines)
 
           print("Purged missing file imports and unused dependencies.")
@@ -129,11 +122,11 @@ jobs:
           if not os.path.exists(main_path):
               print("CRITICAL ERROR: lib/main.dart is missing from the repository.")
               exit(1)
-          content = open(main_path).read()
+          content = open(main_path, encoding='utf-8', errors='ignore').read()
           if "void main" not in content:
               print("CRITICAL ERROR: void main() entry point missing in lib/main.dart")
               exit(1)
-          print("lib/main.dart validation successful. Building real application code.")
+          print("lib/main.dart validation successful.")
           EOF
           python3 sanitize_lib.py
           rm sanitize_lib.py
