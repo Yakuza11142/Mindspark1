@@ -43,7 +43,11 @@ jobs:
           rm -f ~/.gradle/init.gradle || true
           flutter clean || true
           rm -rf pubspec.lock .dart_tool/ build/ android/.gradle/ android/app/build/ symbols/
-          flutter pub cache clean --force || true
+
+      - name: Regenerate Platforms
+        run: |
+          rm -rf android
+          flutter create --platforms=android,web . || true
 
       - name: Resolve Dependencies & Format Code
         run: |
@@ -80,11 +84,8 @@ jobs:
           python3 sanitize_lib.py
           rm sanitize_lib.py
 
-      - name: Regenerate Platforms & Configure Android SDK
+      - name: Configure Android SDK
         run: |
-          rm -rf android
-          flutter create --offline --platforms=android,web . || true
-          flutter pub get
           echo "flutter.compileSdkVersion=37" > android/local.properties
           echo "flutter.targetSdkVersion=37" >> android/local.properties
           sed -i '/android.enableR8/d' android/gradle.properties 2>/devnull || true
@@ -184,6 +185,7 @@ jobs:
           rm -rf ~/.gradle/ || true
           rm -f ~/.gradle/init.gradle || true
           flutter build apk --release \
+            --no-pub \
             --no-tree-shake-icons \
             --target=lib/main.dart \
             --dart-define-from-file=secrets.json
@@ -194,6 +196,7 @@ jobs:
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           
           flutter build web --release \
+            --no-pub \
             --base-href="/${REPO_NAME}/" \
             --dart-define-from-file=secrets.json \
             --target=lib/main.dart
