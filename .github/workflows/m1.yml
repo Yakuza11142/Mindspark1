@@ -1,4 +1,4 @@
-name: MindSpark Ultimate Production CI
+Name: MindSpark Ultimate Production CI
 
 on:
   push:
@@ -69,7 +69,7 @@ jobs:
           rm -rf .dart_tool/
 
       # ============================================================
-      # RECREATE ANDROID DIRECTORY & BOOTSTRAP GRADLE
+      # RECREATE ONLY THE ANDROID DIRECTORY WITHOUT TOUCHING PUB
       # ============================================================
       - name: Completely Recreate Android Directory
         run: |
@@ -84,10 +84,11 @@ jobs:
             exit 1
           fi
 
-          echo "Generating completely fresh Android project..."
+          echo "Generating fresh Android directory..."
 
           flutter create \
             --platforms=android \
+            --no-pub \
             --project-name=mindspark1 \
             .
 
@@ -96,7 +97,6 @@ jobs:
             exit 1
           fi
 
-          # Bootstrap Gradle wrapper files natively
           echo "Bootstrapping Gradle wrapper..."
           flutter build apk --config-only || true
 
@@ -108,13 +108,12 @@ jobs:
           test -f android/gradle/wrapper/gradle-wrapper.jar
           test -f android/gradle/wrapper/gradle-wrapper.properties
 
-          # Flexibly verify settings/build configs (.kts or .gradle)
           test -f android/settings.gradle || test -f android/settings.gradle.kts
           test -f android/app/build.gradle || test -f android/app/build.gradle.kts
 
           chmod +x android/gradlew
 
-          echo "Fresh Android directory created and verified successfully."
+          echo "Fresh Android directory created successfully."
 
       - name: Resolve Dependencies
         run: |
