@@ -1,41 +1,15 @@
 name: mindspark1
-description: "AI TUTOR & AR LAB"
-publish_to: "none"
+description: "AI TUTOR & AR LAB."
+publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.9
-
-  # THE ONLY REMAINING CLOUD BACKEND
-  supabase_flutter: ^2.16.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.14.2
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/
-    - assets/shaders/
-    - assets/intro.mp4
-    - .env
-
-  shaders:
-    - assets/shaders/hologram_glow.frag
-
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: false
-  image_path: "assets/icon_launcher.png"
-  web:
-    generate: true
-    image_path: "assets/icon_launcher.png"
