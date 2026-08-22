@@ -81,6 +81,18 @@ jobs:
             --project-name=mindspark1 \
             .
 
+      - name: Resolve Dependencies
+        run: |
+          flutter pub get
+
+      - name: Apply Dart Fixes
+        run: |
+          dart fix --apply
+
+      - name: Format Dart Code
+        run: |
+          dart format lib
+
       - name: Validate Flutter Project
         run: |
           test -f pubspec.yaml
