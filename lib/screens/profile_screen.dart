@@ -19,7 +19,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   static const String _dbKeyLeague = 'user_league';
 
   // State parameters initialized cleanly
-  late String fallbackName;
   late String streakLabel;
   late String xpLabel;
   late String leagueLabel;
@@ -27,7 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late String dialogCancelText;
   late String dialogSaveText;
 
-  String name = "";
+  String name = "User";
   String? imagePath;
   int streak = 0;
   int totalXp = 0;
@@ -45,8 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Safely retrieve standard localizations and set default fallback
-    fallbackName = "User";
+    // Safely retrieve standard localizations
     dialogCancelText = MaterialLocalizations.of(context).cancelButtonLabel;
     dialogSaveText = MaterialLocalizations.of(context).saveButtonLabel;
 
@@ -54,10 +52,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     streakLabel = "🔥 Streak";
     xpLabel = "⚡ Total XP";
     leagueLabel = "🏆 League";
-
-    if (name.isEmpty) {
-      name = fallbackName;
-    }
   }
 
   @override
@@ -70,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      name = prefs.getString(_dbKeyName) ?? fallbackName;
+      name = prefs.getString(_dbKeyName) ?? "User";
       imagePath = prefs.getString(_dbKeyAvatar);
 
       // Dynamic fallback metrics pulled out of preferences storage memory
