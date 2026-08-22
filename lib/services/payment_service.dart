@@ -4,26 +4,61 @@ import '../config/secrets.dart';
 
 class PaymentService {
   final InAppPurchase _iap = InAppPurchase.instance;
+  StreamSubscription<List<PurchaseDetails>>? _subscription;
   Function(bool)? onProStatusChanged;
 
   void init() {
-    _iap.purchaseStream.listen((list) {
-      for (var p in list) {
-        if (p.status == PurchaseStatus.purchased ||
-            p.status == PurchaseStatus.restored) {
-          if (onProStatusChanged != null) onProStatusChanged!(true);
+    _subscription = _iap.purchaseStream.listen(
+      (List<PurchaseDetails> purchaseDetailsList) {
+        _listenToPurchaseUpdated(purchaseDetailsList);
+      },
+      onDone: () {
+        _subscription?.cancel();
+      },
+      onError: (error) {
+        // Handle stream errors
+      },
+    );
+  }
+
+  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
+    for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
+      if (purchaseDetails.status == PurchaseStatus.purchased ||
+          purchaseDetails.status == PurchaseStatus.restored) {
+        if (purchaseDetails.pendingCompletePurchase) {
+          _iap.completePurchase(purchaseDetails);
+        }
+        if (onProStatusChanged != null) {
+          onProStatusChanged!(true);
+        }
+      } else if (purchaseDetails.status == PurchaseStatus.error) {
+        if (purchaseDetails.pendingCompletePurchase) {
+          _iap.completePurchase(purchaseDetails);
         }
       }
-    });
+    }
   }
 
   Future<void> buyPro() async {
-    if (!(await _iap.isAvailable())) return;
-    final res = await _iap.queryProductDetails({Secrets.productId});
-    if (res.productDetails.isNotEmpty) {
-      _iap.buyNonConsumable(
-          purchaseParam:
-              PurchaseParam(productDetails: res.productDetails.first));
+    final bool available = await _iap.isAvailable();
+    if (!available) return;
+
+    final ProductDetailsResponse response =
+        await _iap.queryProductDetails({Secrets.productId});
+
+    if (response.notFoundIDs.isNotEmpty) {
+      return;
     }
+
+    if (response.productDetails.isNotEmpty) {
+      final PurchaseParam purchaseParam =
+          PurchaseParam(productDetails: response.productDetails.first);
+      
+      await _iap.buyNonConsumable(purchaseParam: purchaseParam);
+    }
+  }
+
+  void dispose() {
+    _subscription?.cancel();
   }
 }
